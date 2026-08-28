@@ -11,13 +11,22 @@ import '../services/api.dart';
 import '../theme/app_theme.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
+import '../widgets/bounded_list.dart';
 import '../widgets/occupancy_chip.dart';
 
 class DiningCard extends StatelessWidget {
-  const DiningCard({super.key, required this.result, this.dragHandle});
+  const DiningCard({
+    super.key,
+    required this.result,
+    this.dragHandle,
+    this.onShowAll,
+  });
 
   final Result<Collection<DiningLocation>> result;
   final Widget? dragHandle;
+
+  /// Tap target for the detail view. Not built yet, so this is a no-op.
+  final VoidCallback? onShowAll;
 
   @override
   Widget build(BuildContext context) {
@@ -31,16 +40,20 @@ class DiningCard extends StatelessWidget {
       child: switch ((result.isPriming, collection?.data.isEmpty ?? true)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
         (_, true) => const EmptyNote(text: 'No dining locations cached yet.'),
-        _ => _List(locations: collection!.data),
+        _ => _List(locations: collection!.data, onShowAll: onShowAll),
       },
     );
   }
 }
 
 class _List extends StatelessWidget {
-  const _List({required this.locations});
+  const _List({required this.locations, this.onShowAll});
 
   final List<DiningLocation> locations;
+  final VoidCallback? onShowAll;
+
+  /// Enforced row height, so BoundedList can do exact arithmetic.
+  static const double _rowHeight = 62;
 
   @override
   Widget build(BuildContext context) {
@@ -50,10 +63,11 @@ class _List extends StatelessWidget {
         return a.name.compareTo(b.name);
       });
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+    return BoundedList(
       itemCount: sorted.length,
+      itemHeight: _rowHeight,
+      noun: 'locations',
+      onShowAll: onShowAll,
       itemBuilder: (context, index) => RuledRow(
         last: index == sorted.length - 1,
         child: _Row(location: sorted[index]),
@@ -97,9 +111,19 @@ class _Row extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(location.name, style: text.titleMedium),
+              Text(
+                location.name,
+                style: text.titleMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
               const SizedBox(height: 2),
-              Text(_status(), style: text.bodySmall),
+              Text(
+                _status(),
+                style: text.bodySmall,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ],
           ),
         ),

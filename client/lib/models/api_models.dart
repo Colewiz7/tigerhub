@@ -32,18 +32,29 @@ DateTime? _date(Object? value) =>
     value is String ? DateTime.tryParse(value)?.toLocal() : null;
 
 class Occupancy {
-  const Occupancy({this.count, this.maxOcc, this.openStatus, this.percentFull});
+  const Occupancy({
+    this.count,
+    this.maxOcc,
+    this.openStatus,
+    this.percentFull,
+    this.overCapacity = false,
+  });
 
   final int? count;
   final int? maxOcc;
   final String? openStatus;
   final int? percentFull;
 
+  /// The live count exceeds RIT's published capacity, so the percentage is not
+  /// trustworthy and the chip shows a qualitative label instead.
+  final bool overCapacity;
+
   factory Occupancy.fromJson(Map<String, dynamic> json) => Occupancy(
         count: json['count'] as int?,
         maxOcc: json['max_occ'] as int?,
         openStatus: json['open_status'] as String?,
         percentFull: json['percent_full'] as int?,
+        overCapacity: json['over_capacity'] as bool? ?? false,
       );
 }
 

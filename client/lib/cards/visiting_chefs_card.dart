@@ -7,16 +7,27 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
+import '../widgets/bounded_list.dart';
 
 class VisitingChefsCard extends StatelessWidget {
-  const VisitingChefsCard({super.key, required this.result, this.dragHandle});
+  const VisitingChefsCard({
+    super.key,
+    required this.result,
+    this.dragHandle,
+    this.onShowAll,
+  });
 
   final Result<Collection<MenuItem>> result;
   final Widget? dragHandle;
 
+  /// Tap target for the detail view. Not built yet, so this is a no-op.
+  final VoidCallback? onShowAll;
+
+  static const double _rowHeight = 62;
+
   @override
   Widget build(BuildContext context) {
-    final items = result.value?.data ?? const <MenuItem>[];
+    final all = result.value?.data ?? const <MenuItem>[];
     final text = Theme.of(context).textTheme;
 
     return CardShell(
@@ -24,31 +35,35 @@ class VisitingChefsCard extends StatelessWidget {
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
-      child: switch ((result.isPriming, items.isEmpty)) {
+      child: switch ((result.isPriming, all.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading today'),
         (_, true) => const EmptyNote(text: 'No visiting chefs on campus today.'),
-        _ => ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return RuledRow(
-                last: index == items.length - 1,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.name, style: text.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(item.locationName, style: text.bodySmall),
-                    if (item.description != null && item.description!.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(item.description!, style: text.bodySmall),
-                    ],
-                  ],
-                ),
-              );
-            },
+        _ => BoundedList(
+            itemCount: all.length,
+            itemHeight: _rowHeight,
+            noun: 'chefs',
+            onShowAll: onShowAll,
+            itemBuilder: (context, index) => RuledRow(
+              last: index == all.length - 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    all[index].name,
+                    style: text.titleMedium,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    all[index].locationName,
+                    style: text.bodySmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
           ),
       },
     );

@@ -82,11 +82,28 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  /// Placeholder for the detail view. The "+N more" rows are already wired to
+  /// this so the tap target exists before the screen does.
+  void _openDetail(String cardId) {
+    // Intentionally does nothing yet.
+  }
+
   Widget _cardFor(String id) => switch (id) {
-        'dining' => DiningCard(result: _dining, dragHandle: const _DragHandle()),
-        'events' => EventsCard(result: _events, dragHandle: const _DragHandle()),
-        'chefs' =>
-          VisitingChefsCard(result: _chefs, dragHandle: const _DragHandle()),
+        'dining' => DiningCard(
+            result: _dining,
+            dragHandle: const _DragHandle(),
+            onShowAll: () => _openDetail('dining'),
+          ),
+        'events' => EventsCard(
+            result: _events,
+            dragHandle: const _DragHandle(),
+            onShowAll: () => _openDetail('events'),
+          ),
+        'chefs' => VisitingChefsCard(
+            result: _chefs,
+            dragHandle: const _DragHandle(),
+            onShowAll: () => _openDetail('chefs'),
+          ),
         'housing' => HousingCard(
             areas: _areas,
             api: widget.api,

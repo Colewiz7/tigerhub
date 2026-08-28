@@ -32,6 +32,11 @@ class Occupancy(BaseModel):
     max_occ: int | None = None
     open_status: str | None = None
     percent_full: int | None = None
+    # True when the live count exceeds the published capacity. RIT's max_occ is
+    # frequently too low (Midnight Oil reads 46 against a stated 38), so the
+    # percentage is not trustworthy in that case and the client should say
+    # "busy" rather than quote a precise figure.
+    over_capacity: bool = False
 
 
 class DiningLocation(BaseModel):

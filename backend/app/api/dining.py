@@ -16,17 +16,27 @@ VISITING_CHEF = "Visiting Chef"
 
 
 def _occupancy_for(row: dict) -> Occupancy | None:
-    """Occupancy is optional by design. A missing reading hides the chip."""
+    """Occupancy is optional by design. A missing reading hides the chip.
+
+    A reading with a count but no usable denominator still returns a chip, with
+    percent_full left null. The client shows the raw count rather than silently
+    dropping the location, so a missing capacity is visible instead of papered
+    over. Verified 2026-08-28: all five sensor locations do publish max_occ, so
+    this is a guard, not the normal path.
+    """
     count = row.get("occupancy_count")
     if count is None:
         return None
+
     max_occ = row.get("occupancy_max") or 0
     percent = int(round(100 * count / max_occ)) if max_occ else None
+
     return Occupancy(
         count=count,
         max_occ=row.get("occupancy_max"),
         open_status=row.get("occupancy_status"),
         percent_full=min(percent, 100) if percent is not None else None,
+        over_capacity=bool(max_occ) and count > max_occ,
     )
 
 

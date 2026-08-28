@@ -224,3 +224,35 @@ def test_post_offices(client):
     streets = {o["id"]: o["street"] for o in body}
     assert streets["global-village"] == "6000 Reynolds Drive"
     assert streets["dsp"] == "43 Greenleaf Court"
+
+
+def test_occupancy_over_capacity_is_flagged(client):
+    """RIT's max_occ is often too low. The count exceeding it is a fact the
+    API reports, so the client can avoid quoting a precise percentage."""
+    _seed_open_location()
+    occupancy.upsert({"mdo_id": 123, "count": 46, "max_occ": 38,
+                      "open_status": "Open Now", "hourly": []})
+    occ = client.get("/dining").json()["data"][0]["occupancy"]
+    assert occ["over_capacity"] is True
+    assert occ["percent_full"] == 100
+
+
+def test_occupancy_under_capacity_is_not_flagged(client):
+    _seed_open_location()
+    occupancy.upsert({"mdo_id": 123, "count": 9, "max_occ": 12,
+                      "open_status": "Open Now", "hourly": []})
+    occ = client.get("/dining").json()["data"][0]["occupancy"]
+    assert occ["over_capacity"] is False
+    assert occ["percent_full"] == 75
+
+
+def test_occupancy_without_a_denominator_still_shows_the_count(client):
+    """A missing max_occ must not silently hide the location."""
+    _seed_open_location()
+    occupancy.upsert({"mdo_id": 123, "count": 235, "max_occ": None,
+                      "open_status": "Open Now", "hourly": []})
+    occ = client.get("/dining").json()["data"][0]["occupancy"]
+    assert occ is not None, "a count with no capacity must still return a chip"
+    assert occ["count"] == 235
+    assert occ["percent_full"] is None
+    assert occ["over_capacity"] is False
