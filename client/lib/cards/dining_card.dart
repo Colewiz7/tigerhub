@@ -71,11 +71,16 @@ class _List extends StatelessWidget {
         if (a.isOpen != b.isOpen) return a.isOpen ? -1 : 1;
         return a.name.compareTo(b.name);
       });
+    final openNow = sorted.where((location) => location.isOpen).length;
 
     return BoundedList(
       itemCount: sorted.length,
       itemHeight: _rowHeight,
-      noun: 'locations',
+      noun: 'open',
+      // Open rows are sorted first, so any visible capacity is consumed by
+      // open locations before closed ones. The footer and hero then count the
+      // same population.
+      hiddenCountBuilder: (shown) => (openNow - shown).clamp(0, openNow),
       onShowAll: onShowAll,
       itemBuilder: (context, index) => _Row(location: sorted[index]),
     );

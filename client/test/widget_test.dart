@@ -257,6 +257,49 @@ void main() {
       expect(find.byType(MoreRow), findsOneWidget);
     });
 
+    testWidgets('dining footer and visible open rows equal the hero count',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final locations = [
+        for (var i = 0; i < 14; i++)
+          DiningLocation(
+            id: i,
+            name: 'Open ${i.toString().padLeft(2, '0')}',
+            isOpen: true,
+          ),
+        for (var i = 0; i < 10; i++)
+          DiningLocation(
+            id: 100 + i,
+            name: 'Closed ${i.toString().padLeft(2, '0')}',
+            isOpen: false,
+          ),
+      ];
+
+      await tester.pumpWidget(boxed(
+        DiningCard(
+          result: Result(
+            value: Collection(data: locations, stale: false),
+            state: DataState.ok,
+          ),
+        ),
+        height: 700,
+      ));
+
+      final visibleOpen = find
+          .byWidgetPredicate(
+            (widget) => widget is Text && (widget.data?.startsWith('Open ') ?? false),
+          )
+          .evaluate()
+          .length;
+      const heroOpen = 14;
+      const hiddenOpen = 5;
+      expect(find.text('+$hiddenOpen open'), findsOneWidget);
+      expect(visibleOpen + hiddenOpen, heroOpen);
+      expect(find.textContaining('Closed '), findsNothing,
+          reason: 'open locations must fill the visible rows first');
+    });
+
     testWidgets('more row is tappable for the future detail view',
         (tester) async {
       var tapped = 0;
