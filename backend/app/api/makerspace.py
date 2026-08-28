@@ -6,21 +6,30 @@ config, because their hours feed is broken. See CLAUDE.md section 8 decision 3.
 
 from fastapi import APIRouter, Query
 
-from app.api.schemas import Equipment, MakerSpaceHours, RoomSummary
+from app import freshness
+from app.api.schemas import Collection, Equipment, MakerSpaceHours, RoomSummary
 from app.config import get_config
 from app.models import makerspace as makerspace_model
 
 router = APIRouter(prefix="/makerspace", tags=["makerspace"])
 
 
-@router.get("/equipment", response_model=list[Equipment])
+@router.get("/equipment", response_model=Collection[Equipment])
 def list_equipment(room: str | None = Query(None)):
-    return makerspace_model.list_equipment(room)
+    return Collection[Equipment](
+        data=makerspace_model.list_equipment(room),
+        stale=freshness.is_stale("makerspace_equipment"),
+        last_updated=freshness.last_success("makerspace_equipment"),
+    )
 
 
-@router.get("/rooms", response_model=list[RoomSummary])
+@router.get("/rooms", response_model=Collection[RoomSummary])
 def list_rooms():
-    return makerspace_model.room_summary()
+    return Collection[RoomSummary](
+        data=makerspace_model.room_summary(),
+        stale=freshness.is_stale("makerspace_equipment"),
+        last_updated=freshness.last_success("makerspace_equipment"),
+    )
 
 
 @router.get("/hours", response_model=list[MakerSpaceHours])

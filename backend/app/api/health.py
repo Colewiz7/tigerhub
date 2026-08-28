@@ -6,11 +6,9 @@ broken parser or a config that drifted out of season surfaces before the UI
 notices.
 """
 
-from datetime import datetime, timedelta, timezone
-
 from fastapi import APIRouter, Response
 
-from app import settings
+from app import freshness, settings
 from app.api.schemas import Health, SourceHealth, SourcesReport, StaleConfigEntry
 from app.config import staleness_report
 from app.models import health as health_model
@@ -22,23 +20,16 @@ DISCLAIMER = (
     "Rochester Institute of Technology. Student built and student maintained."
 )
 
-# A source counts as unhealthy once it has missed several cycles in a row, so a
-# single transient upstream blip does not page anyone.
-MAX_CONSECUTIVE_FAILURES = 3
-
-# How long after its expected cadence a source is considered overdue.
-EXPECTED_INTERVAL_MINUTES = {
-    "tigercenter_dining": settings.INTERVAL_DINING_MINUTES,
-    "campusgroups": settings.INTERVAL_EVENTS_MINUTES,
-    "drupal": settings.INTERVAL_EVENTS_MINUTES,
-    "makerspace_equipment": settings.INTERVAL_MAKERSPACE_MINUTES,
-    "maps_occupancy": settings.INTERVAL_OCCUPANCY_MINUTES,
-}
-OVERDUE_GRACE = 3
 
 
 @router.get("", response_model=Health)
 def health():
+    """Liveness. Answers as soon as the port is bound.
+
+    Deliberately independent of scraper state: a cold cache is a normal phase
+    of a container that just started, not a failed rollout. Point the k8s
+    readiness probe here, and use /health/sources for monitoring.
+    """
     return Health(
         status="ok",
         app=settings.APP_NAME,
@@ -47,36 +38,49 @@ def health():
     )
 
 
-def _is_healthy(row: dict) -> bool:
-    if row.get("consecutive_failures", 0) >= MAX_CONSECUTIVE_FAILURES:
-        return False
-    last_success = row.get("last_success_at")
-    if not last_success:
-        return False
-
-    interval = EXPECTED_INTERVAL_MINUTES.get(row["source"])
-    if interval is None:
-        return True
-    try:
-        seen = datetime.fromisoformat(last_success)
-    except ValueError:
-        return False
-    if seen.tzinfo is None:
-        seen = seen.replace(tzinfo=timezone.utc)
-    deadline = seen + timedelta(minutes=interval * OVERDUE_GRACE)
-    return datetime.now(timezone.utc) <= deadline
-
-
 @router.get("/sources", response_model=SourcesReport)
 def sources(response: Response):
-    rows = health_model.all_sources()
-    reported = [SourceHealth(**row, healthy=_is_healthy(row)) for row in rows]
-    stale = [StaleConfigEntry(**entry) for entry in staleness_report()]
+    """Per scraper detail, plus static config that needs re-verifying.
 
-    # No rows at all means nothing has run yet, which is not healthy either.
-    all_healthy = bool(reported) and all(s.healthy for s in reported)
+    States: priming (never scraped, still inside the startup grace), ok, stale
+    (last success older than several cycles), failing. Only stale and failing
+    count against health, so a container that just booted is not reported as
+    broken.
+    """
+    rows = health_model.all_sources()
+    known = set(freshness.EXPECTED_INTERVAL_MINUTES)
+    seen = {row["source"] for row in rows}
+
+    # A source with no row yet still belongs in the report, as priming.
+    for missing in sorted(known - seen):
+        rows.append(
+            {
+                "source": missing,
+                "last_success_at": None,
+                "last_attempt_at": None,
+                "last_error": None,
+                "last_error_at": None,
+                "consecutive_failures": 0,
+                "last_record_count": None,
+            }
+        )
+
+    reported = []
+    for row in rows:
+        state = freshness.state_of(row)
+        reported.append(SourceHealth(**row, state=state, healthy=state in ("ok", "priming")))
+
+    stale_config = [StaleConfigEntry(**entry) for entry in staleness_report()]
+    priming = any(s.state == "priming" for s in reported)
+    all_healthy = all(s.healthy for s in reported)
+
+    # 503 only for a real problem. Priming is not one.
     if not all_healthy:
-        # 503 so a uptime check notices without having to parse the body.
         response.status_code = 503
 
-    return SourcesReport(sources=reported, stale_config=stale, all_healthy=all_healthy)
+    return SourcesReport(
+        sources=reported,
+        stale_config=stale_config,
+        all_healthy=all_healthy,
+        priming=priming,
+    )

@@ -29,7 +29,7 @@ docs/recon/       captured sample payloads from the recon phase
 cd backend
 python3.12 -m venv .venv
 .venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest          # 58 tests, no network
+.venv/bin/python -m pytest          # 71 tests, no network
 .venv/bin/uvicorn app.main:app --reload
 ```
 
@@ -37,13 +37,13 @@ Then open http://127.0.0.1:8000/docs.
 
 ## Deploying
 
-```bash
-cd backend
-docker compose up -d --build
-```
+Public host: `tigerhub.colewiz.dev`. On campus: `tigerhub.student.rit.edu`.
 
-The compose file carries Traefik labels for a homelab behind a Cloudflare
-Tunnel. The SQLite cache lives on a named volume so it survives a rebuild.
+**Deploy target is not settled yet.** The homelab runs k3s with Argo CD, Cilium,
+CNPG, and a Cloudflare Tunnel, so the current `docker-compose.yml` targets the
+wrong runtime and is a placeholder. It is either replaced by `k8s/` manifests
+for Argo CD to watch, or kept deliberately as standalone Docker outside the
+cluster. The Dockerfile is correct either way.
 
 ## Data sources
 
@@ -74,17 +74,41 @@ Enforced in code, not just documented:
 
 ## Health
 
-- `GET /health` liveness.
-- `GET /health/sources` per scraper last success, last error, and consecutive
-  failures, plus static config entries that are unverified or older than 120
-  days. Returns 503 when anything is unhealthy, so a broken parser surfaces
-  before the UI does.
+- `GET /health` liveness. Answers as soon as the port is bound and never
+  depends on scraper state, so a cold cache does not read as a failed rollout.
+  This is the one to point a readiness probe at.
+- `GET /health/sources` per scraper `state` (`priming`, `ok`, `stale`,
+  `failing`), last success, last error, and consecutive failures, plus static
+  config entries that are unverified or older than 120 days. Returns 503 only
+  for a real problem. A container that just booted reports `priming` with 200.
+
+Every list endpoint returns an envelope, never a bare array:
+
+```json
+{ "data": [], "stale": true, "last_updated": null }
+```
+
+A cold cache answers 200 with an empty `data` and `stale: true`. The client
+shows a subtle indicator, not an error screen.
+
+## Campus mail
+
+RIT runs a **zone based** mail system, verified against
+[rit.edu/fa/campus-post-offices](https://www.rit.edu/fa/campus-post-offices).
+There are no per hall street addresses and **no mailbox numbers**: mail is
+picked up at the counter after an email notification.
+
+Two offices serve campus housing. Global Village (`6000 Reynolds Drive`) covers
+the west side, DSP in Perry Hall (`43 Greenleaf Court`) covers the east. Line 2
+of the address is a building/room designator whose format varies by area. The
+RIT Inn and 175 Jefferson Road bypass both offices.
+
+`1 Lomb Memorial Drive` is **not** a student package address. RIT states mail
+sent there is delayed.
 
 ## Known gaps
 
-- Residence hall street addresses in `backend/app/config/data/residence_halls.json`
-  are **unverified placeholders**. They ship with `last_verified: null`, so
-  `/health/sources` reports them stale and the API returns `verified: false`
-  on the address lookup. Confirm against rit.edu/housing before shipping.
 - SHED hours are hardcoded because the upstream GraphQL hours feed is buggy.
-  Cross check against rit.edu/shed.
+  The open and close times came off that payload but the weekday mapping is
+  inferred, so treat as provisional and cross check against rit.edu/shed.
+- Deploy manifests are pending the k3s decision above.

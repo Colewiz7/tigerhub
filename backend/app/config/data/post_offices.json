@@ -1,28 +1,50 @@
 {
   "last_verified": "2026-08-28",
-  "source_note": "Hand maintained. RIT publishes no structured feed for these, confirmed by the Drupal JSON:API gate task in CLAUDE.md section 7.10.",
+  "source_url": "https://www.rit.edu/fa/campus-post-offices",
+  "source_note": "Verified against the authoritative RIT page. Physical mailboxes are NOT in use: mail and packages are picked up at the counter after an email notification. Street addresses confirmed on that page. 1 Lomb Memorial Drive is explicitly NOT a student package address.",
   "offices": [
     {
       "id": "global-village",
       "name": "Global Village Post Office",
+      "side": "west",
       "building": "Global Village",
-      "email": "gvpostoffice@rit.edu",
+      "location_note": "Located between Advantage Federal Credit Union and Shop One.",
+      "street": "6000 Reynolds Drive",
+      "city": "Rochester",
+      "state": "NY",
+      "zip": "14623",
       "phone": "585-475-3463",
+      "email": "gvpostoffice@rit.edu",
       "last_verified": "2026-08-28",
       "hours": [
-        {"days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "08:00", "closes_at": "17:00", "season": "academic"},
-        {"days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "08:00", "closes_at": "16:30", "season": "summer"}
+        {"service": "package_pickup", "days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "09:00", "closes_at": "16:30", "season": "fall"},
+        {"service": "package_pickup", "days": ["SATURDAY"], "opens_at": "12:00", "closes_at": "16:00", "season": "fall"},
+        {"service": "shipping_window", "days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "09:00", "closes_at": "13:00", "season": "fall"},
+        {"service": "shipping_window", "days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "13:30", "closes_at": "16:00", "season": "fall"},
+        {"service": "package_pickup", "days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "09:00", "closes_at": "16:00", "season": "summer"},
+        {"service": "shipping_window", "days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "09:00", "closes_at": "13:00", "season": "summer"},
+        {"service": "shipping_window", "days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "13:30", "closes_at": "15:30", "season": "summer"}
       ]
     },
     {
-      "id": "perry-hall",
-      "name": "Fredericka Douglass Sprague Perry Hall Post Office",
+      "id": "dsp",
+      "name": "DSP Post Office",
+      "side": "east",
       "building": "Fredericka Douglass Sprague Perry Hall",
-      "email": null,
-      "phone": null,
+      "location_note": "Located in the lower level of Fredericka Douglass Sprague Perry Hall (DSP), across from the Corner Store.",
+      "street": "43 Greenleaf Court",
+      "city": "Rochester",
+      "state": "NY",
+      "zip": "14623",
+      "phone": "585-475-2518",
+      "email": "postoff@rit.edu",
       "last_verified": "2026-08-28",
       "hours": [
-        {"days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "08:00", "closes_at": "17:00", "season": "academic"}
+        {"service": "package_pickup", "days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "09:00", "closes_at": "16:30", "season": "fall"},
+        {"service": "package_pickup", "days": ["SATURDAY"], "opens_at": "12:00", "closes_at": "16:00", "season": "fall"},
+        {"service": "shipping_window", "days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "09:00", "closes_at": "12:30", "season": "fall"},
+        {"service": "shipping_window", "days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "13:00", "closes_at": "16:00", "season": "fall"},
+        {"service": "package_pickup", "days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "09:00", "closes_at": "16:00", "season": "summer"}
       ]
     }
   ]
