@@ -14,6 +14,7 @@ import 'screens/campus_screen.dart';
 import 'screens/dining_screen.dart';
 import 'screens/events_screen.dart';
 import 'services/api.dart';
+import 'theme/dynamic_theme.dart';
 import 'widgets/tab_bar.dart';
 
 const List<TabSpec> _tabs = [
@@ -24,9 +25,10 @@ const List<TabSpec> _tabs = [
 ];
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.api});
+  const AppShell({super.key, required this.api, required this.scheme});
 
   final ApiClient api;
+  final SchemeController scheme;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -76,7 +78,7 @@ class _AppShellState extends State<AppShell> {
       body: SafeArea(
         child: Column(
           children: [
-            const _Masthead(),
+            _Masthead(scheme: widget.scheme),
             Expanded(
               child: IndexedStack(
                 index: _index,
@@ -105,11 +107,15 @@ class _AppShellState extends State<AppShell> {
 }
 
 class _Masthead extends StatelessWidget {
-  const _Masthead();
+  const _Masthead({required this.scheme});
+
+  final SchemeController scheme;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final colors = Theme.of(context).colorScheme;
+    final state = scheme.state;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(22, 16, 22, 10),
       child: Row(
@@ -119,7 +125,30 @@ class _Masthead extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 21),
           ),
           const Spacer(),
-          Icon(Icons.school_rounded, size: 19, color: scheme.onSurfaceVariant),
+          // The palette escape hatch. An unusual wallpaper can produce an
+          // unreadable scheme, so pinning the known-good seed is always one
+          // tap away rather than requiring a rebuild.
+          Tooltip(
+            message: state.isDynamic
+                ? 'Following the wallpaper\n${state.detail ?? ''}\nTap to pin the built-in palette'
+                : 'Built-in palette\n${state.detail ?? ''}\nTap to follow the wallpaper',
+            child: InkWell(
+              onTap: () => scheme.setForceSeed(!scheme.forcedToSeed),
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  state.isDynamic
+                      ? Icons.palette_rounded
+                      : Icons.lock_outline_rounded,
+                  size: 19,
+                  color: state.isDynamic
+                      ? colors.primary
+                      : colors.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -56,7 +56,6 @@ class _HousingCardState extends State<HousingCard> {
   @override
   Widget build(BuildContext context) {
     final areas = widget.areas.value?.data ?? const <HousingArea>[];
-    final text = Theme.of(context).textTheme;
 
     return CardShell(
       title: 'Mailing Address',
@@ -66,6 +65,14 @@ class _HousingCardState extends State<HousingCard> {
       child: switch ((widget.areas.isPriming, areas.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading housing areas'),
         (_, true) => const EmptyNote(text: 'No housing areas cached yet.'),
+        // Never an empty card: it is either the picker or the answer.
+        (_, _) when _address?.value == null => _AreaChips(
+            areas: areas,
+            onPick: (id) {
+              setState(() => _areaId = id);
+              _load();
+            },
+          ),
         _ => SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,20 +89,57 @@ class _HousingCardState extends State<HousingCard> {
                     _load();
                   },
                 ),
-                if (_address?.value != null) ...[
-                  const SizedBox(height: 12),
-                  _AddressBlock(address: _address!.value!),
-                ] else ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    'Pick your housing area to see the correct format.',
-                    style: text.bodySmall,
-                  ),
-                ],
+                const SizedBox(height: 12),
+                _AddressBlock(address: _address!.value!),
               ],
             ),
           ),
       },
+    );
+  }
+}
+
+/// The empty state, which fills the card rather than leaving it blank. Every
+/// area is one tap away, which is faster than opening a menu anyway.
+class _AreaChips extends StatelessWidget {
+  const _AreaChips({required this.areas, required this.onPick});
+
+  final List<HousingArea> areas;
+  final ValueChanged<String> onPick;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('WHERE DO YOU LIVE', style: text.labelSmall),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 7,
+          runSpacing: 7,
+          children: [
+            for (final area in areas)
+              Material(
+                elevation: 0,
+                color: scheme.surfaceContainerHigh,
+                shape: Shapes.pill,
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => onPick(area.id),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
+                    child: Text(area.name, style: text.bodyMedium),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }

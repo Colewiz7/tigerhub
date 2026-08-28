@@ -14,9 +14,11 @@ import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/widgets/freshness.dart';
 import 'package:tigerhub/cards/dining_card.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
 import 'package:tigerhub/widgets/more_row.dart';
+import 'package:tigerhub/widgets/scalloped_badge.dart';
 import 'package:tigerhub/widgets/occupancy_chip.dart';
 
 void main() {
@@ -194,6 +196,42 @@ void main() {
       expect(find.text('+10 locations'), findsOneWidget);
     });
 
+    testWidgets('dining shows at least 5 rows in a real 344px cell',
+        (tester) async {
+      // The grid cell the home screen actually uses. The hero sits inline with
+      // the title precisely so the list keeps its rows.
+      final locations = [
+        for (var i = 0; i < 24; i++)
+          DiningLocation(
+            id: i,
+            name: 'Place ${i.toString().padLeft(2, '0')}',
+            isOpen: true,
+            occupancy: i == 0
+                ? const Occupancy(count: 9, maxOcc: 12, percentFull: 75)
+                : null,
+          ),
+      ];
+      await tester.pumpWidget(boxed(
+        DiningCard(
+          result: Result(
+            value: Collection(data: locations, stale: false),
+            state: DataState.ok,
+          ),
+        ),
+        height: 344,
+      ));
+      expect(tester.takeException(), isNull);
+      final rows = [
+        for (var i = 0; i < 24; i++)
+          if (find.text('Place ${i.toString().padLeft(2, '0')}').evaluate().isNotEmpty) i,
+      ];
+      expect(rows.length, greaterThanOrEqualTo(5),
+          reason: 'the inline hero must buy back list rows');
+      expect(find.byType(MoreRow), findsOneWidget);
+      // The badge is still present, just beside the title.
+      expect(find.byType(ScallopedBadge), findsOneWidget);
+    });
+
     testWidgets('dining bounds itself and keeps open locations first',
         (tester) async {
       final locations = [
@@ -277,6 +315,8 @@ void main() {
   });
 
   _designTokens();
+  _dynamicColour();
+  _screenshotReview();
 
   test('age formatting', () {
     final now = DateTime.now();
@@ -284,6 +324,113 @@ void main() {
     expect(formatAge(now.subtract(const Duration(minutes: 40))), '40m ago');
     expect(formatAge(now.subtract(const Duration(hours: 3))), '3h ago');
     expect(formatAge(now.subtract(const Duration(days: 2))), '2d ago');
+  });
+}
+
+ColorScheme _fallbackScheme() => schemeFromJson(_caelestiaSample)!;
+
+/// A trimmed copy of the real ~/.local/state/caelestia/scheme.json, so the
+/// parser is tested against the actual shape rather than an invented one.
+const Map<String, dynamic> _caelestiaSample = {
+  'name': 'dynamic',
+  'mode': 'dark',
+  'variant': 'tonalspot',
+  'colours': {
+    'background': '050301',
+    'onBackground': 'f8e1d5',
+    'surface': '050301',
+    'surfaceContainerLowest': '000000',
+    'surfaceContainerLow': '080402',
+    'surfaceContainerHigh': '0e0705',
+    'onSurface': 'f8e1d5',
+    'onSurfaceVariant': 'bba79c',
+    'outline': '847268',
+    'outlineVariant': '54453c',
+    'surfaceTint': '372418',
+    'primary': 'f6ba96',
+    'onPrimary': '5e361c',
+    'primaryContainer': '74482c',
+    'onPrimaryContainer': 'ffdcca',
+    'secondary': 'e5bfa9',
+    'error': 'f97758',
+    'onError': '450900',
+    'errorContainer': '85230a',
+    'onErrorContainer': 'ff9b82',
+    'inverseSurface': 'fff8f5',
+    'inverseOnSurface': '5d534e',
+    'inversePrimary': '825438',
+    'shadow': '000000',
+    'scrim': '000000',
+  },
+};
+
+void _dynamicColour() {
+  group('dynamic colour', () {
+    test('parses the real Caelestia scheme shape', () {
+      final scheme = schemeFromJson(_caelestiaSample);
+      expect(scheme, isNotNull);
+      expect(scheme!.primary, const Color(0xFFF6BA96));
+      expect(scheme.brightness, Brightness.dark);
+      expect(scheme.onSurface, const Color(0xFFF8E1D5));
+    });
+
+    test('honours the light mode flag', () {
+      final light = schemeFromJson({
+        ..._caelestiaSample,
+        'mode': 'light',
+      });
+      expect(light!.brightness, Brightness.light);
+    });
+
+    test('hex parses with and without a leading hash', () {
+      expect(parseHex('f6ba96'), const Color(0xFFF6BA96));
+      expect(parseHex('#f6ba96'), const Color(0xFFF6BA96));
+      expect(parseHex('nonsense'), isNull);
+      expect(parseHex(null), isNull);
+      expect(parseHex(42), isNull);
+    });
+
+    test('a payload missing the essential roles falls back rather than half themes', () {
+      expect(schemeFromJson({'colours': {}}), isNull);
+      expect(schemeFromJson({'colours': {'primary': 'f6ba96'}}), isNull);
+      expect(schemeFromJson({'nope': true}), isNull);
+    });
+
+    test('container levels are derived from the tint so nesting stays visible', () {
+      final scheme = schemeFromJson(_caelestiaSample)!;
+      // The file's own container roles sit within a few points of each other,
+      // so they are re-derived by blending surfaceTint over surface.
+      final levels = [
+        scheme.surfaceContainerLowest,
+        scheme.surfaceContainerLow,
+        scheme.surfaceContainer,
+        scheme.surfaceContainerHigh,
+        scheme.surfaceContainerHighest,
+      ];
+      for (var i = 1; i < levels.length; i++) {
+        expect(levels[i].r, greaterThan(levels[i - 1].r));
+      }
+    });
+
+    test('forcing the seed yields a usable palette with no scheme file', () async {
+      final controller = SchemeController(forceSeed: true);
+      await controller.load();
+      expect(controller.state.origin, SchemeOrigin.seed);
+      expect(controller.state.isDynamic, isFalse);
+      // The escape hatch must always produce something readable.
+      final theme = AppTheme.from(controller.state.scheme);
+      expect(theme.colorScheme.primary, isNotNull);
+      controller.dispose();
+    });
+
+    test('the seed toggle flips back and forth', () async {
+      final controller = SchemeController(forceSeed: true);
+      await controller.load();
+      expect(controller.forcedToSeed, isTrue);
+      await controller.setForceSeed(false);
+      expect(controller.forcedToSeed, isFalse);
+      controller.dispose();
+    });
   });
 }
 
@@ -296,8 +443,10 @@ void _designTokens() {
       // from the brief throws. This asserts the shape actually constructs.
       final badge = Shapes.badge as StarBorder;
       expect(badge.pointRounding + badge.valleyRounding, lessThanOrEqualTo(1.0));
-      expect(badge.points, 8);
-      expect(badge.innerRadiusRatio, 0.9);
+      expect(badge.points, 7);
+      expect(badge.innerRadiusRatio, 0.93);
+      // Past roughly 0.95 the lobes flatten into a circle.
+      expect(badge.innerRadiusRatio, lessThan(0.95));
     });
 
     test('nothing is rounded at 8 or below', () {
@@ -306,14 +455,14 @@ void _designTokens() {
       expect(Shapes.smallRadius, greaterThan(8));
     });
 
-    testWidgets('cards carry no shadow at any elevation', (tester) async {
-      final theme = AppTheme.dark();
+    test('cards carry no shadow at any elevation', () {
+      final theme = AppTheme.from(_fallbackScheme());
       expect(theme.cardTheme.elevation, 0);
       expect(theme.shadowColor, Colors.transparent);
     });
 
     test('surfaces step lighter and stay warm, never neutral grey', () {
-      final scheme = AppTheme.dark().colorScheme;
+      final scheme = _fallbackScheme();
       final levels = [
         scheme.surfaceContainerLowest,
         scheme.surfaceContainerLow,
@@ -328,6 +477,118 @@ void _designTokens() {
       for (final c in levels) {
         expect(c.r, greaterThan(c.b),
             reason: 'surfaces must be warm tinted, not neutral grey');
+      }
+    });
+  });
+}
+
+/// Regressions from the screenshot review.
+void _screenshotReview() {
+  group('screenshot review fixes', () {
+    test('midnight and noon read as words, not 12:00', () {
+      expect(formatClock(DateTime(2026, 8, 28, 0, 0)), 'midnight');
+      expect(formatClock(DateTime(2026, 8, 28, 12, 0)), 'noon');
+      // Only exactly on the hour, so 12:30 is still a clock time.
+      expect(formatClock(DateTime(2026, 8, 28, 12, 30)), isNot('noon'));
+      expect(formatClock(DateTime(2026, 8, 28, 0, 30)), isNot('midnight'));
+      expect(formatClock(DateTime(2026, 8, 28, 17, 30)), '5:30 PM');
+    });
+
+    testWidgets('the dining hero counts open locations, not one unrelated one',
+        (tester) async {
+      // Regression: the badge used to show occupancy for a location that was
+      // usually not among the visible rows, which made it meaningless.
+      final locations = [
+        for (var i = 0; i < 10; i++)
+          DiningLocation(
+            id: i,
+            name: 'Place ${i.toString().padLeft(2, '0')}',
+            isOpen: i < 6,
+            // Give the sensor to a location far down the list.
+            occupancy: i == 9
+                ? const Occupancy(count: 165, maxOcc: 136, percentFull: 100)
+                : null,
+          ),
+      ];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: SizedBox(
+                height: 344,
+                child: DiningCard(
+                  result: Result(
+                    value: Collection(data: locations, stale: false),
+                    state: DataState.ok,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(find.text('6'), findsOneWidget);
+      expect(find.text('OPEN NOW'), findsOneWidget);
+      // The unrelated location's number must not be the hero.
+      expect(find.text('165'), findsNothing);
+    });
+
+    testWidgets('a taller card yields more rows for free', (tester) async {
+      Future<int> rowsAt(double height) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  height: height,
+                  child: BoundedList(
+                    itemCount: 30,
+                    itemHeight: 38,
+                    noun: 'locations',
+                    itemBuilder: (context, i) => Text('row $i'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        return [
+          for (var i = 0; i < 30; i++)
+            if (find.text('row $i').evaluate().isNotEmpty) i,
+        ].length;
+      }
+
+      final short = await rowsAt(344);
+      final tall = await rowsAt(560);
+      expect(tall, greaterThan(short),
+          reason: 'growing the card must turn into more rows');
+    });
+
+    testWidgets('the footer stays inside the box at several window sizes',
+        (tester) async {
+      for (final height in [200.0, 344.0, 460.0, 560.0]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  height: height,
+                  child: BoundedList(
+                    itemCount: 40,
+                    itemHeight: 38,
+                    noun: 'locations',
+                    itemBuilder: (context, i) => Text('row $i'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(tester.takeException(), isNull, reason: 'at height $height');
+        final box = tester.getRect(find.byType(BoundedList));
+        final footer = tester.getRect(find.byType(MoreRow));
+        expect(footer.bottom, lessThanOrEqualTo(box.bottom + 0.5),
+            reason: 'footer escaped the box at height $height');
       }
     });
   });

@@ -20,9 +20,17 @@ String formatAge(DateTime when) {
 }
 
 /// Displays a timestamp the API computed. Never derives one.
-String formatClock(DateTime when) => DateFormat('h:mm a').format(when);
+///
+/// Midnight and noon read better as words than as "12:00 AM", which is easy to
+/// misread as midday.
+String formatClock(DateTime when) {
+  if (when.minute == 0 && when.hour == 0) return 'midnight';
+  if (when.minute == 0 && when.hour == 12) return 'noon';
+  return DateFormat('h:mm a').format(when);
+}
 
-String formatDayAndClock(DateTime when) => DateFormat('EEE d MMM, h:mm a').format(when);
+String formatDayAndClock(DateTime when) =>
+    '${DateFormat('EEE d MMM').format(when)}, ${formatClock(when)}';
 
 class FreshnessLine extends StatelessWidget {
   const FreshnessLine({super.key, required this.state, this.fetchedAt});

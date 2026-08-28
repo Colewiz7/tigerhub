@@ -1,9 +1,8 @@
 /// Theme.
 ///
-/// The palette is generated from one warm seed, the way a matugen scheme is,
-/// so the whole app is a rendering of that scheme rather than a set of
-/// hand-picked colours. Surfaces are then pinned to explicitly warm values,
-/// because Material's own dark surfaces drift toward neutral grey.
+/// The palette is not defined here. It arrives as a ColorScheme, either read
+/// from the wallpaper-generated scheme file or built from the fallback seed,
+/// and this file only decides how that scheme is applied.
 ///
 /// Elevation is expressed only as surface tint. There are no drop shadows
 /// anywhere in this app.
@@ -16,58 +15,22 @@ import 'tokens.dart';
 class AppTheme {
   const AppTheme._();
 
-  /// RIT orange. The single seed the rest of the scheme is generated from.
-  static const Color seed = Color(0xFFF76902);
-
   static const String fontFamily = 'Rubik';
 
-  // Warm near-black. Red channel leads at every step, so the background reads
-  // as warm rather than as neutral grey.
-  static const _darkSurfaces = _Surfaces(
-    lowest: Color(0xFF0E0B09),
-    low: Color(0xFF15110E),
-    base: Color(0xFF1C1714),
-    high: Color(0xFF251E1A),
-    highest: Color(0xFF2F2721),
-  );
-
-  static const _lightSurfaces = _Surfaces(
-    lowest: Color(0xFFFFFFFF),
-    low: Color(0xFFFBF5F0),
-    base: Color(0xFFF6EEE7),
-    high: Color(0xFFF0E6DD),
-    highest: Color(0xFFEADDD2),
-  );
-
-  static ThemeData dark() => _build(Brightness.dark, _darkSurfaces);
-  static ThemeData light() => _build(Brightness.light, _lightSurfaces);
-
-  static ThemeData _build(Brightness brightness, _Surfaces surfaces) {
-    final generated = ColorScheme.fromSeed(
-      seedColor: seed,
-      brightness: brightness,
-    );
-
-    final scheme = generated.copyWith(
-      surface: surfaces.base,
-      surfaceContainerLowest: surfaces.lowest,
-      surfaceContainerLow: surfaces.low,
-      surfaceContainer: surfaces.base,
-      surfaceContainerHigh: surfaces.high,
-      surfaceContainerHighest: surfaces.highest,
-    );
-
+  /// Build the theme from whatever scheme is currently in force.
+  static ThemeData from(ColorScheme scheme) {
     final base = ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
       fontFamily: fontFamily,
+      brightness: scheme.brightness,
     );
 
     final onSurface = scheme.onSurface;
     final muted = scheme.onSurfaceVariant;
 
     return base.copyWith(
-      scaffoldBackgroundColor: surfaces.lowest,
+      scaffoldBackgroundColor: scheme.surfaceContainerLowest,
       // Shadows are disabled globally rather than per widget, so a stray
       // elevation cannot reintroduce one.
       shadowColor: Colors.transparent,
@@ -148,20 +111,4 @@ class AppTheme {
       ),
     );
   }
-}
-
-class _Surfaces {
-  const _Surfaces({
-    required this.lowest,
-    required this.low,
-    required this.base,
-    required this.high,
-    required this.highest,
-  });
-
-  final Color lowest;
-  final Color low;
-  final Color base;
-  final Color high;
-  final Color highest;
 }

@@ -73,82 +73,132 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _order = merged);
   }
 
-  Widget _cardFor(String id) => switch (id) {
+  Widget _cardFor(String id, bool hovered) => switch (id) {
         'dining' => DiningCard(
             result: widget.dining,
-            dragHandle: const _DragHandle(),
+            dragHandle: _DragHandle(visible: hovered),
             onShowAll: () => widget.onGoToTab(1),
           ),
         'events' => EventsCard(
             result: widget.events,
-            dragHandle: const _DragHandle(),
+            dragHandle: _DragHandle(visible: hovered),
             onShowAll: () => widget.onGoToTab(2),
           ),
         'chefs' => VisitingChefsCard(
             result: widget.chefs,
-            dragHandle: const _DragHandle(),
+            dragHandle: _DragHandle(visible: hovered),
             onShowAll: () => widget.onGoToTab(1),
           ),
         'housing' => HousingCard(
             areas: widget.areas,
             api: widget.api,
-            dragHandle: const _DragHandle(),
+            dragHandle: _DragHandle(visible: hovered),
           ),
         _ => const SizedBox.shrink(),
       };
 
+  /// Columns grow with width, so a wide window is not four cards huddled in
+  /// the top left corner.
+  static int _columnsFor(double width) {
+    if (width < 700) return 1;
+    if (width < 1100) return 2;
+    if (width < 1600) return 3;
+    return 4;
+  }
+
+  /// Card height. Cards grow to use spare vertical room, which BoundedList
+  /// turns into extra rows for free, but stop before they get silly.
+  static const double _minCardHeight = 344;
+  static const double _maxCardHeight = 560;
+  static const double _cardGutter = 6;
+
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final columns = width < 700 ? 1 : (width < 1240 ? 2 : 3);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = _columnsFor(constraints.maxWidth);
+        final rows = (_order.length / columns).ceil();
 
-    final children = [
-      for (final id in _order)
-        Padding(
-          key: ValueKey(id),
-          padding: const EdgeInsets.all(6),
-          child: _cardFor(id),
-        ),
-    ];
+        // Fill the viewport when there is room, without ever shrinking below
+        // the height the cards were designed against.
+        final available = constraints.maxHeight - _Colophon.height;
+        final perRow = rows > 0 ? available / rows : _minCardHeight;
+        final cardHeight =
+            perRow.clamp(_minCardHeight, _maxCardHeight).toDouble();
 
-    return RefreshIndicator(
-      onRefresh: widget.onRefresh,
-      child: CustomScrollView(
-        controller: _scrollController,
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            sliver: SliverToBoxAdapter(
-              child: ReorderableBuilder<String>(
-                scrollController: _scrollController,
-                enableScrollingWhileDragging: false,
-                onReorder: (reorderedListFunction) {
-                  setState(() => _order = reorderedListFunction(_order));
-                  ResponseCache.instance.writeOrder('cards', _order);
-                },
-                builder: (wrapped) => GridView(
-                  key: _gridKey,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: columns,
-                    mainAxisExtent: 344,
-                  ),
-                  children: wrapped,
-                ),
-                children: children,
-              ),
+        final children = [
+          for (final id in _order)
+            Padding(
+              key: ValueKey(id),
+              padding: const EdgeInsets.all(_cardGutter),
+              child: _HoverCard(builder: (hovered) => _cardFor(id, hovered)),
             ),
+        ];
+
+        return RefreshIndicator(
+          onRefresh: widget.onRefresh,
+          child: CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                sliver: SliverToBoxAdapter(
+                  child: ReorderableBuilder<String>(
+                    scrollController: _scrollController,
+                    enableScrollingWhileDragging: false,
+                    onReorder: (reorderedListFunction) {
+                      setState(() => _order = reorderedListFunction(_order));
+                      ResponseCache.instance.writeOrder('cards', _order);
+                    },
+                    builder: (wrapped) => GridView(
+                      key: _gridKey,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: columns,
+                        // The card height plus the gutter on each side.
+                        mainAxisExtent: cardHeight + _cardGutter * 2,
+                      ),
+                      children: wrapped,
+                    ),
+                    children: children,
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: _Colophon()),
+            ],
           ),
-          const SliverToBoxAdapter(child: _Colophon()),
-        ],
-      ),
+        );
+      },
     );
   }
 }
 
+/// Reveals the drag handle on hover, so it is not permanent visual noise.
+class _HoverCard extends StatefulWidget {
+  const _HoverCard({required this.builder});
+
+  final Widget Function(bool hovered) builder;
+
+  @override
+  State<_HoverCard> createState() => _HoverCardState();
+}
+
+class _HoverCardState extends State<_HoverCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) => MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: widget.builder(_hovered),
+      );
+}
+
 class _Colophon extends StatelessWidget {
   const _Colophon();
+
+  static const double height = 64;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -162,15 +212,23 @@ class _Colophon extends StatelessWidget {
 }
 
 class _DragHandle extends StatelessWidget {
-  const _DragHandle();
+  const _DragHandle({required this.visible});
+
+  final bool visible;
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 8, top: 3),
-        child: Icon(
-          Icons.drag_indicator_rounded,
-          size: 17,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        padding: const EdgeInsets.only(left: 8),
+        // The space is always reserved, so revealing the handle never shifts
+        // the title next to it.
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: const Duration(milliseconds: 130),
+          child: Icon(
+            Icons.drag_indicator_rounded,
+            size: 17,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       );
 }
