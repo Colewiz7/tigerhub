@@ -1,7 +1,7 @@
 /// Visiting chefs.
 ///
-/// The chef name is the hero, the location recedes underneath it. Data comes
-/// straight from the TigerCenter dining payload, no separate scraper.
+/// The chef name is the hero of each row, the location recedes beneath it.
+/// Data comes straight from the TigerCenter dining payload, no separate scraper.
 library;
 
 import 'package:flutter/material.dart';
@@ -11,6 +11,7 @@ import '../services/api.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
+import '../widgets/status_row.dart';
 
 class VisitingChefsCard extends StatelessWidget {
   const VisitingChefsCard({
@@ -24,12 +25,9 @@ class VisitingChefsCard extends StatelessWidget {
   final Widget? dragHandle;
   final VoidCallback? onShowAll;
 
-  static const double _rowHeight = 74;
-
   @override
   Widget build(BuildContext context) {
     final all = result.value?.data ?? const <MenuItem>[];
-    final text = Theme.of(context).textTheme;
 
     return CardShell(
       title: 'Visiting Chefs',
@@ -41,26 +39,13 @@ class VisitingChefsCard extends StatelessWidget {
         (_, true) => const EmptyNote(text: 'No visiting chefs on campus today.'),
         _ => BoundedList(
             itemCount: all.length,
-            itemHeight: _rowHeight,
+            itemHeight: StatusRow.height,
             noun: 'chefs',
             onShowAll: onShowAll,
-            itemBuilder: (context, index) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  all[index].name,
-                  style: text.titleMedium,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  all[index].locationName,
-                  style: text.bodySmall,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+            itemBuilder: (context, index) => StatusRow(
+              icon: Icons.restaurant_menu_rounded,
+              title: all[index].name,
+              subtitle: all[index].locationName,
             ),
           ),
       },

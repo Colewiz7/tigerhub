@@ -1,11 +1,11 @@
 /// Events card.
 ///
-/// No gauges and no badge. This card is a grouped list: organiser names
-/// muted, event titles carrying the weight, and the withheld count in the
-/// footer pill.
+/// No gauges. Grouped by organizer, with each organizer introduced by a tinted
+/// header row rather than a line of small uppercase text, because the organizer
+/// is a navigation landmark.
 ///
-/// Grouping matters because FoodShare alone is 213 of 921 events, so an
-/// ungrouped list reads as one club's feed.
+/// Grouping matters: FoodShare alone is 213 of 921 events, so an ungrouped list
+/// reads as one club's feed.
 library;
 
 import 'package:flutter/material.dart';
@@ -15,6 +15,20 @@ import '../services/api.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
+import '../widgets/status_row.dart';
+import 'event_row.dart';
+
+/// Organizer type drives the header icon.
+IconData iconForOrganizer(String name) {
+  final n = name.toLowerCase();
+  if (n == 'rit') return Icons.school_rounded;
+  if (n.contains('food') || n.contains('dining')) return Icons.volunteer_activism_rounded;
+  if (n.contains('council') || n.contains('board') || n.contains('government')) {
+    return Icons.groups_rounded;
+  }
+  if (n.contains('residence') || n.contains('housing')) return Icons.home_rounded;
+  return Icons.celebration_rounded;
+}
 
 class EventsCard extends StatelessWidget {
   const EventsCard({
@@ -52,21 +66,21 @@ class _Grouped extends StatelessWidget {
   final List<CampusEvent> events;
   final VoidCallback? onShowAll;
 
-  /// Two per organiser keeps every group the same height, which is what lets
-  /// BoundedList work out exactly how many fit.
-  static const int _maxPerGroup = 2;
-  static const double _groupHeight = 96;
+  /// One event under each header keeps every group the same height, which is
+  /// what lets BoundedList work out exactly how many fit. Density is meant to
+  /// be low here: the Events tab is where the full feed lives.
+  static const int _perGroup = 1;
+  static double get _groupHeight =>
+      GroupHeader.height + GroupHeader.gap + StatusRow.height * _perGroup;
 
   @override
   Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-
     final groups = <String, List<CampusEvent>>{};
     for (final event in events) {
       groups.putIfAbsent(event.organizer ?? 'Other', () => []).add(event);
     }
 
-    // Busiest organisers first, so the card leads with what is actually on.
+    // Busiest organizers first, so the card leads with what is actually on.
     final ordered = groups.entries.toList()
       ..sort((a, b) => b.value.length.compareTo(a.value.length));
 
@@ -77,36 +91,15 @@ class _Grouped extends StatelessWidget {
       onShowAll: onShowAll,
       itemBuilder: (context, i) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            ordered[i].key.toUpperCase(),
-            style: text.labelSmall,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          GroupHeader(
+            icon: iconForOrganizer(ordered[i].key),
+            title: ordered[i].key,
+            count: ordered[i].value.length,
           ),
-          const SizedBox(height: 5),
-          for (final event in ordered[i].value.take(_maxPerGroup))
-            Padding(
-              padding: const EdgeInsets.only(bottom: 3),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      event.title,
-                      style: text.bodyMedium,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    // The API supplies the timestamp, intl only formats it.
-                    event.allDay ? 'all day' : formatClock(event.startsAt),
-                    style: text.bodySmall,
-                  ),
-                ],
-              ),
-            ),
+          for (final event in ordered[i].value.take(_perGroup))
+            EventRow(event: event),
         ],
       ),
     );

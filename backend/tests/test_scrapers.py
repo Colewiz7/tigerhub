@@ -122,3 +122,44 @@ def test_occupancy_locations_without_sensors_are_not_an_error():
     normal, not a parse failure."""
     payload = '["routes/home",{"_0":1},"something else"]'
     assert maps_occupancy.extract(payload) is None
+
+
+def test_campusgroups_strips_placeholder_locations():
+    """CampusGroups puts UI prompts in LOCATION. They are not addresses and
+    must never reach the client."""
+    from app.scrapers.campusgroups import clean_location
+
+    assert clean_location("Sign in to download the location") is None
+    assert clean_location("TBA") is None
+    assert clean_location("To be announced") is None
+    assert clean_location("") is None
+    assert clean_location(None) is None
+    assert clean_location("   ") is None
+
+
+def test_campusgroups_truncates_a_postal_address_to_the_venue():
+    from app.scrapers.campusgroups import clean_location
+
+    assert (
+        clean_location(
+            "RIT FoodShare (113 Riverknoll), 113 Riverknoll, "
+            "Rochester, NY 14623, United States"
+        )
+        == "RIT FoodShare (113 Riverknoll)"
+    )
+    # A venue with no address attached survives untouched.
+    assert clean_location("Global Village") == "Global Village"
+    assert (
+        clean_location("NTID Dance Lab 1 & 2 (LBJ-1845 & 1825)")
+        == "NTID Dance Lab 1 & 2 (LBJ-1845 & 1825)"
+    )
+
+
+def test_campusgroups_real_feed_has_no_placeholder_locations():
+    parsed = campusgroups.parse(fixture_bytes("campusgroups_rit.ics"))
+    for event in parsed:
+        location = event["location"]
+        if location is None:
+            continue
+        assert "sign in" not in location.lower()
+        assert "," not in location, f"postal address leaked through: {location}"

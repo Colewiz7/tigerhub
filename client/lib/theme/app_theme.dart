@@ -10,6 +10,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'semantic.dart';
 import 'tokens.dart';
 
 class AppTheme {
@@ -30,6 +31,9 @@ class AppTheme {
     final muted = scheme.onSurfaceVariant;
 
     return base.copyWith(
+      // Status colours harmonized against this scheme, so they never clash
+      // with a wallpaper derived palette.
+      extensions: <ThemeExtension<dynamic>>[Semantic.from(scheme)],
       scaffoldBackgroundColor: scheme.surfaceContainerLowest,
       // Shadows are disabled globally rather than per widget, so a stray
       // elevation cannot reintroduce one.
@@ -62,8 +66,8 @@ class AppTheme {
           color: onSurface,
         ),
         titleLarge: TextStyle(
-          fontSize: 24,
-          fontVariations: Weights.medium,
+          fontSize: 27,
+          fontVariations: Weights.semibold,
           letterSpacing: 0.1,
           color: onSurface,
         ),

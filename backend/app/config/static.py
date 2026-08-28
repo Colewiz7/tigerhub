@@ -123,6 +123,37 @@ class DirectDelivery(_Strict):
         return [student_name, self.street, f"{self.city} {self.state} {self.zip}"]
 
 
+class DiningCategory(_Strict):
+    id: str
+    name: str
+    order: int
+
+
+class DiningCategoryFile(_Strict):
+    last_verified: date | None = None
+    source_url: str | None = None
+    source_note: str | None = None
+    categories: list[DiningCategory]
+    default_category: str
+    # Location id as a string, to category id.
+    assignments: dict[str, str]
+
+    def category_for(self, location_id: int) -> str:
+        return self.assignments.get(str(location_id), self.default_category)
+
+    def order_of(self, category_id: str) -> int:
+        for category in self.categories:
+            if category.id == category_id:
+                return category.order
+        return 999
+
+    def name_of(self, category_id: str) -> str:
+        for category in self.categories:
+            if category.id == category_id:
+                return category.name
+        return category_id
+
+
 class PostOfficeFile(_Strict):
     last_verified: date | None = None
     source_url: str | None = None
@@ -149,6 +180,7 @@ class StaticConfig(BaseModel):
     post_offices: PostOfficeFile
     shed: ShedFile
     housing: HousingFile
+    dining_categories: DiningCategoryFile
 
     def area(self, area_id: str) -> HousingArea | None:
         return next((a for a in self.housing.areas if a.id == area_id), None)
@@ -188,6 +220,7 @@ _FILES = {
     "post_offices": ("post_offices.json", PostOfficeFile),
     "shed": ("shed_hours.json", ShedFile),
     "housing": ("housing_areas.json", HousingFile),
+    "dining_categories": ("dining_categories.json", DiningCategoryFile),
 }
 
 _cache: StaticConfig | None = None
@@ -237,6 +270,25 @@ def _check_referential_integrity(config: StaticConfig) -> None:
     duplicates = _duplicates([o.id for o in config.post_offices.offices])
     if duplicates:
         raise ConfigError(f"duplicate post office id(s): {duplicates}")
+
+    # A location assigned to a category that does not exist would silently fall
+    # into the default bucket, so catch it at boot instead.
+    known_categories = {c.id for c in config.dining_categories.categories}
+    unknown = sorted(
+        {c for c in config.dining_categories.assignments.values() if c not in known_categories}
+    )
+    if unknown:
+        raise ConfigError(
+            f"dining_categories.json assigns unknown category id(s): {unknown}. "
+            f"Known ids: {sorted(known_categories)}"
+        )
+    if config.dining_categories.default_category not in known_categories:
+        raise ConfigError(
+            f"default_category {config.dining_categories.default_category!r} is not a known category"
+        )
+    duplicates = _duplicates([c.id for c in config.dining_categories.categories])
+    if duplicates:
+        raise ConfigError(f"duplicate dining category id(s): {duplicates}")
 
 
 def _duplicates(values: list[str]) -> list[str]:
@@ -305,5 +357,11 @@ def staleness_report(today: date | None = None) -> list[dict]:
         check("housing_area", area.id, area.name, area.last_verified)
     for direct in config.housing.direct_delivery:
         check("direct_delivery", direct.id, direct.name, direct.last_verified)
+    check(
+        "dining_categories",
+        "dining_categories",
+        "Dining categories",
+        config.dining_categories.last_verified,
+    )
 
     return stale

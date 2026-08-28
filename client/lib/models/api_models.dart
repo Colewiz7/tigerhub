@@ -63,6 +63,9 @@ class DiningLocation {
     required this.id,
     required this.name,
     required this.isOpen,
+    this.category = 'other',
+    this.categoryName = 'Everything else',
+    this.categoryOrder = 999,
     this.summary,
     this.opensAt,
     this.closesAt,
@@ -72,6 +75,12 @@ class DiningLocation {
 
   final int id;
   final String name;
+
+  /// From the server's static config. TigerCenter publishes no category.
+  final String category;
+  final String categoryName;
+  final int categoryOrder;
+
   final String? summary;
   final bool isOpen;
   final DateTime? opensAt;
@@ -85,6 +94,9 @@ class DiningLocation {
   factory DiningLocation.fromJson(Map<String, dynamic> json) => DiningLocation(
         id: json['id'] as int,
         name: json['name'] as String,
+        category: json['category'] as String? ?? 'other',
+        categoryName: json['category_name'] as String? ?? 'Everything else',
+        categoryOrder: json['category_order'] as int? ?? 999,
         summary: json['summary'] as String?,
         isOpen: json['is_open'] as bool? ?? false,
         opensAt: _date(json['opens_at']),
@@ -126,6 +138,7 @@ class CampusEvent {
     required this.source,
     required this.title,
     required this.startsAt,
+    this.endsAt,
     this.location,
     this.organizer,
     this.organizerKey,
@@ -138,6 +151,11 @@ class CampusEvent {
   final String source;
   final String title;
   final DateTime startsAt;
+
+  /// Used to decide whether an event has already finished, so past and future
+  /// can be told apart visually.
+  final DateTime? endsAt;
+
   final String? location;
   final String? organizer;
   final String? organizerKey;
@@ -150,6 +168,7 @@ class CampusEvent {
         source: json['source'] as String? ?? '',
         title: json['title'] as String? ?? '',
         startsAt: _date(json['starts_at']) ?? DateTime.now(),
+        endsAt: _date(json['ends_at']),
         location: json['location'] as String?,
         organizer: json['organizer'] as String?,
         organizerKey: json['organizer_key'] as String?,

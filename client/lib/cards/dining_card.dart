@@ -1,21 +1,89 @@
 /// Dining card.
 ///
-/// One hero: the scalloped badge showing occupancy for the busiest location
-/// that actually has a sensor. Everything below it is plain text, so the card
-/// has a single focal point rather than a row of gauges.
-///
-/// Every time shown is computed server side. The client displays isOpen,
-/// closesAt and opensAt and does no date math.
+/// One hero, then a list of container rows. Every time shown is computed
+/// server side: the client displays isOpen, closesAt and opensAt and does no
+/// date math of its own.
 library;
 
 import 'package:flutter/material.dart';
 
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../theme/semantic.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
 import '../widgets/scalloped_badge.dart';
+import '../widgets/status_row.dart';
+
+/// Sort within a category.
+///
+/// Only 5 of 24 locations have an occupancy sensor, so "busiest first" cannot
+/// be the primary key or the other 19 land in an arbitrary order. The rule is:
+/// open with a sensor first, by percent descending, then open without a sensor
+/// alphabetically, then closed last.
+int compareForDisplay(DiningLocation a, DiningLocation b) {
+  if (a.isOpen != b.isOpen) return a.isOpen ? -1 : 1;
+
+  if (a.isOpen) {
+    final aHas = a.occupancy?.percentFull != null;
+    final bHas = b.occupancy?.percentFull != null;
+    if (aHas != bHas) return aHas ? -1 : 1;
+    if (aHas && bHas) {
+      final byPercent =
+          b.occupancy!.percentFull!.compareTo(a.occupancy!.percentFull!);
+      if (byPercent != 0) return byPercent;
+    }
+  }
+  return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+}
+
+/// Group locations into the configured categories, in configured order.
+List<MapEntry<String, List<DiningLocation>>> groupByCategory(
+  List<DiningLocation> locations,
+) {
+  final groups = <String, List<DiningLocation>>{};
+  final order = <String, int>{};
+  for (final location in locations) {
+    groups.putIfAbsent(location.categoryName, () => []).add(location);
+    order[location.categoryName] = location.categoryOrder;
+  }
+  for (final entry in groups.entries) {
+    entry.value.sort(compareForDisplay);
+  }
+  final entries = groups.entries.toList()
+    ..sort((a, b) => (order[a.key] ?? 999).compareTo(order[b.key] ?? 999));
+  return entries;
+}
+
+/// Category drives the group header icon.
+IconData iconForCategory(String category) => switch (category) {
+      'market' => Icons.storefront_rounded,
+      'global_village' => Icons.public_rounded,
+      _ => Icons.restaurant_rounded,
+    };
+
+/// Venue type drives the icon, so a row is identifiable before it is read.
+IconData iconForVenue(String name) {
+  final n = name.toLowerCase();
+  if (n.contains('market') || n.contains('store') || n.contains('corner')) {
+    return Icons.storefront_rounded;
+  }
+  if (n.contains('cafe') ||
+      n.contains('café') ||
+      n.contains('coffee') ||
+      n.contains('beanz') ||
+      n.contains('java') ||
+      n.contains('grind') ||
+      n.contains('oil')) {
+    return Icons.local_cafe_rounded;
+  }
+  if (n.contains('truck')) return Icons.local_shipping_rounded;
+  if (n.contains('ben') || n.contains('jerry') || n.contains('smoothie')) {
+    return Icons.icecream_rounded;
+  }
+  return Icons.restaurant_rounded;
+}
 
 class DiningCard extends StatelessWidget {
   const DiningCard({
@@ -40,10 +108,7 @@ class DiningCard extends StatelessWidget {
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
       // Card level, not location level. The hero has to answer the question
-      // this card exists to answer, which is what is open right now. A single
-      // location's occupancy was meaningless here, because that location was
-      // usually not even among the visible rows. Per location occupancy lives
-      // on the Dining tab, where the location is on screen next to it.
+      // this card exists to answer, which is what is open right now.
       hero: locations.isEmpty
           ? null
           : ScallopedBadge(value: '$openNow', label: 'OPEN NOW', size: 88),
@@ -62,75 +127,129 @@ class _List extends StatelessWidget {
   final List<DiningLocation> locations;
   final VoidCallback? onShowAll;
 
-  static const double _rowHeight = 54;
-
   @override
   Widget build(BuildContext context) {
-    // Open locations first, then alphabetical. Ordering only, no time math.
-    final sorted = [...locations]..sort((a, b) {
-        if (a.isOpen != b.isOpen) return a.isOpen ? -1 : 1;
-        return a.name.compareTo(b.name);
-      });
+    // Shared ordering, so the card preview and the Dining tab agree.
+    final sorted = [...locations]..sort(compareForDisplay);
+
     final openNow = sorted.where((location) => location.isOpen).length;
 
     return BoundedList(
       itemCount: sorted.length,
-      itemHeight: _rowHeight,
+      itemHeight: StatusRow.height,
       noun: 'open',
-      // Open rows are sorted first, so any visible capacity is consumed by
-      // open locations before closed ones. The footer and hero then count the
-      // same population.
+      // Open rows sort first, so visible capacity is consumed by open
+      // locations before closed ones. The footer and the hero badge then count
+      // the same population. (Kept from Codex commit 9b12ddb.)
       hiddenCountBuilder: (shown) => (openNow - shown).clamp(0, openNow),
       onShowAll: onShowAll,
-      itemBuilder: (context, index) => _Row(location: sorted[index]),
+      itemBuilder: (context, index) => DiningRow(location: sorted[index]),
     );
   }
 }
 
-class _Row extends StatelessWidget {
-  const _Row({required this.location});
+class DiningRow extends StatelessWidget {
+  const DiningRow({super.key, required this.location});
 
   final DiningLocation location;
 
-  /// Both branches read a timestamp the API already resolved.
-  String _status() {
-    if (location.isOpen) {
-      final closes = location.closesAt;
-      return closes == null ? 'Open' : 'until ${formatClock(closes)}';
+  @override
+  Widget build(BuildContext context) {
+    final semantic = Semantic.of(context);
+    final open = location.isOpen;
+
+    // Harmonized against the wallpaper palette, never a raw hue.
+    final accent = open ? semantic.open : semantic.closed;
+
+    final when = open
+        ? (location.closesAt == null
+            ? 'Open now'
+            : 'Until ${formatClock(location.closesAt!)}')
+        : (location.opensAt == null
+            ? 'Closed'
+            : 'Opens ${formatDayAndClock(location.opensAt!)}');
+
+    // A badge only when the status is NOT the default. Thirteen identical
+    // green OPEN pills in a column carry no information, and they drown out
+    // the five locations that actually have something to say.
+    final Widget? trailing;
+    if (!open) {
+      trailing = _StatusPill(
+        label: 'CLOSED',
+        foreground: semantic.closed,
+        background: semantic.closedContainer,
+      );
+    } else if (location.occupancy != null) {
+      // The only reason to look at the right hand column.
+      trailing = _OccupancyPill(occupancy: location.occupancy!);
+    } else {
+      // Open with no sensor. The subtitle already says so.
+      trailing = null;
     }
-    final opens = location.opensAt;
-    return opens == null ? 'Closed' : 'opens ${formatClock(opens)}';
+
+    return StatusRow(
+      icon: iconForVenue(location.name),
+      title: location.name,
+      subtitle: when,
+      accent: accent,
+      emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
+      trailing: trailing,
+    );
   }
+}
+
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({
+    required this.label,
+    required this.foreground,
+    required this.background,
+  });
+
+  final String label;
+  final Color foreground;
+  final Color background;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        elevation: 0,
+        color: background,
+        shape: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: foreground),
+          ),
+        ),
+      );
+}
+
+class _OccupancyPill extends StatelessWidget {
+  const _OccupancyPill({required this.occupancy});
+
+  final Occupancy occupancy;
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
+    final semantic = Semantic.of(context);
+    final percent = occupancy.percentFull;
 
-    return Row(
-      children: [
-        Container(
-          width: 7,
-          height: 7,
-          margin: const EdgeInsets.only(right: 11),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: location.isOpen
-                ? scheme.primary
-                : scheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            location.name,
-            style: text.bodyMedium,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(_status(), style: text.bodySmall, maxLines: 1),
-      ],
+    if (percent == null) {
+      final count = occupancy.count;
+      if (count == null) return const SizedBox.shrink();
+      return _pill(context, '$count here', semantic.busy, semantic.busyContainer);
+    }
+
+    // A wrong denominator is never quoted as a precise figure.
+    final over = occupancy.overCapacity;
+    return _pill(
+      context,
+      over ? 'BUSY' : '$percent%',
+      over ? semantic.busy : semantic.open,
+      over ? semantic.busyContainer : semantic.openContainer,
     );
   }
+
+  Widget _pill(BuildContext context, String label, Color fg, Color bg) =>
+      _StatusPill(label: label, foreground: fg, background: bg);
 }

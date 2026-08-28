@@ -1,17 +1,26 @@
-/// Events tab: the merged feed, grouped by organiser.
+/// Events tab: the merged feed, grouped by organizer.
+///
+/// Density is deliberately low. Past events stay visible but dimmed, so the
+/// split between what has happened and what is still to come is readable at a
+/// glance.
 library;
 
 import 'package:flutter/material.dart';
 
+import '../cards/event_row.dart';
+import '../cards/events_card.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
-import '../theme/tokens.dart';
+import '../widgets/content_column.dart';
 import '../widgets/freshness.dart';
+import '../widgets/status_row.dart';
 
 class EventsScreen extends StatelessWidget {
   const EventsScreen({super.key, required this.result});
 
   final Result<Collection<CampusEvent>> result;
+
+  static const int _perGroup = 4;
 
   @override
   Widget build(BuildContext context) {
@@ -27,66 +36,37 @@ class EventsScreen extends StatelessWidget {
     final ordered = groups.entries.toList()
       ..sort((a, b) => b.value.length.compareTo(a.value.length));
 
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 4, 14, 20),
+    return ContentColumn(
+      child: ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
       itemCount: ordered.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, index) {
         final group = ordered[index];
-        return Material(
-          elevation: 0,
-          color: scheme.surfaceContainerLow,
-          borderRadius: Shapes.inner,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        group.key.toUpperCase(),
-                        style: text.labelSmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Text('${group.value.length}', style: text.labelSmall),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                for (final event in group.value.take(4))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 5),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            event.title,
-                            style: text.bodyMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          event.allDay
-                              ? 'all day'
-                              : formatDayAndClock(event.startsAt),
-                          style: text.bodySmall,
-                        ),
-                      ],
-                    ),
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GroupHeader(
+                icon: iconForOrganizer(group.key),
+                title: group.key,
+                count: group.value.length,
+              ),
+              for (final event in group.value.take(_perGroup))
+                EventRow(event: event),
+              if (group.value.length > _perGroup)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, top: 2),
+                  child: Text(
+                    '+${group.value.length - _perGroup} more from this organizer',
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         );
       },
+      ),
     );
   }
 }

@@ -41,6 +41,43 @@ def _as_datetime(value) -> tuple[str, bool]:
     raise TypeError(f"unsupported date value: {value!r}")
 
 
+# CampusGroups puts prompts in the LOCATION field when an event hides its
+# venue. These are UI text, not addresses, and must never reach the client.
+_PLACEHOLDER_LOCATIONS = (
+    "sign in to download",
+    "sign in to view",
+    "log in to view",
+    "see description",
+    "tba",
+    "to be announced",
+    "n/a",
+)
+
+
+def clean_location(raw: str | None) -> str | None:
+    """Reduce a LOCATION line to just the venue name.
+
+    The feed sends a full postal address, usually repeating the venue:
+
+        "RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States"
+
+    Nobody needs the ZIP code of a campus building, so only the first segment
+    is kept. Placeholder prompts return None so no subtitle is rendered at all.
+    """
+    if raw is None:
+        return None
+    value = raw.strip()
+    if not value:
+        return None
+
+    lowered = value.lower()
+    if any(marker in lowered for marker in _PLACEHOLDER_LOCATIONS):
+        return None
+
+    venue = value.split(",")[0].strip()
+    return venue or None
+
+
 def _categories(component) -> tuple[str | None, str | None]:
     """Pull the club acronym and the event type out of CATEGORIES."""
     raw = component.get("CATEGORIES")
@@ -89,7 +126,7 @@ def parse(raw: bytes) -> list[dict]:
                 "source": SOURCE,
                 "title": str(component.get("SUMMARY") or "").strip(),
                 "description": str(component.get("DESCRIPTION") or "").strip() or None,
-                "location": str(component.get("LOCATION") or "").strip() or None,
+                "location": clean_location(str(component.get("LOCATION") or "")),
                 "building": None,
                 "room": None,
                 "organizer": organizer,

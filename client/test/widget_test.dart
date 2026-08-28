@@ -14,7 +14,9 @@ import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/widgets/freshness.dart';
 import 'package:tigerhub/cards/dining_card.dart';
+import 'package:tigerhub/cards/event_row.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/theme/semantic.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
@@ -197,7 +199,7 @@ void main() {
       expect(find.text('+10 locations'), findsOneWidget);
     });
 
-    testWidgets('dining shows at least 5 rows at the minimum card height',
+    testWidgets('dining stays useful at the minimum card height',
         (tester) async {
       // The grid cell the home screen actually uses. The hero sits inline with
       // the title precisely so the list keeps its rows.
@@ -219,15 +221,18 @@ void main() {
             state: DataState.ok,
           ),
         ),
-        height: 480,
+        height: 560,
       ));
       expect(tester.takeException(), isNull);
       final rows = [
         for (var i = 0; i < 24; i++)
           if (find.text('Place ${i.toString().padLeft(2, '0')}').evaluate().isNotEmpty) i,
       ];
-      expect(rows.length, greaterThanOrEqualTo(5),
-          reason: 'the inline hero must buy back list rows');
+      // Rows are containers now, roughly 64px tall, so fewer fit on purpose.
+      // The bar is that the card still shows a useful handful, not a count
+      // carried over from when rows were bare 38px text lines.
+      expect(rows.length, greaterThanOrEqualTo(3),
+          reason: 'the card must still show a useful number of locations');
       expect(find.byType(MoreRow), findsOneWidget);
       // The badge is still present, just beside the title.
       expect(find.byType(ScallopedBadge), findsOneWidget);
@@ -286,18 +291,34 @@ void main() {
         height: 700,
       ));
 
+      // Match the row TITLE exactly. A prefix match also catches the "Open now"
+      // subtitle each row now carries, which double counts.
+      final namePattern = RegExp(r'^Open \d\d$');
       final visibleOpen = find
           .byWidgetPredicate(
-            (widget) => widget is Text && (widget.data?.startsWith('Open ') ?? false),
+            (widget) => widget is Text && namePattern.hasMatch(widget.data ?? ''),
           )
           .evaluate()
           .length;
       const heroOpen = 14;
-      const hiddenOpen = 5;
-      expect(find.text('+$hiddenOpen open'), findsOneWidget);
-      expect(visibleOpen + hiddenOpen, heroOpen);
-      expect(find.textContaining('Closed '), findsNothing,
-          reason: 'open locations must fill the visible rows first');
+
+      // Read the hidden count off the footer rather than hardcoding it, so the
+      // invariant survives a change in row height.
+      final footer = find
+          .byWidgetPredicate(
+            (widget) => widget is Text && (widget.data?.endsWith(' open') ?? false),
+          )
+          .evaluate()
+          .single
+          .widget as Text;
+      final hiddenOpen =
+          int.parse(footer.data!.replaceAll(RegExp(r'[^0-9]'), ''));
+
+      expect(visibleOpen + hiddenOpen, heroOpen,
+          reason: 'the footer and the hero must count the same population');
+      expect(find.byWidgetPredicate(
+        (widget) => widget is Text && RegExp(r'^Closed \d\d$').hasMatch(widget.data ?? ''),
+      ), findsNothing, reason: 'open locations must fill the visible rows first');
     });
 
     testWidgets('more row is tappable for the future detail view',
@@ -361,6 +382,8 @@ void main() {
   _designTokens();
   _dynamicColour();
   _screenshotReview();
+  _visualStructure();
+  _statusAndGrouping();
 
   test('age formatting', () {
     final now = DateTime.now();
@@ -652,6 +675,277 @@ void _screenshotReview() {
         expect(footer.bottom, lessThanOrEqualTo(box.bottom + 0.5),
             reason: 'footer escaped the box at height $height');
       }
+    });
+  });
+}
+
+/// The structural overhaul: visible surfaces, container rows, harmonized
+/// status colours, and the past/future split.
+void _visualStructure() {
+  group('surfaces are actually distinguishable', () {
+    double luminance(Color c) =>
+        0.2126 * c.r * 255 + 0.7152 * c.g * 255 + 0.0722 * c.b * 255;
+
+    test('each nesting level is clearly lighter, not a hair lighter', () {
+      final scheme = _fallbackScheme();
+      final levels = [
+        scheme.surfaceContainerLowest,
+        scheme.surfaceContainerLow,
+        scheme.surfaceContainer,
+        scheme.surfaceContainerHigh,
+        scheme.surfaceContainerHighest,
+      ];
+      for (var i = 1; i < levels.length; i++) {
+        final step = luminance(levels[i]) - luminance(levels[i - 1]);
+        // The old blend produced steps under 2, which made card edges vanish.
+        // Calibrated against the real Caelestia panel, whose own steps are
+        // modest, so this asserts visible separation rather than a big jump.
+        expect(step, greaterThan(4),
+            reason: 'step $i was only $step, cards would be invisible');
+      }
+
+      // The card must clearly read as a card against the page behind it.
+      expect(
+        luminance(scheme.surfaceContainerLow) -
+            luminance(scheme.surfaceContainerLowest),
+        greaterThan(8),
+      );
+    });
+  });
+
+  group('semantic colours', () {
+    test('are harmonized toward the scheme, not raw hues', () {
+      final scheme = _fallbackScheme();
+      final semantic = Semantic.from(scheme);
+      // A raw Colors.green would survive unchanged. Harmonizing must move it.
+      expect(semantic.open, isNot(Colors.green));
+      expect(semantic.closed, isNot(Colors.red));
+      expect(semantic.busy, isNot(Colors.amber));
+    });
+
+    test('open, closed and busy stay distinguishable from each other', () {
+      final semantic = Semantic.from(_fallbackScheme());
+      expect(semantic.open, isNot(semantic.closed));
+      expect(semantic.open, isNot(semantic.busy));
+      expect(semantic.closed, isNot(semantic.busy));
+    });
+
+    test('rebuild against a different scheme, so they follow the wallpaper', () {
+      final warm = Semantic.from(_fallbackScheme());
+      final cool = Semantic.from(
+        ColorScheme.fromSeed(seedColor: const Color(0xFF2196F3),
+            brightness: Brightness.dark),
+      );
+      expect(warm.open, isNot(cool.open),
+          reason: 'status colours must track the active palette');
+    });
+  });
+
+  group('container rows', () {
+    testWidgets('a dining row has an icon badge, a title and a subtitle',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.from(_fallbackScheme()),
+        home: Scaffold(
+          body: DiningRow(
+            location: DiningLocation(
+              id: 1,
+              name: 'Beanz',
+              isOpen: true,
+              closesAt: DateTime(2026, 8, 28, 22),
+            ),
+          ),
+        ),
+      ));
+      expect(find.text('Beanz'), findsOneWidget);
+      expect(find.text('Until 10:00 PM'), findsOneWidget);
+      expect(find.byIcon(Icons.local_cafe_rounded), findsOneWidget);
+      // No pill: open with no sensor is the default state, and the subtitle
+      // already says it is open.
+      expect(find.text('OPEN'), findsNothing);
+    });
+
+    testWidgets('a closed row is dimmed relative to an open one',
+        (tester) async {
+      Future<double> opacityFor(bool isOpen) async {
+        await tester.pumpWidget(MaterialApp(
+          theme: AppTheme.from(_fallbackScheme()),
+          home: Scaffold(
+            body: DiningRow(
+              location: DiningLocation(id: 1, name: 'X', isOpen: isOpen),
+            ),
+          ),
+        ));
+        final op = tester.widgetList<Opacity>(find.byType(Opacity)).first;
+        return op.opacity;
+      }
+
+      expect(await opacityFor(false), lessThan(await opacityFor(true)));
+    });
+
+    testWidgets('venue type picks the icon', (tester) async {
+      expect(iconForVenue('Corner Store'), Icons.storefront_rounded);
+      expect(iconForVenue('Java Wally\'s'), Icons.local_cafe_rounded);
+      expect(iconForVenue('RIT Food Truck'), Icons.local_shipping_rounded);
+      expect(iconForVenue('Gracie\'s'), Icons.restaurant_rounded);
+    });
+  });
+
+  group('past and future events', () {
+    Widget wrap(CampusEvent event, DateTime now) => MaterialApp(
+          theme: AppTheme.from(_fallbackScheme()),
+          home: Scaffold(body: EventRow(event: event, now: now)),
+        );
+
+    CampusEvent at(DateTime start, {DateTime? end}) => CampusEvent(
+          uid: 'u',
+          source: 'campusgroups',
+          title: 'Dodgeball',
+          startsAt: start,
+          endsAt: end,
+        );
+
+    testWidgets('a finished event is marked and dimmed', (tester) async {
+      await tester.pumpWidget(wrap(
+        at(DateTime(2026, 8, 28, 9), end: DateTime(2026, 8, 28, 10)),
+        DateTime(2026, 8, 28, 14),
+      ));
+      expect(find.text('ENDED'), findsOneWidget);
+      expect(find.byIcon(Icons.history_rounded), findsOneWidget);
+    });
+
+    testWidgets('an upcoming event is not marked', (tester) async {
+      await tester.pumpWidget(wrap(
+        at(DateTime(2026, 8, 28, 19), end: DateTime(2026, 8, 28, 21)),
+        DateTime(2026, 8, 28, 14),
+      ));
+      expect(find.text('ENDED'), findsNothing);
+      expect(find.byIcon(Icons.history_rounded), findsNothing);
+    });
+
+    testWidgets('an event with no end uses its start', (tester) async {
+      await tester.pumpWidget(
+          wrap(at(DateTime(2026, 8, 28, 9)), DateTime(2026, 8, 28, 14)));
+      expect(find.text('ENDED'), findsOneWidget);
+    });
+
+    testWidgets('an event running right now counts as future', (tester) async {
+      await tester.pumpWidget(wrap(
+        at(DateTime(2026, 8, 28, 13), end: DateTime(2026, 8, 28, 15)),
+        DateTime(2026, 8, 28, 14),
+      ));
+      expect(find.text('ENDED'), findsNothing);
+    });
+  });
+}
+
+/// The status badge only appears when the status is not the default, and
+/// dining groups by the category the server supplies.
+void _statusAndGrouping() {
+  DiningLocation loc(
+    String name, {
+    bool open = true,
+    int? percent,
+    bool over = false,
+    String category = 'other',
+    String categoryName = 'Everything else',
+    int order = 3,
+  }) =>
+      DiningLocation(
+        id: name.hashCode,
+        name: name,
+        isOpen: open,
+        category: category,
+        categoryName: categoryName,
+        categoryOrder: order,
+        closesAt: open ? DateTime(2026, 8, 28, 22) : null,
+        occupancy: percent == null
+            ? null
+            : Occupancy(count: 10, maxOcc: 20, percentFull: percent, overCapacity: over),
+      );
+
+  Widget wrap(Widget child) => MaterialApp(
+        theme: AppTheme.from(_fallbackScheme()),
+        home: Scaffold(body: child),
+      );
+
+  group('status badges only when not the default', () {
+    testWidgets('open with no sensor shows no pill at all', (tester) async {
+      await tester.pumpWidget(wrap(DiningRow(location: loc('Beanz'))));
+      expect(find.text('OPEN'), findsNothing);
+      expect(find.text('CLOSED'), findsNothing);
+      expect(find.textContaining('%'), findsNothing);
+    });
+
+    testWidgets('open with a sensor shows the occupancy', (tester) async {
+      await tester.pumpWidget(wrap(DiningRow(location: loc('Crossroads', percent: 86))));
+      expect(find.text('86%'), findsOneWidget);
+      expect(find.text('OPEN'), findsNothing);
+    });
+
+    testWidgets('over capacity shows BUSY, never a percentage', (tester) async {
+      await tester.pumpWidget(
+          wrap(DiningRow(location: loc('Midnight Oil', percent: 100, over: true))));
+      expect(find.text('BUSY'), findsOneWidget);
+      expect(find.textContaining('%'), findsNothing);
+    });
+
+    testWidgets('closed shows CLOSED', (tester) async {
+      await tester.pumpWidget(wrap(DiningRow(location: loc('Gracie', open: false))));
+      expect(find.text('CLOSED'), findsOneWidget);
+    });
+
+    testWidgets('a column of open rows carries no repeated pills',
+        (tester) async {
+      await tester.pumpWidget(wrap(ListView(children: [
+        for (final n in ['A', 'B', 'C', 'D', 'E']) DiningRow(location: loc(n)),
+      ])));
+      // The whole point: 13 identical pills was noise.
+      expect(find.text('OPEN'), findsNothing);
+    });
+  });
+
+  group('dining ordering', () {
+    test('sensors first by percent, then alphabetical, closed last', () {
+      final list = [
+        loc('Zulu', open: false),
+        loc('Alpha'),
+        loc('Bravo', percent: 40),
+        loc('Charlie', percent: 90),
+        loc('Delta'),
+      ]..sort(compareForDisplay);
+
+      expect(list.map((l) => l.name).toList(),
+          ['Charlie', 'Bravo', 'Alpha', 'Delta', 'Zulu']);
+    });
+
+    test('closed locations sort last even with a sensor', () {
+      final list = [
+        loc('Shut', open: false, percent: 99),
+        loc('Open', percent: 10),
+      ]..sort(compareForDisplay);
+      expect(list.first.name, 'Open');
+    });
+
+    test('groups come back in the configured order', () {
+      final groups = groupByCategory([
+        loc('Other one'),
+        loc('A market', category: 'market', categoryName: 'Markets', order: 1),
+        loc('GV thing',
+            category: 'global_village', categoryName: 'Global Village', order: 2),
+      ]);
+      expect(groups.map((g) => g.key).toList(),
+          ['Markets', 'Global Village', 'Everything else']);
+    });
+
+    test('each group is sorted internally', () {
+      final groups = groupByCategory([
+        loc('B market', category: 'market', categoryName: 'Markets', order: 1),
+        loc('A market',
+            category: 'market', categoryName: 'Markets', order: 1, percent: 50),
+      ]);
+      // The one with a sensor leads its group.
+      expect(groups.single.value.first.name, 'A market');
     });
   });
 }

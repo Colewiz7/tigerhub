@@ -228,6 +228,52 @@ cmd_shot() {
   fi
 }
 
+# Capture every tab into response/screenshots/.
+#
+# Tabs are driven with wtype on the digit shortcuts, because hyprctl dispatch
+# cannot be used here (see CLAUDE.md 2.1). Each frame is cropped to the window,
+# so a capture never contains anything but the app.
+cmd_shot_tabs() {
+  command -v wtype >/dev/null || die "wtype not found, needed to switch tabs"
+  command -v grim >/dev/null || die "grim not found"
+  [ -x "$BIN" ] || die "no release build. Run: scripts/dev build"
+  backend_healthy || warn "backend is down, screenshots will show cached or empty data"
+
+  local dir="$ROOT/response/screenshots"
+  mkdir -p "$dir"
+
+  local started=0
+  if ! pgrep -x tigerhub >/dev/null; then
+    ( "$BIN" >/dev/null 2>&1 & )
+    started=1
+    local i=0
+    until hyprctl clients -j | grep -q 'dev.colewiz.tigerhub'; do
+      i=$((i+1)); [ "$i" -gt 25 ] && die "window never appeared"; sleep 1
+    done
+    sleep 8
+  fi
+
+  local geo
+  geo="$(hyprctl clients -j | python3 "$ROOT/scripts/_geometry.py")" \
+    || die "could not read the window geometry"
+
+  local pair key name
+  for pair in "1:01-today" "2:02-dining" "3:03-events" "4:04-campus"; do
+    key="${pair%%:*}"; name="${pair##*:}"
+    wtype "$key"; sleep 2
+    grim -g "$geo" "$dir/$name.png" && ok "$name.png"
+  done
+
+  # Leave it on the first tab rather than wherever the loop finished.
+  wtype 1
+
+  if [ "$started" = "1" ]; then
+    pkill -x tigerhub 2>/dev/null
+    ok "closed the app"
+  fi
+  say "written to response/screenshots/"
+}
+
 cmd_help() {
   cat <<'HELP'
 TigerHub dev helper
@@ -248,6 +294,7 @@ TigerHub dev helper
   scripts/dev test         backend pytest plus client flutter test
   scripts/dev api [path]   pretty print an endpoint, default /dining
   scripts/dev shot [file]  screenshot the app window only, cropped
+  scripts/dev shot-tabs    capture every tab into response/screenshots/
   scripts/dev reset        wipe the SQLite cache
 
 Environment:
@@ -269,6 +316,7 @@ case "${1:-help}" in
   test) shift; cmd_test "$@" ;;
   api) shift; cmd_api "$@" ;;
   shot|screenshot) shift; cmd_shot "$@" ;;
+  shot-tabs|tabs) shift; cmd_shot_tabs "$@" ;;
   reset) shift; cmd_reset "$@" ;;
   help|-h|--help) cmd_help ;;
   *) printf 'unknown command: %s\n\n' "$1"; cmd_help; exit 1 ;;
