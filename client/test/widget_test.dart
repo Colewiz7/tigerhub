@@ -511,7 +511,11 @@ void _dynamicColour() {
       );
       await tester.pump();
 
-      final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+      // The app bar now also carries a settings tooltip, so target the
+      // palette one by its message rather than by type alone.
+      final tooltip = tester
+          .widgetList<Tooltip>(find.byType(Tooltip))
+          .firstWhere((t) => (t.message ?? '').contains('Theme source'));
       expect(tooltip.message, contains('Theme source: built-in palette'));
       expect(tooltip.message, contains('Tap to follow the wallpaper'));
 

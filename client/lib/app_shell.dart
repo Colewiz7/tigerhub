@@ -14,6 +14,9 @@ import 'models/api_models.dart';
 import 'screens/campus_screen.dart';
 import 'screens/dining_screen.dart';
 import 'screens/events_screen.dart';
+import 'screens/settings/settings_screen.dart';
+import 'services/cache.dart';
+import 'services/preferences.dart';
 import 'services/api.dart';
 import 'theme/dynamic_theme.dart';
 import 'widgets/tab_bar.dart';
@@ -37,6 +40,11 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+  bool _showSettings = false;
+
+  // Mirrored here so Settings and the Today grid stay in step.
+  List<String> _cards = const ['dining', 'events', 'chefs', 'housing'];
+  List<String> _hiddenCards = const [];
 
   Result<Collection<DiningLocation>> _dining =
       const Result(value: null, state: DataState.priming);
@@ -50,7 +58,29 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+    Preferences.instance.load();
+    _restoreCards();
     _refresh();
+  }
+
+  Future<void> _restoreCards() async {
+    final cache = ResponseCache.instance;
+    final order = await cache.readOrder('cards');
+    final hidden = await cache.readOrder('cards_hidden');
+    if (!mounted) return;
+    setState(() {
+      if (order.isNotEmpty) _cards = order;
+      _hiddenCards = hidden;
+    });
+  }
+
+  Future<void> _setCards(List<String> order, List<String> hidden) async {
+    setState(() {
+      _cards = order;
+      _hiddenCards = hidden;
+    });
+    await ResponseCache.instance.writeOrder('cards', order);
+    await ResponseCache.instance.writeOrder('cards_hidden', hidden);
   }
 
   Future<void> _refresh() async {
@@ -82,15 +112,32 @@ class _AppShellState extends State<AppShell> {
         bindings: {
           for (var i = 0; i < _tabs.length; i++)
             SingleActivator(_digits[i]): () => _go(i),
+          // Conventional settings shortcut.
+          const SingleActivator(LogicalKeyboardKey.comma, control: true): () =>
+              setState(() => _showSettings = !_showSettings),
+          const SingleActivator(LogicalKeyboardKey.escape): () =>
+              setState(() => _showSettings = false),
         },
         child: Focus(
           autofocus: true,
           child: SafeArea(
         child: Column(
           children: [
-            _Masthead(scheme: widget.scheme),
+            _Masthead(
+              scheme: widget.scheme,
+              settingsOpen: _showSettings,
+              onSettings: () => setState(() => _showSettings = !_showSettings),
+            ),
             Expanded(
-              child: IndexedStack(
+              child: _showSettings
+                  ? SettingsScreen(
+                      scheme: widget.scheme,
+                      events: _events,
+                      cards: _cards,
+                      hiddenCards: _hiddenCards,
+                      onCardsChanged: _setCards,
+                    )
+                  : IndexedStack(
                 index: _index,
                 children: [
                   HomeScreen(
@@ -108,7 +155,14 @@ class _AppShellState extends State<AppShell> {
                 ],
               ),
             ),
-            AppTabBar(tabs: _tabs, index: _index, onSelect: _go),
+            AppTabBar(
+              tabs: _tabs,
+              index: _showSettings ? -1 : _index,
+              onSelect: (i) => setState(() {
+                _showSettings = false;
+                _index = i;
+              }),
+            ),
               ],
             ),
           ),
@@ -126,9 +180,15 @@ const List<LogicalKeyboardKey> _digits = [
 ];
 
 class _Masthead extends StatelessWidget {
-  const _Masthead({required this.scheme});
+  const _Masthead({
+    required this.scheme,
+    required this.settingsOpen,
+    required this.onSettings,
+  });
 
   final SchemeController scheme;
+  final bool settingsOpen;
+  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +204,24 @@ class _Masthead extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 30),
           ),
           const Spacer(),
+          Tooltip(
+            message: settingsOpen ? 'Close settings' : 'Settings',
+            child: InkWell(
+              onTap: onSettings,
+              borderRadius: BorderRadius.circular(20),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(
+                  settingsOpen ? Icons.close_rounded : Icons.settings_rounded,
+                  size: 24,
+                  color: settingsOpen
+                      ? colors.primary
+                      : colors.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
           // The palette escape hatch. An unusual wallpaper can produce an
           // unreadable scheme, so pinning the known-good seed is always one
           // tap away rather than requiring a rebuild.
