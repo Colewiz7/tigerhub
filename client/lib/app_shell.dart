@@ -130,8 +130,8 @@ class _Masthead extends StatelessWidget {
           // tap away rather than requiring a rebuild.
           Tooltip(
             message: state.isDynamic
-                ? 'Following the wallpaper\n${state.detail ?? ''}\nTap to pin the built-in palette'
-                : 'Built-in palette\n${state.detail ?? ''}\nTap to follow the wallpaper',
+                ? 'Theme source: wallpaper\n${state.detail ?? ''}\nTap to use the built-in palette'
+                : 'Theme source: built-in palette\n${state.detail ?? ''}\nTap to follow the wallpaper',
             child: InkWell(
               onTap: () => scheme.setForceSeed(!scheme.forcedToSeed),
               borderRadius: BorderRadius.circular(20),
