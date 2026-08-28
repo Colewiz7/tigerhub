@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/widgets/freshness.dart';
@@ -429,6 +430,26 @@ void _dynamicColour() {
       expect(controller.forcedToSeed, isTrue);
       await controller.setForceSeed(false);
       expect(controller.forcedToSeed, isFalse);
+      controller.dispose();
+    });
+
+    testWidgets('palette icon tooltip identifies source and action', (tester) async {
+      final controller = SchemeController(forceSeed: true);
+      await controller.load();
+      final api = ApiClient(
+        client: MockClient((_) async => throw http.ClientException('offline')),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(home: AppShell(api: api, scheme: controller)),
+      );
+      await tester.pump();
+
+      final tooltip = tester.widget<Tooltip>(find.byType(Tooltip));
+      expect(tooltip.message, contains('Theme source: built-in palette'));
+      expect(tooltip.message, contains('Tap to follow the wallpaper'));
+
+      await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();
     });
   });
