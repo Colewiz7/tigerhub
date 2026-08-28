@@ -1,22 +1,19 @@
-/// Occupancy chip.
+/// Occupancy chip, a full pill.
 ///
 /// Only 5 of 24 dining locations publish occupancy upstream. For the other 19
-/// this renders nothing at all: no placeholder, no "no data" label, no empty
-/// space. The absence of a sensor is not information worth showing.
+/// this renders nothing at all: no placeholder, no "no data" label.
 ///
-/// Honesty rules for what is shown:
-///  - `over_capacity` means the live count exceeds RIT's published capacity,
-///    which happens often (Midnight Oil reads 46 against a stated 38). The
-///    denominator is clearly wrong, so a qualitative "busy" is shown rather
-///    than a precise looking "100% full".
-///  - No denominator at all yields the raw count, labelled as a count, rather
-///    than the location being silently dropped.
+/// Honesty rules:
+///  - `overCapacity` means the count exceeds RIT's published capacity, which
+///    is common. The denominator is wrong, so a qualitative "busy" is shown
+///    rather than a precise looking percentage.
+///  - No denominator at all yields the raw count, labelled as a count.
 library;
 
 import 'package:flutter/material.dart';
 
 import '../models/api_models.dart';
-import '../theme/app_theme.dart';
+import 'segmented_bar.dart';
 
 class OccupancyChip extends StatelessWidget {
   const OccupancyChip({super.key, required this.occupancy});
@@ -28,45 +25,45 @@ class OccupancyChip extends StatelessWidget {
     final data = occupancy;
     if (data == null) return const SizedBox.shrink();
 
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
     final percent = data.percentFull;
-    final muted = AppTheme.mutedOf(context);
 
-    // A count with no usable capacity. Say what it is, do not imply a ratio.
     if (percent == null) {
       if (data.count == null) return const SizedBox.shrink();
-      return Text(
-        '${data.count} here now',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
-      );
+      return _Pill(child: Text('${data.count} here', style: text.bodySmall));
     }
 
-    // The bar is a rough fill indicator in both cases.
-    final fraction = (percent / 100).clamp(0.0, 1.0);
-    final label = data.overCapacity ? 'busy' : '$percent% full';
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          width: 34,
-          height: 4,
-          child: DecoratedBox(
-            decoration: BoxDecoration(color: AppTheme.ruleOf(context)),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: fraction,
-              child: const DecoratedBox(
-                decoration: BoxDecoration(color: AppTheme.accent),
-              ),
-            ),
+    final label = data.overCapacity ? 'busy' : '$percent%';
+    return _Pill(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SegmentedBar(value: percent / 100, width: 34, height: 4, gap: 3),
+          const SizedBox(width: 7),
+          Text(
+            label,
+            style: text.bodySmall?.copyWith(color: scheme.onSurface),
           ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: muted),
-        ),
-      ],
+        ],
+      ),
     );
   }
+}
+
+class _Pill extends StatelessWidget {
+  const _Pill({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        elevation: 0,
+        color: Theme.of(context).colorScheme.surfaceContainerHigh,
+        shape: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+          child: child,
+        ),
+      );
 }

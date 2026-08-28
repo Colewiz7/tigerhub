@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'config.dart';
-import 'home_screen.dart';
+import 'app_shell.dart';
 import 'services/api.dart';
 import 'theme/app_theme.dart';
 
@@ -29,6 +29,7 @@ class _TigerHubAppState extends State<TigerHubApp> {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
-        home: HomeScreen(api: _api),
+        themeMode: ThemeMode.dark,
+        home: AppShell(api: _api),
       );
 }

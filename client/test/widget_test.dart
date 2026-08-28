@@ -13,6 +13,8 @@ import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/widgets/freshness.dart';
 import 'package:tigerhub/cards/dining_card.dart';
+import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
 import 'package:tigerhub/widgets/more_row.dart';
 import 'package:tigerhub/widgets/occupancy_chip.dart';
@@ -85,7 +87,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('50% full'), findsOneWidget);
+      expect(find.text('50%'), findsOneWidget);
     });
   });
 
@@ -116,7 +118,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('235 here now'), findsOneWidget);
+      expect(find.text('235 here'), findsOneWidget);
       expect(find.textContaining('%'), findsNothing);
     });
   });
@@ -124,7 +126,7 @@ void main() {
   group('bounded cards', () {
     // The grid cell height the home screen uses.
     const cellHeight = 340.0;
-    const rowHeight = 62.0;
+    const rowHeight = 44.0;
     const footerHeight = 34.0;
 
     Widget boxed(Widget child, {double height = cellHeight}) => MaterialApp(
@@ -140,10 +142,10 @@ void main() {
           itemBuilder: (context, i) => Text('row $i'),
         ),
       ));
-      // (340 - 34) / 62 = 4 rows fit alongside the footer.
-      expect(find.text('row 3'), findsOneWidget);
-      expect(find.text('row 4'), findsNothing);
-      expect(find.text('+8 locations'), findsOneWidget);
+      // (340 - 34) / 44 = 6 rows fit alongside the footer.
+      expect(find.text('row 5'), findsOneWidget);
+      expect(find.text('row 6'), findsNothing);
+      expect(find.text('+6 locations'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
@@ -270,9 +272,11 @@ void main() {
         ),
       );
       expect(find.text('updated 2h ago'), findsOneWidget);
-      expect(find.byIcon(Icons.cloud_off_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.cloud_off_rounded), findsOneWidget);
     });
   });
+
+  _designTokens();
 
   test('age formatting', () {
     final now = DateTime.now();
@@ -280,5 +284,51 @@ void main() {
     expect(formatAge(now.subtract(const Duration(minutes: 40))), '40m ago');
     expect(formatAge(now.subtract(const Duration(hours: 3))), '3h ago');
     expect(formatAge(now.subtract(const Duration(days: 2))), '2d ago');
+  });
+}
+
+/// Design token guarantees. These encode rules from the brief that are easy to
+/// regress by accident.
+void _designTokens() {
+  group('design tokens', () {
+    test('the scalloped badge stays inside StarBorder assertions', () {
+      // pointRounding + valleyRounding must not exceed 1, so the 1.0/1.0 pair
+      // from the brief throws. This asserts the shape actually constructs.
+      final badge = Shapes.badge as StarBorder;
+      expect(badge.pointRounding + badge.valleyRounding, lessThanOrEqualTo(1.0));
+      expect(badge.points, 8);
+      expect(badge.innerRadiusRatio, 0.9);
+    });
+
+    test('nothing is rounded at 8 or below', () {
+      expect(Shapes.cardRadius, greaterThanOrEqualTo(28));
+      expect(Shapes.innerRadius, greaterThan(8));
+      expect(Shapes.smallRadius, greaterThan(8));
+    });
+
+    testWidgets('cards carry no shadow at any elevation', (tester) async {
+      final theme = AppTheme.dark();
+      expect(theme.cardTheme.elevation, 0);
+      expect(theme.shadowColor, Colors.transparent);
+    });
+
+    test('surfaces step lighter and stay warm, never neutral grey', () {
+      final scheme = AppTheme.dark().colorScheme;
+      final levels = [
+        scheme.surfaceContainerLowest,
+        scheme.surfaceContainerLow,
+        scheme.surfaceContainer,
+        scheme.surfaceContainerHigh,
+        scheme.surfaceContainerHighest,
+      ];
+      for (var i = 1; i < levels.length; i++) {
+        expect(levels[i].r, greaterThan(levels[i - 1].r),
+            reason: 'each nested level must step one lighter');
+      }
+      for (final c in levels) {
+        expect(c.r, greaterThan(c.b),
+            reason: 'surfaces must be warm tinted, not neutral grey');
+      }
+    });
   });
 }

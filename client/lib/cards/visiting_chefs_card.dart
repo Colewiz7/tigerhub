@@ -1,13 +1,16 @@
-/// Visiting chefs, straight from the TigerCenter dining payload.
+/// Visiting chefs.
+///
+/// The chef name is the hero, the location recedes underneath it. Data comes
+/// straight from the TigerCenter dining payload, no separate scraper.
 library;
 
 import 'package:flutter/material.dart';
 
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
-import '../widgets/bounded_list.dart';
 
 class VisitingChefsCard extends StatelessWidget {
   const VisitingChefsCard({
@@ -19,11 +22,9 @@ class VisitingChefsCard extends StatelessWidget {
 
   final Result<Collection<MenuItem>> result;
   final Widget? dragHandle;
-
-  /// Tap target for the detail view. Not built yet, so this is a no-op.
   final VoidCallback? onShowAll;
 
-  static const double _rowHeight = 62;
+  static const double _rowHeight = 54;
 
   @override
   Widget build(BuildContext context) {
@@ -43,26 +44,23 @@ class VisitingChefsCard extends StatelessWidget {
             itemHeight: _rowHeight,
             noun: 'chefs',
             onShowAll: onShowAll,
-            itemBuilder: (context, index) => RuledRow(
-              last: index == all.length - 1,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    all[index].name,
-                    style: text.titleMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    all[index].locationName,
-                    style: text.bodySmall,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+            itemBuilder: (context, index) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  all[index].name,
+                  style: text.titleMedium,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  all[index].locationName,
+                  style: text.bodySmall,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
       },
