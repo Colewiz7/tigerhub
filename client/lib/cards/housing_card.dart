@@ -1,11 +1,12 @@
-/// Housing mailing address card.
+/// Housing mailing address.
 ///
-/// RIT runs a zone based mail system: pick an area, get that area's post
-/// office address, with line 2 being your own building and room. There are no
-/// mailbox numbers. When the unit is blank the API returns the documented
-/// format as a placeholder rather than inventing one.
+/// The address block is the hero. RIT runs a zone based mail system: pick an
+/// area, get that area's post office address, with line 2 being your own
+/// building and room. There are no mailbox numbers. When the unit is blank the
+/// API returns the documented format as a placeholder rather than inventing
+/// one.
 ///
-/// A caution badge is shown whenever the API reports `verified: false`.
+/// A caution pill appears whenever the API reports verified: false.
 library;
 
 import 'package:flutter/material.dart';
@@ -13,7 +14,7 @@ import 'package:flutter/services.dart';
 
 import '../models/api_models.dart';
 import '../services/api.dart';
-import '../theme/app_theme.dart';
+import '../theme/tokens.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
 
@@ -65,153 +66,205 @@ class _HousingCardState extends State<HousingCard> {
       child: switch ((widget.areas.isPriming, areas.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading housing areas'),
         (_, true) => const EmptyNote(text: 'No housing areas cached yet.'),
-        _ => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                initialValue: _areaId,
-                isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Where do you live',
-                  border: OutlineInputBorder(),
-                  isDense: true,
+        _ => SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _AreaPicker(
+                  areas: areas,
+                  selected: _areaId,
+                  onChanged: (value) {
+                    setState(() {
+                      _areaId = value;
+                      _address = null;
+                    });
+                    _load();
+                  },
                 ),
-                items: [
-                  for (final area in areas)
-                    DropdownMenuItem(value: area.id, child: Text(area.name)),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _areaId = value;
-                    _address = null;
-                  });
-                  _load();
-                },
-              ),
-              if (_areaId != null) ...[
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _unit,
-                  decoration: InputDecoration(
-                    labelText: 'Your building and room',
-                    hintText: _hintFor(areas),
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  onSubmitted: (_) => _load(),
-                  onChanged: (_) => _load(),
-                ),
-              ],
-              if (_address != null) ...[
-                const SizedBox(height: 12),
-                _AddressBlock(result: _address!),
-              ],
-              if (_areaId == null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    'Pick your housing area to see the correct address format.',
+                if (_address?.value != null) ...[
+                  const SizedBox(height: 12),
+                  _AddressBlock(address: _address!.value!),
+                ] else ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    'Pick your housing area to see the correct format.',
                     style: text.bodySmall,
                   ),
-                ),
-            ],
+                ],
+              ],
+            ),
           ),
       },
     );
   }
+}
 
-  String? _hintFor(List<HousingArea> areas) {
-    for (final area in areas) {
-      if (area.id == _areaId) return area.line2Example;
-    }
-    return null;
+/// Split control: a wide pill for the value, a separate small pill holding the
+/// chevron.
+class _AreaPicker extends StatelessWidget {
+  const _AreaPicker({
+    required this.areas,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final List<HousingArea> areas;
+  final String? selected;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final current = areas.where((a) => a.id == selected).firstOrNull;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Material(
+            elevation: 0,
+            color: scheme.surfaceContainerHigh,
+            shape: Shapes.pill,
+            clipBehavior: Clip.antiAlias,
+            child: PopupMenuButton<String>(
+              tooltip: 'Choose housing area',
+              onSelected: onChanged,
+              itemBuilder: (context) => [
+                for (final area in areas)
+                  PopupMenuItem(value: area.id, child: Text(area.name)),
+              ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Text(
+                  current?.name ?? 'Where do you live',
+                  style: text.bodyMedium?.copyWith(
+                    color: current == null ? scheme.onSurfaceVariant : scheme.onSurface,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 7),
+        Material(
+          elevation: 0,
+          color: scheme.primary,
+          shape: Shapes.pill,
+          child: Padding(
+            padding: const EdgeInsets.all(11),
+            child: Icon(
+              Icons.expand_more_rounded,
+              size: 19,
+              color: scheme.onPrimary,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
 class _AddressBlock extends StatelessWidget {
-  const _AddressBlock({required this.result});
+  const _AddressBlock({required this.address});
 
-  final Result<MailingAddress> result;
+  final MailingAddress address;
 
   @override
   Widget build(BuildContext context) {
-    final address = result.value;
-    if (address == null) return const SizedBox.shrink();
-
+    final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // The hero: nested one surface level lighter than the card.
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            border: Border.all(color: AppTheme.ruleOf(context)),
-            borderRadius: BorderRadius.circular(3),
+            color: scheme.surfaceContainerHigh,
+            borderRadius: Shapes.inner,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               for (final line in address.lines)
-                Text(line, style: text.bodyMedium?.copyWith(height: 1.5)),
+                Text(line, style: text.bodyMedium?.copyWith(height: 1.55)),
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Row(
           children: [
-            TextButton.icon(
-              onPressed: () => Clipboard.setData(
-                ClipboardData(text: address.lines.join('\n')),
-              ),
-              icon: const Icon(Icons.copy_outlined, size: 15),
-              label: const Text('Copy'),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: const Size(0, 32),
+            Material(
+              elevation: 0,
+              color: scheme.surfaceContainerHigh,
+              shape: Shapes.pill,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => Clipboard.setData(
+                  ClipboardData(text: address.lines.join('\n')),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.copy_rounded, size: 14, color: scheme.onSurfaceVariant),
+                      const SizedBox(width: 6),
+                      Text('Copy', style: text.bodySmall),
+                    ],
+                  ),
+                ),
               ),
             ),
             const Spacer(),
-            if (!address.verified) const _CautionBadge(),
+            if (!address.verified) const _CautionPill(),
           ],
         ),
         if (!address.unitSupplied)
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: 8),
             child: Text(
-              'Line 2 shows the format. Enter your own building and room above.',
+              'Line 2 shows the format. Yours goes there.',
               style: text.bodySmall,
             ),
-          ),
-        if (address.note != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(address.note!, style: text.bodySmall),
           ),
       ],
     );
   }
 }
 
-class _CautionBadge extends StatelessWidget {
-  const _CautionBadge();
+class _CautionPill extends StatelessWidget {
+  const _CautionPill();
 
   @override
   Widget build(BuildContext context) {
-    final color = AppTheme.warningOf(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.error_outline, size: 13, color: color),
-        const SizedBox(width: 4),
-        Text(
-          'unverified',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      elevation: 0,
+      color: scheme.errorContainer,
+      shape: Shapes.pill,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline_rounded, size: 13, color: scheme.onErrorContainer),
+            const SizedBox(width: 5),
+            Text(
+              'unverified',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: scheme.onErrorContainer,
+                  ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

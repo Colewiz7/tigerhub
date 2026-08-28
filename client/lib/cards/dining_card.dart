@@ -1,18 +1,21 @@
 /// Dining card.
 ///
-/// Every time shown here is computed server side. The client displays
-/// `isOpen`, `closesAt`, and `nextTransition` and does no date math of its own.
+/// One hero: the scalloped badge showing occupancy for the busiest location
+/// that actually has a sensor. Everything below it is plain text, so the card
+/// has a single focal point rather than a row of gauges.
+///
+/// Every time shown is computed server side. The client displays isOpen,
+/// closesAt and opensAt and does no date math.
 library;
 
 import 'package:flutter/material.dart';
 
 import '../models/api_models.dart';
 import '../services/api.dart';
-import '../theme/app_theme.dart';
+import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
-import '../widgets/bounded_list.dart';
-import '../widgets/occupancy_chip.dart';
+import '../widgets/scalloped_badge.dart';
 
 class DiningCard extends StatelessWidget {
   const DiningCard({
@@ -24,24 +27,65 @@ class DiningCard extends StatelessWidget {
 
   final Result<Collection<DiningLocation>> result;
   final Widget? dragHandle;
-
-  /// Tap target for the detail view. Not built yet, so this is a no-op.
   final VoidCallback? onShowAll;
+
+  /// The single location worth putting in the badge: the fullest one that
+  /// publishes occupancy at all. Null when no sensor has reported.
+  DiningLocation? _heroLocation(List<DiningLocation> locations) {
+    final withSensor = locations
+        .where((l) => l.occupancy != null && l.isOpen)
+        .toList()
+      ..sort((a, b) =>
+          (b.occupancy!.percentFull ?? 0).compareTo(a.occupancy!.percentFull ?? 0));
+    return withSensor.isEmpty ? null : withSensor.first;
+  }
 
   @override
   Widget build(BuildContext context) {
-    final collection = result.value;
+    final locations = result.value?.data ?? const <DiningLocation>[];
+    final hero = _heroLocation(locations);
 
     return CardShell(
       title: 'Dining',
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
-      child: switch ((result.isPriming, collection?.data.isEmpty ?? true)) {
+      hero: hero == null ? null : _Hero(location: hero),
+      child: switch ((result.isPriming, locations.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
         (_, true) => const EmptyNote(text: 'No dining locations cached yet.'),
-        _ => _List(locations: collection!.data, onShowAll: onShowAll),
+        _ => _List(locations: locations, onShowAll: onShowAll),
       },
+    );
+  }
+}
+
+class _Hero extends StatelessWidget {
+  const _Hero({required this.location});
+
+  final DiningLocation location;
+
+  @override
+  Widget build(BuildContext context) {
+    final occ = location.occupancy!;
+    // A wrong denominator is never quoted as a precise figure, so an over
+    // capacity reading shows the raw headcount instead of a percentage.
+    final value = occ.overCapacity
+        ? '${occ.count}'
+        : '${occ.percentFull ?? 0}%';
+    final label = occ.overCapacity ? 'HERE NOW' : 'FULL';
+
+    return Column(
+      children: [
+        ScallopedBadge(value: value, label: label),
+        const SizedBox(height: 8),
+        Text(
+          location.name,
+          style: Theme.of(context).textTheme.bodySmall,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }
@@ -52,8 +96,7 @@ class _List extends StatelessWidget {
   final List<DiningLocation> locations;
   final VoidCallback? onShowAll;
 
-  /// Enforced row height, so BoundedList can do exact arithmetic.
-  static const double _rowHeight = 62;
+  static const double _rowHeight = 44;
 
   @override
   Widget build(BuildContext context) {
@@ -68,10 +111,7 @@ class _List extends StatelessWidget {
       itemHeight: _rowHeight,
       noun: 'locations',
       onShowAll: onShowAll,
-      itemBuilder: (context, index) => RuledRow(
-        last: index == sorted.length - 1,
-        child: _Row(location: sorted[index]),
-      ),
+      itemBuilder: (context, index) => _Row(location: sorted[index]),
     );
   }
 }
@@ -85,53 +125,40 @@ class _Row extends StatelessWidget {
   String _status() {
     if (location.isOpen) {
       final closes = location.closesAt;
-      return closes == null ? 'Open' : 'Open until ${formatClock(closes)}';
+      return closes == null ? 'Open' : 'until ${formatClock(closes)}';
     }
     final opens = location.opensAt;
-    return opens == null ? 'Closed' : 'Closed, opens ${formatDayAndClock(opens)}';
+    return opens == null ? 'Closed' : 'opens ${formatClock(opens)}';
   }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 6,
-          height: 6,
-          margin: const EdgeInsets.only(top: 6, right: 10),
+          width: 7,
+          height: 7,
+          margin: const EdgeInsets.only(right: 11),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: location.isOpen ? AppTheme.accent : AppTheme.ruleOf(context),
+            color: location.isOpen
+                ? scheme.primary
+                : scheme.outlineVariant.withValues(alpha: 0.5),
           ),
         ),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                location.name,
-                style: text.titleMedium,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                _status(),
-                style: text.bodySmall,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+          child: Text(
+            location.name,
+            style: text.bodyMedium,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
-        // Renders nothing for the 19 locations without a sensor.
-        Padding(
-          padding: const EdgeInsets.only(left: 8, top: 2),
-          child: OccupancyChip(occupancy: location.occupancy),
-        ),
+        const SizedBox(width: 8),
+        Text(_status(), style: text.bodySmall, maxLines: 1),
       ],
     );
   }

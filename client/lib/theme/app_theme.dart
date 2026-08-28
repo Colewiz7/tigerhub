@@ -1,91 +1,167 @@
-/// Modern newspaper: masthead, rules, serif display type, strong hierarchy,
-/// generous whitespace, on an otherwise modern app. Not a newsprint pastiche,
-/// so no paper texture, no sepia, no fake halftone.
+/// Theme.
+///
+/// The palette is generated from one warm seed, the way a matugen scheme is,
+/// so the whole app is a rendering of that scheme rather than a set of
+/// hand-picked colours. Surfaces are then pinned to explicitly warm values,
+/// because Material's own dark surfaces drift toward neutral grey.
+///
+/// Elevation is expressed only as surface tint. There are no drop shadows
+/// anywhere in this app.
 library;
 
 import 'package:flutter/material.dart';
 
+import 'tokens.dart';
+
 class AppTheme {
   const AppTheme._();
 
-  static const Color ink = Color(0xFF111111);
-  static const Color paper = Color(0xFFFAF8F5);
-  static const Color rule = Color(0xFFD8D3CC);
-  static const Color accent = Color(0xFFF76902); // RIT orange, used sparingly
-  static const Color muted = Color(0xFF6B6560);
-  static const Color warning = Color(0xFFA85B00);
+  /// RIT orange. The single seed the rest of the scheme is generated from.
+  static const Color seed = Color(0xFFF76902);
 
-  static const Color inkDark = Color(0xFFEDEAE5);
-  static const Color paperDark = Color(0xFF161513);
-  static const Color ruleDark = Color(0xFF33302C);
-  static const Color mutedDark = Color(0xFF9A938C);
-  static const Color warningDark = Color(0xFFE0A050);
+  static const String fontFamily = 'Rubik';
 
-  /// A serif for display type only. Body stays in the system sans, which keeps
-  /// the newspaper cue in the hierarchy rather than in a costume.
-  static const String displayFont = 'serif';
+  // Warm near-black. Red channel leads at every step, so the background reads
+  // as warm rather than as neutral grey.
+  static const _darkSurfaces = _Surfaces(
+    lowest: Color(0xFF0E0B09),
+    low: Color(0xFF15110E),
+    base: Color(0xFF1C1714),
+    high: Color(0xFF251E1A),
+    highest: Color(0xFF2F2721),
+  );
 
-  static ThemeData light() => _build(Brightness.light);
-  static ThemeData dark() => _build(Brightness.dark);
+  static const _lightSurfaces = _Surfaces(
+    lowest: Color(0xFFFFFFFF),
+    low: Color(0xFFFBF5F0),
+    base: Color(0xFFF6EEE7),
+    high: Color(0xFFF0E6DD),
+    highest: Color(0xFFEADDD2),
+  );
 
-  static ThemeData _build(Brightness brightness) {
-    final isDark = brightness == Brightness.dark;
-    final fg = isDark ? inkDark : ink;
-    final bg = isDark ? paperDark : paper;
-    final line = isDark ? ruleDark : rule;
+  static ThemeData dark() => _build(Brightness.dark, _darkSurfaces);
+  static ThemeData light() => _build(Brightness.light, _lightSurfaces);
 
-    final base = ThemeData(brightness: brightness, useMaterial3: true);
+  static ThemeData _build(Brightness brightness, _Surfaces surfaces) {
+    final generated = ColorScheme.fromSeed(
+      seedColor: seed,
+      brightness: brightness,
+    );
+
+    final scheme = generated.copyWith(
+      surface: surfaces.base,
+      surfaceContainerLowest: surfaces.lowest,
+      surfaceContainerLow: surfaces.low,
+      surfaceContainer: surfaces.base,
+      surfaceContainerHigh: surfaces.high,
+      surfaceContainerHighest: surfaces.highest,
+    );
+
+    final base = ThemeData(
+      colorScheme: scheme,
+      useMaterial3: true,
+      fontFamily: fontFamily,
+    );
+
+    final onSurface = scheme.onSurface;
+    final muted = scheme.onSurfaceVariant;
 
     return base.copyWith(
-      scaffoldBackgroundColor: bg,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: accent,
-        brightness: brightness,
-      ).copyWith(surface: bg, onSurface: fg),
-      dividerTheme: DividerThemeData(color: line, space: 1, thickness: 1),
+      scaffoldBackgroundColor: surfaces.lowest,
+      // Shadows are disabled globally rather than per widget, so a stray
+      // elevation cannot reintroduce one.
+      shadowColor: Colors.transparent,
       cardTheme: CardThemeData(
         elevation: 0,
-        color: bg,
+        color: scheme.surfaceContainerLow,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          side: BorderSide(color: line),
-          borderRadius: BorderRadius.circular(4),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: Shapes.card),
       ),
-      textTheme: base.textTheme.copyWith(
+      dividerTheme: DividerThemeData(
+        color: scheme.outlineVariant.withValues(alpha: 0.35),
+        space: 1,
+        thickness: 1,
+      ),
+      textTheme: TextTheme(
+        // The one oversized, light-weight number per card.
         displayLarge: TextStyle(
-          fontFamily: displayFont,
+          fontSize: 52,
+          height: 1.0,
+          fontVariations: Weights.light,
+          letterSpacing: -1.5,
+          color: onSurface,
+        ),
+        displayMedium: TextStyle(
           fontSize: 34,
           height: 1.05,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 2,
-          color: fg,
+          fontVariations: Weights.light,
+          letterSpacing: -0.8,
+          color: onSurface,
         ),
         titleLarge: TextStyle(
-          fontFamily: displayFont,
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
-          color: fg,
+          fontSize: 17,
+          fontVariations: Weights.medium,
+          letterSpacing: 0.1,
+          color: onSurface,
         ),
-        titleMedium: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: fg),
-        bodyMedium: TextStyle(fontSize: 14, height: 1.4, color: fg),
-        bodySmall: TextStyle(fontSize: 12, color: isDark ? mutedDark : muted),
+        titleMedium: TextStyle(
+          fontSize: 14.5,
+          fontVariations: Weights.medium,
+          color: onSurface,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 13.5,
+          height: 1.35,
+          fontVariations: Weights.regular,
+          color: onSurface,
+        ),
+        bodySmall: TextStyle(
+          fontSize: 12,
+          fontVariations: Weights.regular,
+          color: muted,
+        ),
+        // Small, muted, wide. The label under a big number.
         labelSmall: TextStyle(
-          fontSize: 11,
-          letterSpacing: 0.8,
-          fontWeight: FontWeight.w600,
-          color: isDark ? mutedDark : muted,
+          fontSize: 10.5,
+          fontVariations: Weights.medium,
+          letterSpacing: 1.1,
+          color: muted,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: scheme.surfaceContainerHigh,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: Shapes.inner,
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: Shapes.inner,
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: Shapes.inner,
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
       ),
     );
   }
+}
 
-  static Color mutedOf(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? mutedDark : muted;
+class _Surfaces {
+  const _Surfaces({
+    required this.lowest,
+    required this.low,
+    required this.base,
+    required this.high,
+    required this.highest,
+  });
 
-  static Color warningOf(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? warningDark : warning;
-
-  static Color ruleOf(BuildContext context) =>
-      Theme.of(context).brightness == Brightness.dark ? ruleDark : rule;
+  final Color lowest;
+  final Color low;
+  final Color base;
+  final Color high;
+  final Color highest;
 }

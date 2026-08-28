@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../services/api.dart';
-import '../theme/app_theme.dart';
+
 
 /// Relative age, formatting only. All real time logic lives on the server.
 String formatAge(DateTime when) {
@@ -38,15 +38,18 @@ class FreshnessLine extends StatelessWidget {
     }
     if (fetchedAt == null) return const SizedBox.shrink();
 
+    final scheme = Theme.of(context).colorScheme;
     final failing = state == DataState.failing;
-    final color = failing ? AppTheme.warningOf(context) : AppTheme.mutedOf(context);
+    // Distinct roles: stale is muted, failing borrows the error role so the
+    // two never read the same.
+    final color = failing ? scheme.error : scheme.onSurfaceVariant;
 
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Row(
         children: [
           if (failing) ...[
-            Icon(Icons.cloud_off_outlined, size: 12, color: color),
+            Icon(Icons.cloud_off_rounded, size: 12, color: color),
             const SizedBox(width: 4),
           ],
           Text(
@@ -75,7 +78,7 @@ class PrimingPlaceholder extends StatelessWidget {
               height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: AppTheme.mutedOf(context),
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(height: 12),

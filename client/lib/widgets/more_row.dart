@@ -10,7 +10,7 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_theme.dart';
+import '../theme/tokens.dart';
 
 class MoreRow extends StatelessWidget {
   const MoreRow({super.key, required this.hidden, this.onTap, this.noun = 'more'});
@@ -22,24 +22,35 @@ class MoreRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (hidden <= 0) return const SizedBox.shrink();
-    final muted = AppTheme.mutedOf(context);
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurfaceVariant;
 
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 9),
-        child: Row(
-          children: [
-            Text(
-              '+$hidden $noun',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: muted,
-                    fontWeight: FontWeight.w600,
-                  ),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        elevation: 0,
+        color: scheme.surfaceContainerHigh,
+        shape: Shapes.pill,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '+$hidden $noun',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: muted,
+                        fontVariations: Weights.medium,
+                      ),
+                ),
+                const SizedBox(width: 3),
+                Icon(Icons.chevron_right_rounded, size: 15, color: muted),
+              ],
             ),
-            const SizedBox(width: 4),
-            Icon(Icons.chevron_right, size: 14, color: muted),
-          ],
+          ),
         ),
       ),
     );
