@@ -24,9 +24,21 @@ IconData iconForEventType(String? type) {
 }
 
 class EventRow extends StatelessWidget {
-  const EventRow({super.key, required this.event, this.now});
+  const EventRow({
+    super.key,
+    required this.event,
+    this.now,
+    this.boosted = false,
+    this.forceDimmed = false,
+  });
 
   final CampusEvent event;
+
+  /// Matched a boost keyword. Gets a subtle accent marker.
+  final bool boosted;
+
+  /// Rendered as part of an expanded hidden list.
+  final bool forceDimmed;
 
   /// Injectable so the past/future split is testable.
   final DateTime? now;
@@ -39,7 +51,7 @@ class EventRow extends StatelessWidget {
 
     // An event is past once its end has gone by, or its start if it has no end.
     final ends = event.endsAt ?? event.startsAt;
-    final isPast = ends.isBefore(moment);
+    final isPast = ends.isBefore(moment) || forceDimmed;
 
     final when = event.allDay ? 'All day' : formatDayAndClock(event.startsAt);
 
@@ -56,10 +68,14 @@ class EventRow extends StatelessWidget {
             : formatDayAndClock(event.startsAt));
 
     return StatusRow(
-      icon: isPast ? Icons.history_rounded : iconForEventType(event.eventType),
-      title: event.title,
+      icon: forceDimmed
+          ? Icons.visibility_off_rounded
+          : (isPast ? Icons.history_rounded : iconForEventType(event.eventType)),
+      title: boosted ? '✦ ${event.title}' : event.title,
       subtitle: event.location?.isNotEmpty == true ? event.location : when,
-      accent: isPast ? semantic.closed : semantic.open,
+      accent: boosted
+          ? Theme.of(context).colorScheme.primary
+          : (isPast ? semantic.closed : semantic.open),
       emphasis: isPast ? RowEmphasis.dimmed : RowEmphasis.normal,
       trailing: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
