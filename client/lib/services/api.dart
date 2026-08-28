@@ -142,10 +142,80 @@ class ApiClient {
         (j) => Collection.fromJson(j, MenuItem.fromJson),
       );
 
+  Stream<Result<Collection<PostOffice>>> postOffices() => watch(
+        '/post-offices',
+        (j) => Collection.fromJson(j, PostOffice.fromJson),
+      );
+
+  Stream<Result<Collection<RoomSummary>>> makerspaceRooms() => watch(
+        '/makerspace/rooms',
+        (j) => Collection.fromJson(j, RoomSummary.fromJson),
+      );
+
+  /// Makerspace hours come from static config, so this endpoint returns a bare
+  /// list rather than the usual envelope.
+  Stream<Result<List<MakerSpaceHours>>> makerspaceHours() => watchList(
+        '/makerspace/hours',
+        MakerSpaceHours.fromJson,
+      );
+
   Stream<Result<Collection<HousingArea>>> housingAreas() => watch(
         '/housing/areas',
         (j) => Collection.fromJson(j, HousingArea.fromJson),
       );
+
+  /// Same cache and staleness behaviour as watch(), for endpoints that return
+  /// a bare JSON array instead of the {data, stale} envelope.
+  ///
+  /// The array is wrapped before caching, because the cache stores objects.
+  Stream<Result<List<T>>> watchList<T>(
+    String path,
+    T Function(Map<String, dynamic>) parse,
+  ) async* {
+    List<T> decode(Map<String, dynamic> body) => [
+          for (final item in (body['items'] as List<dynamic>? ?? const []))
+            parse(item as Map<String, dynamic>),
+        ];
+
+    final cached = await _cache.read(path);
+    if (cached != null) {
+      yield Result<List<T>>(
+        value: decode(cached.body),
+        state: DataState.stale,
+        fetchedAt: cached.fetchedAt,
+      );
+    } else {
+      yield Result<List<T>>(value: null, state: DataState.priming);
+    }
+
+    try {
+      final response = await _client.get(_uri(path)).timeout(_timeout);
+      if (response.statusCode != 200) {
+        throw http.ClientException('HTTP ${response.statusCode}', _uri(path));
+      }
+      final decoded = jsonDecode(response.body);
+      final body = <String, dynamic>{
+        'items': decoded is List ? decoded : const [],
+      };
+      await _cache.write(path, body);
+      yield Result<List<T>>(
+        value: decode(body),
+        state: DataState.ok,
+        fetchedAt: DateTime.now(),
+      );
+    } catch (error) {
+      if (cached != null) {
+        yield Result<List<T>>(
+          value: decode(cached.body),
+          state: DataState.failing,
+          fetchedAt: cached.fetchedAt,
+          error: error,
+        );
+      } else {
+        yield Result<List<T>>(value: null, state: DataState.priming, error: error);
+      }
+    }
+  }
 
   Stream<Result<MailingAddress>> address(String areaId, String name, String? unit) =>
       watch(
