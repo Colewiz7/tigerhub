@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_reorderable_grid_view/widgets/widgets.dart';
 
 import 'cards/dining_card.dart';
@@ -73,29 +74,29 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _order = merged);
   }
 
-  Widget _cardFor(String id, bool hovered) => switch (id) {
-        'dining' => DiningCard(
-            result: widget.dining,
-            dragHandle: _DragHandle(visible: hovered),
-            onShowAll: () => widget.onGoToTab(1),
-          ),
-        'events' => EventsCard(
-            result: widget.events,
-            dragHandle: _DragHandle(visible: hovered),
-            onShowAll: () => widget.onGoToTab(2),
-          ),
-        'chefs' => VisitingChefsCard(
-            result: widget.chefs,
-            dragHandle: _DragHandle(visible: hovered),
-            onShowAll: () => widget.onGoToTab(1),
-          ),
-        'housing' => HousingCard(
-            areas: widget.areas,
-            api: widget.api,
-            dragHandle: _DragHandle(visible: hovered),
-          ),
-        _ => const SizedBox.shrink(),
-      };
+  Widget _cardFor(String id, bool showDragHandle) => switch (id) {
+    'dining' => DiningCard(
+      result: widget.dining,
+      dragHandle: _DragHandle(visible: showDragHandle),
+      onShowAll: () => widget.onGoToTab(1),
+    ),
+    'events' => EventsCard(
+      result: widget.events,
+      dragHandle: _DragHandle(visible: showDragHandle),
+      onShowAll: () => widget.onGoToTab(2),
+    ),
+    'chefs' => VisitingChefsCard(
+      result: widget.chefs,
+      dragHandle: _DragHandle(visible: showDragHandle),
+      onShowAll: () => widget.onGoToTab(1),
+    ),
+    'housing' => HousingCard(
+      areas: widget.areas,
+      api: widget.api,
+      dragHandle: _DragHandle(visible: showDragHandle),
+    ),
+    _ => const SizedBox.shrink(),
+  };
 
   /// Columns grow with width, so a wide window is not four cards huddled in
   /// the top left corner.
@@ -125,8 +126,9 @@ class _HomeScreenState extends State<HomeScreen> {
         // the height the cards were designed against.
         final available = constraints.maxHeight - _Colophon.height;
         final perRow = rows > 0 ? available / rows : _minCardHeight;
-        final cardHeight =
-            perRow.clamp(_minCardHeight, _maxCardHeight).toDouble();
+        final cardHeight = perRow
+            .clamp(_minCardHeight, _maxCardHeight)
+            .toDouble();
 
         final children = [
           for (final id in _order)
@@ -190,11 +192,15 @@ class _HoverCardState extends State<_HoverCard> {
   bool _hovered = false;
 
   @override
-  Widget build(BuildContext context) => MouseRegion(
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: widget.builder(_hovered),
-      );
+  Widget build(BuildContext context) {
+    final mouseConnected =
+        RendererBinding.instance.mouseTracker.mouseIsConnected;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: widget.builder(_hovered || !mouseConnected),
+    );
+  }
 }
 
 class _Colophon extends StatelessWidget {
@@ -204,13 +210,13 @@ class _Colophon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(26, 14, 26, 26),
-        child: Text(
-          AppConfig.disclaimer,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      );
+    padding: const EdgeInsets.fromLTRB(26, 14, 26, 26),
+    child: Text(
+      AppConfig.disclaimer,
+      textAlign: TextAlign.center,
+      style: Theme.of(context).textTheme.bodySmall,
+    ),
+  );
 }
 
 class _DragHandle extends StatelessWidget {
@@ -219,18 +225,25 @@ class _DragHandle extends StatelessWidget {
   final bool visible;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 8),
-        // The space is always reserved, so revealing the handle never shifts
-        // the title next to it.
-        child: AnimatedOpacity(
-          opacity: visible ? 1 : 0,
-          duration: const Duration(milliseconds: 130),
-          child: Icon(
-            Icons.drag_indicator_rounded,
-            size: 17,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+  Widget build(BuildContext context) {
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return Padding(
+      padding: const EdgeInsets.only(left: 8),
+      // The space is always reserved, so revealing the handle never shifts
+      // the title next to it.
+      child: AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: reduceMotion
+            ? Duration.zero
+            : const Duration(milliseconds: 130),
+        curve: Curves.easeOutCubic,
+        child: Icon(
+          Icons.drag_indicator_rounded,
+          size: 17,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
-      );
+      ),
+    );
+  }
 }
