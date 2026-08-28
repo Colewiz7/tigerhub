@@ -14,12 +14,21 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
+import '../widgets/bounded_list.dart';
 
 class EventsCard extends StatelessWidget {
-  const EventsCard({super.key, required this.result, this.dragHandle});
+  const EventsCard({
+    super.key,
+    required this.result,
+    this.dragHandle,
+    this.onShowAll,
+  });
 
   final Result<Collection<CampusEvent>> result;
   final Widget? dragHandle;
+
+  /// Tap target for the detail view. Not built yet, so this is a no-op.
+  final VoidCallback? onShowAll;
 
   @override
   Widget build(BuildContext context) {
@@ -33,19 +42,22 @@ class EventsCard extends StatelessWidget {
       child: switch ((result.isPriming, events.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading events'),
         (_, true) => const EmptyNote(text: 'No upcoming events cached yet.'),
-        _ => _Grouped(events: events),
+        _ => _Grouped(events: events, onShowAll: onShowAll),
       },
     );
   }
 }
 
 class _Grouped extends StatelessWidget {
-  const _Grouped({required this.events});
+  const _Grouped({required this.events, this.onShowAll});
 
   final List<CampusEvent> events;
+  final VoidCallback? onShowAll;
 
-  static const int _maxGroups = 6;
-  static const int _maxPerGroup = 3;
+  /// Two events per organizer keeps every group the same height, which lets
+  /// BoundedList work out exactly how many fit.
+  static const int _maxPerGroup = 2;
+  static const double _groupHeight = 84;
 
   @override
   Widget build(BuildContext context) {
@@ -59,66 +71,56 @@ class _Grouped extends StatelessWidget {
     // Busiest organizers first, so the feed leads with what is actually on.
     final ordered = groups.entries.toList()
       ..sort((a, b) => b.value.length.compareTo(a.value.length));
-    final shown = ordered.take(_maxGroups).toList();
-    final hidden = ordered.length - shown.length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < shown.length; i++)
-          RuledRow(
-            last: i == shown.length - 1 && hidden <= 0,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return BoundedList(
+      itemCount: ordered.length,
+      itemHeight: _groupHeight,
+      noun: 'organizers',
+      onShowAll: onShowAll,
+      itemBuilder: (context, i) => RuledRow(
+        last: i == ordered.length - 1,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Row(
+                Expanded(
+                  child: Text(
+                    ordered[i].key.toUpperCase(),
+                    style: text.labelSmall,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Text('${ordered[i].value.length}', style: text.labelSmall),
+              ],
+            ),
+            const SizedBox(height: 4),
+            for (final event in ordered[i].value.take(_maxPerGroup))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: Text(
-                        shown[i].key.toUpperCase(),
-                        style: text.labelSmall,
+                        event.title,
+                        style: text.bodyMedium,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Text('${shown[i].value.length}', style: text.labelSmall),
+                    const SizedBox(width: 8),
+                    Text(
+                      // The API supplies the timestamp, intl only formats it.
+                      event.allDay ? 'all day' : formatDayAndClock(event.startsAt),
+                      style: text.bodySmall,
+                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                for (final event in shown[i].value.take(_maxPerGroup))
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 3),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            event.title,
-                            style: text.bodyMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          // The API supplies the timestamp, intl only formats it.
-                          event.allDay
-                              ? 'all day'
-                              : formatDayAndClock(event.startsAt),
-                          style: text.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        if (hidden > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 9),
-            child: Text('and $hidden more organizers', style: text.bodySmall),
-          ),
-      ],
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
