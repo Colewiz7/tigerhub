@@ -162,9 +162,22 @@ ColorScheme? schemeFromJson(Map<String, dynamic> json) {
   // derived by blending the tint over the surface at increasing strength. The
   // generated file does supply its own container roles, but they sit within a
   // few points of each other and the nesting becomes invisible.
+  //
+  // Calibrated against the real Caelestia settings panel, sampled pixel by
+  // pixel. Its row fills sit only a little above the page (luminance about 8
+  // against 3), and separation comes from the circular icon badges and the
+  // gaps between rows, not from bright surfaces. Lifting these too far washes
+  // the whole thing out, so the steps are moderate and the badges carry the
+  // contrast instead.
   final tint = role('surfaceTint') ?? primary;
-  Color level(double alpha) =>
-      Color.alphaBlend(tint.withValues(alpha: alpha), surface);
+  final lift = role('primary') ?? primary;
+
+  Color level(double tintAlpha, double liftAlpha) {
+    final tinted = Color.alphaBlend(tint.withValues(alpha: tintAlpha), surface);
+    // A touch of the primary on top keeps the steps warm and, more
+    // importantly, keeps them far enough apart to actually see.
+    return Color.alphaBlend(lift.withValues(alpha: liftAlpha), tinted);
+  }
 
   return ColorScheme(
     brightness: brightness,
@@ -196,9 +209,9 @@ ColorScheme? schemeFromJson(Map<String, dynamic> json) {
     inversePrimary: role('inversePrimary') ?? primary,
     surfaceTint: tint,
     surfaceContainerLowest: surface,
-    surfaceContainerLow: level(0.05),
-    surfaceContainer: level(0.08),
-    surfaceContainerHigh: level(0.12),
-    surfaceContainerHighest: level(0.17),
+    surfaceContainerLow: level(0.28, 0.010),
+    surfaceContainer: level(0.38, 0.018),
+    surfaceContainerHigh: level(0.50, 0.030),
+    surfaceContainerHighest: level(0.65, 0.055),
   );
 }

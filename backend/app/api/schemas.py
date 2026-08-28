@@ -42,6 +42,10 @@ class Occupancy(BaseModel):
 class DiningLocation(BaseModel):
     id: int
     name: str
+    # From static config. TigerCenter publishes no usable category of its own.
+    category: str = "other"
+    category_name: str = "Everything else"
+    category_order: int = 999
     summary: str | None = None
     description: str | None = None
     maps_url: str | None = None

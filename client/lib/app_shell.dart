@@ -6,6 +6,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'config.dart';
 import 'home_screen.dart';
@@ -75,7 +76,16 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       backgroundColor: scheme.surfaceContainerLowest,
-      body: SafeArea(
+      // Digit keys jump between tabs. Standard on a desktop app, and it also
+      // makes the UI drivable for screenshots.
+      body: CallbackShortcuts(
+        bindings: {
+          for (var i = 0; i < _tabs.length; i++)
+            SingleActivator(_digits[i]): () => _go(i),
+        },
+        child: Focus(
+          autofocus: true,
+          child: SafeArea(
         child: Column(
           children: [
             _Masthead(scheme: widget.scheme),
@@ -99,12 +109,21 @@ class _AppShellState extends State<AppShell> {
               ),
             ),
             AppTabBar(tabs: _tabs, index: _index, onSelect: _go),
-          ],
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
+
+const List<LogicalKeyboardKey> _digits = [
+  LogicalKeyboardKey.digit1,
+  LogicalKeyboardKey.digit2,
+  LogicalKeyboardKey.digit3,
+  LogicalKeyboardKey.digit4,
+];
 
 class _Masthead extends StatelessWidget {
   const _Masthead({required this.scheme});

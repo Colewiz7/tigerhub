@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query
 from app import hours as hours_lib
 from app import settings
 from app.api.schemas import Collection, DiningLocation, MenuItem, Occupancy, OpenSpan
+from app.config import get_config
 from app import freshness
 from app.models import dining, occupancy as occupancy_model
 
@@ -42,9 +43,14 @@ def _occupancy_for(row: dict) -> Occupancy | None:
 
 def _build(row: dict, grouped: dict, now: datetime) -> DiningLocation:
     state = hours_lib.open_state(grouped, now)
+    categories = get_config().dining_categories
+    category = categories.category_for(row["id"])
     return DiningLocation(
         id=row["id"],
         name=row["name"],
+        category=category,
+        category_name=categories.name_of(category),
+        category_order=categories.order_of(category),
         summary=row.get("summary"),
         description=row.get("description"),
         maps_url=row.get("maps_url"),

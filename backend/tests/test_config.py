@@ -92,6 +92,12 @@ def _write(tmp_path, housing=None, offices=None, shed=None):
     (tmp_path / "housing_areas.json").write_text(json.dumps(housing or {
         "last_verified": "2026-08-28", "areas": [],
     }))
+    (tmp_path / "dining_categories.json").write_text(json.dumps({
+        "last_verified": "2026-08-28",
+        "categories": [{"id": "other", "name": "Everything else", "order": 1}],
+        "default_category": "other",
+        "assignments": {},
+    }))
     return tmp_path
 
 
@@ -163,3 +169,35 @@ def test_old_entries_are_reported_stale(config):
     assert "post_office" in kinds
     assert "housing_area" in kinds
     assert "makerspace" in kinds
+
+
+def test_dining_categories_cover_every_known_location():
+    """TigerCenter exposes no category, so these live in config. A location
+    missing from the map silently falls into the default bucket."""
+    import json
+    from pathlib import Path
+
+    config = load_config()
+    fixture = json.loads(
+        (Path(__file__).parent / "fixtures" / "tigercenter_dining_all.json").read_text()
+    )
+    ids = {str(loc["id"]) for loc in fixture["locations"]}
+    assigned = set(config.dining_categories.assignments)
+    assert ids - assigned == set(), "these locations have no category"
+
+
+def test_dining_category_lookup_falls_back_for_an_unknown_location():
+    config = load_config()
+    assert config.dining_categories.category_for(999999) == "other"
+
+
+def test_unknown_dining_category_is_fatal(tmp_path):
+    _write(tmp_path)
+    (tmp_path / "dining_categories.json").write_text(json.dumps({
+        "last_verified": "2026-08-28",
+        "categories": [{"id": "market", "name": "Markets", "order": 1}],
+        "default_category": "market",
+        "assignments": {"23": "does-not-exist"},
+    }))
+    with pytest.raises(ConfigError, match="unknown category"):
+        load_config(tmp_path)

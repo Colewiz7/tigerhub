@@ -121,11 +121,21 @@ class ApiClient {
   Stream<Result<Collection<DiningLocation>>> dining() =>
       watch('/dining', (j) => Collection.fromJson(j, DiningLocation.fromJson));
 
-  Stream<Result<Collection<CampusEvent>>> events() => watch(
-        '/events',
-        (j) => Collection.fromJson(j, CampusEvent.fromJson),
-        query: {'days': '14', 'limit': '300'},
-      );
+  Stream<Result<Collection<CampusEvent>>> events() {
+    // From midnight, not from now, so events earlier today are included and
+    // can be shown as past rather than silently dropped.
+    final now = DateTime.now();
+    final midnight = DateTime(now.year, now.month, now.day);
+    return watch(
+      '/events',
+      (j) => Collection.fromJson(j, CampusEvent.fromJson),
+      query: {
+        'days': '14',
+        'limit': '300',
+        'start': midnight.toIso8601String(),
+      },
+    );
+  }
 
   Stream<Result<Collection<MenuItem>>> visitingChefs() => watch(
         '/dining/visiting-chefs',

@@ -27,3 +27,6 @@ client/linux/flutter/ephemeral/
 
 # dev helper runtime state
 .run/
+
+# handoff artefacts, regenerable
+response/
