@@ -13,11 +13,17 @@ class Shapes {
   ///
   /// Note on the values: StarBorder asserts that
   /// `pointRounding + valleyRounding <= 1`, so the 1.0/1.0 pair in the brief
-  /// throws at construction. Splitting the budget evenly gives the fully
-  /// lobed look while staying inside the assert.
+  /// throws at construction. With the rounding budget capped, the softness has
+  /// to come from geometry instead.
+  ///
+  /// Picked by rendering a grid of variants at 150px. 8 points at 0.90 shows
+  /// obvious straight segments and reads as an octagon. Raising the inner
+  /// radius past about 0.95, or going above 8 points, collapses the shape into
+  /// a plain circle. 7 points at 0.93 keeps distinct bulging lobes with gentle
+  /// valleys and no straight edge anywhere.
   static const ShapeBorder badge = StarBorder(
-    points: 8,
-    innerRadiusRatio: 0.9,
+    points: 7,
+    innerRadiusRatio: 0.93,
     pointRounding: 0.5,
     valleyRounding: 0.5,
   );

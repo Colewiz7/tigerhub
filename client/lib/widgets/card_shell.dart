@@ -27,7 +27,8 @@ class CardShell extends StatelessWidget {
   final DataState state;
   final DateTime? fetchedAt;
 
-  /// The single most important thing on this card, shown beside the title.
+  /// The single most important thing on this card, shown beside the title so
+  /// it costs no vertical room from the list underneath.
   final Widget? hero;
 
   final Widget? dragHandle;
@@ -48,7 +49,7 @@ class CardShell extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: Column(
@@ -59,14 +60,14 @@ class CardShell extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (hero != null) ...[
+                  const SizedBox(width: 10),
+                  hero!,
+                ],
                 ?dragHandle,
               ],
             ),
-            if (hero != null) ...[
-              const SizedBox(height: 14),
-              Center(child: hero!),
-            ],
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Flexible(child: child),
           ],
         ),

@@ -14,7 +14,7 @@ class ScallopedBadge extends StatelessWidget {
     super.key,
     required this.value,
     this.label,
-    this.size = 92,
+    this.size = 60,
     this.filled = true,
   });
 
@@ -53,7 +53,7 @@ class ScallopedBadge extends StatelessWidget {
                 value,
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
                       color: foreground,
-                      fontSize: size * 0.30,
+                      fontSize: size * 0.32,
                     ),
                 maxLines: 1,
               ),
@@ -64,7 +64,7 @@ class ScallopedBadge extends StatelessWidget {
                     label!,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: foreground.withValues(alpha: 0.75),
-                          fontSize: size * 0.085,
+                          fontSize: size * 0.105,
                         ),
                     maxLines: 1,
                   ),

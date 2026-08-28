@@ -29,63 +29,29 @@ class DiningCard extends StatelessWidget {
   final Widget? dragHandle;
   final VoidCallback? onShowAll;
 
-  /// The single location worth putting in the badge: the fullest one that
-  /// publishes occupancy at all. Null when no sensor has reported.
-  DiningLocation? _heroLocation(List<DiningLocation> locations) {
-    final withSensor = locations
-        .where((l) => l.occupancy != null && l.isOpen)
-        .toList()
-      ..sort((a, b) =>
-          (b.occupancy!.percentFull ?? 0).compareTo(a.occupancy!.percentFull ?? 0));
-    return withSensor.isEmpty ? null : withSensor.first;
-  }
-
   @override
   Widget build(BuildContext context) {
     final locations = result.value?.data ?? const <DiningLocation>[];
-    final hero = _heroLocation(locations);
+    final openNow = locations.where((l) => l.isOpen).length;
 
     return CardShell(
       title: 'Dining',
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
-      hero: hero == null ? null : _Hero(location: hero),
+      // Card level, not location level. The hero has to answer the question
+      // this card exists to answer, which is what is open right now. A single
+      // location's occupancy was meaningless here, because that location was
+      // usually not even among the visible rows. Per location occupancy lives
+      // on the Dining tab, where the location is on screen next to it.
+      hero: locations.isEmpty
+          ? null
+          : ScallopedBadge(value: '$openNow', label: 'OPEN NOW', size: 62),
       child: switch ((result.isPriming, locations.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
         (_, true) => const EmptyNote(text: 'No dining locations cached yet.'),
         _ => _List(locations: locations, onShowAll: onShowAll),
       },
-    );
-  }
-}
-
-class _Hero extends StatelessWidget {
-  const _Hero({required this.location});
-
-  final DiningLocation location;
-
-  @override
-  Widget build(BuildContext context) {
-    final occ = location.occupancy!;
-    // A wrong denominator is never quoted as a precise figure, so an over
-    // capacity reading shows the raw headcount instead of a percentage.
-    final value = occ.overCapacity
-        ? '${occ.count}'
-        : '${occ.percentFull ?? 0}%';
-    final label = occ.overCapacity ? 'HERE NOW' : 'FULL';
-
-    return Column(
-      children: [
-        ScallopedBadge(value: value, label: label),
-        const SizedBox(height: 8),
-        Text(
-          location.name,
-          style: Theme.of(context).textTheme.bodySmall,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
     );
   }
 }
@@ -96,7 +62,7 @@ class _List extends StatelessWidget {
   final List<DiningLocation> locations;
   final VoidCallback? onShowAll;
 
-  static const double _rowHeight = 44;
+  static const double _rowHeight = 38;
 
   @override
   Widget build(BuildContext context) {
