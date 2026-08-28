@@ -485,13 +485,11 @@ void _designTokens() {
 /// Regressions from the screenshot review.
 void _screenshotReview() {
   group('screenshot review fixes', () {
-    test('midnight and noon read as words, not 12:00', () {
+    test('midnight and noon apply only at exact boundaries', () {
       expect(formatClock(DateTime(2026, 8, 28, 0, 0)), 'midnight');
       expect(formatClock(DateTime(2026, 8, 28, 12, 0)), 'noon');
-      // Only exactly on the hour, so 12:30 is still a clock time.
-      expect(formatClock(DateTime(2026, 8, 28, 12, 30)), isNot('noon'));
-      expect(formatClock(DateTime(2026, 8, 28, 0, 30)), isNot('midnight'));
-      expect(formatClock(DateTime(2026, 8, 28, 17, 30)), '5:30 PM');
+      expect(formatClock(DateTime(2026, 8, 28, 0, 1)), '12:01 AM');
+      expect(formatClock(DateTime(2026, 8, 28, 23, 59)), '11:59 PM');
     });
 
     testWidgets('the dining hero counts open locations, not one unrelated one',
