@@ -21,7 +21,7 @@ class BoundedList extends StatelessWidget {
     required this.itemBuilder,
     required this.noun,
     this.onShowAll,
-    this.footerHeight = 34,
+    this.footerHeight = 46,
   });
 
   final int itemCount;

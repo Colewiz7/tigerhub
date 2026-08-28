@@ -100,16 +100,18 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Columns grow with width, so a wide window is not four cards huddled in
   /// the top left corner.
   static int _columnsFor(double width) {
-    if (width < 700) return 1;
-    if (width < 1100) return 2;
-    if (width < 1600) return 3;
+    if (width < 820) return 1;
+    if (width < 1300) return 2;
+    if (width < 1850) return 3;
     return 4;
   }
 
   /// Card height. Cards grow to use spare vertical room, which BoundedList
   /// turns into extra rows for free, but stop before they get silly.
-  static const double _minCardHeight = 344;
-  static const double _maxCardHeight = 560;
+  static const double _minCardHeight = 480;
+  // High enough that a single row of cards fills a large window, rather
+  // than leaving a band of dead space under it.
+  static const double _maxCardHeight = 860;
   static const double _cardGutter = 6;
 
   @override

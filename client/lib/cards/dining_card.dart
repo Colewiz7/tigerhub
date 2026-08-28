@@ -46,7 +46,7 @@ class DiningCard extends StatelessWidget {
       // on the Dining tab, where the location is on screen next to it.
       hero: locations.isEmpty
           ? null
-          : ScallopedBadge(value: '$openNow', label: 'OPEN NOW', size: 62),
+          : ScallopedBadge(value: '$openNow', label: 'OPEN NOW', size: 88),
       child: switch ((result.isPriming, locations.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
         (_, true) => const EmptyNote(text: 'No dining locations cached yet.'),
@@ -62,7 +62,7 @@ class _List extends StatelessWidget {
   final List<DiningLocation> locations;
   final VoidCallback? onShowAll;
 
-  static const double _rowHeight = 38;
+  static const double _rowHeight = 54;
 
   @override
   Widget build(BuildContext context) {

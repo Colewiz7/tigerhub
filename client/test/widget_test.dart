@@ -129,7 +129,7 @@ void main() {
     // The grid cell height the home screen uses.
     const cellHeight = 340.0;
     const rowHeight = 44.0;
-    const footerHeight = 34.0;
+    const footerHeight = 46.0;
 
     Widget boxed(Widget child, {double height = cellHeight}) => MaterialApp(
           home: Scaffold(body: Center(child: SizedBox(height: height, child: child))),
@@ -144,7 +144,7 @@ void main() {
           itemBuilder: (context, i) => Text('row $i'),
         ),
       ));
-      // (340 - 34) / 44 = 6 rows fit alongside the footer.
+      // (340 - 46) / 44 = 6 rows fit alongside the footer.
       expect(find.text('row 5'), findsOneWidget);
       expect(find.text('row 6'), findsNothing);
       expect(find.text('+6 locations'), findsOneWidget);
@@ -196,7 +196,7 @@ void main() {
       expect(find.text('+10 locations'), findsOneWidget);
     });
 
-    testWidgets('dining shows at least 5 rows in a real 344px cell',
+    testWidgets('dining shows at least 5 rows at the minimum card height',
         (tester) async {
       // The grid cell the home screen actually uses. The hero sits inline with
       // the title precisely so the list keeps its rows.
@@ -218,7 +218,7 @@ void main() {
             state: DataState.ok,
           ),
         ),
-        height: 344,
+        height: 480,
       ));
       expect(tester.takeException(), isNull);
       final rows = [
@@ -515,7 +515,7 @@ void _screenshotReview() {
           home: Scaffold(
             body: Center(
               child: SizedBox(
-                height: 344,
+                height: 480,
                 child: DiningCard(
                   result: Result(
                     value: Collection(data: locations, stale: false),
