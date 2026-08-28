@@ -23,17 +23,67 @@ assets/prompts/   asset generation prompts, placeholders until generated
 docs/recon/       captured sample payloads from the recon phase
 ```
 
-## Running the backend
+## Local development
+
+Everything runs on the laptop. Docker is purely a packaging step for the
+homelab later, so there is no need to build an image to work on this.
+
+**Backend, first time:**
 
 ```bash
 cd backend
-python3.12 -m venv .venv
+python3.12 -m venv .venv                      # 3.12 specifically, see note below
 .venv/bin/pip install -r requirements-dev.txt
-.venv/bin/python -m pytest          # 71 tests, no network
-.venv/bin/uvicorn app.main:app --reload
 ```
 
-Then open http://127.0.0.1:8000/docs.
+**Run it:**
+
+```bash
+cd backend
+.venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Open http://127.0.0.1:8000/docs for the interactive API.
+
+On first start the scrapers run in the background and the cache fills within
+about 15 seconds. The API answers immediately the whole time, returning
+`{"data": [], "stale": true}` until each source lands.
+
+**Tests:**
+
+```bash
+cd backend
+.venv/bin/python -m pytest            # 71 tests, no network access
+```
+
+**Useful flags:**
+
+```bash
+# Skip the startup scrape, for fast iteration on routes
+RIT_TIMES_SCRAPE_ON_STARTUP=0 .venv/bin/uvicorn app.main:app --reload
+
+# Point at a throwaway database
+RIT_TIMES_DB=/tmp/scratch.db .venv/bin/uvicorn app.main:app --reload
+```
+
+> **Python 3.12, not 3.13 or newer.** The pinned pydantic has no wheel for
+> newer interpreters and falls back to a source build that fails. 3.12 is also
+> what the Dockerfile uses, so local and container match.
+
+**Client:**
+
+```bash
+cd client
+~/flutter/bin/flutter run -d linux     # native desktop
+~/flutter/bin/flutter run -d chrome    # web, the PWA target
+```
+
+The client defaults to `http://127.0.0.1:8000`. Point it elsewhere without
+editing source:
+
+```bash
+~/flutter/bin/flutter run -d linux --dart-define=API_BASE_URL=https://tigerhub.colewiz.dev
+```
 
 ## Deploying
 
