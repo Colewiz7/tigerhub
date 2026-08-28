@@ -199,6 +199,126 @@ class HousingArea {
       );
 }
 
+class HoursRule {
+  const HoursRule({
+    required this.days,
+    required this.opensAt,
+    required this.closesAt,
+    this.season = 'academic',
+    this.service = 'general',
+  });
+
+  final List<String> days;
+  final String opensAt;
+  final String closesAt;
+  final String season;
+
+  /// Post offices run a package counter and a shipping window on different
+  /// hours, so a rule is per service.
+  final String service;
+
+  factory HoursRule.fromJson(Map<String, dynamic> json) => HoursRule(
+        days: (json['days'] as List<dynamic>? ?? const [])
+            .map((e) => e as String)
+            .toList(),
+        opensAt: json['opens_at'] as String? ?? '',
+        closesAt: json['closes_at'] as String? ?? '',
+        season: json['season'] as String? ?? 'academic',
+        service: json['service'] as String? ?? 'general',
+      );
+}
+
+class PostOffice {
+  const PostOffice({
+    required this.id,
+    required this.name,
+    required this.side,
+    required this.building,
+    required this.street,
+    required this.city,
+    required this.state,
+    required this.zip,
+    required this.hours,
+    this.locationNote,
+    this.email,
+    this.phone,
+  });
+
+  final String id;
+  final String name;
+  final String side;
+  final String building;
+  final String street;
+  final String city;
+  final String state;
+  final String zip;
+  final String? locationNote;
+  final String? email;
+  final String? phone;
+  final List<HoursRule> hours;
+
+  factory PostOffice.fromJson(Map<String, dynamic> json) => PostOffice(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        side: json['side'] as String? ?? '',
+        building: json['building'] as String? ?? '',
+        street: json['street'] as String? ?? '',
+        city: json['city'] as String? ?? '',
+        state: json['state'] as String? ?? '',
+        zip: json['zip'] as String? ?? '',
+        locationNote: json['location_note'] as String?,
+        email: json['email'] as String?,
+        phone: json['phone'] as String?,
+        hours: (json['hours'] as List<dynamic>? ?? const [])
+            .map((e) => HoursRule.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+class MakerSpaceHours {
+  const MakerSpaceHours({
+    required this.id,
+    required this.name,
+    required this.location,
+    required this.hours,
+  });
+
+  final String id;
+  final String name;
+  final String location;
+  final List<HoursRule> hours;
+
+  factory MakerSpaceHours.fromJson(Map<String, dynamic> json) => MakerSpaceHours(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        location: json['location'] as String? ?? '',
+        hours: (json['hours'] as List<dynamic>? ?? const [])
+            .map((e) => HoursRule.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+class RoomSummary {
+  const RoomSummary({
+    required this.room,
+    required this.machines,
+    required this.available,
+    required this.inUse,
+  });
+
+  final String room;
+  final int machines;
+  final int available;
+  final int inUse;
+
+  factory RoomSummary.fromJson(Map<String, dynamic> json) => RoomSummary(
+        room: json['room'] as String? ?? 'Other',
+        machines: json['machines'] as int? ?? 0,
+        available: json['available'] as int? ?? 0,
+        inUse: json['in_use'] as int? ?? 0,
+      );
+}
+
 class MailingAddress {
   const MailingAddress({
     required this.areaId,

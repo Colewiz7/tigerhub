@@ -1,4 +1,11 @@
-/// Campus tab: the mailing address lookup on its own, with room to breathe.
+/// Campus tab.
+///
+/// The things that are neither dining nor events: where to collect mail, when
+/// the post offices are open, and what is free right now in the SHED.
+///
+/// Note on the SHED: its hours are hardcoded in the server's static config
+/// because the make.rit.edu hours feed is broken (it reports closed on every
+/// row). Equipment availability from that same API is trusted and live.
 library;
 
 import 'package:flutter/material.dart';
@@ -6,16 +13,428 @@ import 'package:flutter/material.dart';
 import '../cards/housing_card.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../theme/semantic.dart';
+import '../theme/tokens.dart';
+import '../widgets/content_column.dart';
+import '../widgets/freshness.dart';
+import '../widgets/status_row.dart';
 
-class CampusScreen extends StatelessWidget {
+class CampusScreen extends StatefulWidget {
   const CampusScreen({super.key, required this.api, required this.areas});
 
   final ApiClient api;
   final Result<Collection<HousingArea>> areas;
 
   @override
-  Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(14, 4, 14, 20),
-        children: [HousingCard(areas: areas, api: api)],
-      );
+  State<CampusScreen> createState() => _CampusScreenState();
+}
+
+class _CampusScreenState extends State<CampusScreen> {
+  Result<Collection<PostOffice>> _offices =
+      const Result(value: null, state: DataState.priming);
+  Result<List<MakerSpaceHours>> _shed =
+      const Result(value: null, state: DataState.priming);
+  Result<Collection<RoomSummary>> _rooms =
+      const Result(value: null, state: DataState.priming);
+
+  @override
+  void initState() {
+    super.initState();
+    widget.api.postOffices().listen((r) {
+      if (mounted) setState(() => _offices = r);
+    });
+    widget.api.makerspaceHours().listen((r) {
+      if (mounted) setState(() => _shed = r);
+    });
+    widget.api.makerspaceRooms().listen((r) {
+      if (mounted) setState(() => _rooms = r);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    return ContentColumn(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+        children: [
+          HousingCard(areas: widget.areas, api: widget.api),
+          const SizedBox(height: 22),
+
+          _Heading(
+            title: 'Post offices',
+            subtitle: 'Mail is collected at the counter after an email notice. '
+                'There are no mailboxes.',
+            state: _offices.state,
+            fetchedAt: _offices.fetchedAt,
+          ),
+          for (final office in _offices.value?.data ?? const <PostOffice>[])
+            _PostOfficeBlock(office: office),
+          if (_offices.isPriming) const PrimingPlaceholder(label: 'Loading post offices'),
+
+          const SizedBox(height: 22),
+
+          _Heading(
+            title: 'SHED makerspace',
+            subtitle: 'Equipment availability is live. Hours are hand '
+                'maintained, because the upstream hours feed is broken.',
+            state: _rooms.state,
+            fetchedAt: _rooms.fetchedAt,
+          ),
+          for (final space in _shed.value ?? const <MakerSpaceHours>[])
+            _ShedHoursBlock(space: space),
+          _EquipmentBlock(result: _rooms),
+        ],
+      ),
+    );
+  }
+}
+
+class _Heading extends StatelessWidget {
+  const _Heading({
+    required this.title,
+    required this.subtitle,
+    required this.state,
+    this.fetchedAt,
+  });
+
+  final String title;
+  final String subtitle;
+  final DataState state;
+  final DateTime? fetchedAt;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: text.titleLarge),
+          const SizedBox(height: 3),
+          Text(subtitle, style: text.bodySmall),
+          FreshnessLine(state: state, fetchedAt: fetchedAt),
+        ],
+      ),
+    );
+  }
+}
+
+/// Weekday order for display, and a compact "Mon to Fri" style label.
+const _weekOrder = [
+  'MONDAY',
+  'TUESDAY',
+  'WEDNESDAY',
+  'THURSDAY',
+  'FRIDAY',
+  'SATURDAY',
+  'SUNDAY',
+];
+
+String _dayLabel(List<String> days) {
+  if (days.isEmpty) return '';
+  final indices = days.map(_weekOrder.indexOf).toList()..sort();
+  final short = [for (final i in indices) _weekOrder[i].substring(0, 3).toLowerCase()];
+  final capitalised = [
+    for (final s in short) '${s[0].toUpperCase()}${s.substring(1)}'
+  ];
+  // Contiguous runs collapse to a range.
+  final contiguous = indices.length > 1 &&
+      indices.last - indices.first == indices.length - 1;
+  if (contiguous) return '${capitalised.first} to ${capitalised.last}';
+  return capitalised.join(', ');
+}
+
+String _time(String hhmm) {
+  final parts = hhmm.split(':');
+  if (parts.length < 2) return hhmm;
+  final hour = int.tryParse(parts[0]) ?? 0;
+  final minute = parts[1];
+  if (hour == 0 && minute == '00') return 'midnight';
+  if (hour == 12 && minute == '00') return 'noon';
+  final suffix = hour >= 12 ? 'PM' : 'AM';
+  final display = hour % 12 == 0 ? 12 : hour % 12;
+  return '$display:$minute $suffix';
+}
+
+String _serviceLabel(String service) => switch (service) {
+      'package_pickup' => 'Package pickup',
+      'shipping_window' => 'Shipping window',
+      _ => 'Hours',
+    };
+
+class _PostOfficeBlock extends StatelessWidget {
+  const _PostOfficeBlock({required this.office});
+
+  final PostOffice office;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
+    // Fall hours are the ones in force during term. Summer is shown after.
+    final seasons = <String, List<HoursRule>>{};
+    for (final rule in office.hours) {
+      seasons.putIfAbsent(rule.season, () => []).add(rule);
+    }
+    final ordered = seasons.entries.toList()
+      ..sort((a, b) => a.key == 'fall' ? -1 : 1);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow,
+          borderRadius: Shapes.card,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: StatusRow.badgeSize,
+                  height: StatusRow.badgeSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: scheme.primary.withValues(alpha: 0.32),
+                  ),
+                  child: Icon(Icons.local_post_office_rounded,
+                      size: 21, color: scheme.primary),
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(office.name, style: text.titleMedium),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${office.street}  ${office.side} side',
+                        style: text.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (office.locationNote != null) ...[
+              const SizedBox(height: 10),
+              Text(office.locationNote!, style: text.bodySmall),
+            ],
+            const SizedBox(height: 14),
+            for (final season in ordered) ...[
+              Text(season.key.toUpperCase(), style: text.labelSmall),
+              const SizedBox(height: 6),
+              for (final rule in season.value)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 132,
+                        child: Text(_serviceLabel(rule.service),
+                            style: text.bodySmall),
+                      ),
+                      Expanded(
+                        child: Text(
+                          '${_dayLabel(rule.days)}  ${_time(rule.opensAt)} to ${_time(rule.closesAt)}',
+                          style: text.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 10),
+            ],
+            if (office.email != null || office.phone != null)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (office.phone != null)
+                    _ContactChip(icon: Icons.call_rounded, label: office.phone!),
+                  if (office.email != null)
+                    _ContactChip(icon: Icons.mail_rounded, label: office.email!),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ContactChip extends StatelessWidget {
+  const _ContactChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      elevation: 0,
+      color: scheme.surfaceContainerHigh,
+      shape: Shapes.pill,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: scheme.onSurfaceVariant),
+            const SizedBox(width: 7),
+            Text(label, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShedHoursBlock extends StatelessWidget {
+  const _ShedHoursBlock({required this.space});
+
+  final MakerSpaceHours space;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
+    final rules = [...space.hours]..sort((a, b) =>
+        _weekOrder.indexOf(a.days.isEmpty ? '' : a.days.first)
+            .compareTo(_weekOrder.indexOf(b.days.isEmpty ? '' : b.days.first)));
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow,
+          borderRadius: Shapes.card,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: StatusRow.badgeSize,
+                  height: StatusRow.badgeSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: scheme.primary.withValues(alpha: 0.32),
+                  ),
+                  child: Icon(Icons.construction_rounded,
+                      size: 21, color: scheme.primary),
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(space.name, style: text.titleMedium),
+                      const SizedBox(height: 2),
+                      Text(space.location, style: text.bodySmall),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            for (final rule in rules)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 132,
+                      child: Text(_dayLabel(rule.days), style: text.bodySmall),
+                    ),
+                    Expanded(
+                      child: Text(
+                        '${_time(rule.opensAt)} to ${_time(rule.closesAt)}',
+                        style: text.bodyMedium,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 8),
+            Text(
+              'Provisional. Cross check against rit.edu/shed.',
+              style: text.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EquipmentBlock extends StatelessWidget {
+  const _EquipmentBlock({required this.result});
+
+  final Result<Collection<RoomSummary>> result;
+
+  @override
+  Widget build(BuildContext context) {
+    if (result.isPriming) {
+      return const PrimingPlaceholder(label: 'Loading equipment');
+    }
+
+    final rooms = [...(result.value?.data ?? const <RoomSummary>[])]
+      ..sort((a, b) => b.available.compareTo(a.available));
+    if (rooms.isEmpty) {
+      return const EmptyNote(text: 'No equipment cached yet.');
+    }
+
+    final semantic = Semantic.of(context);
+    final totalFree = rooms.fold<int>(0, (n, r) => n + r.available);
+    final totalBusy = rooms.fold<int>(0, (n, r) => n + r.inUse);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GroupHeader(
+          icon: Icons.precision_manufacturing_rounded,
+          title: '$totalFree free now, $totalBusy in use',
+          count: rooms.fold<int>(0, (n, r) => n + r.machines),
+        ),
+        for (final room in rooms)
+          StatusRow(
+            icon: _iconForRoom(room.room),
+            title: room.room,
+            subtitle: '${room.machines} machine${room.machines == 1 ? '' : 's'}',
+            accent: room.available > 0 ? semantic.open : semantic.closed,
+            emphasis:
+                room.available > 0 ? RowEmphasis.normal : RowEmphasis.dimmed,
+            trailing: Text(
+              room.available > 0 ? '${room.available} free' : 'none free',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: room.available > 0 ? semantic.open : semantic.closed,
+                  ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  static IconData _iconForRoom(String room) {
+    final r = room.toLowerCase();
+    if (r.contains('3d print')) return Icons.view_in_ar_rounded;
+    if (r.contains('laser')) return Icons.blur_on_rounded;
+    if (r.contains('wood')) return Icons.carpenter_rounded;
+    if (r.contains('metal')) return Icons.hardware_rounded;
+    if (r.contains('textile')) return Icons.checkroom_rounded;
+    if (r.contains('electronic')) return Icons.memory_rounded;
+    if (r.contains('vinyl')) return Icons.content_cut_rounded;
+    return Icons.build_rounded;
+  }
 }
