@@ -14,7 +14,7 @@ class ScallopedBadge extends StatelessWidget {
     super.key,
     required this.value,
     this.label,
-    this.size = 60,
+    this.size = 88,
     this.filled = true,
   });
 

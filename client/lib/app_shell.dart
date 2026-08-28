@@ -117,12 +117,12 @@ class _Masthead extends StatelessWidget {
     final state = scheme.state;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 16, 22, 10),
+      padding: const EdgeInsets.fromLTRB(26, 20, 26, 12),
       child: Row(
         children: [
           Text(
             AppConfig.appName,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 21),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 30),
           ),
           const Spacer(),
           // The palette escape hatch. An unusual wallpaper can produce an
@@ -141,7 +141,7 @@ class _Masthead extends StatelessWidget {
                   state.isDynamic
                       ? Icons.palette_rounded
                       : Icons.lock_outline_rounded,
-                  size: 19,
+                  size: 24,
                   color: state.isDynamic
                       ? colors.primary
                       : colors.onSurfaceVariant,

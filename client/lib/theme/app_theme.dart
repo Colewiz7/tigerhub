@@ -48,44 +48,44 @@ class AppTheme {
       textTheme: TextTheme(
         // The one oversized, light-weight number per card.
         displayLarge: TextStyle(
-          fontSize: 52,
+          fontSize: 68,
           height: 1.0,
           fontVariations: Weights.light,
           letterSpacing: -1.5,
           color: onSurface,
         ),
         displayMedium: TextStyle(
-          fontSize: 34,
+          fontSize: 46,
           height: 1.05,
           fontVariations: Weights.light,
           letterSpacing: -0.8,
           color: onSurface,
         ),
         titleLarge: TextStyle(
-          fontSize: 17,
+          fontSize: 24,
           fontVariations: Weights.medium,
           letterSpacing: 0.1,
           color: onSurface,
         ),
         titleMedium: TextStyle(
-          fontSize: 14.5,
+          fontSize: 18,
           fontVariations: Weights.medium,
           color: onSurface,
         ),
         bodyMedium: TextStyle(
-          fontSize: 13.5,
-          height: 1.35,
+          fontSize: 17,
+          height: 1.4,
           fontVariations: Weights.regular,
           color: onSurface,
         ),
         bodySmall: TextStyle(
-          fontSize: 12,
+          fontSize: 14.5,
           fontVariations: Weights.regular,
           color: muted,
         ),
         // Small, muted, wide. The label under a big number.
         labelSmall: TextStyle(
-          fontSize: 10.5,
+          fontSize: 12.5,
           fontVariations: Weights.medium,
           letterSpacing: 1.1,
           color: muted,
@@ -95,7 +95,7 @@ class AppTheme {
         filled: true,
         fillColor: scheme.surfaceContainerHigh,
         isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         border: OutlineInputBorder(
           borderRadius: Shapes.inner,
           borderSide: BorderSide.none,

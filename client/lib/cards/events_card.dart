@@ -55,7 +55,7 @@ class _Grouped extends StatelessWidget {
   /// Two per organiser keeps every group the same height, which is what lets
   /// BoundedList work out exactly how many fit.
   static const int _maxPerGroup = 2;
-  static const double _groupHeight = 70;
+  static const double _groupHeight = 96;
 
   @override
   Widget build(BuildContext context) {

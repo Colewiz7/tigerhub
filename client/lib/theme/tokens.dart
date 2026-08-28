@@ -44,7 +44,7 @@ class Shapes {
 class Insets {
   const Insets._();
 
-  static const double cardPadding = 20;
+  static const double cardPadding = 26;
   static const double gutter = 10;
 }
 

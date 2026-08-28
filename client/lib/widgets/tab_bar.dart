@@ -68,9 +68,9 @@ class _Tab extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: 9),
-          Icon(spec.icon, size: 23, color: color),
-          const SizedBox(height: 5),
+          const SizedBox(height: 11),
+          Icon(spec.icon, size: 29, color: color),
+          const SizedBox(height: 6),
           Text(
             spec.label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -83,8 +83,8 @@ class _Tab extends StatelessWidget {
           AnimatedContainer(
             duration: const Duration(milliseconds: 160),
             curve: Curves.easeOut,
-            height: 2,
-            width: active ? 26 : 0,
+            height: 3,
+            width: active ? 34 : 0,
             decoration: BoxDecoration(
               color: scheme.primary,
               borderRadius: BorderRadius.circular(2),

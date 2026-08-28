@@ -24,7 +24,7 @@ class VisitingChefsCard extends StatelessWidget {
   final Widget? dragHandle;
   final VoidCallback? onShowAll;
 
-  static const double _rowHeight = 54;
+  static const double _rowHeight = 74;
 
   @override
   Widget build(BuildContext context) {
