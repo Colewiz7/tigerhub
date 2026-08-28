@@ -1,0 +1,42 @@
+{
+  "count": 228,
+  "location": "The_Cafe_&_Market_at_Crossroads",
+  "building": "89",
+  "mdo_id": 123,
+  "max_occ": 150,
+  "open_status": "Open Now",
+  "intra_loc_hours": [
+    {
+      "hour": 0,
+      "today": 4,
+      "today_max": 5,
+      "one_week_ago": 4,
+      "one_week_ago_max": 4,
+      "average": 4
+    },
+    {
+      "hour": 1,
+      "today": 4,
+      "today_max": 5,
+      "one_week_ago": 4,
+      "one_week_ago_max": 4,
+      "average": 4
+    },
+    {
+      "hour": 2,
+      "today": 4,
+      "today_max": 4,
+      "one_week_ago": 4,
+      "one_week_ago_max": 4,
+      "average": 4
+    },
+    {
+      "hour": 3,
+      "today": 4,
+      "today_max": 4,
+      "one_week_ago": 4,
+      "one_week_ago_max": 4,
+      "average": 4
+    }
+  ]
+}

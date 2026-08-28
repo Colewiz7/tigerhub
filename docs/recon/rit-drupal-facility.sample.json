@@ -1,0 +1,184 @@
+[
+  {
+    "type": "node--facility",
+    "id": "4b5d1b72-96c9-4e97-8317-8b542e5a95ec",
+    "links": {
+      "self": {
+        "href": "https://www.rit.edu/jsonapi/node/facility/4b5d1b72-96c9-4e97-8317-8b542e5a95ec?resourceVersion=id%3A317493"
+      }
+    },
+    "attributes": {
+      "title": "Judson/Hale Aquatics Center",
+      "changed": "2026-08-25T15:23:56+00:00",
+      "path": {
+        "alias": "/facilities/judson-hale-aquatics-center",
+        "pid": 6533017,
+        "langcode": "en"
+      },
+      "facility_hours": {
+        "value": "<p>Visit the <a href=\"https://www.rit.edu/fitnessrecreation/facilities/judson-hale-aquatics-center\">Fitness and Recreation site</a> for details.</p>\r\n",
+        "format": "full_html",
+        "processed": "<p>Visit the <a href=\"https://www.rit.edu/fitnessrecreation/facilities/judson-hale-aquatics-center\">Fitness and Recreation site</a> for details.</p>\n"
+      },
+      "facility_location": null,
+      "facility_type": [
+        "Recreational"
+      ]
+    }
+  },
+  {
+    "type": "node--facility",
+    "id": "f475760c-a67b-4f5b-aa32-7375d03c04dc",
+    "links": {
+      "self": {
+        "href": "https://www.rit.edu/jsonapi/node/facility/f475760c-a67b-4f5b-aa32-7375d03c04dc?resourceVersion=id%3A317580"
+      }
+    },
+    "attributes": {
+      "title": "Business Enterprise Systems (BEST) Lab (3135)",
+      "changed": "2026-08-07T19:38:10+00:00",
+      "path": {
+        "alias": "/facilities/business-enterprise-systems-best-lab-3135",
+        "pid": 1601550,
+        "langcode": "en"
+      },
+      "facility_hours": {
+        "value": "<p>7 a.m.-12 a.m.</p>\r\n",
+        "format": "full_html",
+        "processed": "<p>7 a.m.-12 a.m.</p>\n"
+      },
+      "facility_location": {
+        "value": "<p>Lowenthal Hall, 3135</p>\r\n",
+        "format": "full_html",
+        "processed": "<p>Lowenthal Hall, 3135</p>\n"
+      },
+      "facility_type": [
+        "Lab"
+      ]
+    }
+  },
+  {
+    "type": "node--facility",
+    "id": "55b94ded-cd7a-4344-b794-d170062c6247",
+    "links": {
+      "self": {
+        "href": "https://www.rit.edu/jsonapi/node/facility/55b94ded-cd7a-4344-b794-d170062c6247?resourceVersion=id%3A317631"
+      }
+    },
+    "attributes": {
+      "title": "Center for Urban Entrepreneurship",
+      "changed": "2023-07-26T19:38:30+00:00",
+      "path": {
+        "alias": "/facilities/center-urban-entrepreneurship",
+        "pid": 1601613,
+        "langcode": "en"
+      },
+      "facility_hours": {
+        "value": "<p>7 a.m.-12 a.m.</p>\r\n",
+        "format": "full_html",
+        "processed": "<p>7 a.m.-12 a.m.</p>\n"
+      },
+      "facility_location": {
+        "value": "<p>40 Franklin Street, Rochester</p>\r\n",
+        "format": "full_html",
+        "processed": "<p>40 Franklin Street, Rochester</p>\n"
+      },
+      "facility_type": [
+        "Educational"
+      ]
+    }
+  },
+  {
+    "type": "node--facility",
+    "id": "aab7697b-9d9f-4c96-b474-1baf13918fc3",
+    "links": {
+      "self": {
+        "href": "https://www.rit.edu/jsonapi/node/facility/aab7697b-9d9f-4c96-b474-1baf13918fc3?resourceVersion=id%3A317673"
+      }
+    },
+    "attributes": {
+      "title": "Design and Drafting Lab",
+      "changed": "2026-08-07T19:38:10+00:00",
+      "path": {
+        "alias": "/facilities/design-and-drafting-lab",
+        "pid": 1601661,
+        "langcode": "en"
+      },
+      "facility_hours": {
+        "value": "<p>24/7 Swipe Access</p>\r\n",
+        "format": "full_html",
+        "processed": "<p>24/7 Swipe Access</p>\n"
+      },
+      "facility_location": {
+        "value": "ENT-2165",
+        "format": "plain_text",
+        "processed": "<p>ENT-2165</p>\n"
+      },
+      "facility_type": [
+        "Lab"
+      ]
+    }
+  },
+  {
+    "type": "node--facility",
+    "id": "f84522dd-43e6-4600-bc7b-b827aceacb97",
+    "links": {
+      "self": {
+        "href": "https://www.rit.edu/jsonapi/node/facility/f84522dd-43e6-4600-bc7b-b827aceacb97?resourceVersion=id%3A317688"
+      }
+    },
+    "attributes": {
+      "title": "Dr. Philip R. Tyler Active Learning Classroom (1105/1110)",
+      "changed": "2026-08-12T15:48:14+00:00",
+      "path": {
+        "alias": "/facilities/dr-philip-r-tyler-active-learning-classroom-1105-1110",
+        "pid": 1601682,
+        "langcode": "en"
+      },
+      "facility_hours": {
+        "value": "<p>7 a.m.-12 a.m.</p>\r\n",
+        "format": "full_html",
+        "processed": "<p>7 a.m.-12 a.m.</p>\n"
+      },
+      "facility_location": {
+        "value": "<p>Lowenthal Hall,&nbsp;1105/1110</p>\r\n",
+        "format": "full_html",
+        "processed": "<p>Lowenthal Hall,&nbsp;1105/1110</p>\n"
+      },
+      "facility_type": [
+        "Educational"
+      ]
+    }
+  },
+  {
+    "type": "node--facility",
+    "id": "7ffb4d67-c56b-402f-93f1-302df47dabdb",
+    "links": {
+      "self": {
+        "href": "https://www.rit.edu/jsonapi/node/facility/7ffb4d67-c56b-402f-93f1-302df47dabdb?resourceVersion=id%3A317757"
+      }
+    },
+    "attributes": {
+      "title": "Industrial Design Graduate Studio",
+      "changed": "2026-08-13T17:25:18+00:00",
+      "path": {
+        "alias": "/facilities/industrial-design-graduate-studio",
+        "pid": 7936141,
+        "langcode": "en"
+      },
+      "facility_hours": {
+        "value": "<p>24-hour card swipe access</p>\r\n",
+        "format": "full_html",
+        "processed": "<p>24-hour card swipe access</p>\n"
+      },
+      "facility_location": {
+        "value": "Booth Hall, 4610",
+        "format": "plain_text",
+        "processed": "<p>Booth Hall, 4610</p>\n"
+      },
+      "facility_type": [
+        "Educational"
+      ]
+    }
+  }
+]

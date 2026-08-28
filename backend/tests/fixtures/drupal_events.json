@@ -1,0 +1,2736 @@
+{
+ "jsonapi": {
+  "version": "1.0",
+  "meta": {
+   "links": {
+    "self": {
+     "href": "http://jsonapi.org/format/1.0/"
+    }
+   }
+  }
+ },
+ "data": [
+  {
+   "type": "node--event",
+   "id": "9d178014-928b-48db-b677-92294ac059b5",
+   "links": {
+    "self": {
+     "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5?resourceVersion=id%3A693460"
+    }
+   },
+   "attributes": {
+    "drupal_internal__nid": 6345688,
+    "drupal_internal__vid": 693460,
+    "langcode": "en",
+    "revision_timestamp": "2022-04-18T00:00:12+00:00",
+    "status": true,
+    "title": "ROAR Day ",
+    "created": "2022-04-18T00:00:12+00:00",
+    "changed": "2022-04-19T23:00:16+00:00",
+    "promote": true,
+    "sticky": false,
+    "default_langcode": true,
+    "revision_translation_affected": true,
+    "metatag": [
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "title",
+       "content": "ROAR Day | Rochester Institute of Technology"
+      }
+     },
+     {
+      "tag": "link",
+      "attributes": {
+       "rel": "canonical",
+       "href": "https://www.rit.edu/events/roar-day"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "property": "og:site_name",
+       "content": "RIT"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@type",
+       "content": "CollegeOrUniversity",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@id",
+       "content": "https://www.rit.edu/#organization",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "name",
+       "content": "Rochester Institute of Technology",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "sameAs",
+       "content": [
+        "https://www.facebook.com/RITtigers/",
+        "https://instagram.com/RITTigers",
+        "https://x.com/RITtigers",
+        "https://www.tiktok.com/@rittigers",
+        "https://www.youtube.com/user/RITUniversityNews",
+        "https://www.linkedin.com/company/rochester-institute-of-technology"
+       ],
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "url",
+       "content": "https://www.rit.edu/",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "telephone",
+       "content": "585-475-2411",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "image",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/rit.edu/files/default_images/tiger-at-shed.jpg",
+        "width": "1600",
+        "height": "1033"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "logo",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png",
+        "width": "180",
+        "height": "180"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "address",
+       "content": {
+        "@type": "PostalAddress",
+        "streetAddress": "1 Lomb Memorial Drive",
+        "addressLocality": "Rochester",
+        "addressRegion": "NY",
+        "postalCode": "14623",
+        "addressCountry": "US"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     }
+    ],
+    "node_class": null,
+    "path": {
+     "alias": "/events/roar-day",
+     "pid": 33345958,
+     "langcode": "en"
+    },
+    "rh_action": null,
+    "rh_redirect": null,
+    "rh_redirect_response": null,
+    "rh_redirect_fallback_action": null,
+    "publish_on": null,
+    "unpublish_on": null,
+    "body": null,
+    "field_building": null,
+    "field_end_date": null,
+    "field_end_time": "11:59 PM",
+    "field_event_type": null,
+    "field_featured_event": false,
+    "field_image_alt_text": null,
+    "field_image_url": null,
+    "field_link": null,
+    "field_room_location": null,
+    "field_start_date": "2022-04-21T00:00:00-04:00",
+    "field_start_time": "12:00 AM"
+   },
+   "relationships": {
+    "node_type": {
+     "data": {
+      "type": "node_type--node_type",
+      "id": "58996f5d-f7b3-4325-9117-6fae1171be1b",
+      "meta": {
+       "drupal_internal__target_id": "event"
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/node_type?resourceVersion=id%3A693460"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/node_type?resourceVersion=id%3A693460"
+      }
+     }
+    },
+    "revision_uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/revision_uid?resourceVersion=id%3A693460"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/revision_uid?resourceVersion=id%3A693460"
+      }
+     }
+    },
+    "uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/uid?resourceVersion=id%3A693460"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/uid?resourceVersion=id%3A693460"
+      }
+     }
+    },
+    "event_program_degree": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/event_program_degree?resourceVersion=id%3A693460"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/event_program_degree?resourceVersion=id%3A693460"
+      }
+     }
+    },
+    "feeds_item": {
+     "data": [
+      {
+       "type": "feeds_feed--master_calendar_importer",
+       "id": "8bb14635-cedd-4cf8-94d5-39b8b6b459d2",
+       "meta": {
+        "imported": "2022-04-18T00:00:12+00:00",
+        "url": "https://www.rit.edu/events/roar-day-4",
+        "guid": "f3cd2410fe127b03c626489f845a51fa",
+        "hash": "_delete",
+        "drupal_internal__target_id": 7
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/feeds_item?resourceVersion=id%3A693460"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/feeds_item?resourceVersion=id%3A693460"
+      }
+     }
+    },
+    "field_additional_tags": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/field_additional_tags?resourceVersion=id%3A693460"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/field_additional_tags?resourceVersion=id%3A693460"
+      }
+     }
+    },
+    "field_degree_program": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/field_degree_program?resourceVersion=id%3A693460"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/field_degree_program?resourceVersion=id%3A693460"
+      }
+     }
+    },
+    "field_event_general_topics": {
+     "data": [
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "12d07337-57bc-48d8-b040-254542e69a91",
+       "meta": {
+        "drupal_internal__target_id": 4979
+       }
+      },
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "97af0bd8-0905-46a5-8ffa-04d87b6ed602",
+       "meta": {
+        "drupal_internal__target_id": 5031
+       }
+      },
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "9a08188b-2278-4798-9267-d16b88ff3734",
+       "meta": {
+        "drupal_internal__target_id": 5039
+       }
+      },
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "7d08941b-301e-49ba-8ce6-fa3a21e04df7",
+       "meta": {
+        "drupal_internal__target_id": 5103
+       }
+      },
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "090d457d-0258-4d79-b7e4-76d8d1ace255",
+       "meta": {
+        "drupal_internal__target_id": 5155
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/field_event_general_topics?resourceVersion=id%3A693460"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/field_event_general_topics?resourceVersion=id%3A693460"
+      }
+     }
+    },
+    "field_event_rit_org_structure": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/field_event_rit_org_structure?resourceVersion=id%3A693460"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/field_event_rit_org_structure?resourceVersion=id%3A693460"
+      }
+     }
+    },
+    "field_image": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/field_image?resourceVersion=id%3A693460"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/field_image?resourceVersion=id%3A693460"
+      }
+     }
+    }
+   }
+  },
+  {
+   "type": "node--event",
+   "id": "be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db",
+   "links": {
+    "self": {
+     "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db?resourceVersion=id%3A693472"
+    }
+   },
+   "attributes": {
+    "drupal_internal__nid": 6345700,
+    "drupal_internal__vid": 693472,
+    "langcode": "en",
+    "revision_timestamp": "2022-04-18T00:00:56+00:00",
+    "status": true,
+    "title": "ROAR Day ",
+    "created": "2022-04-18T00:00:56+00:00",
+    "changed": "2022-04-18T02:00:37+00:00",
+    "promote": true,
+    "sticky": false,
+    "default_langcode": true,
+    "revision_translation_affected": true,
+    "metatag": [
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "title",
+       "content": "ROAR Day | Rochester Institute of Technology"
+      }
+     },
+     {
+      "tag": "link",
+      "attributes": {
+       "rel": "canonical",
+       "href": "https://www.rit.edu/events/roar-day-0"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "property": "og:site_name",
+       "content": "RIT"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@type",
+       "content": "CollegeOrUniversity",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@id",
+       "content": "https://www.rit.edu/#organization",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "name",
+       "content": "Rochester Institute of Technology",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "sameAs",
+       "content": [
+        "https://www.facebook.com/RITtigers/",
+        "https://instagram.com/RITTigers",
+        "https://x.com/RITtigers",
+        "https://www.tiktok.com/@rittigers",
+        "https://www.youtube.com/user/RITUniversityNews",
+        "https://www.linkedin.com/company/rochester-institute-of-technology"
+       ],
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "url",
+       "content": "https://www.rit.edu/",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "telephone",
+       "content": "585-475-2411",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "image",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/rit.edu/files/default_images/tiger-at-shed.jpg",
+        "width": "1600",
+        "height": "1033"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "logo",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png",
+        "width": "180",
+        "height": "180"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "address",
+       "content": {
+        "@type": "PostalAddress",
+        "streetAddress": "1 Lomb Memorial Drive",
+        "addressLocality": "Rochester",
+        "addressRegion": "NY",
+        "postalCode": "14623",
+        "addressCountry": "US"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     }
+    ],
+    "node_class": null,
+    "path": {
+     "alias": "/events/roar-day-0",
+     "pid": 33254434,
+     "langcode": "en"
+    },
+    "rh_action": null,
+    "rh_redirect": null,
+    "rh_redirect_response": null,
+    "rh_redirect_fallback_action": null,
+    "publish_on": null,
+    "unpublish_on": null,
+    "body": null,
+    "field_building": null,
+    "field_end_date": null,
+    "field_end_time": "11:59 PM",
+    "field_event_type": null,
+    "field_featured_event": false,
+    "field_image_alt_text": null,
+    "field_image_url": null,
+    "field_link": null,
+    "field_room_location": null,
+    "field_start_date": "2022-04-21T00:00:00-04:00",
+    "field_start_time": "12:00 AM"
+   },
+   "relationships": {
+    "node_type": {
+     "data": {
+      "type": "node_type--node_type",
+      "id": "58996f5d-f7b3-4325-9117-6fae1171be1b",
+      "meta": {
+       "drupal_internal__target_id": "event"
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/node_type?resourceVersion=id%3A693472"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/node_type?resourceVersion=id%3A693472"
+      }
+     }
+    },
+    "revision_uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/revision_uid?resourceVersion=id%3A693472"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/revision_uid?resourceVersion=id%3A693472"
+      }
+     }
+    },
+    "uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/uid?resourceVersion=id%3A693472"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/uid?resourceVersion=id%3A693472"
+      }
+     }
+    },
+    "event_program_degree": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/event_program_degree?resourceVersion=id%3A693472"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/event_program_degree?resourceVersion=id%3A693472"
+      }
+     }
+    },
+    "feeds_item": {
+     "data": [
+      {
+       "type": "feeds_feed--master_calendar_importer",
+       "id": "8bb14635-cedd-4cf8-94d5-39b8b6b459d2",
+       "meta": {
+        "imported": "2022-04-18T00:00:56+00:00",
+        "url": "https://www.rit.edu/events/roar-day-4",
+        "guid": "f3cd2410fe127b03c626489f845a51fa",
+        "hash": "_delete",
+        "drupal_internal__target_id": 7
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/feeds_item?resourceVersion=id%3A693472"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/feeds_item?resourceVersion=id%3A693472"
+      }
+     }
+    },
+    "field_additional_tags": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/field_additional_tags?resourceVersion=id%3A693472"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/field_additional_tags?resourceVersion=id%3A693472"
+      }
+     }
+    },
+    "field_degree_program": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/field_degree_program?resourceVersion=id%3A693472"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/field_degree_program?resourceVersion=id%3A693472"
+      }
+     }
+    },
+    "field_event_general_topics": {
+     "data": [
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "12d07337-57bc-48d8-b040-254542e69a91",
+       "meta": {
+        "drupal_internal__target_id": 4979
+       }
+      },
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "97af0bd8-0905-46a5-8ffa-04d87b6ed602",
+       "meta": {
+        "drupal_internal__target_id": 5031
+       }
+      },
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "9a08188b-2278-4798-9267-d16b88ff3734",
+       "meta": {
+        "drupal_internal__target_id": 5039
+       }
+      },
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "7d08941b-301e-49ba-8ce6-fa3a21e04df7",
+       "meta": {
+        "drupal_internal__target_id": 5103
+       }
+      },
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "090d457d-0258-4d79-b7e4-76d8d1ace255",
+       "meta": {
+        "drupal_internal__target_id": 5155
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/field_event_general_topics?resourceVersion=id%3A693472"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/field_event_general_topics?resourceVersion=id%3A693472"
+      }
+     }
+    },
+    "field_event_rit_org_structure": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/field_event_rit_org_structure?resourceVersion=id%3A693472"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/field_event_rit_org_structure?resourceVersion=id%3A693472"
+      }
+     }
+    },
+    "field_image": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/field_image?resourceVersion=id%3A693472"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/field_image?resourceVersion=id%3A693472"
+      }
+     }
+    }
+   }
+  },
+  {
+   "type": "node--event",
+   "id": "d2798f23-546a-4760-9f4a-da99794221a0",
+   "links": {
+    "self": {
+     "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0?resourceVersion=id%3A694318"
+    }
+   },
+   "attributes": {
+    "drupal_internal__nid": 6346435,
+    "drupal_internal__vid": 694318,
+    "langcode": "en",
+    "revision_timestamp": "2022-04-19T19:00:51+00:00",
+    "status": true,
+    "title": "Red Cross Blood Drive: RIT Faculty & Staff",
+    "created": "2022-04-19T19:00:51+00:00",
+    "changed": "2022-04-19T23:00:18+00:00",
+    "promote": true,
+    "sticky": false,
+    "default_langcode": true,
+    "revision_translation_affected": true,
+    "metatag": [
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "title",
+       "content": "Red Cross Blood Drive: RIT Faculty & Staff | Rochester Institute of Technology"
+      }
+     },
+     {
+      "tag": "link",
+      "attributes": {
+       "rel": "canonical",
+       "href": "https://www.rit.edu/events/red-cross-blood-drive-rit-faculty-staff"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "property": "og:site_name",
+       "content": "RIT"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@type",
+       "content": "CollegeOrUniversity",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@id",
+       "content": "https://www.rit.edu/#organization",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "name",
+       "content": "Rochester Institute of Technology",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "sameAs",
+       "content": [
+        "https://www.facebook.com/RITtigers/",
+        "https://instagram.com/RITTigers",
+        "https://x.com/RITtigers",
+        "https://www.tiktok.com/@rittigers",
+        "https://www.youtube.com/user/RITUniversityNews",
+        "https://www.linkedin.com/company/rochester-institute-of-technology"
+       ],
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "url",
+       "content": "https://www.rit.edu/",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "telephone",
+       "content": "585-475-2411",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "image",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/rit.edu/files/default_images/tiger-at-shed.jpg",
+        "width": "1600",
+        "height": "1033"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "logo",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png",
+        "width": "180",
+        "height": "180"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "address",
+       "content": {
+        "@type": "PostalAddress",
+        "streetAddress": "1 Lomb Memorial Drive",
+        "addressLocality": "Rochester",
+        "addressRegion": "NY",
+        "postalCode": "14623",
+        "addressCountry": "US"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     }
+    ],
+    "node_class": null,
+    "path": {
+     "alias": "/events/red-cross-blood-drive-rit-faculty-staff",
+     "pid": 33345961,
+     "langcode": "en"
+    },
+    "rh_action": null,
+    "rh_redirect": null,
+    "rh_redirect_response": null,
+    "rh_redirect_fallback_action": null,
+    "publish_on": null,
+    "unpublish_on": null,
+    "body": null,
+    "field_building": null,
+    "field_end_date": null,
+    "field_end_time": "1:30 PM",
+    "field_event_type": null,
+    "field_featured_event": false,
+    "field_image_alt_text": null,
+    "field_image_url": null,
+    "field_link": null,
+    "field_room_location": null,
+    "field_start_date": "2022-05-13T00:00:00-04:00",
+    "field_start_time": "8:30 AM"
+   },
+   "relationships": {
+    "node_type": {
+     "data": {
+      "type": "node_type--node_type",
+      "id": "58996f5d-f7b3-4325-9117-6fae1171be1b",
+      "meta": {
+       "drupal_internal__target_id": "event"
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/node_type?resourceVersion=id%3A694318"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/relationships/node_type?resourceVersion=id%3A694318"
+      }
+     }
+    },
+    "revision_uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/revision_uid?resourceVersion=id%3A694318"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/relationships/revision_uid?resourceVersion=id%3A694318"
+      }
+     }
+    },
+    "uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/uid?resourceVersion=id%3A694318"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/relationships/uid?resourceVersion=id%3A694318"
+      }
+     }
+    },
+    "event_program_degree": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/event_program_degree?resourceVersion=id%3A694318"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/relationships/event_program_degree?resourceVersion=id%3A694318"
+      }
+     }
+    },
+    "feeds_item": {
+     "data": [
+      {
+       "type": "feeds_feed--master_calendar_importer",
+       "id": "8bb14635-cedd-4cf8-94d5-39b8b6b459d2",
+       "meta": {
+        "imported": "2022-04-19T19:00:51+00:00",
+        "url": "https://www.rit.edu/events/red-cross-blood-drive-rit-faculty-staff",
+        "guid": "3e92d77c7c227a2947d421b234e84019",
+        "hash": "_delete",
+        "drupal_internal__target_id": 7
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/feeds_item?resourceVersion=id%3A694318"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/relationships/feeds_item?resourceVersion=id%3A694318"
+      }
+     }
+    },
+    "field_additional_tags": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/field_additional_tags?resourceVersion=id%3A694318"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/relationships/field_additional_tags?resourceVersion=id%3A694318"
+      }
+     }
+    },
+    "field_degree_program": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/field_degree_program?resourceVersion=id%3A694318"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/relationships/field_degree_program?resourceVersion=id%3A694318"
+      }
+     }
+    },
+    "field_event_general_topics": {
+     "data": [
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "97af0bd8-0905-46a5-8ffa-04d87b6ed602",
+       "meta": {
+        "drupal_internal__target_id": 5031
+       }
+      },
+      {
+       "type": "taxonomy_term--general_topics",
+       "id": "7d08941b-301e-49ba-8ce6-fa3a21e04df7",
+       "meta": {
+        "drupal_internal__target_id": 5103
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/field_event_general_topics?resourceVersion=id%3A694318"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/relationships/field_event_general_topics?resourceVersion=id%3A694318"
+      }
+     }
+    },
+    "field_event_rit_org_structure": {
+     "data": [
+      {
+       "type": "taxonomy_term--rit_organizational_structure",
+       "id": "missing",
+       "meta": {
+        "links": {
+         "help": {
+          "href": "https://www.drupal.org/docs/8/modules/json-api/core-concepts#missing",
+          "meta": {
+           "about": "Usage and meaning of the 'missing' resource identifier."
+          }
+         }
+        }
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/field_event_rit_org_structure?resourceVersion=id%3A694318"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/relationships/field_event_rit_org_structure?resourceVersion=id%3A694318"
+      }
+     }
+    },
+    "field_image": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/field_image?resourceVersion=id%3A694318"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/d2798f23-546a-4760-9f4a-da99794221a0/relationships/field_image?resourceVersion=id%3A694318"
+      }
+     }
+    }
+   }
+  },
+  {
+   "type": "node--event",
+   "id": "c6a9c3ad-9dac-4f68-9403-211514a66590",
+   "links": {
+    "self": {
+     "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590?resourceVersion=id%3A1908717"
+    }
+   },
+   "attributes": {
+    "drupal_internal__nid": 7445652,
+    "drupal_internal__vid": 1908717,
+    "langcode": "en",
+    "revision_timestamp": "2026-07-04T04:00:11+00:00",
+    "status": true,
+    "title": "Inclusive Hiring Training ",
+    "created": "2026-07-04T04:00:11+00:00",
+    "changed": "2026-07-04T04:00:11+00:00",
+    "promote": true,
+    "sticky": false,
+    "default_langcode": true,
+    "revision_translation_affected": true,
+    "metatag": [
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "title",
+       "content": "Inclusive Hiring Training | Rochester Institute of Technology"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "description",
+       "content": "Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday."
+      }
+     },
+     {
+      "tag": "link",
+      "attributes": {
+       "rel": "canonical",
+       "href": "https://www.rit.edu/events/inclusive-hiring-training"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "property": "og:site_name",
+       "content": "RIT"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@type",
+       "content": "CollegeOrUniversity",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@id",
+       "content": "https://www.rit.edu/#organization",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "name",
+       "content": "Rochester Institute of Technology",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "sameAs",
+       "content": [
+        "https://www.facebook.com/RITtigers/",
+        "https://instagram.com/RITTigers",
+        "https://x.com/RITtigers",
+        "https://www.tiktok.com/@rittigers",
+        "https://www.youtube.com/user/RITUniversityNews",
+        "https://www.linkedin.com/company/rochester-institute-of-technology"
+       ],
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "url",
+       "content": "https://www.rit.edu/",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "telephone",
+       "content": "585-475-2411",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "image",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/rit.edu/files/default_images/tiger-at-shed.jpg",
+        "width": "1600",
+        "height": "1033"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "logo",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png",
+        "width": "180",
+        "height": "180"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "address",
+       "content": {
+        "@type": "PostalAddress",
+        "streetAddress": "1 Lomb Memorial Drive",
+        "addressLocality": "Rochester",
+        "addressRegion": "NY",
+        "postalCode": "14623",
+        "addressCountry": "US"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     }
+    ],
+    "node_class": null,
+    "path": {
+     "alias": "/events/inclusive-hiring-training",
+     "pid": 42354087,
+     "langcode": "en"
+    },
+    "rh_action": null,
+    "rh_redirect": null,
+    "rh_redirect_response": null,
+    "rh_redirect_fallback_action": null,
+    "publish_on": null,
+    "unpublish_on": null,
+    "body": {
+     "value": "<p>Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday.</p>\r\n",
+     "format": "full_html",
+     "processed": "<p>Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday.</p>\n",
+     "summary": null
+    },
+    "field_building": "George Eastman Hall",
+    "field_end_date": null,
+    "field_end_time": "11:00 AM",
+    "field_event_type": null,
+    "field_featured_event": false,
+    "field_image_alt_text": null,
+    "field_image_url": null,
+    "field_link": null,
+    "field_room_location": "4125",
+    "field_start_date": "2026-09-25T00:00:00-04:00",
+    "field_start_time": "9:30 AM"
+   },
+   "relationships": {
+    "node_type": {
+     "data": {
+      "type": "node_type--node_type",
+      "id": "58996f5d-f7b3-4325-9117-6fae1171be1b",
+      "meta": {
+       "drupal_internal__target_id": "event"
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/node_type?resourceVersion=id%3A1908717"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/relationships/node_type?resourceVersion=id%3A1908717"
+      }
+     }
+    },
+    "revision_uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/revision_uid?resourceVersion=id%3A1908717"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/relationships/revision_uid?resourceVersion=id%3A1908717"
+      }
+     }
+    },
+    "uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/uid?resourceVersion=id%3A1908717"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/relationships/uid?resourceVersion=id%3A1908717"
+      }
+     }
+    },
+    "event_program_degree": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/event_program_degree?resourceVersion=id%3A1908717"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/relationships/event_program_degree?resourceVersion=id%3A1908717"
+      }
+     }
+    },
+    "feeds_item": {
+     "data": [
+      {
+       "type": "feeds_feed--master_calendar_importer",
+       "id": "8bb14635-cedd-4cf8-94d5-39b8b6b459d2",
+       "meta": {
+        "imported": "2026-07-04T04:00:11+00:00",
+        "url": "https://www.rit.edu/events/inclusive-hiring-training-8",
+        "guid": "e056658d19f925048deeec9bcd2f8c50",
+        "hash": "414c7c2a6135ef3c48e9175d2e3a386a",
+        "drupal_internal__target_id": 7
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/feeds_item?resourceVersion=id%3A1908717"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/relationships/feeds_item?resourceVersion=id%3A1908717"
+      }
+     }
+    },
+    "field_additional_tags": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/field_additional_tags?resourceVersion=id%3A1908717"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/relationships/field_additional_tags?resourceVersion=id%3A1908717"
+      }
+     }
+    },
+    "field_degree_program": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/field_degree_program?resourceVersion=id%3A1908717"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/relationships/field_degree_program?resourceVersion=id%3A1908717"
+      }
+     }
+    },
+    "field_event_general_topics": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/field_event_general_topics?resourceVersion=id%3A1908717"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/relationships/field_event_general_topics?resourceVersion=id%3A1908717"
+      }
+     }
+    },
+    "field_event_rit_org_structure": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/field_event_rit_org_structure?resourceVersion=id%3A1908717"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/relationships/field_event_rit_org_structure?resourceVersion=id%3A1908717"
+      }
+     }
+    },
+    "field_image": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/field_image?resourceVersion=id%3A1908717"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/c6a9c3ad-9dac-4f68-9403-211514a66590/relationships/field_image?resourceVersion=id%3A1908717"
+      }
+     }
+    }
+   }
+  },
+  {
+   "type": "node--event",
+   "id": "bf0ac523-d5b9-4e02-b854-7bf82fa2d650",
+   "links": {
+    "self": {
+     "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650?resourceVersion=id%3A1908720"
+    }
+   },
+   "attributes": {
+    "drupal_internal__nid": 7445655,
+    "drupal_internal__vid": 1908720,
+    "langcode": "en",
+    "revision_timestamp": "2026-07-04T04:00:11+00:00",
+    "status": true,
+    "title": "Inclusive Hiring Training ",
+    "created": "2026-07-04T04:00:11+00:00",
+    "changed": "2026-07-04T04:00:11+00:00",
+    "promote": true,
+    "sticky": false,
+    "default_langcode": true,
+    "revision_translation_affected": true,
+    "metatag": [
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "title",
+       "content": "Inclusive Hiring Training | Rochester Institute of Technology"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "description",
+       "content": "Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday."
+      }
+     },
+     {
+      "tag": "link",
+      "attributes": {
+       "rel": "canonical",
+       "href": "https://www.rit.edu/events/inclusive-hiring-training-0"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "property": "og:site_name",
+       "content": "RIT"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@type",
+       "content": "CollegeOrUniversity",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@id",
+       "content": "https://www.rit.edu/#organization",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "name",
+       "content": "Rochester Institute of Technology",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "sameAs",
+       "content": [
+        "https://www.facebook.com/RITtigers/",
+        "https://instagram.com/RITTigers",
+        "https://x.com/RITtigers",
+        "https://www.tiktok.com/@rittigers",
+        "https://www.youtube.com/user/RITUniversityNews",
+        "https://www.linkedin.com/company/rochester-institute-of-technology"
+       ],
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "url",
+       "content": "https://www.rit.edu/",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "telephone",
+       "content": "585-475-2411",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "image",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/rit.edu/files/default_images/tiger-at-shed.jpg",
+        "width": "1600",
+        "height": "1033"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "logo",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png",
+        "width": "180",
+        "height": "180"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "address",
+       "content": {
+        "@type": "PostalAddress",
+        "streetAddress": "1 Lomb Memorial Drive",
+        "addressLocality": "Rochester",
+        "addressRegion": "NY",
+        "postalCode": "14623",
+        "addressCountry": "US"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     }
+    ],
+    "node_class": null,
+    "path": {
+     "alias": "/events/inclusive-hiring-training-0",
+     "pid": 42354090,
+     "langcode": "en"
+    },
+    "rh_action": null,
+    "rh_redirect": null,
+    "rh_redirect_response": null,
+    "rh_redirect_fallback_action": null,
+    "publish_on": null,
+    "unpublish_on": null,
+    "body": {
+     "value": "<p>Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday.</p>\r\n",
+     "format": "full_html",
+     "processed": "<p>Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday.</p>\n",
+     "summary": null
+    },
+    "field_building": null,
+    "field_end_date": null,
+    "field_end_time": "12:00 PM",
+    "field_event_type": null,
+    "field_featured_event": false,
+    "field_image_alt_text": null,
+    "field_image_url": null,
+    "field_link": null,
+    "field_room_location": "Zoom",
+    "field_start_date": "2026-10-30T00:00:00-04:00",
+    "field_start_time": "10:30 AM"
+   },
+   "relationships": {
+    "node_type": {
+     "data": {
+      "type": "node_type--node_type",
+      "id": "58996f5d-f7b3-4325-9117-6fae1171be1b",
+      "meta": {
+       "drupal_internal__target_id": "event"
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/node_type?resourceVersion=id%3A1908720"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/relationships/node_type?resourceVersion=id%3A1908720"
+      }
+     }
+    },
+    "revision_uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/revision_uid?resourceVersion=id%3A1908720"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/relationships/revision_uid?resourceVersion=id%3A1908720"
+      }
+     }
+    },
+    "uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/uid?resourceVersion=id%3A1908720"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/relationships/uid?resourceVersion=id%3A1908720"
+      }
+     }
+    },
+    "event_program_degree": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/event_program_degree?resourceVersion=id%3A1908720"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/relationships/event_program_degree?resourceVersion=id%3A1908720"
+      }
+     }
+    },
+    "feeds_item": {
+     "data": [
+      {
+       "type": "feeds_feed--master_calendar_importer",
+       "id": "8bb14635-cedd-4cf8-94d5-39b8b6b459d2",
+       "meta": {
+        "imported": "2026-07-04T04:00:11+00:00",
+        "url": "https://www.rit.edu/events/inclusive-hiring-training-8",
+        "guid": "f022a2ac86a8aec98219f2dfd5331dd4",
+        "hash": "364c9019fba0e59250976d67b181536c",
+        "drupal_internal__target_id": 7
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/feeds_item?resourceVersion=id%3A1908720"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/relationships/feeds_item?resourceVersion=id%3A1908720"
+      }
+     }
+    },
+    "field_additional_tags": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/field_additional_tags?resourceVersion=id%3A1908720"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/relationships/field_additional_tags?resourceVersion=id%3A1908720"
+      }
+     }
+    },
+    "field_degree_program": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/field_degree_program?resourceVersion=id%3A1908720"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/relationships/field_degree_program?resourceVersion=id%3A1908720"
+      }
+     }
+    },
+    "field_event_general_topics": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/field_event_general_topics?resourceVersion=id%3A1908720"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/relationships/field_event_general_topics?resourceVersion=id%3A1908720"
+      }
+     }
+    },
+    "field_event_rit_org_structure": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/field_event_rit_org_structure?resourceVersion=id%3A1908720"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/relationships/field_event_rit_org_structure?resourceVersion=id%3A1908720"
+      }
+     }
+    },
+    "field_image": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/field_image?resourceVersion=id%3A1908720"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/bf0ac523-d5b9-4e02-b854-7bf82fa2d650/relationships/field_image?resourceVersion=id%3A1908720"
+      }
+     }
+    }
+   }
+  },
+  {
+   "type": "node--event",
+   "id": "cc52acff-e5eb-4475-8af0-f7e339780fa3",
+   "links": {
+    "self": {
+     "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3?resourceVersion=id%3A1908723"
+    }
+   },
+   "attributes": {
+    "drupal_internal__nid": 7445658,
+    "drupal_internal__vid": 1908723,
+    "langcode": "en",
+    "revision_timestamp": "2026-07-04T04:00:11+00:00",
+    "status": true,
+    "title": "Inclusive Hiring Training ",
+    "created": "2026-07-04T04:00:11+00:00",
+    "changed": "2026-07-04T04:00:11+00:00",
+    "promote": true,
+    "sticky": false,
+    "default_langcode": true,
+    "revision_translation_affected": true,
+    "metatag": [
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "title",
+       "content": "Inclusive Hiring Training | Rochester Institute of Technology"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "description",
+       "content": "Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday."
+      }
+     },
+     {
+      "tag": "link",
+      "attributes": {
+       "rel": "canonical",
+       "href": "https://www.rit.edu/events/inclusive-hiring-training-1"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "property": "og:site_name",
+       "content": "RIT"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@type",
+       "content": "CollegeOrUniversity",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@id",
+       "content": "https://www.rit.edu/#organization",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "name",
+       "content": "Rochester Institute of Technology",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "sameAs",
+       "content": [
+        "https://www.facebook.com/RITtigers/",
+        "https://instagram.com/RITTigers",
+        "https://x.com/RITtigers",
+        "https://www.tiktok.com/@rittigers",
+        "https://www.youtube.com/user/RITUniversityNews",
+        "https://www.linkedin.com/company/rochester-institute-of-technology"
+       ],
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "url",
+       "content": "https://www.rit.edu/",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "telephone",
+       "content": "585-475-2411",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "image",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/rit.edu/files/default_images/tiger-at-shed.jpg",
+        "width": "1600",
+        "height": "1033"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "logo",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png",
+        "width": "180",
+        "height": "180"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "address",
+       "content": {
+        "@type": "PostalAddress",
+        "streetAddress": "1 Lomb Memorial Drive",
+        "addressLocality": "Rochester",
+        "addressRegion": "NY",
+        "postalCode": "14623",
+        "addressCountry": "US"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     }
+    ],
+    "node_class": null,
+    "path": {
+     "alias": "/events/inclusive-hiring-training-1",
+     "pid": 42354093,
+     "langcode": "en"
+    },
+    "rh_action": null,
+    "rh_redirect": null,
+    "rh_redirect_response": null,
+    "rh_redirect_fallback_action": null,
+    "publish_on": null,
+    "unpublish_on": null,
+    "body": {
+     "value": "<p>Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday.</p>\r\n",
+     "format": "full_html",
+     "processed": "<p>Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday.</p>\n",
+     "summary": null
+    },
+    "field_building": null,
+    "field_end_date": null,
+    "field_end_time": "11:00 AM",
+    "field_event_type": null,
+    "field_featured_event": false,
+    "field_image_alt_text": null,
+    "field_image_url": null,
+    "field_link": null,
+    "field_room_location": "Zoom",
+    "field_start_date": "2026-11-09T00:00:00-05:00",
+    "field_start_time": "9:30 AM"
+   },
+   "relationships": {
+    "node_type": {
+     "data": {
+      "type": "node_type--node_type",
+      "id": "58996f5d-f7b3-4325-9117-6fae1171be1b",
+      "meta": {
+       "drupal_internal__target_id": "event"
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/node_type?resourceVersion=id%3A1908723"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/relationships/node_type?resourceVersion=id%3A1908723"
+      }
+     }
+    },
+    "revision_uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/revision_uid?resourceVersion=id%3A1908723"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/relationships/revision_uid?resourceVersion=id%3A1908723"
+      }
+     }
+    },
+    "uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/uid?resourceVersion=id%3A1908723"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/relationships/uid?resourceVersion=id%3A1908723"
+      }
+     }
+    },
+    "event_program_degree": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/event_program_degree?resourceVersion=id%3A1908723"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/relationships/event_program_degree?resourceVersion=id%3A1908723"
+      }
+     }
+    },
+    "feeds_item": {
+     "data": [
+      {
+       "type": "feeds_feed--master_calendar_importer",
+       "id": "8bb14635-cedd-4cf8-94d5-39b8b6b459d2",
+       "meta": {
+        "imported": "2026-07-04T04:00:11+00:00",
+        "url": "https://www.rit.edu/events/inclusive-hiring-training-8",
+        "guid": "d5c170fd3e31bafc737e7757430d78e8",
+        "hash": "f81de303fd3adba01df7ac487b60497a",
+        "drupal_internal__target_id": 7
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/feeds_item?resourceVersion=id%3A1908723"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/relationships/feeds_item?resourceVersion=id%3A1908723"
+      }
+     }
+    },
+    "field_additional_tags": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/field_additional_tags?resourceVersion=id%3A1908723"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/relationships/field_additional_tags?resourceVersion=id%3A1908723"
+      }
+     }
+    },
+    "field_degree_program": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/field_degree_program?resourceVersion=id%3A1908723"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/relationships/field_degree_program?resourceVersion=id%3A1908723"
+      }
+     }
+    },
+    "field_event_general_topics": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/field_event_general_topics?resourceVersion=id%3A1908723"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/relationships/field_event_general_topics?resourceVersion=id%3A1908723"
+      }
+     }
+    },
+    "field_event_rit_org_structure": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/field_event_rit_org_structure?resourceVersion=id%3A1908723"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/relationships/field_event_rit_org_structure?resourceVersion=id%3A1908723"
+      }
+     }
+    },
+    "field_image": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/field_image?resourceVersion=id%3A1908723"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/cc52acff-e5eb-4475-8af0-f7e339780fa3/relationships/field_image?resourceVersion=id%3A1908723"
+      }
+     }
+    }
+   }
+  },
+  {
+   "type": "node--event",
+   "id": "02a496cc-ae72-4f51-b9b5-1fd6e129b720",
+   "links": {
+    "self": {
+     "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720?resourceVersion=id%3A1908726"
+    }
+   },
+   "attributes": {
+    "drupal_internal__nid": 7445661,
+    "drupal_internal__vid": 1908726,
+    "langcode": "en",
+    "revision_timestamp": "2026-07-04T04:00:11+00:00",
+    "status": true,
+    "title": "Inclusive Hiring Training ",
+    "created": "2026-07-04T04:00:11+00:00",
+    "changed": "2026-07-04T04:00:11+00:00",
+    "promote": true,
+    "sticky": false,
+    "default_langcode": true,
+    "revision_translation_affected": true,
+    "metatag": [
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "title",
+       "content": "Inclusive Hiring Training | Rochester Institute of Technology"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "description",
+       "content": "Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday."
+      }
+     },
+     {
+      "tag": "link",
+      "attributes": {
+       "rel": "canonical",
+       "href": "https://www.rit.edu/events/inclusive-hiring-training-2"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "property": "og:site_name",
+       "content": "RIT"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@type",
+       "content": "CollegeOrUniversity",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@id",
+       "content": "https://www.rit.edu/#organization",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "name",
+       "content": "Rochester Institute of Technology",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "sameAs",
+       "content": [
+        "https://www.facebook.com/RITtigers/",
+        "https://instagram.com/RITTigers",
+        "https://x.com/RITtigers",
+        "https://www.tiktok.com/@rittigers",
+        "https://www.youtube.com/user/RITUniversityNews",
+        "https://www.linkedin.com/company/rochester-institute-of-technology"
+       ],
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "url",
+       "content": "https://www.rit.edu/",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "telephone",
+       "content": "585-475-2411",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "image",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/rit.edu/files/default_images/tiger-at-shed.jpg",
+        "width": "1600",
+        "height": "1033"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "logo",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png",
+        "width": "180",
+        "height": "180"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "address",
+       "content": {
+        "@type": "PostalAddress",
+        "streetAddress": "1 Lomb Memorial Drive",
+        "addressLocality": "Rochester",
+        "addressRegion": "NY",
+        "postalCode": "14623",
+        "addressCountry": "US"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     }
+    ],
+    "node_class": null,
+    "path": {
+     "alias": "/events/inclusive-hiring-training-2",
+     "pid": 42354096,
+     "langcode": "en"
+    },
+    "rh_action": null,
+    "rh_redirect": null,
+    "rh_redirect_response": null,
+    "rh_redirect_fallback_action": null,
+    "publish_on": null,
+    "unpublish_on": null,
+    "body": {
+     "value": "<p>Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday.</p>\r\n",
+     "format": "full_html",
+     "processed": "<p>Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday.</p>\n",
+     "summary": null
+    },
+    "field_building": null,
+    "field_end_date": null,
+    "field_end_time": "1:30 PM",
+    "field_event_type": null,
+    "field_featured_event": false,
+    "field_image_alt_text": null,
+    "field_image_url": null,
+    "field_link": null,
+    "field_room_location": "Zoom",
+    "field_start_date": "2027-01-07T00:00:00-05:00",
+    "field_start_time": "12:00 PM"
+   },
+   "relationships": {
+    "node_type": {
+     "data": {
+      "type": "node_type--node_type",
+      "id": "58996f5d-f7b3-4325-9117-6fae1171be1b",
+      "meta": {
+       "drupal_internal__target_id": "event"
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/node_type?resourceVersion=id%3A1908726"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/relationships/node_type?resourceVersion=id%3A1908726"
+      }
+     }
+    },
+    "revision_uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/revision_uid?resourceVersion=id%3A1908726"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/relationships/revision_uid?resourceVersion=id%3A1908726"
+      }
+     }
+    },
+    "uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/uid?resourceVersion=id%3A1908726"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/relationships/uid?resourceVersion=id%3A1908726"
+      }
+     }
+    },
+    "event_program_degree": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/event_program_degree?resourceVersion=id%3A1908726"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/relationships/event_program_degree?resourceVersion=id%3A1908726"
+      }
+     }
+    },
+    "feeds_item": {
+     "data": [
+      {
+       "type": "feeds_feed--master_calendar_importer",
+       "id": "8bb14635-cedd-4cf8-94d5-39b8b6b459d2",
+       "meta": {
+        "imported": "2026-07-04T04:00:11+00:00",
+        "url": "https://www.rit.edu/events/inclusive-hiring-training-8",
+        "guid": "0e855abd661c34f3e023a9f4b71f00f7",
+        "hash": "4446944469604378b724084e3b3dd14d",
+        "drupal_internal__target_id": 7
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/feeds_item?resourceVersion=id%3A1908726"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/relationships/feeds_item?resourceVersion=id%3A1908726"
+      }
+     }
+    },
+    "field_additional_tags": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/field_additional_tags?resourceVersion=id%3A1908726"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/relationships/field_additional_tags?resourceVersion=id%3A1908726"
+      }
+     }
+    },
+    "field_degree_program": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/field_degree_program?resourceVersion=id%3A1908726"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/relationships/field_degree_program?resourceVersion=id%3A1908726"
+      }
+     }
+    },
+    "field_event_general_topics": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/field_event_general_topics?resourceVersion=id%3A1908726"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/relationships/field_event_general_topics?resourceVersion=id%3A1908726"
+      }
+     }
+    },
+    "field_event_rit_org_structure": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/field_event_rit_org_structure?resourceVersion=id%3A1908726"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/relationships/field_event_rit_org_structure?resourceVersion=id%3A1908726"
+      }
+     }
+    },
+    "field_image": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/field_image?resourceVersion=id%3A1908726"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/02a496cc-ae72-4f51-b9b5-1fd6e129b720/relationships/field_image?resourceVersion=id%3A1908726"
+      }
+     }
+    }
+   }
+  },
+  {
+   "type": "node--event",
+   "id": "e7cb8cc2-d1bc-4103-81a1-421592665101",
+   "links": {
+    "self": {
+     "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101?resourceVersion=id%3A1908732"
+    }
+   },
+   "attributes": {
+    "drupal_internal__nid": 7445667,
+    "drupal_internal__vid": 1908732,
+    "langcode": "en",
+    "revision_timestamp": "2026-07-04T04:00:11+00:00",
+    "status": true,
+    "title": "Inclusive Hiring Training ",
+    "created": "2026-07-04T04:00:11+00:00",
+    "changed": "2026-07-04T04:00:11+00:00",
+    "promote": true,
+    "sticky": false,
+    "default_langcode": true,
+    "revision_translation_affected": true,
+    "metatag": [
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "title",
+       "content": "Inclusive Hiring Training | Rochester Institute of Technology"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "description",
+       "content": "Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday."
+      }
+     },
+     {
+      "tag": "link",
+      "attributes": {
+       "rel": "canonical",
+       "href": "https://www.rit.edu/events/inclusive-hiring-training-4"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "property": "og:site_name",
+       "content": "RIT"
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@type",
+       "content": "CollegeOrUniversity",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "@id",
+       "content": "https://www.rit.edu/#organization",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "name",
+       "content": "Rochester Institute of Technology",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "sameAs",
+       "content": [
+        "https://www.facebook.com/RITtigers/",
+        "https://instagram.com/RITTigers",
+        "https://x.com/RITtigers",
+        "https://www.tiktok.com/@rittigers",
+        "https://www.youtube.com/user/RITUniversityNews",
+        "https://www.linkedin.com/company/rochester-institute-of-technology"
+       ],
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "url",
+       "content": "https://www.rit.edu/",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "telephone",
+       "content": "585-475-2411",
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "image",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/rit.edu/files/default_images/tiger-at-shed.jpg",
+        "width": "1600",
+        "height": "1033"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "logo",
+       "content": {
+        "@type": "ImageObject",
+        "representativeOfPage": "True",
+        "url": "https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png",
+        "width": "180",
+        "height": "180"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     },
+     {
+      "tag": "meta",
+      "attributes": {
+       "name": "address",
+       "content": {
+        "@type": "PostalAddress",
+        "streetAddress": "1 Lomb Memorial Drive",
+        "addressLocality": "Rochester",
+        "addressRegion": "NY",
+        "postalCode": "14623",
+        "addressCountry": "US"
+       },
+       "group": "schema_organization",
+       "schema_metatag": true
+      }
+     }
+    ],
+    "node_class": null,
+    "path": {
+     "alias": "/events/inclusive-hiring-training-4",
+     "pid": 42354102,
+     "langcode": "en"
+    },
+    "rh_action": null,
+    "rh_redirect": null,
+    "rh_redirect_response": null,
+    "rh_redirect_fallback_action": null,
+    "publish_on": null,
+    "unpublish_on": null,
+    "body": {
+     "value": "<p>Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday.</p>\r\n",
+     "format": "full_html",
+     "processed": "<p>Looking to conduct a hire? Consider this volunteer training to learn ways to minimize bias and reduce discrimination within the hiring process. The training is best served for Assistant Director or higher staff positions and all faculty positions. Choose the training date and time that works best for your schedule. You only need to complete one. If interested, register via Workday.</p>\n",
+     "summary": null
+    },
+    "field_building": null,
+    "field_end_date": null,
+    "field_end_time": "12:00 PM",
+    "field_event_type": null,
+    "field_featured_event": false,
+    "field_image_alt_text": null,
+    "field_image_url": null,
+    "field_link": null,
+    "field_room_location": "Zoom",
+    "field_start_date": "2027-02-26T00:00:00-05:00",
+    "field_start_time": "10:30 AM"
+   },
+   "relationships": {
+    "node_type": {
+     "data": {
+      "type": "node_type--node_type",
+      "id": "58996f5d-f7b3-4325-9117-6fae1171be1b",
+      "meta": {
+       "drupal_internal__target_id": "event"
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/node_type?resourceVersion=id%3A1908732"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/relationships/node_type?resourceVersion=id%3A1908732"
+      }
+     }
+    },
+    "revision_uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/revision_uid?resourceVersion=id%3A1908732"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/relationships/revision_uid?resourceVersion=id%3A1908732"
+      }
+     }
+    },
+    "uid": {
+     "data": {
+      "type": "user--user",
+      "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+      "meta": {
+       "drupal_internal__target_id": 185
+      }
+     },
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/uid?resourceVersion=id%3A1908732"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/relationships/uid?resourceVersion=id%3A1908732"
+      }
+     }
+    },
+    "event_program_degree": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/event_program_degree?resourceVersion=id%3A1908732"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/relationships/event_program_degree?resourceVersion=id%3A1908732"
+      }
+     }
+    },
+    "feeds_item": {
+     "data": [
+      {
+       "type": "feeds_feed--master_calendar_importer",
+       "id": "8bb14635-cedd-4cf8-94d5-39b8b6b459d2",
+       "meta": {
+        "imported": "2026-07-04T04:00:11+00:00",
+        "url": "https://www.rit.edu/events/inclusive-hiring-training-8",
+        "guid": "711b803d7031da65ad1aa50e2b18d9a5",
+        "hash": "b763b2d8cb3c3ea026e5f4bdd48796d4",
+        "drupal_internal__target_id": 7
+       }
+      }
+     ],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/feeds_item?resourceVersion=id%3A1908732"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/relationships/feeds_item?resourceVersion=id%3A1908732"
+      }
+     }
+    },
+    "field_additional_tags": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/field_additional_tags?resourceVersion=id%3A1908732"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/relationships/field_additional_tags?resourceVersion=id%3A1908732"
+      }
+     }
+    },
+    "field_degree_program": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/field_degree_program?resourceVersion=id%3A1908732"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/relationships/field_degree_program?resourceVersion=id%3A1908732"
+      }
+     }
+    },
+    "field_event_general_topics": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/field_event_general_topics?resourceVersion=id%3A1908732"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/relationships/field_event_general_topics?resourceVersion=id%3A1908732"
+      }
+     }
+    },
+    "field_event_rit_org_structure": {
+     "data": [],
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/field_event_rit_org_structure?resourceVersion=id%3A1908732"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/relationships/field_event_rit_org_structure?resourceVersion=id%3A1908732"
+      }
+     }
+    },
+    "field_image": {
+     "data": null,
+     "links": {
+      "related": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/field_image?resourceVersion=id%3A1908732"
+      },
+      "self": {
+       "href": "https://www.rit.edu/jsonapi/node/event/e7cb8cc2-d1bc-4103-81a1-421592665101/relationships/field_image?resourceVersion=id%3A1908732"
+      }
+     }
+    }
+   }
+  }
+ ],
+ "meta": {
+  "count": 444
+ },
+ "links": {
+  "self": {
+   "href": "https://www.rit.edu/jsonapi/node/event?page%5Blimit%5D=8"
+  }
+ }
+}

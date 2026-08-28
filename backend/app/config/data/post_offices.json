@@ -1,0 +1,29 @@
+{
+  "last_verified": "2026-08-28",
+  "source_note": "Hand maintained. RIT publishes no structured feed for these, confirmed by the Drupal JSON:API gate task in CLAUDE.md section 7.10.",
+  "offices": [
+    {
+      "id": "global-village",
+      "name": "Global Village Post Office",
+      "building": "Global Village",
+      "email": "gvpostoffice@rit.edu",
+      "phone": "585-475-3463",
+      "last_verified": "2026-08-28",
+      "hours": [
+        {"days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "08:00", "closes_at": "17:00", "season": "academic"},
+        {"days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "08:00", "closes_at": "16:30", "season": "summer"}
+      ]
+    },
+    {
+      "id": "perry-hall",
+      "name": "Fredericka Douglass Sprague Perry Hall Post Office",
+      "building": "Fredericka Douglass Sprague Perry Hall",
+      "email": null,
+      "phone": null,
+      "last_verified": "2026-08-28",
+      "hours": [
+        {"days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"], "opens_at": "08:00", "closes_at": "17:00", "season": "academic"}
+      ]
+    }
+  ]
+}

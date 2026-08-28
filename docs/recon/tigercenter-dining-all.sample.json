@@ -1,0 +1,122 @@
+{
+  "locations": [
+    {
+      "id": 23,
+      "name": "The Cafe & Market at Crossroads",
+      "summary": "Restaurant and Convenience Store",
+      "description": "Located in the Crossroads building in Global Village, the Cafe and Market at Crossroads features a food court and convenience store. Inside of Crossroads are eight different food stations: grill, salad bar, pasta toss, pizza, Asian cuisine, deli, chef specials, and visiting chefs. <br /><br />\nThis location is cashless everyday after 7 p.m. Customers using cash may use a Tiger Spend Reload Station to add funds to an existing RIT ID card or a Reload Card.",
+      "mapsUrl": "https://maps.rit.edu/m/index.html?mdo_id=123",
+      "department": "Dining",
+      "mdoId": 123,
+      "mapId": 0,
+      "mrkId": 0,
+      "catId": 0,
+      "contacts": [],
+      "events": [
+        {
+          "id": 9684,
+          "name": "Fall 2026",
+          "locationId": 23,
+          "locationName": "The Cafe & Market at Crossroads",
+          "startTime": "10:30:00",
+          "endTime": "21:00:00",
+          "startDate": "2026-08-16",
+          "endDate": "2026-12-24",
+          "daysMask": 62,
+          "daysOfWeek": [
+            "MONDAY",
+            "TUESDAY",
+            "WEDNESDAY",
+            "THURSDAY",
+            "FRIDAY"
+          ],
+          "infinite": false,
+          "menuTypes": [
+            "LUNCH"
+          ],
+          "exceptions": [
+            {
+              "id": 24743,
+              "name": "8/28",
+              "startTime": "10:30:00",
+              "endTime": "18:00:00",
+              "startDate": "2026-08-28",
+              "endDate": "2026-08-28",
+              "daysMask": 32,
+              "daysOfWeek": [
+                "FRIDAY"
+              ],
+              "open": true,
+              "infinite": false
+            }
+          ],
+          "description": null
+        }
+      ],
+      "menus": [
+        {
+          "id": 150,
+          "name": "D'Mangu (11 a.m.-2 p.m.)",
+          "description": "Native Dominican cuisine",
+          "price": 0,
+          "category": "Visiting Chef",
+          "eventId": 9684
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "name": "Corner Store",
+      "summary": "Convenience Store",
+      "description": "Located in Fredericka Douglass Sprague Perry Hall, The Corner Store is the on-campus grocery store. Pick up snacks or all the ingredients to prepare a meal. The Corner Store is filled with fresh produce, sandwiches, ice cream, microwavable entrees, dairy products, snacks, and beverages. The Corner Store is open late everyday.\n<br /><br />\nThis location is cashless from 10:00 a.m. - 12:00 p.m. Saturday and Sunday. Cash cannot be accepted during these times. Purchases can be made with Meal Exchanges, Tiger Bucks, Dining Dollars, or Visa/Mastercard/Discover.",
+      "mapsUrl": "https://maps.rit.edu/m/index.html?mdo_id=127",
+      "department": "Dining",
+      "mdoId": 127,
+      "mapId": 0,
+      "mrkId": 0,
+      "catId": 0,
+      "contacts": [],
+      "events": [
+        {
+          "id": 9603,
+          "name": "Fall 2026",
+          "locationId": 27,
+          "locationName": "Corner Store",
+          "startTime": "08:30:00",
+          "endTime": "00:00:00",
+          "startDate": "2026-08-16",
+          "endDate": "2026-12-24",
+          "daysMask": 62,
+          "daysOfWeek": [
+            "MONDAY",
+            "TUESDAY",
+            "WEDNESDAY",
+            "THURSDAY",
+            "FRIDAY"
+          ],
+          "infinite": false,
+          "menuTypes": null,
+          "exceptions": [
+            {
+              "id": 24582,
+              "name": "8/23 & 8/29",
+              "startTime": "10:00:00",
+              "endTime": "00:00:00",
+              "startDate": "2026-08-23",
+              "endDate": "2026-08-29",
+              "daysMask": 65,
+              "daysOfWeek": [
+                "SUNDAY",
+                "SATURDAY"
+              ],
+              "open": true,
+              "infinite": false
+            }
+          ],
+          "description": null
+        }
+      ],
+      "menus": []
+    }
+  ]
+}

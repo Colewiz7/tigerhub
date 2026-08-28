@@ -1,0 +1,735 @@
+{
+  "jsonapi": {
+    "version": "1.0",
+    "meta": {
+      "links": {
+        "self": {
+          "href": "http://jsonapi.org/format/1.0/"
+        }
+      }
+    }
+  },
+  "links": {
+    "last": {
+      "href": "https://www.rit.edu/jsonapi/node/event?page%5Boffset%5D=400&page%5Blimit%5D=50"
+    },
+    "next": {
+      "href": "https://www.rit.edu/jsonapi/node/event?page%5Boffset%5D=50&page%5Blimit%5D=50"
+    },
+    "self": {
+      "href": "https://www.rit.edu/jsonapi/node/event"
+    }
+  },
+  "data": [
+    {
+      "type": "node--event",
+      "id": "9d178014-928b-48db-b677-92294ac059b5",
+      "links": {
+        "self": {
+          "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5?resourceVersion=id%3A693460"
+        }
+      },
+      "attributes": {
+        "drupal_internal__nid": 6345688,
+        "drupal_internal__vid": 693460,
+        "langcode": "en",
+        "revision_timestamp": "2022-04-18T00:00:12+00:00",
+        "status": true,
+        "title": "ROAR Day ",
+        "created": "2022-04-18T00:00:12+00:00",
+        "changed": "2022-04-19T23:00:16+00:00",
+        "promote": true,
+        "sticky": false,
+        "default_langcode": true,
+        "revision_translation_affected": true,
+        "metatag": [
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "title",
+              "content": "ROAR Day | Rochester Institute of Technology"
+            }
+          },
+          {
+            "tag": "link",
+            "attributes": {
+              "rel": "canonical",
+              "href": "https://www.rit.edu/events/roar-day"
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "property": "og:site_name",
+              "content": "RIT"
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "@type",
+              "content": "CollegeOrUniversity",
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "@id",
+              "content": "https://www.rit.edu/#organization",
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "name",
+              "content": "Rochester Institute of Technology",
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "sameAs",
+              "content": [
+                "https://www.facebook.com/RITtigers/",
+                "https://instagram.com/RITTigers",
+                "https://x.com/RITtigers",
+                "https://www.tiktok.com/@rittigers",
+                "https://www.youtube.com/user/RITUniversityNews",
+                "https://www.linkedin.com/company/rochester-institute-of-technology"
+              ],
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "url",
+              "content": "https://www.rit.edu/",
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "telephone",
+              "content": "585-475-2411",
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "image",
+              "content": {
+                "@type": "ImageObject",
+                "representativeOfPage": "True",
+                "url": "https://www.rit.edu/sites/rit.edu/files/default_images/tiger-at-shed.jpg",
+                "width": "1600",
+                "height": "1033"
+              },
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "logo",
+              "content": {
+                "@type": "ImageObject",
+                "representativeOfPage": "True",
+                "url": "https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png",
+                "width": "180",
+                "height": "180"
+              },
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "address",
+              "content": {
+                "@type": "PostalAddress",
+                "streetAddress": "1 Lomb Memorial Drive",
+                "addressLocality": "Rochester",
+                "addressRegion": "NY",
+                "postalCode": "14623",
+                "addressCountry": "US"
+              },
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          }
+        ],
+        "node_class": null,
+        "path": {
+          "alias": "/events/roar-day",
+          "pid": 33345958,
+          "langcode": "en"
+        },
+        "rh_action": null,
+        "rh_redirect": null,
+        "rh_redirect_response": null,
+        "rh_redirect_fallback_action": null,
+        "publish_on": null,
+        "unpublish_on": null,
+        "body": null,
+        "field_building": null,
+        "field_end_date": null,
+        "field_end_time": "11:59 PM",
+        "field_event_type": null,
+        "field_featured_event": false,
+        "field_image_alt_text": null,
+        "field_image_url": null,
+        "field_link": null,
+        "field_room_location": null,
+        "field_start_date": "2022-04-21T00:00:00-04:00",
+        "field_start_time": "12:00 AM"
+      },
+      "relationships": {
+        "node_type": {
+          "data": {
+            "type": "node_type--node_type",
+            "id": "58996f5d-f7b3-4325-9117-6fae1171be1b",
+            "meta": {
+              "drupal_internal__target_id": "event"
+            }
+          },
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/node_type?resourceVersion=id%3A693460"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/node_type?resourceVersion=id%3A693460"
+            }
+          }
+        },
+        "revision_uid": {
+          "data": {
+            "type": "user--user",
+            "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+            "meta": {
+              "drupal_internal__target_id": 185
+            }
+          },
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/revision_uid?resourceVersion=id%3A693460"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/revision_uid?resourceVersion=id%3A693460"
+            }
+          }
+        },
+        "uid": {
+          "data": {
+            "type": "user--user",
+            "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+            "meta": {
+              "drupal_internal__target_id": 185
+            }
+          },
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/uid?resourceVersion=id%3A693460"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/uid?resourceVersion=id%3A693460"
+            }
+          }
+        },
+        "event_program_degree": {
+          "data": null,
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/event_program_degree?resourceVersion=id%3A693460"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/event_program_degree?resourceVersion=id%3A693460"
+            }
+          }
+        },
+        "feeds_item": {
+          "data": [
+            {
+              "type": "feeds_feed--master_calendar_importer",
+              "id": "8bb14635-cedd-4cf8-94d5-39b8b6b459d2",
+              "meta": {
+                "imported": "2022-04-18T00:00:12+00:00",
+                "url": "https://www.rit.edu/events/roar-day-4",
+                "guid": "f3cd2410fe127b03c626489f845a51fa",
+                "hash": "_delete",
+                "drupal_internal__target_id": 7
+              }
+            }
+          ],
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/feeds_item?resourceVersion=id%3A693460"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/feeds_item?resourceVersion=id%3A693460"
+            }
+          }
+        },
+        "field_additional_tags": {
+          "data": [],
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/field_additional_tags?resourceVersion=id%3A693460"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/field_additional_tags?resourceVersion=id%3A693460"
+            }
+          }
+        },
+        "field_degree_program": {
+          "data": [],
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/field_degree_program?resourceVersion=id%3A693460"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/field_degree_program?resourceVersion=id%3A693460"
+            }
+          }
+        },
+        "field_event_general_topics": {
+          "data": [
+            {
+              "type": "taxonomy_term--general_topics",
+              "id": "12d07337-57bc-48d8-b040-254542e69a91",
+              "meta": {
+                "drupal_internal__target_id": 4979
+              }
+            },
+            {
+              "type": "taxonomy_term--general_topics",
+              "id": "97af0bd8-0905-46a5-8ffa-04d87b6ed602",
+              "meta": {
+                "drupal_internal__target_id": 5031
+              }
+            },
+            {
+              "type": "taxonomy_term--general_topics",
+              "id": "9a08188b-2278-4798-9267-d16b88ff3734",
+              "meta": {
+                "drupal_internal__target_id": 5039
+              }
+            },
+            {
+              "type": "taxonomy_term--general_topics",
+              "id": "7d08941b-301e-49ba-8ce6-fa3a21e04df7",
+              "meta": {
+                "drupal_internal__target_id": 5103
+              }
+            },
+            {
+              "type": "taxonomy_term--general_topics",
+              "id": "090d457d-0258-4d79-b7e4-76d8d1ace255",
+              "meta": {
+                "drupal_internal__target_id": 5155
+              }
+            }
+          ],
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/field_event_general_topics?resourceVersion=id%3A693460"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/field_event_general_topics?resourceVersion=id%3A693460"
+            }
+          }
+        },
+        "field_event_rit_org_structure": {
+          "data": [],
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/field_event_rit_org_structure?resourceVersion=id%3A693460"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/field_event_rit_org_structure?resourceVersion=id%3A693460"
+            }
+          }
+        },
+        "field_image": {
+          "data": null,
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/field_image?resourceVersion=id%3A693460"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/9d178014-928b-48db-b677-92294ac059b5/relationships/field_image?resourceVersion=id%3A693460"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "node--event",
+      "id": "be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db",
+      "links": {
+        "self": {
+          "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db?resourceVersion=id%3A693472"
+        }
+      },
+      "attributes": {
+        "drupal_internal__nid": 6345700,
+        "drupal_internal__vid": 693472,
+        "langcode": "en",
+        "revision_timestamp": "2022-04-18T00:00:56+00:00",
+        "status": true,
+        "title": "ROAR Day ",
+        "created": "2022-04-18T00:00:56+00:00",
+        "changed": "2022-04-18T02:00:37+00:00",
+        "promote": true,
+        "sticky": false,
+        "default_langcode": true,
+        "revision_translation_affected": true,
+        "metatag": [
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "title",
+              "content": "ROAR Day | Rochester Institute of Technology"
+            }
+          },
+          {
+            "tag": "link",
+            "attributes": {
+              "rel": "canonical",
+              "href": "https://www.rit.edu/events/roar-day-0"
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "property": "og:site_name",
+              "content": "RIT"
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "@type",
+              "content": "CollegeOrUniversity",
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "@id",
+              "content": "https://www.rit.edu/#organization",
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "name",
+              "content": "Rochester Institute of Technology",
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "sameAs",
+              "content": [
+                "https://www.facebook.com/RITtigers/",
+                "https://instagram.com/RITTigers",
+                "https://x.com/RITtigers",
+                "https://www.tiktok.com/@rittigers",
+                "https://www.youtube.com/user/RITUniversityNews",
+                "https://www.linkedin.com/company/rochester-institute-of-technology"
+              ],
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "url",
+              "content": "https://www.rit.edu/",
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "telephone",
+              "content": "585-475-2411",
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "image",
+              "content": {
+                "@type": "ImageObject",
+                "representativeOfPage": "True",
+                "url": "https://www.rit.edu/sites/rit.edu/files/default_images/tiger-at-shed.jpg",
+                "width": "1600",
+                "height": "1033"
+              },
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "logo",
+              "content": {
+                "@type": "ImageObject",
+                "representativeOfPage": "True",
+                "url": "https://www.rit.edu/sites/all/themes/uwbase/rit_bootstrap_2019/favicon/apple-touch-icon.png",
+                "width": "180",
+                "height": "180"
+              },
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          },
+          {
+            "tag": "meta",
+            "attributes": {
+              "name": "address",
+              "content": {
+                "@type": "PostalAddress",
+                "streetAddress": "1 Lomb Memorial Drive",
+                "addressLocality": "Rochester",
+                "addressRegion": "NY",
+                "postalCode": "14623",
+                "addressCountry": "US"
+              },
+              "group": "schema_organization",
+              "schema_metatag": true
+            }
+          }
+        ],
+        "node_class": null,
+        "path": {
+          "alias": "/events/roar-day-0",
+          "pid": 33254434,
+          "langcode": "en"
+        },
+        "rh_action": null,
+        "rh_redirect": null,
+        "rh_redirect_response": null,
+        "rh_redirect_fallback_action": null,
+        "publish_on": null,
+        "unpublish_on": null,
+        "body": null,
+        "field_building": null,
+        "field_end_date": null,
+        "field_end_time": "11:59 PM",
+        "field_event_type": null,
+        "field_featured_event": false,
+        "field_image_alt_text": null,
+        "field_image_url": null,
+        "field_link": null,
+        "field_room_location": null,
+        "field_start_date": "2022-04-21T00:00:00-04:00",
+        "field_start_time": "12:00 AM"
+      },
+      "relationships": {
+        "node_type": {
+          "data": {
+            "type": "node_type--node_type",
+            "id": "58996f5d-f7b3-4325-9117-6fae1171be1b",
+            "meta": {
+              "drupal_internal__target_id": "event"
+            }
+          },
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/node_type?resourceVersion=id%3A693472"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/node_type?resourceVersion=id%3A693472"
+            }
+          }
+        },
+        "revision_uid": {
+          "data": {
+            "type": "user--user",
+            "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+            "meta": {
+              "drupal_internal__target_id": 185
+            }
+          },
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/revision_uid?resourceVersion=id%3A693472"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/revision_uid?resourceVersion=id%3A693472"
+            }
+          }
+        },
+        "uid": {
+          "data": {
+            "type": "user--user",
+            "id": "da6e9af2-70db-4857-8b52-83f6c564d650",
+            "meta": {
+              "drupal_internal__target_id": 185
+            }
+          },
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/uid?resourceVersion=id%3A693472"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/uid?resourceVersion=id%3A693472"
+            }
+          }
+        },
+        "event_program_degree": {
+          "data": null,
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/event_program_degree?resourceVersion=id%3A693472"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/event_program_degree?resourceVersion=id%3A693472"
+            }
+          }
+        },
+        "feeds_item": {
+          "data": [
+            {
+              "type": "feeds_feed--master_calendar_importer",
+              "id": "8bb14635-cedd-4cf8-94d5-39b8b6b459d2",
+              "meta": {
+                "imported": "2022-04-18T00:00:56+00:00",
+                "url": "https://www.rit.edu/events/roar-day-4",
+                "guid": "f3cd2410fe127b03c626489f845a51fa",
+                "hash": "_delete",
+                "drupal_internal__target_id": 7
+              }
+            }
+          ],
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/feeds_item?resourceVersion=id%3A693472"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/feeds_item?resourceVersion=id%3A693472"
+            }
+          }
+        },
+        "field_additional_tags": {
+          "data": [],
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/field_additional_tags?resourceVersion=id%3A693472"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/field_additional_tags?resourceVersion=id%3A693472"
+            }
+          }
+        },
+        "field_degree_program": {
+          "data": [],
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/field_degree_program?resourceVersion=id%3A693472"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/field_degree_program?resourceVersion=id%3A693472"
+            }
+          }
+        },
+        "field_event_general_topics": {
+          "data": [
+            {
+              "type": "taxonomy_term--general_topics",
+              "id": "12d07337-57bc-48d8-b040-254542e69a91",
+              "meta": {
+                "drupal_internal__target_id": 4979
+              }
+            },
+            {
+              "type": "taxonomy_term--general_topics",
+              "id": "97af0bd8-0905-46a5-8ffa-04d87b6ed602",
+              "meta": {
+                "drupal_internal__target_id": 5031
+              }
+            },
+            {
+              "type": "taxonomy_term--general_topics",
+              "id": "9a08188b-2278-4798-9267-d16b88ff3734",
+              "meta": {
+                "drupal_internal__target_id": 5039
+              }
+            },
+            {
+              "type": "taxonomy_term--general_topics",
+              "id": "7d08941b-301e-49ba-8ce6-fa3a21e04df7",
+              "meta": {
+                "drupal_internal__target_id": 5103
+              }
+            },
+            {
+              "type": "taxonomy_term--general_topics",
+              "id": "090d457d-0258-4d79-b7e4-76d8d1ace255",
+              "meta": {
+                "drupal_internal__target_id": 5155
+              }
+            }
+          ],
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/field_event_general_topics?resourceVersion=id%3A693472"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/field_event_general_topics?resourceVersion=id%3A693472"
+            }
+          }
+        },
+        "field_event_rit_org_structure": {
+          "data": [],
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/field_event_rit_org_structure?resourceVersion=id%3A693472"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/field_event_rit_org_structure?resourceVersion=id%3A693472"
+            }
+          }
+        },
+        "field_image": {
+          "data": null,
+          "links": {
+            "related": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/field_image?resourceVersion=id%3A693472"
+            },
+            "self": {
+              "href": "https://www.rit.edu/jsonapi/node/event/be9f68d0-0bc2-48fb-a0f4-4abbb0c7f8db/relationships/field_image?resourceVersion=id%3A693472"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

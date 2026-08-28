@@ -1,0 +1,44 @@
+services:
+  rit-times-api:
+    build: .
+    image: rit-times-api:latest
+    container_name: rit-times-api
+    restart: unless-stopped
+    environment:
+      # Honest, identifiable contact on every outbound request.
+      RIT_TIMES_CONTACT: "${RIT_TIMES_CONTACT:-colewiz72@gmail.com}"
+      RIT_TIMES_DB: /srv/data/rit_times.db
+      # Scrape cadence, in minutes. See CLAUDE.md section 6.
+      RIT_TIMES_INTERVAL_DINING: "60"
+      RIT_TIMES_INTERVAL_EVENTS: "180"
+      RIT_TIMES_INTERVAL_MAKERSPACE: "15"
+      RIT_TIMES_INTERVAL_OCCUPANCY: "5"
+      RIT_TIMES_CONFIG_STALE_DAYS: "120"
+    volumes:
+      # Named volume so the SQLite cache survives a rebuild.
+      - rit-times-data:/srv/data
+    networks:
+      - traefik
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "traefik"
+
+      # Public host. Swap to colewiz.student.rit.edu for the on campus route.
+      traefik.http.routers.rit-times.rule: "Host(`rit-times.colewiz.dev`)"
+      traefik.http.routers.rit-times.entrypoints: "websecure"
+      traefik.http.routers.rit-times.tls: "true"
+      traefik.http.routers.rit-times.tls.certresolver: "cloudflare"
+      traefik.http.routers.rit-times.service: "rit-times"
+      traefik.http.services.rit-times.loadbalancer.server.port: "8000"
+
+      # Read only public data, so no Authentik middleware here. If a private
+      # endpoint is ever added, gate only that router.
+      traefik.http.routers.rit-times.middlewares: "rit-times-headers@docker"
+      traefik.http.middlewares.rit-times-headers.headers.customresponseheaders.X-Robots-Tag: "noindex"
+
+networks:
+  traefik:
+    external: true
+
+volumes:
+  rit-times-data:

@@ -1,0 +1,86 @@
+{
+  "data": {
+    "equipments": [
+      {
+        "id": "12",
+        "name": "Serger",
+        "archived": false,
+        "numAvailable": 0,
+        "numInUse": 0,
+        "room": {
+          "name": "Textiles"
+        }
+      },
+      {
+        "id": "15",
+        "name": "CNC Router",
+        "archived": false,
+        "numAvailable": 1,
+        "numInUse": 0,
+        "room": {
+          "name": "Wood Shop"
+        }
+      },
+      {
+        "id": "70",
+        "name": "Rotary Sanding Station",
+        "archived": false,
+        "numAvailable": 1,
+        "numInUse": 0,
+        "room": {
+          "name": "Wood Shop"
+        }
+      },
+      {
+        "id": "21",
+        "name": "Spindle Sander",
+        "archived": false,
+        "numAvailable": 1,
+        "numInUse": 0,
+        "room": {
+          "name": "Wood Shop"
+        }
+      },
+      {
+        "id": "40",
+        "name": "Metal Belt Sander",
+        "archived": false,
+        "numAvailable": 0,
+        "numInUse": 1,
+        "room": {
+          "name": "Manual Shop"
+        }
+      },
+      {
+        "id": "23",
+        "name": "Metal Drill Press",
+        "archived": false,
+        "numAvailable": 1,
+        "numInUse": 0,
+        "room": {
+          "name": "Manual Shop"
+        }
+      },
+      {
+        "id": "71",
+        "name": "Rotary Grinding Station",
+        "archived": false,
+        "numAvailable": 1,
+        "numInUse": 0,
+        "room": {
+          "name": "Manual Shop"
+        }
+      },
+      {
+        "id": "29",
+        "name": "Conversational Lathe (Large)",
+        "archived": false,
+        "numAvailable": 1,
+        "numInUse": 0,
+        "room": {
+          "name": "Manual Shop"
+        }
+      }
+    ]
+  }
+}
