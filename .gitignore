@@ -24,3 +24,6 @@ client/build/
 client/.dart_tool/
 client/.flutter-plugins-dependencies
 client/linux/flutter/ephemeral/
+
+# dev helper runtime state
+.run/
