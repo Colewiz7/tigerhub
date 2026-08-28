@@ -18,3 +18,9 @@ backend/data/
 # Flutter, for when the client lands
 client/build/
 client/.dart_tool/
+
+# Flutter
+client/build/
+client/.dart_tool/
+client/.flutter-plugins-dependencies
+client/linux/flutter/ephemeral/
