@@ -1,0 +1,49 @@
+{
+  "last_verified": "2026-08-28",
+  "source_note": "Hardcoded on purpose. The make.rit.edu GraphQL hours feed returns closed:true on every row with an ISO timestamp where a weekday belongs, which is a bug in their data. The open and close TIMES below were read off that same payload and look sane, but the weekday mapping is inferred, so treat these as provisional and cross check against rit.edu/shed.",
+  "spaces": [
+    {
+      "id": "shed-general-makerspace",
+      "name": "General Makerspace",
+      "location": "SHED-1330",
+      "last_verified": "2026-08-28",
+      "hours": [
+        {
+          "days": [
+            "MONDAY",
+            "TUESDAY",
+            "WEDNESDAY",
+            "THURSDAY"
+          ],
+          "opens_at": "09:00",
+          "closes_at": "21:00",
+          "season": "academic"
+        },
+        {
+          "days": [
+            "FRIDAY"
+          ],
+          "opens_at": "09:00",
+          "closes_at": "19:00",
+          "season": "academic"
+        },
+        {
+          "days": [
+            "SATURDAY"
+          ],
+          "opens_at": "12:00",
+          "closes_at": "19:00",
+          "season": "academic"
+        },
+        {
+          "days": [
+            "SUNDAY"
+          ],
+          "opens_at": "12:00",
+          "closes_at": "21:00",
+          "season": "academic"
+        }
+      ]
+    }
+  ]
+}

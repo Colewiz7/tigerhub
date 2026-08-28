@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Local SQLite cache, rebuilt by the scrapers
+backend/data/
+*.db
+*.db-wal
+*.db-shm
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# Flutter, for when the client lands
+client/build/
+client/.dart_tool/

@@ -1,0 +1,687 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:CAMPUSGROUPS
+X-WR-CALNAME:RIT (Rochester Institute of Technology)
+X-PUBLISHED-TTL:PT1H
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260530T122428
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330051#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260530T170000Z
+DTEND:20260530T210000Z
+UID:d94d66d1ea8971caf7ab98b82b87145a5122026_9:18:17_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330051
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330051
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260530T122439
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330106#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260530T170000Z
+DTEND:20260530T210000Z
+UID:ca724bf411f5b4c512f48ed876e5d0985122026_9:23:54_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330106
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330106
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260528T112903
+CREATED:20260528T120000
+SEQUENCE:1
+ORGANIZER;CN="Center for Residence Life":https://campusgroups.rit.edu/ResLife/
+CONTACT:https://campusgroups.rit.edu/ResLife/rsvp_boot?id=2330223#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:RESLIFE
+CATEGORIES;X-CG-CATEGORY=event_type:Recreation
+DTSTART:20260530T173000Z
+DTEND:20260530T183000Z
+UID:86a8a24ab1ace2b8bc6f15730daa8f805282026_11:04:23_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Summer Start Up
+LOCATION: Sign in to download the location
+URL:https://campusgroups.rit.edu/rsvp?id=2330223
+DESCRIPTION:An Event to have all the residents get to know each other and have time to connect with good food and games\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330223
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260602T084246
+CREATED:20260501T120000
+SEQUENCE:3
+ORGANIZER;CN="Campus Life: Building Operations & Vending":https://campusgroups.rit.edu/CCLBuildingOps/
+CONTACT:https://campusgroups.rit.edu/CCLBuildingOps/rsvp_boot?id=2329634#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:CCLBUILDINGOPS
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260601T040000Z
+DTEND:20260701T035500Z
+UID:7327c52d0a457e9ae2d9fc387ca105aa512026_10:06:30_PM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:June Check-In  
+LOCATION: Sign in to download the location
+URL:https://campusgroups.rit.edu/rsvp?id=2329634
+DESCRIPTION:June1st- June 30st\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2329634
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260601T121105
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330052#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260601T170000Z
+DTEND:20260601T210000Z
+UID:56c87f00fdf280353a8e174b890617b35122026_9:18:18_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330052
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330052
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260601T121117
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330107#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260601T170000Z
+DTEND:20260601T210000Z
+UID:81c9bce5a9b4dbefbdebd5947097291d5122026_9:23:55_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330107
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330107
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260603T122523
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330053#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260603T170000Z
+DTEND:20260603T210000Z
+UID:303023f02b8127f5f72f8072457fb3595122026_9:18:19_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330053
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330053
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260603T122533
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330108#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260603T170000Z
+DTEND:20260603T210000Z
+UID:e1cfad79124777bec3b9bc3445b0d3de5122026_9:23:56_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330108
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330108
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260605T122702
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330054#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260605T170000Z
+DTEND:20260605T210000Z
+UID:c0d5a14e0d283eefcfce9015ca30618c5122026_9:18:20_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330054
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330054
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260605T122715
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330109#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260605T170000Z
+DTEND:20260605T210000Z
+UID:8632b95ce178abfcde9b442a8c90ae1f5122026_9:23:56_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330109
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330109
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121539
+LAST-MODIFIED:20260606T122542
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330055#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260606T170000Z
+DTEND:20260606T210000Z
+UID:227b5fb8171d7aaaea6400350eee27f35122026_9:18:21_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330055
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330055
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260606T122558
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330110#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260606T170000Z
+DTEND:20260606T210000Z
+UID:6e68eb30ff7c29a18bd8ca85679c5bba5122026_9:23:57_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330110
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330110
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260608T121756
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330056#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260608T170000Z
+DTEND:20260608T210000Z
+UID:a72ed1ec38c4b11439889040e483fdb05122026_9:18:21_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330056
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330056
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260608T121808
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330111#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260608T170000Z
+DTEND:20260608T210000Z
+UID:f9ad66dca70944616b9b3c390b8284035122026_9:23:58_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330111
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330111
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260610T115802
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330057#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260610T170000Z
+DTEND:20260610T210000Z
+UID:0352346a16d20d8cf14d3eb0579c51b35122026_9:18:22_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330057
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330057
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260610T115819
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330112#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260610T170000Z
+DTEND:20260610T210000Z
+UID:84376e80362ce025e4d805539c91821c5122026_9:23:58_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330112
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330112
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260615T093953
+CREATED:20260615T120000
+SEQUENCE:1
+ORGANIZER;CN="Center for Residence Life":https://campusgroups.rit.edu/ResLife/
+CONTACT:https://campusgroups.rit.edu/ResLife/rsvp_boot?id=2330373#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:RESLIFE
+CATEGORIES;X-CG-CATEGORY=event_type:Recreation
+DTSTART:20260611T190000Z
+DTEND:20260611T210000Z
+UID:6506cfa9292aca7b8c01f4c5f264f3056152026_9:35:27_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Pizza Party
+LOCATION: Sign in to download the location
+URL:https://campusgroups.rit.edu/rsvp?id=2330373
+DESCRIPTION:Pizza party for residents. \n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330373
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260518T131628
+CREATED:20260518T120000
+SEQUENCE:3
+ORGANIZER;CN="CSTEP":https://campusgroups.rit.edu/CSTEP/
+CONTACT:https://campusgroups.rit.edu/CSTEP/rsvp_boot?id=2330188#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:CSTEP
+CATEGORIES;X-CG-CATEGORY=event_type:Travel/Trip
+DTSTART:20260612T123000Z
+DTEND:20260612T160000Z
+UID:3e11968921fb2e5673c53ed5844a966a5182026_11:28:09_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Grad School Tour of University of Rochester 
+LOCATION: Sign in to download the location
+URL:https://campusgroups.rit.edu/rsvp?id=2330188
+DESCRIPTION:Transportation will be provided for this graduate school tour of the University of Rochester. Bus departs from in front of the SAU at 8:30am. Bus will return to RIT by 12pm. We will return to campus by 12pm and you can grab a boxed lunch, to go! This required event counts toward your research hours for the week. \n\n\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330188
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260612T122531
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330058#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260612T170000Z
+DTEND:20260612T210000Z
+UID:82f84319f29f6fbeb4c1f4a9f06435765122026_9:18:23_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330058
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330058
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260612T122536
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330113#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260612T170000Z
+DTEND:20260612T210000Z
+UID:4306afc4da3b567b0735cc644790b5005122026_9:23:59_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330113
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330113
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260613T120743
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330059#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260613T170000Z
+DTEND:20260613T210000Z
+UID:ba5e5f10e4b5fb1b7684d2743e3228475122026_9:18:24_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330059
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330059
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260613T120754
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330114#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260613T170000Z
+DTEND:20260613T210000Z
+UID:51c1daef0d95e4ae6f785816787d42815122026_9:24:00_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330114
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330114
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260615T120840
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330060#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260615T170000Z
+DTEND:20260615T210000Z
+UID:fe6e1409753f5eb79a3adf85918e4d825122026_9:18:25_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330060
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330060
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260615T120853
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330115#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260615T170000Z
+DTEND:20260615T210000Z
+UID:f179113805f41128301fe70d7989612c5122026_9:24:00_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330115
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330115
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260617T121947
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330061#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260617T170000Z
+DTEND:20260617T210000Z
+UID:a60bfca5267d30bcea6e18dd313c79115122026_9:18:26_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330061
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330061
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260617T121956
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330116#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260617T170000Z
+DTEND:20260617T210000Z
+UID:e5eb80c2d1294b8a3ae8c35aa03071d85122026_9:24:01_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330116
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330116
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260618T135017
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330062#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260620T170000Z
+DTEND:20260620T210000Z
+UID:e918e10bbc1d49e68f5b390fd16d3bd85122026_9:18:27_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330062
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330062
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260620T120659
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330117#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260620T170000Z
+DTEND:20260620T210000Z
+UID:056d00018efe5ab1aef5fa0a3f811d785122026_9:24:02_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330117
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330117
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260622T130235
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330063#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260622T170000Z
+DTEND:20260622T210000Z
+UID:427f994c0f2b5c3d093afedc0cb8a3f45122026_9:18:28_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330063
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330063
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260622T130254
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330118#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260622T170000Z
+DTEND:20260622T210000Z
+UID:2c9e4573dd528fa61cc0ee7d8792b0e65122026_9:24:02_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330118
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330118
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260624T092134
+CREATED:20260410T120000
+SEQUENCE:17
+ORGANIZER;CN="McNair Program":https://campusgroups.rit.edu/McNair/
+CONTACT:https://campusgroups.rit.edu/McNair/rsvp_boot?id=2328298#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:MCNAIR
+CATEGORIES;X-CG-CATEGORY=event_type:Meeting
+DTSTART:20260624T130000Z
+DTEND:20260624T143000Z
+UID:50eeb733ca9cca3b34dd99425b5860274102026_11:21:45_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Writing Workshop - Writing the Abstract
+LOCATION: Sign in to download the location
+URL:https://campusgroups.rit.edu/rsvp?id=2328298
+DESCRIPTION:This is a mandatory event. Breakfast is served at 9am, and program staff will be available for questions or any concerns from 9-9:30am. If you do not have questions, you are still welcome to arrive early. No one should arrive later than 9:15 am. The writing workshop will begin promptly at 9:30am with attendance taken first.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2328298
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260624T121848
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330064#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260624T170000Z
+DTEND:20260624T210000Z
+UID:15fa604ebc593cb2097a6ae7e172521a5122026_9:18:29_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330064
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330064
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260624T121911
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330119#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260624T170000Z
+DTEND:20260624T210000Z
+UID:b71077a759978c6ff1f4b84efe7cf15b5122026_9:24:03_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330119
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330119
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260721T093821
+CREATED:20260615T120000
+SEQUENCE:111
+ORGANIZER;CN="Goodbye Goodbuy!":https://campusgroups.rit.edu/GoodbyeGoodbuy/
+CONTACT:https://campusgroups.rit.edu/GoodbyeGoodbuy/rsvp_boot?id=2330382#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:GOODBYEGOODBUY
+CATEGORIES;X-CG-CATEGORY=event_type:University Wide Event
+CATEGORIES;X-CG-CATEGORY=event_tags:Sustainability,Community Service
+DTSTART:20260625T190000Z
+DTEND:20260730T210000Z
+UID:198e47c3abe181d53eb0ccd61ac518206152026_3:56:17_PM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Goodbye, Goodbuy! Summer Volunteering 2026
+LOCATION:Lobby of Grace Watson Hall, 1 Lomb Memorial Dr, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330382
+DESCRIPTION:Every year, Goodbye, Goodbuy! hosts summer volunteering to sort donations, clean and test electronics, and organizing the program space.\n\nVolunteers for the collection and the summer will receive special access to our presale, slated for August 16th!\n\nMeet at Gracie's main entrance area. We will contact you if we need to provide additional information.\n\nIMPORTANT NOTE: Please sign up for desired shift before 11 AM on the desired day. Any day with no signups after 11 AM will be cancelled.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330382
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260626T120732
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330065#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260626T170000Z
+DTEND:20260626T210000Z
+UID:04eeb02cdcda46c12e79d84db23079d35122026_9:18:29_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330065
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330065
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260626T120801
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330120#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260626T170000Z
+DTEND:20260626T210000Z
+UID:fdb7595283da9137c095918f46922c7a5122026_9:24:04_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330120
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330120
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260626T130840
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330066#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260627T170000Z
+DTEND:20260627T210000Z
+UID:bea657c6b435f74542e54ef7cb31d8435122026_9:18:30_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330066
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330066
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260627T130017
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330121#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260627T170000Z
+DTEND:20260627T210000Z
+UID:1f5b44ffe03bbe90ea64a155356a28d25122026_9:24:04_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330121
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330121
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260629T120357
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330067#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260629T170000Z
+DTEND:20260629T210000Z
+UID:08f362813cea56743eee8dd7252ca6435122026_9:18:31_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:RIT FoodShare
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330067
+DESCRIPTION:RIT community members are welcome to stop by the FoodShare Center to receive food, clothing, and personal products at no cost.\n\nThe RIT FoodShare Center is a no questions asked resource, open to any member of the RIT community.  In order to meet the immediate and basic needs of members of the community who are experiencing food insecurity, it is vital that visitors to FoodShare have a need that is otherwise not met.  Community members who can afford to purchase food should allow others to utilize FoodShare services.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330067
+END:VEVENT
+BEGIN:VEVENT
+DTSTAMP:20260827T121540
+LAST-MODIFIED:20260629T120408
+CREATED:20260512T120000
+SEQUENCE:1
+ORGANIZER;CN="RIT FoodShare":https://campusgroups.rit.edu/FoodShare/
+CONTACT:https://campusgroups.rit.edu/FoodShare/rsvp_boot?id=2330122#event_host
+CATEGORIES;X-CG-CATEGORY=club_acronym:FOODSHARE
+CATEGORIES;X-CG-CATEGORY=event_type:Attendance Tracking
+DTSTART:20260629T170000Z
+DTEND:20260629T210000Z
+UID:e55d602ed783b0e8e557b16235728c6e5122026_9:24:05_AM@campusgroups.com
+SUMMARY;ENCODING=QUOTED-PRINTABLE:Bern's Closet
+LOCATION:RIT FoodShare (113 Riverknoll), 113 Riverknoll, Rochester, NY 14623, United States
+URL:https://campusgroups.rit.edu/rsvp?id=2330122
+DESCRIPTION:Bern's Closet, located at the RIT FoodShare Center, is a free clothing resource for the RIT community focusing on clothing for employment and job interviews with a mix of business casual and formal clothes.  We also offer winter clothing including coats, hats, scarfs, gloves, and boots, as available.  Clothes are donated by members of the RIT and Rochester communities.\n---\nEvent Details: https://campusgroups.rit.edu/rsvp?id=2330122
+END:VEVENT
+END:VCALENDAR
