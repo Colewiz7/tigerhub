@@ -2,7 +2,7 @@
 ///
 /// Cards live in a uniform height grid, so content is bounded explicitly
 /// rather than being clipped by the layout. Nothing is ever silently cut off:
-/// if rows are withheld, this row says how many.
+/// if relevant rows are withheld, this row says how many.
 ///
 /// It is also the natural tap target for the detail view, so the callback is
 /// wired now and currently does nothing.

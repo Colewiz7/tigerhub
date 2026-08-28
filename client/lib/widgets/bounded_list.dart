@@ -21,6 +21,7 @@ class BoundedList extends StatelessWidget {
     required this.itemBuilder,
     required this.noun,
     this.onShowAll,
+    this.hiddenCountBuilder,
     this.footerHeight = 46,
   });
 
@@ -29,6 +30,7 @@ class BoundedList extends StatelessWidget {
   final Widget Function(BuildContext, int) itemBuilder;
   final String noun;
   final VoidCallback? onShowAll;
+  final int Function(int shown)? hiddenCountBuilder;
   final double footerHeight;
 
   @override
@@ -46,8 +48,16 @@ class BoundedList extends StatelessWidget {
           // No footer needed, so the whole box is available for rows.
           fits = (available / itemHeight).floor();
         }
-        final shown = fits.clamp(0, itemCount);
-        final hidden = itemCount - shown;
+        var shown = fits.clamp(0, itemCount);
+        var hidden = itemCount - shown;
+        var footerHidden = hiddenCountBuilder?.call(shown) ?? hidden;
+        if (footerHidden <= 0 && hidden > 0) {
+          // If none of the relevant rows are hidden, reclaim the space that
+          // would otherwise have been reserved for an empty footer.
+          shown = (available / itemHeight).floor().clamp(0, itemCount);
+          hidden = itemCount - shown;
+          footerHidden = hiddenCountBuilder?.call(shown) ?? hidden;
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,10 +65,14 @@ class BoundedList extends StatelessWidget {
           children: [
             for (var i = 0; i < shown; i++)
               SizedBox(height: itemHeight, child: itemBuilder(context, i)),
-            if (hidden > 0)
+            if (footerHidden > 0)
               SizedBox(
                 height: footerHeight,
-                child: MoreRow(hidden: hidden, noun: noun, onTap: onShowAll),
+                child: MoreRow(
+                  hidden: footerHidden,
+                  noun: noun,
+                  onTap: onShowAll,
+                ),
               ),
           ],
         );
