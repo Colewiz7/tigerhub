@@ -39,11 +39,21 @@ Then open http://127.0.0.1:8000/docs.
 
 Public host: `tigerhub.colewiz.dev`. On campus: `tigerhub.student.rit.edu`.
 
-**Deploy target is not settled yet.** The homelab runs k3s with Argo CD, Cilium,
-CNPG, and a Cloudflare Tunnel, so the current `docker-compose.yml` targets the
-wrong runtime and is a placeholder. It is either replaced by `k8s/` manifests
-for Argo CD to watch, or kept deliberately as standalone Docker outside the
-cluster. The Dockerfile is correct either way.
+```bash
+cd backend
+docker compose up -d --build
+```
+
+Runs as **standalone Docker on the Debian box, deliberately outside the k3s
+cluster**. That is a conscious choice for a small personal service, not an
+oversight, and it is not GitOps managed by Argo CD. SQLite plus APScheduler
+means exactly one replica, so the cluster buys nothing here.
+
+TLS terminates at the Cloudflare Tunnel edge, so the container carries no
+certresolver and no TLS config. The routing labels are still to be filled in by
+copying the existing `lore.colewiz.dev` service pattern verbatim.
+
+The SQLite cache lives on a named volume so it survives a rebuild.
 
 ## Data sources
 
@@ -111,4 +121,7 @@ sent there is delayed.
 - SHED hours are hardcoded because the upstream GraphQL hours feed is buggy.
   The open and close times came off that payload but the weekday mapping is
   inferred, so treat as provisional and cross check against rit.edu/shed.
-- Deploy manifests are pending the k3s decision above.
+- Routing labels in `docker-compose.yml` are intentionally blank pending the
+  `lore.colewiz.dev` pattern. Everything else in the compose file is complete.
+- The Dockerfile and compose file are unbuilt: no container runtime on the
+  development machine.

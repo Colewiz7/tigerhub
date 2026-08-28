@@ -1,8 +1,12 @@
+# Standalone Docker on the Debian box, deliberately outside the k3s cluster.
+# See CLAUDE.md section 3. This is a conscious choice for a small personal
+# service, not an oversight, and it is not GitOps managed by Argo CD.
+
 services:
-  rit-times-api:
+  tigerhub-api:
     build: .
-    image: rit-times-api:latest
-    container_name: rit-times-api
+    image: tigerhub-api:latest
+    container_name: tigerhub-api
     restart: unless-stopped
     environment:
       # Honest, identifiable contact on every outbound request.
@@ -16,29 +20,30 @@ services:
       RIT_TIMES_CONFIG_STALE_DAYS: "120"
     volumes:
       # Named volume so the SQLite cache survives a rebuild.
-      - rit-times-data:/srv/data
-    networks:
-      - traefik
-    labels:
-      traefik.enable: "true"
-      traefik.docker.network: "traefik"
+      - tigerhub-data:/srv/data
 
-      # Public host. Swap to colewiz.student.rit.edu for the on campus route.
-      traefik.http.routers.rit-times.rule: "Host(`rit-times.colewiz.dev`)"
-      traefik.http.routers.rit-times.entrypoints: "websecure"
-      traefik.http.routers.rit-times.tls: "true"
-      traefik.http.routers.rit-times.tls.certresolver: "cloudflare"
-      traefik.http.routers.rit-times.service: "rit-times"
-      traefik.http.services.rit-times.loadbalancer.server.port: "8000"
+    # ---------------------------------------------------------------------
+    # ROUTING AND TLS: NOT YET WRITTEN, ON PURPOSE.
+    #
+    # Cloudflare Tunnel terminates TLS at the edge, so this almost certainly
+    # needs no certresolver and no TLS block at all. Rather than invent a
+    # config that half works, this is left blank until the labels from the
+    # existing lore.colewiz.dev service are copied here verbatim, with the
+    # host swapped to tigerhub.colewiz.dev and the port to 8000.
+    #
+    # Whatever that pattern is (Traefik labels, a cloudflared ingress entry in
+    # config.yml, or a docker network the tunnel already sits on), copy it,
+    # do not reinvent it.
+    # ---------------------------------------------------------------------
 
-      # Read only public data, so no Authentik middleware here. If a private
-      # endpoint is ever added, gate only that router.
-      traefik.http.routers.rit-times.middlewares: "rit-times-headers@docker"
-      traefik.http.middlewares.rit-times-headers.headers.customresponseheaders.X-Robots-Tag: "noindex"
+    # If the tunnel reaches containers over a shared network, uncomment and
+    # set the real network name from the lore service.
+    # networks:
+    #   - <network-from-lore>
 
-networks:
-  traefik:
-    external: true
+# networks:
+#   <network-from-lore>:
+#     external: true
 
 volumes:
-  rit-times-data:
+  tigerhub-data:
