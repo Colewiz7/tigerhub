@@ -6,7 +6,8 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app import hours as hours_lib
 from app import settings
-from app.api.schemas import DiningLocation, MenuItem, Occupancy, OpenSpan
+from app.api.schemas import Collection, DiningLocation, MenuItem, Occupancy, OpenSpan
+from app import freshness
 from app.models import dining, occupancy as occupancy_model
 
 router = APIRouter(prefix="/dining", tags=["dining"])
@@ -55,7 +56,7 @@ def _build(row: dict, grouped: dict, now: datetime) -> DiningLocation:
     )
 
 
-@router.get("", response_model=list[DiningLocation])
+@router.get("", response_model=Collection[DiningLocation])
 def list_dining(open_now: bool = Query(False, description="Only locations open right now")):
     now = datetime.now(settings.CAMPUS_TZ)
     today = now.date()
@@ -69,19 +70,32 @@ def list_dining(open_now: bool = Query(False, description="Only locations open r
         _build(loc, hours_lib.group_by_date(by_location.get(loc["id"], [])), now)
         for loc in dining.list_locations()
     ]
-    return [loc for loc in out if loc.is_open] if open_now else out
+    data = [loc for loc in out if loc.is_open] if open_now else out
+    return Collection[DiningLocation](
+        data=data,
+        stale=freshness.is_stale("tigercenter_dining"),
+        last_updated=freshness.last_success("tigercenter_dining"),
+    )
 
 
-@router.get("/visiting-chefs", response_model=list[MenuItem])
+@router.get("/visiting-chefs", response_model=Collection[MenuItem])
 def visiting_chefs(on: date | None = Query(None, description="Defaults to today")):
     service_date = on or datetime.now(settings.CAMPUS_TZ).date()
-    return dining.menu_items_on(service_date, VISITING_CHEF)
+    return Collection[MenuItem](
+        data=dining.menu_items_on(service_date, VISITING_CHEF),
+        stale=freshness.is_stale("tigercenter_dining"),
+        last_updated=freshness.last_success("tigercenter_dining"),
+    )
 
 
-@router.get("/specials", response_model=list[MenuItem])
+@router.get("/specials", response_model=Collection[MenuItem])
 def specials(on: date | None = Query(None, description="Defaults to today")):
     service_date = on or datetime.now(settings.CAMPUS_TZ).date()
-    return dining.menu_items_on(service_date)
+    return Collection[MenuItem](
+        data=dining.menu_items_on(service_date),
+        stale=freshness.is_stale("tigercenter_dining"),
+        last_updated=freshness.last_success("tigercenter_dining"),
+    )
 
 
 @router.get("/{location_id}", response_model=DiningLocation)

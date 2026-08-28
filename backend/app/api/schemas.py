@@ -1,8 +1,23 @@
 """Response models. These are the contract the Flutter client codes against."""
 
 from datetime import datetime
+from typing import Generic, TypeVar
 
 from pydantic import BaseModel
+
+T = TypeVar("T")
+
+
+class Collection(BaseModel, Generic[T]):
+    """Envelope for every list endpoint.
+
+    A cold cache answers 200 with an empty `data` array and stale: true, never
+    a 503. The client shows a subtle indicator, not an error screen.
+    """
+
+    data: list[T]
+    stale: bool = False
+    last_updated: datetime | None = None
 
 
 class OpenSpan(BaseModel):
@@ -89,12 +104,19 @@ class HoursRule(BaseModel):
     opens_at: str
     closes_at: str
     season: str
+    service: str = "general"
 
 
 class PostOffice(BaseModel):
     id: str
     name: str
+    side: str
     building: str
+    location_note: str | None = None
+    street: str
+    city: str
+    state: str
+    zip: str
     email: str | None = None
     phone: str | None = None
     last_verified: str | None = None
@@ -109,20 +131,27 @@ class MakerSpaceHours(BaseModel):
     hours: list[HoursRule]
 
 
-class ResidenceHall(BaseModel):
+class HousingArea(BaseModel):
     id: str
     name: str
-    area: str
-    post_office: str
+    post_office: str | None = None
+    line2_format: str | None = None
+    line2_example: str | None = None
+    direct_delivery: bool = False
     last_verified: str | None = None
 
 
 class MailingAddress(BaseModel):
-    hall_id: str
-    hall_name: str
+    area_id: str
+    area_name: str
     lines: list[str]
-    address_note: str | None = None
+    line2_format: str | None = None
+    line2_example: str | None = None
+    unit_supplied: bool
+    direct_delivery: bool = False
+    note: str | None = None
     post_office: PostOffice | None = None
+    source_url: str | None = None
     last_verified: str | None = None
     verified: bool
 
@@ -135,6 +164,7 @@ class SourceHealth(BaseModel):
     last_error_at: str | None = None
     consecutive_failures: int
     last_record_count: int | None = None
+    state: str
     healthy: bool
 
 
@@ -151,6 +181,7 @@ class SourcesReport(BaseModel):
     sources: list[SourceHealth]
     stale_config: list[StaleConfigEntry]
     all_healthy: bool
+    priming: bool
 
 
 class Health(BaseModel):

@@ -43,6 +43,9 @@ class HoursRule(_Strict):
     opens_at: str
     closes_at: str
     season: str = "academic"
+    # Post offices run two counters with different hours. Makerspaces do not,
+    # so this defaults to a single unnamed service.
+    service: str = "general"
 
     @field_validator("days")
     @classmethod
@@ -67,7 +70,13 @@ class HoursRule(_Strict):
 class PostOffice(_Strict):
     id: str
     name: str
+    side: str
     building: str
+    location_note: str | None = None
+    street: str
+    city: str
+    state: str
+    zip: str
     email: str | None = None
     phone: str | None = None
     last_verified: date | None = None
@@ -82,62 +91,103 @@ class MakerSpace(_Strict):
     hours: list[HoursRule]
 
 
-class ResidenceHall(_Strict):
+class HousingArea(_Strict):
+    """One mail zone.
+
+    RIT runs a zone based system, not per hall street addresses. Every area
+    routes to one of two campus post offices, and line 2 of the address is a
+    building/room or apartment designator whose format varies by area.
+    """
+
     id: str
     name: str
-    area: str
     post_office: str
+    line2_format: str
+    line2_example: str
+    last_verified: date | None = None
+
+
+class DirectDelivery(_Strict):
+    """Housing whose mail bypasses the campus post offices entirely."""
+
+    id: str
+    name: str
     street: str
     city: str
     state: str
     zip: str
-    address_note: str | None = None
+    note: str | None = None
     last_verified: date | None = None
 
     def mailing_address(self, student_name: str = "Your Name") -> list[str]:
-        """The correct mailing format for this hall, as display lines."""
-        return [
-            student_name,
-            f"{self.name}",
-            self.street,
-            f"{self.city}, {self.state} {self.zip}",
-        ]
+        return [student_name, self.street, f"{self.city} {self.state} {self.zip}"]
 
 
 class PostOfficeFile(_Strict):
     last_verified: date | None = None
+    source_url: str | None = None
     source_note: str | None = None
     offices: list[PostOffice]
 
 
 class ShedFile(_Strict):
     last_verified: date | None = None
+    source_url: str | None = None
     source_note: str | None = None
     spaces: list[MakerSpace]
 
 
-class ResidenceHallFile(_Strict):
+class HousingFile(_Strict):
     last_verified: date | None = None
+    source_url: str | None = None
     source_note: str | None = None
-    halls: list[ResidenceHall]
+    areas: list[HousingArea]
+    direct_delivery: list[DirectDelivery] = []
 
 
 class StaticConfig(BaseModel):
     post_offices: PostOfficeFile
     shed: ShedFile
-    residence_halls: ResidenceHallFile
+    housing: HousingFile
 
-    def hall(self, hall_id: str) -> ResidenceHall | None:
-        return next((h for h in self.residence_halls.halls if h.id == hall_id), None)
+    def area(self, area_id: str) -> HousingArea | None:
+        return next((a for a in self.housing.areas if a.id == area_id), None)
+
+    def direct(self, area_id: str) -> DirectDelivery | None:
+        return next((d for d in self.housing.direct_delivery if d.id == area_id), None)
 
     def office(self, office_id: str) -> PostOffice | None:
         return next((o for o in self.post_offices.offices if o.id == office_id), None)
+
+    def address_for(self, area_id: str, student_name: str, unit: str | None) -> list[str] | None:
+        """Build the mailing address lines for an area.
+
+        Line 2 is the student's own building/room designator. When it is not
+        supplied, the area's documented format is shown as a placeholder rather
+        than being invented.
+        """
+        direct = self.direct(area_id)
+        if direct is not None:
+            return direct.mailing_address(student_name)
+
+        area = self.area(area_id)
+        if area is None:
+            return None
+        office = self.office(area.post_office)
+        if office is None:
+            return None
+        return [
+            student_name,
+            unit or area.line2_format,
+            office.street,
+            f"{office.city} {office.state} {office.zip}",
+        ]
 
 
 _FILES = {
     "post_offices": ("post_offices.json", PostOfficeFile),
     "shed": ("shed_hours.json", ShedFile),
-    "residence_halls": ("residence_halls.json", ResidenceHallFile),
+    "housing": ("housing_areas.json", HousingFile),
 }
 
 _cache: StaticConfig | None = None
@@ -172,18 +222,18 @@ def load_config(data_dir: Path | None = None) -> StaticConfig:
 def _check_referential_integrity(config: StaticConfig) -> None:
     """A hall pointing at a post office that does not exist is a typo, not data."""
     known = {office.id for office in config.post_offices.offices}
-    dangling = sorted(
-        {h.post_office for h in config.residence_halls.halls if h.post_office not in known}
-    )
+    dangling = sorted({a.post_office for a in config.housing.areas if a.post_office not in known})
     if dangling:
         raise ConfigError(
-            f"residence_halls.json references unknown post_office id(s): {dangling}. "
+            f"housing_areas.json references unknown post_office id(s): {dangling}. "
             f"Known ids: {sorted(known)}"
         )
 
-    duplicates = _duplicates([h.id for h in config.residence_halls.halls])
+    duplicates = _duplicates(
+        [a.id for a in config.housing.areas] + [d.id for d in config.housing.direct_delivery]
+    )
     if duplicates:
-        raise ConfigError(f"duplicate residence hall id(s): {duplicates}")
+        raise ConfigError(f"duplicate housing area id(s): {duplicates}")
     duplicates = _duplicates([o.id for o in config.post_offices.offices])
     if duplicates:
         raise ConfigError(f"duplicate post office id(s): {duplicates}")
@@ -251,7 +301,9 @@ def staleness_report(today: date | None = None) -> list[dict]:
         check("post_office", office.id, office.name, office.last_verified)
     for space in config.shed.spaces:
         check("makerspace", space.id, space.name, space.last_verified)
-    for hall in config.residence_halls.halls:
-        check("residence_hall", hall.id, hall.name, hall.last_verified)
+    for area in config.housing.areas:
+        check("housing_area", area.id, area.name, area.last_verified)
+    for direct in config.housing.direct_delivery:
+        check("direct_delivery", direct.id, direct.name, direct.last_verified)
 
     return stale
