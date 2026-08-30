@@ -464,7 +464,9 @@ class _PostOfficeBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final season = currentSeason(DateTime.now());
+    // Campus date, not the device's. A phone in another timezone must not
+    // flip to summer hours a day early on the 21st.
+    final season = currentSeason(CampusTime.fieldsOf(CampusTime.nowUtc()));
 
     // Only what is in force. Fall back to everything if a season is missing,
     // so a config gap shows something rather than an empty card.

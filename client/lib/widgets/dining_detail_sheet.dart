@@ -15,6 +15,7 @@ import '../theme/semantic.dart';
 import '../theme/tokens.dart';
 import '../widgets/freshness.dart';
 import '../widgets/menu_section.dart';
+import '../data/campus_time.dart';
 import '../widgets/occupancy_chart.dart';
 import '../services/subscriptions.dart';
 
@@ -76,7 +77,11 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
     final pinned = _prefs.isPinned(location.id);
 
     final hourly = _history?.value?.hourly ?? const <OccupancyHour>[];
-    final nowHour = DateTime.now().hour;
+    // Campus hour, not the device's. maps.rit.edu indexes intra_loc_hours by
+    // RIT's own wall clock, so on a laptop set to any other timezone the "now"
+    // marker landed on the wrong bar and the caption compared the wrong hour.
+    // This is exactly what CampusTime exists for.
+    final nowHour = CampusTime.fieldsOf(CampusTime.nowUtc()).hour;
 
     return SafeArea(
       child: SingleChildScrollView(
