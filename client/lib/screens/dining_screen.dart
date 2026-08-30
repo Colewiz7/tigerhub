@@ -55,30 +55,27 @@ class _DiningScreenState extends State<DiningScreen> {
       pinned: _prefs.pinnedDining,
     );
 
-    return ContentColumn(
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
-        itemCount: groups.length,
-        itemBuilder: (context, index) {
-          final group = groups[index];
-          final openInGroup = group.value.where((l) => l.isOpen).length;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GroupHeader(
-                  icon: iconForCategory(group.value.first.category),
-                  title: group.key,
-                  count: openInGroup,
-                ),
-                for (final location in group.value)
-                  DiningRow(location: location, api: widget.api),
-              ],
-            ),
-          );
-        },
-      ),
+    return ResponsiveList(
+      itemCount: groups.length,
+      itemBuilder: (context, index) {
+        final group = groups[index];
+        final openInGroup = group.value.where((l) => l.isOpen).length;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              GroupHeader(
+                icon: iconForCategory(group.value.first.category),
+                title: group.key,
+                count: openInGroup,
+              ),
+              for (final location in group.value)
+                DiningRow(location: location, api: widget.api),
+            ],
+          ),
+        );
+      },
     );
   }
 }

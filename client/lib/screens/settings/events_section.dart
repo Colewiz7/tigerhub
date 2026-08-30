@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../models/api_models.dart';
 import '../../services/event_filter.dart';
+import '../../services/filter_profiles.dart';
 import '../../services/preferences.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/status_row.dart';
@@ -46,6 +47,13 @@ class _EventsSectionState extends State<EventsSection> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
       children: [
+        _SectionHeading(
+          title: 'Profile',
+          subtitle: 'A preset is a whole taste in one tap. Editing the rules '
+              'below forks to Custom, so switching back is always possible.',
+        ),
+        _ProfilePicker(prefs: _prefs),
+        const SizedBox(height: 26),
         _SectionHeading(
           title: 'Organizers',
           subtitle: '${facets.length} organizers, '
@@ -101,6 +109,47 @@ class _EventsSectionState extends State<EventsSection> {
           'organizer is still findable.',
           style: text.bodySmall,
         ),
+      ],
+    );
+  }
+}
+
+class _ProfilePicker extends StatelessWidget {
+  const _ProfilePicker({required this.prefs});
+
+  final Preferences prefs;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = activeProfile(prefs);
+
+    return Column(
+      children: [
+        for (final profile in builtInProfiles)
+          StatusRow(
+            icon: profile.icon,
+            title: profile.name,
+            subtitle: profile.description,
+            emphasis:
+                active?.id == profile.id ? RowEmphasis.normal : RowEmphasis.dimmed,
+            onTap: () => prefs.applyProfile(
+              profile.hide,
+              profile.boost,
+              keywordsEnabled: profile.keywordsEnabled,
+            ),
+            trailing: active?.id == profile.id
+                ? Icon(Icons.check_circle_rounded,
+                    color: Theme.of(context).colorScheme.primary)
+                : null,
+          ),
+        if (active == null)
+          StatusRow(
+            icon: Icons.tune_rounded,
+            title: 'Custom',
+            subtitle: 'Your own rules, edited below',
+            trailing: Icon(Icons.check_circle_rounded,
+                color: Theme.of(context).colorScheme.primary),
+          ),
       ],
     );
   }

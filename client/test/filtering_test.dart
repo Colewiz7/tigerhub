@@ -7,6 +7,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:shared_preferences_platform_interface/types.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/event_filter.dart';
+import 'package:tigerhub/services/filter_profiles.dart';
 import 'package:tigerhub/services/preferences.dart';
 
 CampusEvent event(
@@ -253,6 +254,8 @@ void main() {
     });
   });
 
+  _profiles();
+
   group('organizer facets for the settings list', () {
     test('counts per organizer, busiest first', () {
       final facets = organizerFacets([
@@ -264,6 +267,89 @@ void main() {
       expect(facets.first.count, 2);
       expect(facets.first.key, 'FOODSHARE');
       expect(facets.last.count, 1);
+    });
+  });
+}
+
+void _profiles() {
+  group('filter profiles', () {
+    setUp(() => Preferences.instance.resetForTests());
+
+    test('applying a preset replaces both rule lists in one go', () async {
+      final prefs = Preferences.instance;
+      await prefs.load();
+      final fun = profileById('free_and_fun')!;
+      await prefs.applyProfile(fun.hide, fun.boost,
+          keywordsEnabled: fun.keywordsEnabled);
+
+      expect(prefs.boostKeywords, contains('ice cream'));
+      expect(prefs.hideKeywords, contains('career fair'));
+      expect(activeProfile(prefs)?.id, 'free_and_fun');
+    });
+
+    test('a preset survives a restart', () async {
+      final prefs = Preferences.instance;
+      await prefs.load();
+      final academic = profileById('academic')!;
+      await prefs.applyProfile(academic.hide, academic.boost,
+          keywordsEnabled: academic.keywordsEnabled);
+
+      prefs.resetForTests();
+      await prefs.load();
+      expect(activeProfile(prefs)?.id, 'academic');
+    });
+
+    test('editing a rule forks to custom rather than mutating the preset',
+        () async {
+      final prefs = Preferences.instance;
+      await prefs.load();
+      final fun = profileById('free_and_fun')!;
+      await prefs.applyProfile(fun.hide, fun.boost,
+          keywordsEnabled: fun.keywordsEnabled);
+      expect(activeProfile(prefs)?.id, 'free_and_fun');
+
+      await prefs.setBoostKeywords([...prefs.boostKeywords, 'dodgeball']);
+      expect(activeProfile(prefs), isNull,
+          reason: 'the rules are no longer the preset, so do not claim it is');
+      // The preset itself is untouched and can be reapplied.
+      expect(profileById('free_and_fun')!.boost, isNot(contains('dodgeball')));
+    });
+
+    test('Everything turns the keyword rules off but keeps organizer mutes',
+        () async {
+      final prefs = Preferences.instance;
+      await prefs.load();
+      await prefs.setMuted('FOODSHARE', true);
+      final all = profileById('everything')!;
+      await prefs.applyProfile(all.hide, all.boost,
+          keywordsEnabled: all.keywordsEnabled);
+
+      expect(prefs.keywordRulesEnabled, isFalse);
+      expect(prefs.mutedOrganizers, contains('FOODSHARE'),
+          reason: 'a profile is about keywords, not about who you muted');
+    });
+
+    test('the fun preset actually matches the stated taste', () async {
+      final prefs = Preferences.instance;
+      await prefs.load();
+      final fun = profileById('free_and_fun')!;
+      await prefs.applyProfile(fun.hide, fun.boost,
+          keywordsEnabled: fun.keywordsEnabled);
+
+      final result = filterEvents([
+        event('Free ice cream on the quarter mile'),
+        event('Dodgeball tournament', day: 2),
+        event('Resume workshop', day: 3),
+        event('Bible study', day: 4),
+      ], prefs);
+
+      final visible =
+          result.groups.single.visible.map((e) => e.event.title).toList();
+      expect(visible.first, contains('ice cream'), reason: 'boosted to the top');
+      expect(visible, isNot(contains('Resume workshop')));
+      expect(visible, isNot(contains('Bible study')));
+      // Hidden, not gone.
+      expect(result.hiddenTotal, 2);
     });
   });
 }

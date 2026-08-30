@@ -20,6 +20,7 @@ import 'package:tigerhub/theme/semantic.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
+import 'package:tigerhub/widgets/content_column.dart';
 import 'package:tigerhub/widgets/more_row.dart';
 import 'package:tigerhub/screens/campus_screen.dart' show currentSeason;
 import 'package:tigerhub/widgets/occupancy_chart.dart';
@@ -389,6 +390,7 @@ void main() {
   _quickWins();
   _pinningAndChart();
   _shippedPalette();
+  _responsiveLayout();
 
   test('age formatting', () {
     final now = DateTime.now();
@@ -1151,6 +1153,76 @@ void _shippedPalette() {
       final closedLum = lum(sem.closed);
       final busyLum = lum(sem.busy);
       expect((closedLum - busyLum).abs(), greaterThan(40));
+    });
+  });
+}
+
+/// Two column layout on a wide window.
+void _responsiveLayout() {
+  group('responsive list', () {
+    Widget boxed(double width) => MaterialApp(
+          theme: AppTheme.from(_fallbackScheme()),
+          home: Scaffold(
+            body: SizedBox(
+              width: width,
+              child: ResponsiveList(
+                itemCount: 6,
+                itemBuilder: (context, i) => SizedBox(
+                  height: 60,
+                  child: Text('item $i'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets('stays one column on a narrow window', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(900, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(boxed(900));
+      expect(tester.takeException(), isNull);
+
+      // One column: every item shares a left edge.
+      final lefts = {
+        for (var i = 0; i < 6; i++) tester.getTopLeft(find.text('item $i')).dx,
+      };
+      expect(lefts.length, 1);
+    });
+
+    testWidgets('splits into two columns when there is room', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1600, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(boxed(1600));
+      expect(tester.takeException(), isNull);
+
+      final lefts = {
+        for (var i = 0; i < 6; i++) tester.getTopLeft(find.text('item $i')).dx,
+      };
+      expect(lefts.length, 2, reason: 'a wide window should use the width');
+    });
+
+    testWidgets('items alternate so the columns stay a similar height',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1600, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(boxed(1600));
+
+      // Alternating means 0 and 2 share a column, 0 and 1 do not.
+      final zero = tester.getTopLeft(find.text('item 0')).dx;
+      final one = tester.getTopLeft(find.text('item 1')).dx;
+      final two = tester.getTopLeft(find.text('item 2')).dx;
+      expect(zero, equals(two));
+      expect(zero, isNot(equals(one)));
+    });
+
+    testWidgets('every item is still rendered in two column mode',
+        (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1600, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(boxed(1600));
+      for (var i = 0; i < 6; i++) {
+        expect(find.text('item $i'), findsOneWidget);
+      }
     });
   });
 }

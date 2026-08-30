@@ -58,21 +58,19 @@ class _EventsScreenState extends State<EventsScreen> {
     final filtered = filterEvents(events, _prefs);
     final text = Theme.of(context).textTheme;
 
-    return ContentColumn(
-      child: ListView.builder(
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
-        itemCount: filtered.groups.length + 1,
-        itemBuilder: (context, index) {
-          if (index == filtered.groups.length) {
-            return _TotalFooter(hidden: filtered.hiddenTotal);
-          }
+    return ResponsiveList(
+      itemCount: filtered.groups.length + 1,
+      itemBuilder: (context, index) {
+        if (index == filtered.groups.length) {
+          return _TotalFooter(hidden: filtered.hiddenTotal);
+        }
 
-          final group = filtered.groups[index];
-          final open = _expanded.contains(group.organizer);
-          final shown = group.visible.take(_perGroup).toList();
-          final overflow = group.visible.length - shown.length;
+        final group = filtered.groups[index];
+        final open = _expanded.contains(group.organizer);
+        final shown = group.visible.take(_perGroup).toList();
+        final overflow = group.visible.length - shown.length;
 
-          return Padding(
+        return Padding(
             padding: const EdgeInsets.only(bottom: 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,14 +99,13 @@ class _EventsScreenState extends State<EventsScreen> {
                         : _expanded.add(group.organizer);
                   }),
                 ),
-                if (open)
-                  for (final item in group.hidden)
-                    EventRow(event: item.event, forceDimmed: true),
-              ],
-            ),
-          );
-        },
-      ),
+              if (open)
+                for (final item in group.hidden)
+                  EventRow(event: item.event, forceDimmed: true),
+            ],
+          ),
+        );
+      },
     );
   }
 }
