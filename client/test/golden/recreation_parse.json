@@ -1,0 +1,602 @@
+[
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Hale-Andrews Student Life Center (SLC)",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-09-05"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Hale-Andrews Student Life Center (SLC)",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-08-30"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Hale-Andrews Student Life Center (SLC)",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Hale-Andrews Student Life Center (SLC)",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Hale-Andrews Student Life Center (SLC)",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Hale-Andrews Student Life Center (SLC)",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Hale-Andrews Student Life Center (SLC)",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-04"
+  },
+  {
+    "closed": true,
+    "closes_at": null,
+    "facility": "Hale-Andrews SLC Main Office",
+    "note": "CLOSED",
+    "opens_at": null,
+    "service_date": "2026-09-05"
+  },
+  {
+    "closed": true,
+    "closes_at": null,
+    "facility": "Hale-Andrews SLC Main Office",
+    "note": "CLOSED",
+    "opens_at": null,
+    "service_date": "2026-08-30"
+  },
+  {
+    "closed": false,
+    "closes_at": "16:00",
+    "facility": "Hale-Andrews SLC Main Office",
+    "note": null,
+    "opens_at": "09:00",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "16:00",
+    "facility": "Hale-Andrews SLC Main Office",
+    "note": null,
+    "opens_at": "09:00",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "18:00",
+    "facility": "Hale-Andrews SLC Main Office",
+    "note": null,
+    "opens_at": "09:00",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "18:00",
+    "facility": "Hale-Andrews SLC Main Office",
+    "note": null,
+    "opens_at": "09:00",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "16:00",
+    "facility": "Hale-Andrews SLC Main Office",
+    "note": null,
+    "opens_at": "09:00",
+    "service_date": "2026-09-04"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Wiedman Fitness Center",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-09-05"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Wiedman Fitness Center",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-08-30"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Wiedman Fitness Center",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Wiedman Fitness Center",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Wiedman Fitness Center",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Wiedman Fitness Center",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Wiedman Fitness Center",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-04"
+  },
+  {
+    "closed": false,
+    "closes_at": "16:30",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "14:30",
+    "service_date": "2026-09-05"
+  },
+  {
+    "closed": false,
+    "closes_at": "22:00",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "19:00",
+    "service_date": "2026-09-05"
+  },
+  {
+    "closed": false,
+    "closes_at": "16:30",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "14:30",
+    "service_date": "2026-08-30"
+  },
+  {
+    "closed": false,
+    "closes_at": "22:00",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "19:00",
+    "service_date": "2026-08-30"
+  },
+  {
+    "closed": false,
+    "closes_at": "08:45",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "06:45",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "13:45",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "12:00",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "22:00",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "19:00",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "08:45",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "06:45",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "13:45",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "12:00",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "22:00",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "19:00",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "08:45",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "06:45",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "13:45",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "12:00",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "22:00",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "19:00",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "08:45",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "06:45",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "13:45",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "12:00",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "22:00",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "19:00",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "08:45",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "06:45",
+    "service_date": "2026-09-04"
+  },
+  {
+    "closed": false,
+    "closes_at": "13:45",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "12:00",
+    "service_date": "2026-09-04"
+  },
+  {
+    "closed": false,
+    "closes_at": "22:00",
+    "facility": "Judson/Hale Aquatics Center",
+    "note": null,
+    "opens_at": "19:00",
+    "service_date": "2026-09-04"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Gordon Field House",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-09-05"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Gordon Field House",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-08-30"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Gordon Field House",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Gordon Field House",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Gordon Field House",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Gordon Field House",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Gordon Field House",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-04"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Field House Indoor Track",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-09-05"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Field House Indoor Track",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-08-30"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Field House Indoor Track",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Field House Indoor Track",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Field House Indoor Track",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Field House Indoor Track",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Field House Indoor Track",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-04"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Outdoor Tennis Courts",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-09-05"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Outdoor Tennis Courts",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-08-30"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Outdoor Tennis Courts",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Outdoor Tennis Courts",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Outdoor Tennis Courts",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Outdoor Tennis Courts",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Outdoor Tennis Courts",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-04"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Turf Field",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-09-05"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Turf Field",
+    "note": null,
+    "opens_at": "10:00",
+    "service_date": "2026-08-30"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Turf Field",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Turf Field",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Turf Field",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Turf Field",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "23:00",
+    "facility": "Turf Field",
+    "note": null,
+    "opens_at": "06:00",
+    "service_date": "2026-09-04"
+  },
+  {
+    "closed": false,
+    "closes_at": "18:00",
+    "facility": "Red Barn Climbing",
+    "note": null,
+    "opens_at": "13:00",
+    "service_date": "2026-09-05"
+  },
+  {
+    "closed": false,
+    "closes_at": "18:00",
+    "facility": "Red Barn Climbing",
+    "note": null,
+    "opens_at": "13:00",
+    "service_date": "2026-08-30"
+  },
+  {
+    "closed": false,
+    "closes_at": "21:00",
+    "facility": "Red Barn Climbing",
+    "note": null,
+    "opens_at": "16:00",
+    "service_date": "2026-08-31"
+  },
+  {
+    "closed": false,
+    "closes_at": "21:00",
+    "facility": "Red Barn Climbing",
+    "note": null,
+    "opens_at": "16:00",
+    "service_date": "2026-09-01"
+  },
+  {
+    "closed": false,
+    "closes_at": "21:00",
+    "facility": "Red Barn Climbing",
+    "note": null,
+    "opens_at": "16:00",
+    "service_date": "2026-09-02"
+  },
+  {
+    "closed": false,
+    "closes_at": "21:00",
+    "facility": "Red Barn Climbing",
+    "note": null,
+    "opens_at": "16:00",
+    "service_date": "2026-09-03"
+  },
+  {
+    "closed": false,
+    "closes_at": "21:00",
+    "facility": "Red Barn Climbing",
+    "note": null,
+    "opens_at": "16:00",
+    "service_date": "2026-09-04"
+  }
+]

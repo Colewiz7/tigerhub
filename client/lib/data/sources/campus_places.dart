@@ -1,0 +1,165 @@
+/// Campus points of interest from maps.rit.edu.
+///
+/// Ported from `backend/app/scrapers/campus_places.py`.
+///
+/// Answers "where is the nearest water fountain", which is the kind of question
+/// the official map makes surprisingly hard.
+///
+/// The useful data sits at `subLocations[].locations[].properties` and carries a
+/// building abbreviation, a floor, a room number and a human note like "Corner
+/// of hallway, next to bathrooms".
+///
+/// The full taxonomy is 11 categories and about 50 sub-categories. Only the ones
+/// students actually need are fetched: the rest are parking tiers, building
+/// types and staff facilities that would be noise.
+///
+/// This is physical infrastructure and changes rarely, so it runs twice a day.
+library;
+
+import '../turbo_stream.dart';
+import '../upstream.dart';
+
+const String campusPlacesSource = 'campus_places';
+const String campusPlacesUrl = 'https://maps.rit.edu/categories/{id}.data';
+
+/// Sub-category id to the key it is stored under, and its display name. Ids
+/// came from decoding the category tree.
+const Map<int, (String, String)> placeKinds = {
+  270: ('water', 'Water fountains'),
+  195: ('ev_charge', 'EV charging'),
+  131: ('blue_light', 'Blue light phones'),
+  135: ('aed', 'Defibrillators'),
+  159: ('restroom_all_gender', 'All-gender restrooms'),
+  171: ('restroom_accessible', 'Accessible restrooms'),
+  151: ('atm', 'ATMs'),
+  175: ('changing_table', 'Diaper changing stations'),
+  139: ('entrance_accessible', 'Accessible entrances'),
+  123: ('bus_stop', 'Bus stops'),
+  119: ('bike_rack', 'Bike racks'),
+  232: ('reload', 'Tiger Spend reload stations'),
+};
+
+/// One request per parent category returns every sub it contains, so six
+/// requests cover all twelve kinds rather than twelve.
+const List<int> placeParents = [35, 19, 27, 23, 15, 7];
+
+String? _trimmed(Object? value) {
+  if (value == null) return null;
+  final text = '$value'.trim();
+  return text.isEmpty ? null : text;
+}
+
+/// Pull the points out of one parent category payload, keyed by sub id.
+///
+/// A payload carries every sub-category the parent contains, and each group
+/// names itself through `menu.id`. Grouping on that rather than on position
+/// means a reordering upstream cannot silently mix water fountains into ATMs.
+///
+/// Located by key rather than by a fixed path, because the surrounding route
+/// structure is RIT's to change and the leaf shape is what matters.
+Map<int, List<Map<String, dynamic>>> parseCampusPlaces(String raw) {
+  Object? decoded;
+  try {
+    decoded = decodeTurboStream(raw);
+  } on TurboStreamError {
+    return {};
+  }
+
+  final out = <int, List<Map<String, dynamic>>>{};
+
+  for (final group in findAll(decoded, 'subLocations')) {
+    if (group is! List) continue;
+    for (final sub in group) {
+      if (sub is! Map<String, dynamic>) continue;
+      final menu = sub['menu'];
+      final subId = menu is Map<String, dynamic> ? menu['id'] : null;
+      if (subId is! int || !placeKinds.containsKey(subId)) continue;
+
+      final kindName = placeKinds[subId]!.$2;
+      final places = out.putIfAbsent(subId, () => []);
+      final seen = {for (final p in places) p['id'] as int};
+
+      for (final location in sub['locations'] as List<dynamic>? ?? const []) {
+        if (location is! Map<String, dynamic>) continue;
+        final props = location['properties'];
+        if (props is! Map<String, dynamic>) continue;
+
+        final placeId = props['id'];
+        final name = props['name'];
+        if (placeId is! int || name is! String) continue;
+        if (!seen.add(placeId)) continue;
+
+        places.add({
+          'id': placeId,
+          'kind_name': kindName,
+          'name': name.trim(),
+          'building': _trimmed(props['abbreviation']),
+          'building_no': _trimmed(props['buildingNumber']),
+          'floor': _trimmed(props['floorLevel']),
+          'room': _trimmed(props['roomNumber']),
+          'note': _trimmed(props['descShort']),
+          'mdo_id': props['mdo_id'] is int ? props['mdo_id'] : null,
+        });
+      }
+    }
+  }
+
+  return out;
+}
+
+Future<Map<String, dynamic>> scrapeCampusPlaces(Upstream http) async {
+  final byKind = <String, List<Map<String, dynamic>>>{};
+  final failures = <int>[];
+
+  // Sequential on purpose. Six categories at roughly 250 KB each is small, but
+  // firing them in parallel at someone else's map server is rude.
+  for (final parent in placeParents) {
+    try {
+      final groups = parseCampusPlaces(
+        await http.getText(campusPlacesUrl.replaceFirst('{id}', '$parent')),
+      );
+      groups.forEach((subId, places) {
+        if (places.isEmpty) return;
+        byKind[placeKinds[subId]!.$1] = places;
+      });
+    } catch (_) {
+      failures.add(parent);
+    }
+  }
+
+  if (byKind.isEmpty) {
+    throw UpstreamError('no campus places parsed, failed parents: $failures');
+  }
+  return {'kinds': byKind};
+}
+
+// --- projections -------------------------------------------------------
+
+/// The kinds that actually have places, in the declared order.
+List<Map<String, dynamic>> placeKindSummary(Map<String, dynamic>? snapshot) {
+  final kinds = snapshot?['kinds'] as Map<String, dynamic>? ?? const {};
+  final out = <Map<String, dynamic>>[];
+
+  for (final entry in placeKinds.values) {
+    final places = kinds[entry.$1] as List<dynamic>?;
+    if (places == null || places.isEmpty) continue;
+    out.add({'kind': entry.$1, 'name': entry.$2, 'count': places.length});
+  }
+  return out;
+}
+
+List<Map<String, dynamic>> placesOfKind(
+  Map<String, dynamic>? snapshot,
+  String kind,
+) {
+  final kinds = snapshot?['kinds'] as Map<String, dynamic>? ?? const {};
+  final places = <Map<String, dynamic>>[
+    for (final p in kinds[kind] as List<dynamic>? ?? const [])
+      p as Map<String, dynamic>,
+  ];
+  places.sort((a, b) {
+    final byBuilding = '${a['building'] ?? ''}'.compareTo('${b['building'] ?? ''}');
+    return byBuilding != 0 ? byBuilding : '${a['name']}'.compareTo('${b['name']}');
+  });
+  return places;
+}

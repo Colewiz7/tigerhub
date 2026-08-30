@@ -12,6 +12,7 @@ library;
 
 import 'dart:async';
 
+import '../config.dart';
 import '../data/backend.dart';
 import '../models/api_models.dart';
 import 'cache.dart';
@@ -53,8 +54,14 @@ class Result<T> {
 
 class ApiClient {
   ApiClient({Backend? backend, ResponseCache? cache})
-      : _backend = backend ?? LocalBackend(),
+      : _backend = backend ?? defaultBackend(),
         _cache = cache ?? ResponseCache.instance;
+
+  /// The local backend, unless a base URL was supplied at build time to compare
+  /// against a running server.
+  static Backend defaultBackend() => AppConfig.usesRemoteBackend
+      ? RemoteBackend(baseUrl: AppConfig.apiBaseUrl)
+      : LocalBackend();
 
   final Backend _backend;
   final ResponseCache _cache;

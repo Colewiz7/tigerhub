@@ -37,9 +37,15 @@ class UpstreamError implements Exception {
 }
 
 class Upstream {
-  Upstream({http.Client? client}) : _client = client ?? http.Client();
+  Upstream({http.Client? client, int? maxRetries})
+      : _client = client ?? http.Client(),
+        _maxRetries = maxRetries ?? httpMaxRetries;
 
   final http.Client _client;
+
+  /// Overridable so tests do not sit through the real backoff. Production
+  /// always uses [httpMaxRetries].
+  final int _maxRetries;
 
   void close() => _client.close();
 
@@ -52,7 +58,7 @@ class Upstream {
   }) async {
     Object? last;
 
-    for (var attempt = 0; attempt < httpMaxRetries; attempt++) {
+    for (var attempt = 0; attempt < _maxRetries; attempt++) {
       try {
         final request = http.Request(method, Uri.parse(url))
           ..followRedirects = true
@@ -77,13 +83,13 @@ class Upstream {
         last = error;
       }
 
-      if (attempt < httpMaxRetries - 1) {
+      if (attempt < _maxRetries - 1) {
         await Future<void>.delayed(Duration(seconds: 1 << attempt));
       }
     }
 
     throw UpstreamError(
-      '$method $url failed after $httpMaxRetries attempts: $last',
+      '$method $url failed after $_maxRetries attempts: $last',
     );
   }
 
