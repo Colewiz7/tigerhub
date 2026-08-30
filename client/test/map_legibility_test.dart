@@ -13,6 +13,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/models/api_models.dart';
+import 'package:tigerhub/widgets/campus_map.dart';
 
 double _luminance(Color c) {
   double channel(double v) =>
@@ -67,6 +69,99 @@ void main() {
       expect(
         contrast(s.surfaceContainerHighest, s.surfaceContainerLowest),
         lessThan(contrast(s.outline, s.surfaceContainerLowest)),
+      );
+    });
+  }
+
+  /// Composites a translucent paint over its background, the way the canvas
+  /// does, so the measurement is of what actually lands on screen.
+  Color over(Color fg, Color bg) => Color.fromARGB(
+        255,
+        (fg.a * fg.r * 255 + (1 - fg.a) * bg.r * 255).round(),
+        (fg.a * fg.g * 255 + (1 - fg.a) * bg.g * 255).round(),
+        (fg.a * fg.b * 255 + (1 - fg.a) * bg.b * 255).round(),
+      );
+
+  group('the three outline families separate', () {
+    CampusMapFeature feature(String kindName) => CampusMapFeature(
+          id: 1,
+          kind: '_campus',
+          kindName: kindName,
+          name: kindName,
+          geometryType: 'Polygon',
+          coordinates: const [],
+        );
+
+    test('a parking apron is not a building', () {
+      // 20 of the 191 outlines are parking, and lots are large. Painted as
+      // buildings they read as the biggest structures on campus.
+      for (final kind in [
+        'Visitor Parking',
+        'General Parking',
+        'Reserved Parking',
+        'Residential Parking',
+      ]) {
+        expect(mapFamily(feature(kind)), MapFamily.parking, reason: kind);
+      }
+    });
+
+    test('vegetation is ground', () {
+      for (final kind in [
+        'Quads And Courtyards',
+        'Pollinator Gardens',
+        'Solar Fields',
+        'Community Gardens',
+      ]) {
+        expect(mapFamily(feature(kind)), MapFamily.open, reason: kind);
+      }
+    });
+
+    test('anything you can walk into is built', () {
+      for (final kind in [
+        'Residential Building',
+        'Academic Building',
+        'Athletic Building',
+        'Green Building',
+        'Restaurants',
+        'Campus structure',
+      ]) {
+        expect(mapFamily(feature(kind)), MapFamily.built, reason: kind);
+      }
+    });
+
+    test('built draws last so it sits on top of ground', () {
+      expect(MapFamily.open.rank, lessThan(MapFamily.parking.rank));
+      expect(MapFamily.parking.rank, lessThan(MapFamily.built.rank));
+    });
+  });
+
+  for (final brightness in [Brightness.light, Brightness.dark]) {
+    final s = scheme(brightness);
+    final name = brightness.name;
+    // What the outlines are actually drawn onto.
+    final field = over(s.primary.withValues(alpha: 0.035), s.surface);
+
+    test('parking reads, but stays under the buildings in $name', () {
+      final edge = over(s.outline.withValues(alpha: 0.55), field);
+      expect(contrast(edge, field), greaterThan(shapeFloor),
+          reason: 'parking outlines will not read in $name');
+      expect(
+        contrast(edge, field),
+        lessThan(contrast(s.outline, field)),
+        reason: 'parking must never compete with a building in $name',
+      );
+    });
+
+    test('open space reads as ground in $name', () {
+      // The surface ramp could not do this: its best step measured 1.11 light
+      // and 1.21 dark against the field, both under the floor.
+      final fill = over(s.tertiary.withValues(alpha: 0.32), field);
+      expect(contrast(fill, field), greaterThan(shapeFloor),
+          reason: 'quads and gardens vanish in $name');
+      expect(
+        contrast(fill, field),
+        lessThan(contrast(s.outline, field)),
+        reason: 'ground must stay quieter than a building edge in $name',
       );
     });
   }

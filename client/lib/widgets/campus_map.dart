@@ -7,6 +7,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/api_models.dart';
 import '../services/api.dart';
@@ -27,6 +28,7 @@ class CampusMapView extends StatefulWidget {
 
 class _CampusMapViewState extends State<CampusMapView> {
   final _transform = TransformationController();
+  final _mapFocus = FocusNode(debugLabel: 'Campus map');
   String? _kind;
   int? _selectedId;
   bool _showEvents = false;
@@ -34,7 +36,33 @@ class _CampusMapViewState extends State<CampusMapView> {
   @override
   void dispose() {
     _transform.dispose();
+    _mapFocus.dispose();
     super.dispose();
+  }
+
+  void _zoomBy(double factor) {
+    final current = _transform.value.getMaxScaleOnAxis();
+    final target = (current * factor).clamp(1.0, 5.0);
+    final applied = target / current;
+    if (applied == 1) return;
+    _transform.value = _transform.value.clone()
+      ..scaleByDouble(applied, applied, 1, 1);
+  }
+
+  KeyEventResult _handleMapKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.add ||
+        event.logicalKey == LogicalKeyboardKey.equal ||
+        event.logicalKey == LogicalKeyboardKey.numpadAdd) {
+      _zoomBy(1.5);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.minus ||
+        event.logicalKey == LogicalKeyboardKey.numpadSubtract) {
+      _zoomBy(1 / 1.5);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   @override
@@ -143,32 +171,61 @@ class _CampusMapViewState extends State<CampusMapView> {
             child: ColoredBox(
               color: Theme.of(context).colorScheme.surfaceContainerLow,
               child: LayoutBuilder(
-                builder: (context, constraints) => InteractiveViewer(
-                  transformationController: _transform,
-                  minScale: 1,
-                  maxScale: 5,
-                  boundaryMargin: const EdgeInsets.all(80),
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTapUp: (details) {
-                      final projection = CampusMapProjection(
-                        mapFeatures,
-                        Size(constraints.maxWidth, constraints.maxHeight),
-                        boundsFeatures: all,
-                      );
-                      final hit = projection.nearest(details.localPosition);
-                      if (hit != null) setState(() => _selectedId = hit.id);
-                    },
-                    child: CustomPaint(
-                      size: Size(constraints.maxWidth, constraints.maxHeight),
-                      painter: CampusMapPainter(
-                        features: mapFeatures,
-                        boundsFeatures: all,
-                        selectedId: _selectedId,
-                        scheme: Theme.of(context).colorScheme,
+                builder: (context, constraints) => Stack(
+                  children: [
+                    Positioned.fill(
+                      child: Focus(
+                        focusNode: _mapFocus,
+                        onKeyEvent: _handleMapKey,
+                        child: InteractiveViewer(
+                          transformationController: _transform,
+                          minScale: 1,
+                          maxScale: 5,
+                          boundaryMargin: const EdgeInsets.all(80),
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onDoubleTap: () => _zoomBy(1.5),
+                            onTapUp: (details) {
+                              _mapFocus.requestFocus();
+                              final projection = CampusMapProjection(
+                                mapFeatures,
+                                Size(
+                                  constraints.maxWidth,
+                                  constraints.maxHeight,
+                                ),
+                                boundsFeatures: all,
+                              );
+                              final hit = projection.nearest(
+                                details.localPosition,
+                              );
+                              if (hit != null) {
+                                setState(() => _selectedId = hit.id);
+                              }
+                            },
+                            child: CustomPaint(
+                              size: Size(
+                                constraints.maxWidth,
+                                constraints.maxHeight,
+                              ),
+                              painter: CampusMapPainter(
+                                features: mapFeatures,
+                                boundsFeatures: all,
+                                selectedId: _selectedId,
+                                scheme: Theme.of(context).colorScheme,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    // Fixed, and outside the InteractiveViewer, so it does not
+                    // zoom the way the scale bar deliberately does.
+                    Positioned(
+                      left: 12,
+                      top: 12,
+                      child: _MapLegend(scheme: Theme.of(context).colorScheme),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -559,14 +616,15 @@ class CampusMapProjection {
     );
     final naturalWidth = geographicWidth * scale;
     final height = latitudeSpan * scale;
-    // This is a campus wayfinding diagram, not a survey map. On a wide app
-    // window the geographically narrow source bounds otherwise collapse into
-    // a tiny square surrounded by dead space. A restrained horizontal spread
-    // makes buildings and clusters legible while preserving every ordering
-    // and direction relationship.
-    final width = math
-        .min(availableWidth, math.max(naturalWidth, height * 2.35))
-        .toDouble();
+    // Isotropic, deliberately. This previously forced a minimum 2.35:1 aspect
+    // to fill a wide window, but the campus that fits in the bounds is
+    // 2342m by 2085m, which is 1.12:1, so the rule stretched longitude by
+    // 2.09x while leaving latitude alone. Every building came out over twice
+    // as wide as it is, angles between them were wrong, and the tall forced
+    // box left dead bands above and below on a normal window. A map whose
+    // shapes do not match the shapes you are standing in cannot be used to
+    // recognise anything. Spare width stays as margin.
+    final width = naturalWidth;
     return Rect.fromLTWH(
       (size.width - width) / 2,
       (size.height - height) / 2,
@@ -599,6 +657,85 @@ class CampusMapProjection {
     }
     return nearestFeature;
   }
+}
+
+/// How a campus outline is drawn.
+///
+/// maps.rit.edu names the sub-category each outline came from, so a parking
+/// apron and a lecture hall arrive already distinguishable. Before this they
+/// were painted identically, and since lots are large, they read as enormous
+/// buildings and buried the campus they surround.
+enum MapFamily {
+  /// Quads, gardens, solar fields. Ground, not structure.
+  open(0),
+
+  /// Lots and aprons. Context you cross, not somewhere you go.
+  parking(1),
+
+  /// Anything you can walk into. Drawn last, so it sits on top.
+  built(2);
+
+  const MapFamily(this.rank);
+
+  /// Painting order, ground upward.
+  final int rank;
+}
+
+/// How each family is painted, in one place, so the map and the legend that
+/// explains it cannot disagree.
+///
+/// Measured against the map field (surface plus primary at 0.035), because
+/// colour here is validated rather than eyeballed:
+///
+///                                light  dark
+///   building fill                 1.17  1.42   under the 1.5 shape floor
+///   building edge (outline)       4.08  5.50   so the edge carries it
+///   parking edge (outline @0.55)  2.00  2.56   present, clearly secondary
+///   open space (tertiary @0.32)   1.54  2.08   reads as ground
+///
+/// No step of the surface ramp works as an open-space fill: the best of them
+/// measured 1.11 light and 1.21 dark, both under the floor. Vegetation uses
+/// `tertiary` instead (hue 53, an olive), which is a scheme role rather than
+/// an invented hue.
+({Paint? fill, Paint? edge}) mapFamilyPaints(
+  MapFamily family,
+  ColorScheme scheme,
+) {
+  switch (family) {
+    case MapFamily.open:
+      return (
+        fill: Paint()..color = scheme.tertiary.withValues(alpha: 0.32),
+        edge: null,
+      );
+    case MapFamily.parking:
+      return (
+        fill: null,
+        edge: Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.9
+          ..color = scheme.outline.withValues(alpha: 0.55),
+      );
+    case MapFamily.built:
+      return (
+        fill: Paint()..color = scheme.surfaceContainerHighest,
+        edge: Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.1
+          ..color = scheme.outline,
+      );
+  }
+}
+
+/// Classifies an outline by the sub-category name maps.rit.edu gave it.
+MapFamily mapFamily(CampusMapFeature feature) {
+  final name = feature.kindName.toLowerCase();
+  if (name.contains('parking')) return MapFamily.parking;
+  if (name.contains('quad') ||
+      name.contains('garden') ||
+      name.contains('solar')) {
+    return MapFamily.open;
+  }
+  return MapFamily.built;
 }
 
 class CampusMapPainter extends CustomPainter {
@@ -673,17 +810,22 @@ class CampusMapPainter extends CustomPainter {
     // `outline` (3.48 light, 3.88 dark) rather than `outlineVariant`. The fill
     // stays quiet. This is why buildings read as faint wireframes before: both
     // the fill and the edge were within a third of their background.
-    final polygonFill = Paint()..color = scheme.surfaceContainerHighest;
-    final polygonEdge = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1
-      ..color = scheme.outline;
+    // Drawn from the ground up, so the things you actually walk into sit on
+    // top. The paints are shared with the legend so the two cannot drift.
+    final familyPaints = {
+      for (final family in MapFamily.values)
+        family: mapFamilyPaints(family, scheme),
+    };
 
     // Collected while the polygons are drawn, so a label knows the shape it
     // belongs to and can be skipped when it will not fit inside it.
     final labelCandidates = <({String text, Rect bounds, double area})>[];
 
-    for (final feature in features.where((f) => f.geometryType != 'Point')) {
+    final areas = features.where((f) => f.geometryType != 'Point').toList()
+      ..sort((a, b) => mapFamily(a).rank.compareTo(mapFamily(b).rank));
+
+    for (final feature in areas) {
+      final family = mapFamily(feature);
       for (final ring in feature.coordinates) {
         if (ring.length < 3) continue;
         final points = [for (final c in ring) projection.project(c)];
@@ -692,9 +834,14 @@ class CampusMapPainter extends CustomPainter {
           path.lineTo(point.dx, point.dy);
         }
         path.close();
-        canvas.drawPath(path, polygonFill);
-        canvas.drawPath(path, polygonEdge);
+        final fill = familyPaints[family]!.fill;
+        final edge = familyPaints[family]!.edge;
+        if (fill != null) canvas.drawPath(path, fill);
+        if (edge != null) canvas.drawPath(path, edge);
 
+        // Only buildings are labelled. A lot number on every parking apron is
+        // the noise that made the campus hard to read in the first place.
+        if (family != MapFamily.built) continue;
         final abbreviation = feature.building;
         if (abbreviation == null || abbreviation.isEmpty) continue;
         final bounds = path.getBounds();
@@ -707,6 +854,7 @@ class CampusMapPainter extends CustomPainter {
     }
 
     _paintBuildingLabels(canvas, labelCandidates, scheme);
+    _paintScaleBar(canvas, projection, mapRect, scheme);
 
     final buckets =
         <(int, int), List<({CampusMapFeature feature, Offset at})>>{};
@@ -780,6 +928,65 @@ class CampusMapPainter extends CustomPainter {
   /// a cartographic layer: a label is drawn only when it fits inside its own
   /// building and does not land on one already drawn, and bigger buildings get
   /// first claim, because they are the ones people navigate by.
+  /// A scale bar.
+  ///
+  /// This is only honest because the projection is isotropic. While longitude
+  /// was being stretched to fill the window, no single bar could have
+  /// described both axes at once.
+  ///
+  /// It is painted into the canvas rather than laid over it, so it zooms with
+  /// the map and keeps telling the truth at every zoom level.
+  void _paintScaleBar(
+    Canvas canvas,
+    CampusMapProjection projection,
+    Rect mapRect,
+    ColorScheme scheme,
+  ) {
+    final latitudeSpan = projection.maxLatitude - projection.minLatitude;
+    if (latitudeSpan <= 0 || mapRect.height <= 0) return;
+    // A degree of latitude is a constant 111320m, and the longitude axis now
+    // carries the same scale, which is what makes one bar meaningful.
+    final metresPerPixel = latitudeSpan * 111320 / mapRect.height;
+
+    // A round distance landing near a fifth of the map width.
+    const steps = [50, 100, 200, 250, 500, 1000];
+    final target = mapRect.width * 0.2 * metresPerPixel;
+    final metres = steps.firstWhere(
+      (step) => step >= target,
+      orElse: () => steps.last,
+    );
+    final length = metres / metresPerPixel;
+    if (length > mapRect.width * 0.5) return;
+
+    final y = mapRect.bottom - 13;
+    final x = mapRect.left + 13;
+    final paint = Paint()
+      ..color = scheme.onSurfaceVariant.withValues(alpha: 0.75)
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(x, y), Offset(x + length, y), paint);
+    canvas.drawLine(Offset(x, y - 3), Offset(x, y + 3), paint);
+    canvas.drawLine(
+      Offset(x + length, y - 3),
+      Offset(x + length, y + 3),
+      paint,
+    );
+
+    final label = TextPainter(
+      text: TextSpan(
+        text: metres >= 1000 ? '${metres ~/ 1000} km' : '$metres m',
+        style: TextStyle(
+          color: scheme.onSurfaceVariant,
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    label.paint(canvas, Offset(x, y - 5 - label.height));
+  }
+
   void _paintBuildingLabels(
     Canvas canvas,
     List<({String text, Rect bounds, double area})> candidates,
@@ -846,4 +1053,81 @@ class CampusMapPainter extends CustomPainter {
       oldDelegate.boundsFeatures != boundsFeatures ||
       oldDelegate.selectedId != selectedId ||
       oldDelegate.scheme != scheme;
+}
+
+/// Names the three outline families.
+///
+/// Without it the map asks you to infer that a hollow shape is a car park and
+/// an olive one is grass. The swatches are painted with `mapFamilyPaints`, the
+/// same function the map uses, so the legend cannot describe colours the map
+/// is not drawing.
+class _MapLegend extends StatelessWidget {
+  const _MapLegend({required this.scheme});
+
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: 0.82),
+        borderRadius: Shapes.inner,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _entry(MapFamily.built, 'Building'),
+            const SizedBox(height: 5),
+            _entry(MapFamily.parking, 'Parking'),
+            const SizedBox(height: 5),
+            _entry(MapFamily.open, 'Green space'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _entry(MapFamily family, String label) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      CustomPaint(
+        size: const Size(15, 10),
+        painter: _LegendSwatch(family: family, scheme: scheme),
+      ),
+      const SizedBox(width: 7),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          height: 1.1,
+          fontWeight: FontWeight.w600,
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+    ],
+  );
+}
+
+class _LegendSwatch extends CustomPainter {
+  const _LegendSwatch({required this.family, required this.scheme});
+
+  final MapFamily family;
+  final ColorScheme scheme;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paints = mapFamilyPaints(family, scheme);
+    final rect = Rect.fromLTWH(0.5, 0.5, size.width - 1, size.height - 1);
+    final fill = paints.fill;
+    final edge = paints.edge;
+    if (fill != null) canvas.drawRect(rect, fill);
+    if (edge != null) canvas.drawRect(rect, edge);
+  }
+
+  @override
+  bool shouldRepaint(_LegendSwatch old) =>
+      old.family != family || old.scheme != scheme;
 }
