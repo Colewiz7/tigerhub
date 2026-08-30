@@ -10,6 +10,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/config.dart';
 import 'package:tigerhub/widgets/wordmark.dart';
@@ -63,6 +64,34 @@ void main() {
     ));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Hub follows the theme instead of defaulting to black',
+      (tester) async {
+    // "Hub" is painted with fill="currentColor". flutter_svg defaults that to
+    // black, and the masthead sits on a near-black surface, so getting this
+    // wrong makes half the app's own name disappear while everything still
+    // renders and nothing throws.
+    const ink = Color(0xFFF2E4DA);
+
+    await tester.pumpWidget(MaterialApp(
+      theme: ThemeData(
+        colorScheme: const ColorScheme.dark(
+          surface: Color(0xFF16100D),
+          onSurface: ink,
+        ),
+      ),
+      home: const Scaffold(
+        body: Center(child: SizedBox(width: 260, child: Wordmark())),
+      ),
+    ));
+    await tester.pumpAndSettle();
+
+    final svg = tester.widget<SvgPicture>(find.byType(SvgPicture));
+    final loader = svg.bytesLoader as SvgAssetLoader;
+    expect(loader.theme?.currentColor, ink,
+        reason: 'currentColor must come from the scheme, or Hub renders black '
+            'on a near-black masthead');
   });
 
   testWidgets('the wordmark names the app to a screen reader', (tester) async {
