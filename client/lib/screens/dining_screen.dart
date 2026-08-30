@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 import '../cards/dining_card.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
-import '../widgets/content_column.dart';
+import '../widgets/jump_list.dart';
 import '../widgets/freshness.dart';
 import '../services/preferences.dart';
 import '../widgets/status_row.dart';
@@ -55,27 +55,29 @@ class _DiningScreenState extends State<DiningScreen> {
       pinned: _prefs.pinnedDining,
     );
 
-    return ResponsiveList(
-      itemCount: groups.length,
-      itemBuilder: (context, index) {
-        final group = groups[index];
-        final openInGroup = group.value.where((l) => l.isOpen).length;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GroupHeader(
-                icon: iconForCategory(group.value.first.category),
-                title: group.key,
-                count: openInGroup,
-              ),
-              for (final location in group.value)
-                DiningRow(location: location, api: widget.api),
-            ],
+    return JumpList(
+      groups: [
+        for (final group in groups)
+          JumpGroup(
+            label: group.key,
+            icon: iconForCategory(group.value.first.category),
+            // The rail counts what is open, which is what people are scanning
+            // for, not how many exist.
+            count: group.value.where((l) => l.isOpen).length,
+            builder: (context) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GroupHeader(
+                  icon: iconForCategory(group.value.first.category),
+                  title: group.key,
+                  count: group.value.where((l) => l.isOpen).length,
+                ),
+                for (final location in group.value)
+                  DiningRow(location: location, api: widget.api),
+              ],
+            ),
           ),
-        );
-      },
+      ],
     );
   }
 }

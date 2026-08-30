@@ -15,10 +15,10 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../theme/semantic.dart';
 import '../theme/tokens.dart';
-import '../widgets/content_column.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 import '../widgets/places_sheet.dart';
+import '../widgets/section_nav.dart';
 import '../widgets/week_grid.dart';
 
 class CampusScreen extends StatefulWidget {
@@ -65,38 +65,101 @@ class _CampusScreenState extends State<CampusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Five unrelated things used to stack in one scroll, so anything below the
+    // first two disappeared. Same nav idiom as Settings.
+    return SectionScaffold(
+      sections: [
+        SectionSpec(
+          id: 'mail',
+          title: 'Mail',
+          subtitle: 'Your address, and both post offices',
+          icon: Icons.local_post_office_rounded,
+          builder: (context) => _MailSection(
+            api: widget.api,
+            areas: widget.areas,
+            offices: _offices,
+          ),
+        ),
+        SectionSpec(
+          id: 'find',
+          title: 'Find on campus',
+          subtitle: 'Fountains, restrooms, blue lights, bus stops',
+          icon: Icons.travel_explore_rounded,
+          builder: (context) => _FindSection(api: widget.api, kinds: _kinds),
+        ),
+        SectionSpec(
+          id: 'rec',
+          title: 'Gym and pool',
+          subtitle: 'Facility hours for the week',
+          icon: Icons.fitness_center_rounded,
+          builder: (context) => _RecreationSection(result: _rec),
+        ),
+        SectionSpec(
+          id: 'shed',
+          title: 'SHED makerspace',
+          subtitle: 'Live equipment availability',
+          icon: Icons.construction_rounded,
+          builder: (context) => _ShedSection(shed: _shed, rooms: _rooms),
+        ),
+      ],
+    );
+  }
+}
 
-    return ContentColumn(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+class _MailSection extends StatelessWidget {
+  const _MailSection({
+    required this.api,
+    required this.areas,
+    required this.offices,
+  });
+
+  final ApiClient api;
+  final Result<Collection<HousingArea>> areas;
+  final Result<Collection<PostOffice>> offices;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
         children: [
-          HousingCard(areas: widget.areas, api: widget.api),
+          HousingCard(areas: areas, api: api),
           const SizedBox(height: 22),
-
           _Heading(
             title: 'Post offices',
             subtitle: 'Mail is collected at the counter after an email notice. '
                 'There are no mailboxes.',
-            state: _offices.state,
-            fetchedAt: _offices.fetchedAt,
+            state: offices.state,
+            fetchedAt: offices.fetchedAt,
           ),
-          for (final office in _offices.value?.data ?? const <PostOffice>[])
-            _PostOfficeBlock(office: office),
-          if (_offices.isPriming) const PrimingPlaceholder(label: 'Loading post offices'),
+          if (offices.isPriming)
+            const PrimingPlaceholder(label: 'Loading post offices')
+          else
+            for (final office in offices.value?.data ?? const <PostOffice>[])
+              _PostOfficeBlock(office: office),
+        ],
+      );
+}
 
-          const SizedBox(height: 22),
+class _FindSection extends StatelessWidget {
+  const _FindSection({required this.api, required this.kinds});
 
+  final ApiClient api;
+  final Result<Collection<PlaceKind>> kinds;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+        children: [
           _Heading(
             title: 'Find on campus',
             subtitle: 'From the campus map, with the building, floor and a note '
                 'on where exactly to look.',
-            state: _kinds.state,
-            fetchedAt: _kinds.fetchedAt,
+            state: kinds.state,
+            fetchedAt: kinds.fetchedAt,
           ),
-          if (_kinds.isPriming)
+          if (kinds.isPriming)
             const PrimingPlaceholder(label: 'Loading places')
           else
-            for (final kind in _kinds.value?.data ?? const <PlaceKind>[])
+            for (final kind in kinds.value?.data ?? const <PlaceKind>[])
               StatusRow(
                 icon: iconForPlaceKind(kind.kind),
                 title: kind.kindName,
@@ -107,7 +170,7 @@ class _CampusScreenState extends State<CampusScreen> {
                   isScrollControlled: true,
                   constraints: const BoxConstraints(maxWidth: 720),
                   builder: (context) => PlacesSheet(
-                    api: widget.api,
+                    api: api,
                     kind: kind.kind,
                     title: kind.kindName,
                     icon: iconForPlaceKind(kind.kind),
@@ -119,39 +182,58 @@ class _CampusScreenState extends State<CampusScreen> {
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
+        ],
+      );
+}
 
-          const SizedBox(height: 22),
+class _RecreationSection extends StatelessWidget {
+  const _RecreationSection({required this.result});
 
+  final Result<Collection<RecreationFacility>> result;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+        children: [
           _Heading(
             title: 'Gym and pool',
             subtitle: 'Today first. A facility can run several sessions in a '
                 'day, so each one is listed separately.',
-            state: _rec.state,
-            fetchedAt: _rec.fetchedAt,
+            state: result.state,
+            fetchedAt: result.fetchedAt,
           ),
-          if (_rec.isPriming)
+          if (result.isPriming)
             const PrimingPlaceholder(label: 'Loading facility hours')
           else
             for (final facility
-                in _rec.value?.data ?? const <RecreationFacility>[])
+                in result.value?.data ?? const <RecreationFacility>[])
               _RecreationRow(facility: facility),
+        ],
+      );
+}
 
-          const SizedBox(height: 22),
+class _ShedSection extends StatelessWidget {
+  const _ShedSection({required this.shed, required this.rooms});
 
+  final Result<List<MakerSpaceHours>> shed;
+  final Result<Collection<RoomSummary>> rooms;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+        children: [
           _Heading(
             title: 'SHED makerspace',
             subtitle: 'Equipment availability is live. Hours are hand '
                 'maintained, because the upstream hours feed is broken.',
-            state: _rooms.state,
-            fetchedAt: _rooms.fetchedAt,
+            state: rooms.state,
+            fetchedAt: rooms.fetchedAt,
           ),
-          for (final space in _shed.value ?? const <MakerSpaceHours>[])
+          for (final space in shed.value ?? const <MakerSpaceHours>[])
             _ShedHoursBlock(space: space),
-          _EquipmentBlock(result: _rooms),
+          _EquipmentBlock(result: rooms),
         ],
-      ),
-    );
-  }
+      );
 }
 
 class _Heading extends StatelessWidget {
