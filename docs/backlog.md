@@ -47,6 +47,55 @@ Keep `source` on whatever survives; it is a first class column for a reason.
 
 ---
 
+## From Cole's review, 2026-08-30
+
+Everything below came from actually using the app. Marked done where it has
+been, so what is left is real.
+
+### Fixed already
+
+- **Glitching when switching pages, and after Customize.** Fourteen stream
+  subscriptions were never cancelled, so stale ones kept delivering and an old
+  page's result could overwrite the current one.
+- **All four tabs laid out constantly**, including the map canvas nobody was
+  looking at. Inactive tabs are Offstage now.
+- **The caption under the hero number was unreadable.** 85% opacity on a 10px
+  semibold sitting on saturated orange.
+- **The Today grid spread horizontally with dead space below.** It considers
+  height and packing now, so four cards in a tall window go two by two rather
+  than three and a widow.
+- **Map tab.** The map existed but was buried as a section inside Campus.
+
+### Still open, for Codex (visual)
+
+**The tiger stripes on the wordmark are wrong.** They read as vertical bars.
+Cole wants **horizontal wavy lines**, like actual tiger markings. The geometry
+lives in `assets/generated/wordmark/*.svg`; `scripts/flatten-wordmark.py`
+converts the text to outlines afterwards, so only the stripe paths need
+redrawing.
+
+**Post office hours look plain and boring.** Better than the cramped original,
+but flat. This is the Campus tab's most-looked-at block after the address.
+
+**The Customize dashboard needs a lot of work; the page is not really modular.**
+Currently it is only reorder plus show/hide of four fixed cards. What "modular"
+should mean here is a design question: card sizes, more card types, per card
+options.
+
+### Still open, for Claude (behaviour)
+
+**Post office hours for today.** The data already carries per service, per day
+rules; what is missing is a "today" projection so the answer is one line rather
+than a table to read.
+
+**Split the events widget.** One widget for a single club's events, another for
+events in general. The organizer facets and muting already exist, so this is
+mostly a matter of a card that is scoped to one organizer.
+
+**A calendar view.** For events at least, possibly for dining hours. Worth
+deciding which, since a calendar of everything is a different feature from a
+month view of one club.
+
 ## Motion and loading animations  *(done)*
 
 Requested 2026-08-30. Handed to Codex alongside the map work, so this is
