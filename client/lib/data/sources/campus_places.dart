@@ -39,9 +39,28 @@ const Map<int, (String, String)> placeKinds = {
   232: ('reload', 'Tiger Spend reload stations'),
 };
 
-/// One request per parent category returns every sub it contains, so six
-/// requests cover all twelve kinds rather than twelve.
-const List<int> placeParents = [35, 19, 27, 23, 15, 7];
+/// One request per parent category returns every sub it contains, so a handful
+/// of requests cover all twelve place kinds rather than twelve.
+///
+/// **3, 11 and 47 are here for their outlines, not for pins.** Between them
+/// they carry the shape of campus:
+///
+///     3   Buildings   152 polygons, with abbreviations, grouped into
+///                     academic, residential, green, admin and athletic
+///     11  Parking      62 polygons, the lots
+///     47  Other        17 polygons, including quads and courtyards
+///
+/// Without them the map drew the twenty buildings that happened to appear
+/// inside the other categories, mostly LEED ones from Sustainability, so campus
+/// was a scatter of dots on an empty field rather than a map.
+///
+/// Category 3's abbreviations are also what event placement needs: the spec
+/// allows a pin only on an exact building match, and there was almost nothing
+/// to match against before.
+///
+/// Their point features are ignored, because those kinds are not in
+/// [placeKinds]; only the geometry comes through.
+const List<int> placeParents = [3, 11, 47, 35, 19, 27, 23, 15, 7];
 
 String? _trimmed(Object? value) {
   if (value == null) return null;
@@ -159,7 +178,17 @@ List<Map<String, dynamic>> parseCampusMapFeatures(String raw) {
         // discarded every outline and left the map as dots on an empty field.
         if (type == 'Point' && placeKind == null) continue;
         final kind = placeKind?.$1 ?? '_campus';
-        final kindName = placeKind?.$2 ?? 'Campus structure';
+
+        // Backdrop geometry keeps the '_campus' kind the renderer looks for,
+        // but names itself after the sub-category it came from: "Academic
+        // Building", "General Parking", "Quads And Courtyards". A parking lot
+        // and a lecture hall are both backdrop, and being able to tell them
+        // apart is what lets them be drawn differently later.
+        final subName = menu is Map<String, dynamic> ? menu['name'] : null;
+        final kindName = placeKind?.$2 ??
+            (subName is String && subName.trim().isNotEmpty
+                ? subName.trim()
+                : 'Campus structure');
 
         // The same building geometry appears in several parent payloads.
         if (!seen.add('$kind:$id')) continue;
