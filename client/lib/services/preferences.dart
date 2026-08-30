@@ -129,6 +129,20 @@ class Preferences extends ChangeNotifier {
     await ResponseCache.instance.writeOrder(_boostKey, _withMarker(_boost));
   }
 
+  /// Apply a preset in one go, so switching taste is one tap rather than
+  /// twenty edits.
+  Future<void> applyProfile(List<String> hide, List<String> boost,
+      {required bool keywordsEnabled}) async {
+    _hide = _clean(hide);
+    _boost = _clean(boost);
+    _keywordRulesEnabled = keywordsEnabled;
+    notifyListeners();
+    final cache = ResponseCache.instance;
+    await cache.writeOrder(_hideKey, _withMarker(_hide));
+    await cache.writeOrder(_boostKey, _withMarker(_boost));
+    await cache.writeOrder(_keywordsEnabledKey, [keywordsEnabled ? 'true' : 'false']);
+  }
+
   Future<void> setKeywordRulesEnabled(bool enabled) async {
     _keywordRulesEnabled = enabled;
     notifyListeners();
