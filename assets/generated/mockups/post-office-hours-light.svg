@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 900" role="img" aria-label="post office hours light mockup">
+  <rect width="1440" height="900" fill="#FFF8F5"/>
+  <text x="96" y="104" fill="#2B1710" font-family="Rubik, sans-serif" font-size="42" font-weight="650">Post offices</text>
+  <text x="96" y="142" fill="#76584A" font-family="Rubik, sans-serif" font-size="20">Global Village Post Office · Fall semester</text>
+  <rect x="72" y="182" width="1296" height="630" rx="34" fill="#FFF1E8"/>
+  <g transform="translate(112 222) scale(1.5)" fill="none" stroke="#F76902" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11a4 4 0 0 1 4 4v7H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/><path d="M8 10v11M19 14h3v5M14 6h5v4M14 6v8"/></g>
+  <text x="166" y="254" fill="#2B1710" font-family="Rubik, sans-serif" font-size="28" font-weight="650">Global Village Post Office</text>
+  <text x="112" y="306" fill="#76584A" font-family="Rubik, sans-serif" font-size="19">4000 Global Village Plaza · Rochester, NY 14623</text>
+  <path d="M112 345 C230 326 338 362 456 343 C571 325 677 359 790 341" fill="none" stroke="#F76902" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 14"/>
+  <rect x="112" y="382" width="570" height="344" rx="28" fill="#FFE4D3"/>
+  <rect x="714" y="382" width="570" height="344" rx="28" fill="#FFE4D3"/>
+  <rect x="142" y="410" width="8" height="288" rx="4" fill="#F76902"/>
+  <rect x="744" y="410" width="8" height="288" rx="4" fill="#F76902"/>
+  <text x="174" y="438" fill="#2B1710" font-family="Rubik, sans-serif" font-size="24" font-weight="650">Package pickup</text>
+  <text x="650" y="438" text-anchor="end" fill="#76584A" font-family="Rubik, sans-serif" font-size="15" letter-spacing="1.5">FALL</text>
+  <text x="174" y="488" fill="#76584A" font-family="Rubik, sans-serif" font-size="15" letter-spacing="1.8">MON TO FRI</text>
+  <text x="397" y="565" text-anchor="middle" fill="#2B1710" font-family="Rubik, sans-serif" font-size="45" font-weight="500">10:00 AM – 1:00 PM</text>
+  <path d="M366 594 C387 586 406 602 427 593" fill="none" stroke="#512B20" stroke-width="5" stroke-linecap="round"/>
+  <text x="397" y="650" text-anchor="middle" fill="#2B1710" font-family="Rubik, sans-serif" font-size="45" font-weight="500">2:00 PM – 4:30 PM</text>
+  <text x="776" y="438" fill="#2B1710" font-family="Rubik, sans-serif" font-size="24" font-weight="650">Shipping window</text>
+  <text x="1252" y="438" text-anchor="end" fill="#76584A" font-family="Rubik, sans-serif" font-size="15" letter-spacing="1.5">FALL</text>
+  <text x="776" y="488" fill="#76584A" font-family="Rubik, sans-serif" font-size="15" letter-spacing="1.8">MON TO FRI</text>
+  <text x="999" y="594" text-anchor="middle" fill="#2B1710" font-family="Rubik, sans-serif" font-size="45" font-weight="500">10:00 AM – 4:00 PM</text>
+  <text x="776" y="680" fill="#76584A" font-family="Rubik, sans-serif" font-size="17">Closed Saturday and Sunday</text>
+</svg>
