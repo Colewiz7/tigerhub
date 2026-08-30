@@ -1,0 +1,782 @@
+{
+    "data": [
+        {
+            "days": [
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-30",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-31",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-01",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-02",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-03",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-04",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-05",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                }
+            ],
+            "name": "Field House Indoor Track"
+        },
+        {
+            "days": [
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-30",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-31",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-01",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-02",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-03",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-04",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-05",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                }
+            ],
+            "name": "Gordon Field House"
+        },
+        {
+            "days": [
+                {
+                    "closed": true,
+                    "note": "CLOSED",
+                    "service_date": "2026-08-30",
+                    "spans": []
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-31",
+                    "spans": [
+                        {
+                            "closes_at": "16:00",
+                            "opens_at": "09:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-01",
+                    "spans": [
+                        {
+                            "closes_at": "16:00",
+                            "opens_at": "09:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-02",
+                    "spans": [
+                        {
+                            "closes_at": "18:00",
+                            "opens_at": "09:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-03",
+                    "spans": [
+                        {
+                            "closes_at": "18:00",
+                            "opens_at": "09:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-04",
+                    "spans": [
+                        {
+                            "closes_at": "16:00",
+                            "opens_at": "09:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": true,
+                    "note": "CLOSED",
+                    "service_date": "2026-09-05",
+                    "spans": []
+                }
+            ],
+            "name": "Hale-Andrews SLC Main Office"
+        },
+        {
+            "days": [
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-30",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-31",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-01",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-02",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-03",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-04",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-05",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                }
+            ],
+            "name": "Hale-Andrews Student Life Center (SLC)"
+        },
+        {
+            "days": [
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-30",
+                    "spans": [
+                        {
+                            "closes_at": "16:30",
+                            "opens_at": "14:30"
+                        },
+                        {
+                            "closes_at": "22:00",
+                            "opens_at": "19:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-31",
+                    "spans": [
+                        {
+                            "closes_at": "08:45",
+                            "opens_at": "06:45"
+                        },
+                        {
+                            "closes_at": "13:45",
+                            "opens_at": "12:00"
+                        },
+                        {
+                            "closes_at": "22:00",
+                            "opens_at": "19:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-01",
+                    "spans": [
+                        {
+                            "closes_at": "08:45",
+                            "opens_at": "06:45"
+                        },
+                        {
+                            "closes_at": "13:45",
+                            "opens_at": "12:00"
+                        },
+                        {
+                            "closes_at": "22:00",
+                            "opens_at": "19:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-02",
+                    "spans": [
+                        {
+                            "closes_at": "08:45",
+                            "opens_at": "06:45"
+                        },
+                        {
+                            "closes_at": "13:45",
+                            "opens_at": "12:00"
+                        },
+                        {
+                            "closes_at": "22:00",
+                            "opens_at": "19:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-03",
+                    "spans": [
+                        {
+                            "closes_at": "08:45",
+                            "opens_at": "06:45"
+                        },
+                        {
+                            "closes_at": "13:45",
+                            "opens_at": "12:00"
+                        },
+                        {
+                            "closes_at": "22:00",
+                            "opens_at": "19:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-04",
+                    "spans": [
+                        {
+                            "closes_at": "08:45",
+                            "opens_at": "06:45"
+                        },
+                        {
+                            "closes_at": "13:45",
+                            "opens_at": "12:00"
+                        },
+                        {
+                            "closes_at": "22:00",
+                            "opens_at": "19:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-05",
+                    "spans": [
+                        {
+                            "closes_at": "16:30",
+                            "opens_at": "14:30"
+                        },
+                        {
+                            "closes_at": "22:00",
+                            "opens_at": "19:00"
+                        }
+                    ]
+                }
+            ],
+            "name": "Judson/Hale Aquatics Center"
+        },
+        {
+            "days": [
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-30",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-31",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-01",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-02",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-03",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-04",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-05",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                }
+            ],
+            "name": "Outdoor Tennis Courts"
+        },
+        {
+            "days": [
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-30",
+                    "spans": [
+                        {
+                            "closes_at": "18:00",
+                            "opens_at": "13:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-31",
+                    "spans": [
+                        {
+                            "closes_at": "21:00",
+                            "opens_at": "16:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-01",
+                    "spans": [
+                        {
+                            "closes_at": "21:00",
+                            "opens_at": "16:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-02",
+                    "spans": [
+                        {
+                            "closes_at": "21:00",
+                            "opens_at": "16:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-03",
+                    "spans": [
+                        {
+                            "closes_at": "21:00",
+                            "opens_at": "16:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-04",
+                    "spans": [
+                        {
+                            "closes_at": "21:00",
+                            "opens_at": "16:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-05",
+                    "spans": [
+                        {
+                            "closes_at": "18:00",
+                            "opens_at": "13:00"
+                        }
+                    ]
+                }
+            ],
+            "name": "Red Barn Climbing"
+        },
+        {
+            "days": [
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-30",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-31",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-01",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-02",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-03",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-04",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-05",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                }
+            ],
+            "name": "Turf Field"
+        },
+        {
+            "days": [
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-30",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-08-31",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-01",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-02",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-03",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-04",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "06:00"
+                        }
+                    ]
+                },
+                {
+                    "closed": false,
+                    "note": null,
+                    "service_date": "2026-09-05",
+                    "spans": [
+                        {
+                            "closes_at": "23:00",
+                            "opens_at": "10:00"
+                        }
+                    ]
+                }
+            ],
+            "name": "Wiedman Fitness Center"
+        }
+    ],
+    "last_updated": "2026-08-30T05:33:55Z",
+    "stale": false
+}

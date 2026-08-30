@@ -1,12 +1,10 @@
 /// Client tests. No network: the API client is driven with a mock http client.
 library;
 
-import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/app_shell.dart';
@@ -19,6 +17,7 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/theme/semantic.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/tokens.dart';
+import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/widgets/menu_section.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/widgets/jump_list.dart';
@@ -32,6 +31,26 @@ import 'package:tigerhub/widgets/occupancy_chart.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart';
 import 'package:tigerhub/widgets/occupancy_chip.dart';
 
+/// Stands in for a scrape. `ApiClient`'s caching and state machine are
+/// transport independent, so these tests inject a [Backend] rather than a
+/// mock HTTP client now that there is no HTTP transport to mock.
+class _FakeBackend implements Backend {
+  _FakeBackend(this.body);
+  final Map<String, dynamic> body;
+  @override
+  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async => body;
+  @override
+  void close() {}
+}
+
+class _OfflineBackend implements Backend {
+  @override
+  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async =>
+      throw const SocketException('offline');
+  @override
+  void close() {}
+}
+
 void main() {
   setUp(() {
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
@@ -39,9 +58,7 @@ void main() {
 
   group('data states', () {
     test('first launch with no cache and no server is priming', () async {
-      final api = ApiClient(
-        client: MockClient((_) async => throw http.ClientException('offline')),
-      );
+      final api = ApiClient(backend: _OfflineBackend());
       final results = await api.dining().toList();
       expect(results.first.state, DataState.priming);
       expect(results.last.state, DataState.priming);
@@ -49,22 +66,20 @@ void main() {
     });
 
     test('successful fetch is ok and caches for next launch', () async {
-      final body = jsonEncode({
+      final body = <String, dynamic>{
         'data': [
           {'id': 23, 'name': 'Crossroads', 'is_open': true, 'occupancy': null},
         ],
         'stale': false,
         'last_updated': '2026-08-28T12:00:00Z',
-      });
-      final api = ApiClient(client: MockClient((_) async => http.Response(body, 200)));
+      };
+      final api = ApiClient(backend: _FakeBackend(body));
       final results = await api.dining().toList();
       expect(results.last.state, DataState.ok);
       expect(results.last.value!.data.single.name, 'Crossroads');
 
       // A second client with no network must still serve the cached payload.
-      final offline = ApiClient(
-        client: MockClient((_) async => throw http.ClientException('offline')),
-      );
+      final offline = ApiClient(backend: _OfflineBackend());
       final replay = await offline.dining().toList();
       expect(replay.first.state, DataState.stale);
       expect(replay.first.value!.data.single.name, 'Crossroads');
@@ -73,8 +88,12 @@ void main() {
     });
 
     test('server reported staleness is mirrored, not recomputed', () async {
-      final body = jsonEncode({'data': [], 'stale': true, 'last_updated': null});
-      final api = ApiClient(client: MockClient((_) async => http.Response(body, 200)));
+      final body = <String, dynamic>{
+        'data': <dynamic>[],
+        'stale': true,
+        'last_updated': null,
+      };
+      final api = ApiClient(backend: _FakeBackend(body));
       final results = await api.dining().toList();
       expect(results.last.state, DataState.stale);
     });
@@ -518,9 +537,7 @@ void _dynamicColour() {
     testWidgets('palette icon tooltip identifies source and action', (tester) async {
       final controller = SchemeController();
       await controller.load();
-      final api = ApiClient(
-        client: MockClient((_) async => throw http.ClientException('offline')),
-      );
+      final api = ApiClient(backend: _OfflineBackend());
 
       await tester.pumpWidget(
         MaterialApp(home: AppShell(api: api, scheme: controller)),

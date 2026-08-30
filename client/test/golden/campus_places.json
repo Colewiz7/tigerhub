@@ -1,0 +1,66 @@
+{
+    "data": [
+        {
+            "count": 6,
+            "kind": "atm",
+            "kind_name": "ATMs"
+        },
+        {
+            "count": 49,
+            "kind": "entrance_accessible",
+            "kind_name": "Accessible entrances"
+        },
+        {
+            "count": 9,
+            "kind": "restroom_accessible",
+            "kind_name": "Accessible restrooms"
+        },
+        {
+            "count": 147,
+            "kind": "restroom_all_gender",
+            "kind_name": "All-gender restrooms"
+        },
+        {
+            "count": 100,
+            "kind": "bike_rack",
+            "kind_name": "Bike racks"
+        },
+        {
+            "count": 61,
+            "kind": "blue_light",
+            "kind_name": "Blue light phones"
+        },
+        {
+            "count": 28,
+            "kind": "bus_stop",
+            "kind_name": "Bus stops"
+        },
+        {
+            "count": 70,
+            "kind": "aed",
+            "kind_name": "Defibrillators"
+        },
+        {
+            "count": 15,
+            "kind": "changing_table",
+            "kind_name": "Diaper changing stations"
+        },
+        {
+            "count": 8,
+            "kind": "ev_charge",
+            "kind_name": "EV charging"
+        },
+        {
+            "count": 9,
+            "kind": "reload",
+            "kind_name": "Tiger Spend reload stations"
+        },
+        {
+            "count": 97,
+            "kind": "water",
+            "kind_name": "Water fountains"
+        }
+    ],
+    "last_updated": "2026-08-30T05:33:57Z",
+    "stale": false
+}

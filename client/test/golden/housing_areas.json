@@ -1,0 +1,78 @@
+{
+    "data": [
+        {
+            "direct_delivery": false,
+            "id": "residence-halls",
+            "last_verified": "2026-08-28",
+            "line2_example": "Peterson 1234",
+            "line2_format": "Building, Room #",
+            "name": "Residence Halls",
+            "post_office": "dsp"
+        },
+        {
+            "direct_delivery": false,
+            "id": "perkins-green",
+            "last_verified": "2026-08-28",
+            "line2_example": "PG 133-C",
+            "line2_format": "Perkins Green Apartment #",
+            "name": "Perkins Green",
+            "post_office": "dsp"
+        },
+        {
+            "direct_delivery": false,
+            "id": "global-village",
+            "last_verified": "2026-08-28",
+            "line2_example": "GV 400 1020",
+            "line2_format": "GV Building # Room #",
+            "name": "Global Village",
+            "post_office": "global-village"
+        },
+        {
+            "direct_delivery": false,
+            "id": "greek-houses",
+            "last_verified": "2026-08-28",
+            "line2_example": "ASA 6011",
+            "line2_format": "House Room #",
+            "name": "Greek Houses",
+            "post_office": "global-village"
+        },
+        {
+            "direct_delivery": false,
+            "id": "riverknoll",
+            "last_verified": "2026-08-28",
+            "line2_example": "RK 123",
+            "line2_format": "RK Apartment #",
+            "name": "Riverknoll",
+            "post_office": "global-village"
+        },
+        {
+            "direct_delivery": false,
+            "id": "university-commons",
+            "last_verified": "2026-08-28",
+            "line2_example": "UC 123",
+            "line2_format": "UC Apartment #",
+            "name": "University Commons",
+            "post_office": "global-village"
+        },
+        {
+            "direct_delivery": true,
+            "id": "rit-inn",
+            "last_verified": "2026-08-28",
+            "line2_example": null,
+            "line2_format": null,
+            "name": "RIT Inn",
+            "post_office": null
+        },
+        {
+            "direct_delivery": true,
+            "id": "175-jefferson",
+            "last_verified": "2026-08-28",
+            "line2_example": null,
+            "line2_format": null,
+            "name": "175 Jefferson Road",
+            "post_office": null
+        }
+    ],
+    "last_updated": null,
+    "stale": false
+}

@@ -1,0 +1,196 @@
+/// Scrapes RIT from the device.
+///
+/// This replaces the FastAPI server. The app no longer depends on a homelab
+/// being up, which is the whole reason it exists.
+///
+/// Two obligations moved here along with the scraping, and both matter more on
+/// a device than they did on one server, because there is now one of these per
+/// install rather than one in total:
+///
+///  1. **Cadence.** CLAUDE.md 6 says scheduled scrapes only, never per request.
+///     A source is refreshed only when its snapshot is older than its cadence,
+///     so opening a tab five times does not scrape five times. Every read is
+///     served from the stored snapshot either way.
+///  2. **Identification.** Every outbound call goes through `upstream.dart`,
+///     which is the only place that sets the User-Agent.
+///
+/// Reads never block on a scrape when a snapshot exists: the stored copy is
+/// returned immediately and the refresh runs behind it. That is what keeps the
+/// offline first requirement (CLAUDE.md 3.1) true now that "offline" also means
+/// "the upstream is slow".
+library;
+
+import 'dart:async';
+
+import 'backend.dart';
+import 'campus_time.dart';
+import 'sources/tigercenter.dart';
+import 'static_config.dart';
+import 'store.dart';
+import 'upstream.dart';
+
+/// One scraped upstream, with the cadence it is polled at.
+///
+/// The intervals are the backend's, unchanged: dining hourly, events every few
+/// hours, makerspace every fifteen minutes (CLAUDE.md 6).
+class SourceSpec {
+  const SourceSpec({
+    required this.name,
+    required this.cadence,
+    required this.scrape,
+  });
+
+  final String name;
+  final Duration cadence;
+  final Future<Map<String, dynamic>> Function(Upstream) scrape;
+}
+
+/// How long past its cadence a source's data counts as stale, mirroring
+/// `backend/app/freshness.py`.
+const int staleGraceMultiplier = 3;
+
+class LocalBackend implements Backend {
+  LocalBackend({Upstream? upstream, this._store})
+      : _http = upstream ?? Upstream();
+
+  final Upstream _http;
+
+  /// Late bound, because opening the store needs an await a constructor
+  /// cannot do. Injected directly in tests.
+  JsonStore? _store;
+
+  /// In flight refreshes, so two screens opening at once scrape once.
+  final Map<String, Future<void>> _inFlight = {};
+
+  static final Map<String, SourceSpec> sources = {
+    'tigercenter_dining': SourceSpec(
+      name: 'tigercenter_dining',
+      cadence: const Duration(minutes: 60),
+      scrape: scrapeDining,
+    ),
+  };
+
+  Future<JsonStore> _openStore() async => _store ??= await JsonStore.open();
+
+  /// Refresh [name] if its snapshot is older than its cadence. Never throws:
+  /// a failed refresh leaves the previous snapshot in place, which is the
+  /// offline first contract.
+  Future<void> _refreshIfDue(String name, {bool force = false}) async {
+    final spec = sources[name];
+    if (spec == null) return;
+
+    final store = await _openStore();
+    if (!force) {
+      final age = await store.fetchedAt(name);
+      if (age != null &&
+          DateTime.now().difference(age) < spec.cadence) {
+        return;
+      }
+    }
+
+    final running = _inFlight[name];
+    if (running != null) return running;
+
+    final future = () async {
+      try {
+        final payload = await spec.scrape(_http);
+        await store.write(name, payload);
+      } catch (_) {
+        // Deliberately swallowed. The read path falls back to the stored
+        // snapshot and reports staleness; a scrape failure must never surface
+        // as an error screen over data we already hold.
+      } finally {
+        _inFlight.remove(name);
+      }
+    }();
+
+    _inFlight[name] = future;
+    return future;
+  }
+
+  /// The snapshot for [name], refreshing first only if nothing is stored yet.
+  ///
+  /// With a snapshot in hand the refresh is fired and not awaited, so the UI
+  /// paints from cache immediately and updates when the scrape lands.
+  Future<(Map<String, dynamic>?, DateTime?)> _snapshot(String name) async {
+    final store = await _openStore();
+    var stored = await store.read(name);
+
+    if (stored == null) {
+      await _refreshIfDue(name, force: true);
+      stored = await store.read(name);
+    } else {
+      unawaited(_refreshIfDue(name));
+    }
+
+    return (stored?.body, stored?.fetchedAt);
+  }
+
+  /// Is this source's data missing or overdue? Mirrors `freshness.is_stale`.
+  bool _isStale(String name, DateTime? fetchedAt) {
+    if (fetchedAt == null) return true;
+    final spec = sources[name];
+    if (spec == null) return false;
+    return DateTime.now().difference(fetchedAt) >
+        spec.cadence * staleGraceMultiplier;
+  }
+
+  Map<String, dynamic> _envelope(
+    String source,
+    List<dynamic> data,
+    DateTime? fetchedAt,
+  ) =>
+      {
+        'data': data,
+        'stale': _isStale(source, fetchedAt),
+        'last_updated':
+            fetchedAt == null ? null : CampusTime.format(fetchedAt.toUtc()),
+      };
+
+  @override
+  Future<Map<String, dynamic>> fetch(
+    String path,
+    [Map<String, String>? query]
+  ) async {
+    await StaticConfig.load();
+
+    switch (path) {
+      case '/dining':
+        return _dining(query);
+      case '/dining/visiting-chefs':
+        return _menuCategory(visitingChef);
+      case '/dining/specials':
+        return _menuCategory('Special');
+    }
+
+    throw UpstreamError('no local source serves $path');
+  }
+
+  Future<Map<String, dynamic>> _dining(Map<String, String>? query) async {
+    final (snapshot, fetchedAt) = await _snapshot('tigercenter_dining');
+    final now = CampusTime.nowUtc();
+    final config = StaticConfig.instance;
+
+    final locations = <Map<String, dynamic>>[
+      for (final loc in snapshot?['locations'] as List<dynamic>? ?? const [])
+        buildDiningLocation(loc as Map<String, dynamic>, now, config, null),
+    ]..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
+
+    final data = query?['open_now'] == 'true'
+        ? [for (final l in locations) if (l['is_open'] == true) l]
+        : locations;
+
+    return _envelope('tigercenter_dining', data, fetchedAt);
+  }
+
+  Future<Map<String, dynamic>> _menuCategory(String category) async {
+    final (snapshot, fetchedAt) = await _snapshot('tigercenter_dining');
+    final data = snapshot == null
+        ? const <Map<String, dynamic>>[]
+        : menuItemsWithCategory(snapshot, category);
+    return _envelope('tigercenter_dining', data, fetchedAt);
+  }
+
+  @override
+  void close() => _http.close();
+}

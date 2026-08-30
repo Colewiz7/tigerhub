@@ -1,0 +1,186 @@
+{
+    "data": [
+        {
+            "building": "Global Village",
+            "city": "Rochester",
+            "email": "gvpostoffice@rit.edu",
+            "hours": [
+                {
+                    "closes_at": "16:30",
+                    "days": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY"
+                    ],
+                    "opens_at": "09:00",
+                    "season": "fall",
+                    "service": "package_pickup"
+                },
+                {
+                    "closes_at": "16:00",
+                    "days": [
+                        "SATURDAY"
+                    ],
+                    "opens_at": "12:00",
+                    "season": "fall",
+                    "service": "package_pickup"
+                },
+                {
+                    "closes_at": "13:00",
+                    "days": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY"
+                    ],
+                    "opens_at": "09:00",
+                    "season": "fall",
+                    "service": "shipping_window"
+                },
+                {
+                    "closes_at": "16:00",
+                    "days": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY"
+                    ],
+                    "opens_at": "13:30",
+                    "season": "fall",
+                    "service": "shipping_window"
+                },
+                {
+                    "closes_at": "16:00",
+                    "days": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY"
+                    ],
+                    "opens_at": "09:00",
+                    "season": "summer",
+                    "service": "package_pickup"
+                },
+                {
+                    "closes_at": "13:00",
+                    "days": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY"
+                    ],
+                    "opens_at": "09:00",
+                    "season": "summer",
+                    "service": "shipping_window"
+                },
+                {
+                    "closes_at": "15:30",
+                    "days": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY"
+                    ],
+                    "opens_at": "13:30",
+                    "season": "summer",
+                    "service": "shipping_window"
+                }
+            ],
+            "id": "global-village",
+            "last_verified": "2026-08-28",
+            "location_note": "Located between Advantage Federal Credit Union and Shop One.",
+            "name": "Global Village Post Office",
+            "phone": "585-475-3463",
+            "side": "west",
+            "state": "NY",
+            "street": "6000 Reynolds Drive",
+            "zip": "14623"
+        },
+        {
+            "building": "Fredericka Douglass Sprague Perry Hall",
+            "city": "Rochester",
+            "email": "postoff@rit.edu",
+            "hours": [
+                {
+                    "closes_at": "16:30",
+                    "days": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY"
+                    ],
+                    "opens_at": "09:00",
+                    "season": "fall",
+                    "service": "package_pickup"
+                },
+                {
+                    "closes_at": "16:00",
+                    "days": [
+                        "SATURDAY"
+                    ],
+                    "opens_at": "12:00",
+                    "season": "fall",
+                    "service": "package_pickup"
+                },
+                {
+                    "closes_at": "12:30",
+                    "days": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY"
+                    ],
+                    "opens_at": "09:00",
+                    "season": "fall",
+                    "service": "shipping_window"
+                },
+                {
+                    "closes_at": "16:00",
+                    "days": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY"
+                    ],
+                    "opens_at": "13:00",
+                    "season": "fall",
+                    "service": "shipping_window"
+                },
+                {
+                    "closes_at": "16:00",
+                    "days": [
+                        "MONDAY",
+                        "TUESDAY",
+                        "WEDNESDAY",
+                        "THURSDAY",
+                        "FRIDAY"
+                    ],
+                    "opens_at": "09:00",
+                    "season": "summer",
+                    "service": "package_pickup"
+                }
+            ],
+            "id": "dsp",
+            "last_verified": "2026-08-28",
+            "location_note": "Located in the lower level of Fredericka Douglass Sprague Perry Hall (DSP), across from the Corner Store.",
+            "name": "DSP Post Office",
+            "phone": "585-475-2518",
+            "side": "east",
+            "state": "NY",
+            "street": "43 Greenleaf Court",
+            "zip": "14623"
+        }
+    ],
+    "last_updated": null,
+    "stale": false
+}
