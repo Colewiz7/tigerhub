@@ -101,14 +101,19 @@ class EventsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final all = result.value?.data ?? const <CampusEvent>[];
     final events = _scoped
-        ? [for (final e in all) if (e.organizerKey == organizerKey) e]
+        ? [
+            for (final e in all)
+              if (e.organizerKey == organizerKey) e,
+          ]
         : all;
     final today = eventsToday(events);
 
     // The club's own name, taken from its events rather than stored on the
     // card, so a club that renames itself is not stuck with the old label.
     final title = _scoped
-        ? (events.isEmpty ? 'Club events' : events.first.organizer ?? 'Club events')
+        ? (events.isEmpty
+              ? 'Club events'
+              : events.first.organizer ?? 'Club events')
         : 'Events';
 
     return CardShell(
@@ -131,11 +136,11 @@ class EventsCard extends StatelessWidget {
       child: switch ((result.isPriming, events.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading events'),
         (_, true) => EmptyState(
-            kind: EmptyKind.noEvents,
-            // A club with nothing on is a different fact from the whole campus
-            // being quiet, and saying so avoids looking broken.
-            title: _scoped ? 'Nothing from this club yet' : null,
-          ),
+          kind: EmptyKind.noEvents,
+          // A club with nothing on is a different fact from the whole campus
+          // being quiet, and saying so avoids looking broken.
+          title: _scoped ? 'Nothing from this club yet' : null,
+        ),
         _ when compact => _Compact(events: events),
         // Grouping by organizer is pointless when they are all one organizer.
         _ when _scoped => _Flat(events: events, onShowAll: onShowAll),
@@ -153,8 +158,11 @@ class _Compact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final ordered = [...events]..sort((a, b) => a.startsAt.compareTo(b.startsAt));
-    final next = ordered.where((event) => (event.endsAt ?? event.startsAt).isAfter(now)).firstOrNull;
+    final ordered = [...events]
+      ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+    final next = ordered
+        .where((event) => (event.endsAt ?? event.startsAt).isAfter(now))
+        .firstOrNull;
     return EventRow(event: next ?? ordered.first);
   }
 }

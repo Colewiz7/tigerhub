@@ -31,7 +31,10 @@ class FacilityHoursCard extends StatelessWidget {
     final all = result.value?.data ?? const <RecreationFacility>[];
     final facilities = facilityName == null
         ? all
-        : [for (final facility in all) if (facility.name == facilityName) facility];
+        : [
+            for (final facility in all)
+              if (facility.name == facilityName) facility,
+          ];
     return CardShell(
       title: facilityName ?? 'Facility hours',
       glyph: GlyphKind.buildings,
@@ -80,7 +83,9 @@ class _FacilityRow extends StatelessWidget {
         : !open
         ? (day.note ?? 'Closed today')
         : day.spans
-              .map((span) => '${_time(span.opensAt)} to ${_time(span.closesAt)}')
+              .map(
+                (span) => '${_time(span.opensAt)} to ${_time(span.closesAt)}',
+              )
               .join(',  ');
     final semantic = Semantic.of(context);
     return StatusRow(

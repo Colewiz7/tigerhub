@@ -4,6 +4,8 @@
 /// there is no cold start spinner once the app has run at least once.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_reorderable_grid_view/widgets/widgets.dart';
@@ -132,16 +134,34 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Edit mode reveals the remove buttons and the add row.
   bool _editing = false;
   String? _selectedId;
+  Result<Collection<RecreationFacility>> _recreation = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  Result<Collection<CampusMapFeature>> _campusMap = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  StreamSubscription<Result<Collection<RecreationFacility>>>? _recreationSub;
+  StreamSubscription<Result<Collection<CampusMapFeature>>>? _mapSub;
 
   @override
   void initState() {
     super.initState();
     _restoreOrder();
+    _recreationSub = widget.api.recreation().listen((result) {
+      if (mounted) setState(() => _recreation = result);
+    });
+    _mapSub = widget.api.campusMap().listen((result) {
+      if (mounted) setState(() => _campusMap = result);
+    });
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _recreationSub?.cancel();
+    _mapSub?.cancel();
     super.dispose();
   }
 
@@ -280,6 +300,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return values;
   }
 
+  List<({String key, String name})> get _facilities => [
+    for (final facility
+        in _recreation.value?.data ?? const <RecreationFacility>[])
+      (key: facility.name, name: facility.name),
+  ];
+
   Widget _cardFor(String id, bool showDragHandle) {
     final card = _instance(id);
     if (card == null) return const SizedBox.shrink();
@@ -331,13 +357,13 @@ class _HomeScreenState extends State<HomeScreen> {
           dragHandle: _DragHandle(visible: showDragHandle),
         ),
         ModuleType.facilityHours => FacilityHoursCard(
-          api: widget.api,
+          result: _recreation,
           facilityName: card.scope,
           compact: card.size == CardSize.compact,
           dragHandle: _DragHandle(visible: showDragHandle),
         ),
         ModuleType.campusMap => DashboardMapCard(
-          api: widget.api,
+          result: _campusMap,
           events: widget.events,
           dragHandle: _DragHandle(visible: showDragHandle),
         ),
@@ -455,6 +481,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       : _instance(_selectedId!),
                   organizers: _organizers,
                   diningCategories: _diningCategories,
+                  facilities: _facilities,
                   onUpdate: _updateCard,
                   onMove: (delta) => _moveCard(_selectedId!, delta),
                 ),
@@ -480,6 +507,7 @@ class _EditBar extends StatelessWidget {
     required this.selected,
     required this.organizers,
     required this.diningCategories,
+    required this.facilities,
     required this.onUpdate,
     required this.onMove,
   });
@@ -497,6 +525,7 @@ class _EditBar extends StatelessWidget {
   final CardInstance? selected;
   final List<({String key, String name})> organizers;
   final List<({String key, String name})> diningCategories;
+  final List<({String key, String name})> facilities;
   final ValueChanged<CardInstance> onUpdate;
   final ValueChanged<int> onMove;
 
@@ -728,6 +757,40 @@ class _EditBar extends StatelessWidget {
                             DropdownMenuItem(
                               value: organizer.key,
                               child: Text(organizer.name),
+                            ),
+                        ],
+                        onChanged: (value) => onUpdate(
+                          value == null || value.isEmpty
+                              ? selected!.copyWith(clearScope: true)
+                              : selected!.copyWith(scope: value),
+                        ),
+                      ),
+                    ],
+                    if (selected!.type == ModuleType.facilityHours) ...[
+                      const SizedBox(height: 12),
+                      Text('FACILITY', style: text.labelSmall),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<String>(
+                        initialValue:
+                            facilities.any(
+                              (item) => item.key == selected!.scope,
+                            )
+                            ? selected!.scope
+                            : '',
+                        decoration: const InputDecoration(
+                          hintText: 'All facilities',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: '',
+                            child: Text('All facilities'),
+                          ),
+                          for (final facility in facilities)
+                            DropdownMenuItem(
+                              value: facility.key,
+                              child: Text(facility.name),
                             ),
                         ],
                         onChanged: (value) => onUpdate(
