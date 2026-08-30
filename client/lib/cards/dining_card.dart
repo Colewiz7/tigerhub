@@ -25,7 +25,11 @@ import '../widgets/status_row.dart';
 /// be the primary key or the other 19 land in an arbitrary order. The rule is:
 /// open with a sensor first, by percent descending, then open without a sensor
 /// alphabetically, then closed last.
-int compareForDisplay(DiningLocation a, DiningLocation b, {Set<String>? pinned}) {
+int compareForDisplay(
+  DiningLocation a,
+  DiningLocation b, {
+  Set<String>? pinned,
+}) {
   if (pinned != null) {
     final aPinned = pinned.contains('${a.id}');
     final bPinned = pinned.contains('${b.id}');
@@ -40,8 +44,9 @@ int compareForDisplay(DiningLocation a, DiningLocation b, {Set<String>? pinned})
     final bHas = b.occupancy?.percentFull != null;
     if (aHas != bHas) return aHas ? -1 : 1;
     if (aHas && bHas) {
-      final byPercent =
-          b.occupancy!.percentFull!.compareTo(a.occupancy!.percentFull!);
+      final byPercent = b.occupancy!.percentFull!.compareTo(
+        a.occupancy!.percentFull!,
+      );
       if (byPercent != 0) return byPercent;
     }
   }
@@ -69,10 +74,10 @@ List<MapEntry<String, List<DiningLocation>>> groupByCategory(
 
 /// Category drives the group header icon.
 IconData iconForCategory(String category) => switch (category) {
-      'market' => Icons.storefront_rounded,
-      'global_village' => Icons.public_rounded,
-      _ => Icons.restaurant_rounded,
-    };
+  'market' => Icons.storefront_rounded,
+  'global_village' => Icons.public_rounded,
+  _ => Icons.restaurant_rounded,
+};
 
 /// Venue type drives the icon, so a row is identifiable before it is read.
 IconData iconForVenue(String name) {
@@ -125,7 +130,10 @@ class DiningCard extends StatelessWidget {
           : ScallopedBadge(value: '$openNow', label: 'OPEN NOW', size: 88),
       child: switch ((result.isPriming, locations.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
-        (_, true) => const EmptyState(kind: EmptyKind.sourceDown, title: 'Dining is unavailable'),
+        (_, true) => const EmptyState(
+          kind: EmptyKind.sourceDown,
+          title: 'Dining is unavailable',
+        ),
         _ => _List(locations: locations, onShowAll: onShowAll),
       },
     );
@@ -174,31 +182,28 @@ class DiningRow extends StatelessWidget {
     final open = location.isOpen;
 
     // Harmonized against the wallpaper palette, never a raw hue.
-    final accent = open ? semantic.open : semantic.closed;
+    final accent = open
+        ? semantic.open
+        : Theme.of(context).colorScheme.onSurfaceVariant;
 
     final when = open
         ? (location.closesAt == null
-            ? 'Open now'
-            : 'Until ${formatClock(location.closesAt!)}')
+              ? 'OPEN · hours unavailable'
+              : 'OPEN · until ${formatClock(location.closesAt!)}')
         : (location.opensAt == null
-            ? 'Closed'
-            : 'Opens ${formatDayAndClock(location.opensAt!)}');
+              ? 'CLOSED · hours unavailable'
+              : 'CLOSED · opens ${formatDayAndClock(location.opensAt!)}');
 
     // A badge only when the status is NOT the default. Thirteen identical
     // green OPEN pills in a column carry no information, and they drown out
     // the five locations that actually have something to say.
     final Widget? trailing;
-    if (!open) {
-      trailing = _StatusPill(
-        label: 'CLOSED',
-        foreground: semantic.closed,
-        background: semantic.closedContainer,
-      );
-    } else if (location.occupancy != null) {
+    if (open && location.occupancy != null) {
       // The only reason to look at the right hand column.
       trailing = _OccupancyPill(occupancy: location.occupancy!);
     } else {
-      // Open with no sensor. The subtitle already says so.
+      // Status is always stated in the subtitle. Only occupancy earns the
+      // trailing column, so closed rows do not become a wall of red pills.
       trailing = null;
     }
 
@@ -214,13 +219,13 @@ class DiningRow extends StatelessWidget {
       onTap: client == null
           ? null
           : () => showModalBottomSheet<void>(
-                context: context,
-                showDragHandle: true,
-                isScrollControlled: true,
-                constraints: const BoxConstraints(maxWidth: 720),
-                builder: (context) =>
-                    DiningDetailSheet(location: location, api: client),
-              ),
+              context: context,
+              showDragHandle: true,
+              isScrollControlled: true,
+              constraints: const BoxConstraints(maxWidth: 720),
+              builder: (context) =>
+                  DiningDetailSheet(location: location, api: client),
+            ),
       trailing: trailing,
     );
   }
@@ -239,17 +244,18 @@ class _StatusPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Material(
-        elevation: 0,
-        color: background,
-        shape: const StadiumBorder(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(color: foreground),
-          ),
-        ),
-      );
+    elevation: 0,
+    color: background,
+    shape: const StadiumBorder(),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall
+            ?.copyWith(color: foreground),
+      ),
+    ),
+  );
 }
 
 class _OccupancyPill extends StatelessWidget {
@@ -265,7 +271,12 @@ class _OccupancyPill extends StatelessWidget {
     if (percent == null) {
       final count = occupancy.count;
       if (count == null) return const SizedBox.shrink();
-      return _pill(context, '$count here', semantic.busy, semantic.busyContainer);
+      return _pill(
+        context,
+        '$count here',
+        semantic.busy,
+        semantic.busyContainer,
+      );
     }
 
     // A wrong denominator is never quoted as a precise figure.

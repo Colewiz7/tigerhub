@@ -32,12 +32,18 @@ class ArcProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return SizedBox(
+    final media = MediaQuery.maybeOf(context);
+    final reduceMotion =
+        (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false);
+    final target = value.clamp(0.0, 1.0);
+
+    Widget paint(double animatedValue) => SizedBox(
       width: size,
       height: size,
       child: CustomPaint(
         painter: _ArcPainter(
-          value: value.clamp(0.0, 1.0),
+          value: animatedValue,
           stroke: stroke,
           sweep: sweepDegrees * math.pi / 180,
           track: scheme.surfaceContainerHighest,
@@ -45,6 +51,14 @@ class ArcProgress extends StatelessWidget {
         ),
         child: Center(child: child),
       ),
+    );
+
+    if (reduceMotion) return paint(target);
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: target),
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      builder: (context, animatedValue, _) => paint(animatedValue),
     );
   }
 }
@@ -80,13 +94,7 @@ class _ArcPainter extends CustomPainter {
     canvas.drawArc(inset, start, sweep, false, base);
 
     if (value <= 0) return;
-    canvas.drawArc(
-      inset,
-      start,
-      sweep * value,
-      false,
-      base..color = fill,
-    );
+    canvas.drawArc(inset, start, sweep * value, false, base..color = fill);
   }
 
   @override
