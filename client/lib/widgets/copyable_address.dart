@@ -13,6 +13,10 @@
 /// card grid, and their space is always reserved so revealing one never shifts
 /// the text. On a touch screen there is no hover, so the rows stay tappable and
 /// the icon simply sits at rest opacity.
+///
+/// The confirmation follows `docs/motion-spec.md`: copy becomes a tick with a
+/// 160 ms fade and a slight scale, and paints instantly when the user has asked
+/// for reduced motion.
 library;
 
 import 'dart:async';
@@ -169,8 +173,8 @@ class _AddressLineState extends State<_AddressLine> {
                   width: 18,
                   child: Opacity(
                     opacity: show ? 1 : 0.28,
-                    child: Icon(
-                      widget.copied ? Icons.check_rounded : Icons.copy_rounded,
+                    child: _CopyMark(
+                      copied: widget.copied,
                       size: 15,
                       color: widget.copied
                           ? scheme.primary
@@ -210,8 +214,8 @@ class _CopyAllButton extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                copied ? Icons.check_rounded : Icons.copy_rounded,
+              _CopyMark(
+                copied: copied,
                 size: 14,
                 color: copied ? scheme.primary : scheme.onSurfaceVariant,
               ),
@@ -220,6 +224,46 @@ class _CopyAllButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The copy icon, becoming a tick when the copy lands.
+///
+/// Spec: 160 ms, fade with a scale from 0.94, instant under reduced motion. A
+/// copy with no feedback leaves people tapping twice to be sure.
+class _CopyMark extends StatelessWidget {
+  const _CopyMark({required this.copied, required this.size, this.color});
+
+  final bool copied;
+  final double size;
+  final Color? color;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.maybeOf(context);
+    final reduceMotion = (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false);
+
+    return AnimatedSwitcher(
+      duration: reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 160),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeOutCubic,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.94, end: 1).animate(animation),
+          child: child,
+        ),
+      ),
+      child: Icon(
+        copied ? Icons.check_rounded : Icons.copy_rounded,
+        key: ValueKey(copied),
+        size: size,
+        color: color,
       ),
     );
   }
