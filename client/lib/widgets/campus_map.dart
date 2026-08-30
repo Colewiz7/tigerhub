@@ -34,6 +34,7 @@ class _CampusMapViewState extends State<CampusMapView> {
   String? _kind;
   int? _selectedId;
   bool _showEvents = false;
+  Size _viewportSize = Size.zero;
 
   /// Empty until the bundled asset decodes. The map paints without it, then
   /// again with it, rather than holding the whole screen back for 114 KB.
@@ -79,6 +80,46 @@ class _CampusMapViewState extends State<CampusMapView> {
     return KeyEventResult.ignored;
   }
 
+  Future<void> _searchPlaces(
+    List<CampusMapFeature> all,
+    List<CampusMapFeature> backdrop,
+  ) async {
+    final searchable = [
+      for (final feature in all)
+        if ((feature.geometryType == 'Point' &&
+                !feature.kind.startsWith('_')) ||
+            (feature.kind == '_campus' && feature.building != null))
+          feature,
+    ];
+    final feature = await showSearch<CampusMapFeature?>(
+      context: context,
+      delegate: _MapSearchDelegate(searchable),
+    );
+    if (feature == null || !mounted) return;
+    setState(() {
+      _showEvents = false;
+      _kind = feature.kind == '_campus' ? null : feature.kind;
+      _selectedId = feature.id;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _viewportSize.isEmpty) return;
+      final projection = CampusMapProjection(
+        [...backdrop, feature],
+        _viewportSize,
+        boundsFeatures: all,
+      );
+      final anchor = feature.anchor;
+      if (anchor == null) return;
+      final point = projection.project(anchor);
+      const scale = 2.4;
+      _transform.value = Matrix4.identity()
+        ..setEntry(0, 0, scale)
+        ..setEntry(1, 1, scale)
+        ..setEntry(0, 3, _viewportSize.width / 2 - point.dx * scale)
+        ..setEntry(1, 3, _viewportSize.height / 2 - point.dy * scale);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.result.isPriming) {
@@ -119,6 +160,9 @@ class _CampusMapViewState extends State<CampusMapView> {
       ...(_showEvents ? eventFeatures : visible),
     ];
     final selected = visible.where((f) => f.id == _selectedId).firstOrNull;
+    final selectedBuilding = backdrop
+        .where((feature) => feature.id == _selectedId)
+        .firstOrNull;
     final selectedEvent = eventMap.groups
         .where((group) => group.id == _selectedId)
         .firstOrNull;
@@ -157,6 +201,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                 _transform.value = Matrix4.identity();
               }),
               onFit: () => _transform.value = Matrix4.identity(),
+              onSearch: () => _searchPlaces(all, backdrop),
             );
 
             if (constraints.maxWidth < 620) {
@@ -185,86 +230,97 @@ class _CampusMapViewState extends State<CampusMapView> {
             child: ColoredBox(
               color: Theme.of(context).colorScheme.surfaceContainerLow,
               child: LayoutBuilder(
-                builder: (context, constraints) => Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Focus(
-                        focusNode: _mapFocus,
-                        onKeyEvent: _handleMapKey,
-                        child: InteractiveViewer(
-                          transformationController: _transform,
-                          minScale: 1,
-                          maxScale: 5,
-                          boundaryMargin: const EdgeInsets.all(80),
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onDoubleTap: () => _zoomBy(1.5),
-                            onTapUp: (details) {
-                              _mapFocus.requestFocus();
-                              final projection = CampusMapProjection(
-                                mapFeatures,
-                                Size(
-                                  constraints.maxWidth,
-                                  constraints.maxHeight,
-                                ),
-                                boundsFeatures: all,
-                              );
-                              final hit = projection.nearest(
-                                details.localPosition,
-                              );
-                              if (hit != null) {
-                                setState(() => _selectedId = hit.id);
-                              }
-                            },
-                            // Repaints as the viewer scales, which is what
-                            // lets labels and the scale bar hold a constant
-                            // on-screen size instead of growing with the map.
-                            child: ValueListenableBuilder<Matrix4>(
-                              valueListenable: _transform,
-                              // Its own layer, so a pan is the compositor
-                              // moving a finished raster rather than Skia
-                              // redrawing 191 outlines and the whole walking
-                              // network for every frame of the gesture.
-                              builder: (context, matrix, _) => RepaintBoundary(
-                                child: CustomPaint(
-                                  size: Size(
+                builder: (context, constraints) {
+                  _viewportSize = constraints.biggest;
+                  return Stack(
+                    children: [
+                      Positioned.fill(
+                        child: Focus(
+                          focusNode: _mapFocus,
+                          onKeyEvent: _handleMapKey,
+                          child: InteractiveViewer(
+                            transformationController: _transform,
+                            minScale: 1,
+                            maxScale: 5,
+                            boundaryMargin: const EdgeInsets.all(80),
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onDoubleTap: () => _zoomBy(1.5),
+                              onTapUp: (details) {
+                                _mapFocus.requestFocus();
+                                final projection = CampusMapProjection(
+                                  mapFeatures,
+                                  Size(
                                     constraints.maxWidth,
                                     constraints.maxHeight,
                                   ),
-                                  painter: CampusMapPainter(
-                                    features: mapFeatures,
-                                    boundsFeatures: all,
-                                    selectedId: _selectedId,
-                                    scheme: Theme.of(context).colorScheme,
-                                    zoom: matrix.getMaxScaleOnAxis(),
-                                    paths: _paths,
-                                    onSelect: (feature) => setState(
-                                      () => _selectedId = feature.id,
+                                  boundsFeatures: all,
+                                );
+                                final hit = projection.nearest(
+                                  details.localPosition,
+                                );
+                                if (hit != null) {
+                                  setState(() => _selectedId = hit.id);
+                                }
+                              },
+                              // Repaints as the viewer scales, which is what
+                              // lets labels and the scale bar hold a constant
+                              // on-screen size instead of growing with the map.
+                              child: ValueListenableBuilder<Matrix4>(
+                                valueListenable: _transform,
+                                // Its own layer, so a pan is the compositor
+                                // moving a finished raster rather than Skia
+                                // redrawing 191 outlines and the whole walking
+                                // network for every frame of the gesture.
+                                builder: (context, matrix, _) =>
+                                    RepaintBoundary(
+                                      child: CustomPaint(
+                                        size: Size(
+                                          constraints.maxWidth,
+                                          constraints.maxHeight,
+                                        ),
+                                        painter: CampusMapPainter(
+                                          features: mapFeatures,
+                                          boundsFeatures: all,
+                                          selectedId: _selectedId,
+                                          scheme: Theme.of(context).colorScheme,
+                                          zoom: matrix.getMaxScaleOnAxis(),
+                                          paths: _paths,
+                                          onSelect: (feature) => setState(
+                                            () => _selectedId = feature.id,
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    // Fixed, and outside the InteractiveViewer, so it does not
-                    // zoom the way the scale bar deliberately does.
-                    Positioned(
-                      left: 12,
-                      top: 12,
-                      child: _MapLegend(scheme: Theme.of(context).colorScheme),
-                    ),
-                  ],
-                ),
+                      // Fixed, and outside the InteractiveViewer, so it does not
+                      // zoom the way the scale bar deliberately does.
+                      Positioned(
+                        left: 12,
+                        top: 12,
+                        child: _MapLegend(
+                          scheme: Theme.of(context).colorScheme,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: selected == null && selectedEvent == null ? 92 : 146,
+          height:
+              selected == null &&
+                  selectedBuilding == null &&
+                  selectedEvent == null
+              ? 92
+              : 146,
           child: _showEvents
               ? selectedEvent == null
                     ? _EventStrip(
@@ -276,7 +332,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                         group: selectedEvent,
                         onClose: () => setState(() => _selectedId = null),
                       )
-              : selected == null
+              : selected == null && selectedBuilding == null
               ? _kind == null
                     ? _KindStrip(
                         features: visible,
@@ -293,7 +349,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                             setState(() => _selectedId = feature.id),
                       )
               : _SelectedPlace(
-                  feature: selected,
+                  feature: selected ?? selectedBuilding!,
                   onClose: () => setState(() => _selectedId = null),
                 ),
         ),
@@ -426,18 +482,92 @@ class _SelectedEventGroup extends StatelessWidget {
   );
 }
 
+class _MapSearchDelegate extends SearchDelegate<CampusMapFeature?> {
+  _MapSearchDelegate(this.features)
+    : super(searchFieldLabel: 'Building, room, or campus place');
+
+  final List<CampusMapFeature> features;
+
+  List<CampusMapFeature> get _matches {
+    final needle = query.trim().toLowerCase();
+    if (needle.isEmpty) return features.take(20).toList();
+    return features
+        .where((feature) {
+          final haystack = [
+            feature.name,
+            feature.kindName,
+            feature.building ?? '',
+            feature.room ?? '',
+            feature.note ?? '',
+          ].join(' ').toLowerCase();
+          return haystack.contains(needle);
+        })
+        .take(30)
+        .toList();
+  }
+
+  @override
+  List<Widget>? buildActions(BuildContext context) => [
+    if (query.isNotEmpty)
+      IconButton(
+        tooltip: 'Clear search',
+        onPressed: () => query = '',
+        icon: const Icon(Icons.close_rounded),
+      ),
+  ];
+
+  @override
+  Widget? buildLeading(BuildContext context) => IconButton(
+    tooltip: 'Back to map',
+    onPressed: () => close(context, null),
+    icon: const Icon(Icons.arrow_back_rounded),
+  );
+
+  @override
+  Widget buildResults(BuildContext context) => _results(context);
+
+  @override
+  Widget buildSuggestions(BuildContext context) => _results(context);
+
+  Widget _results(BuildContext context) {
+    final matches = _matches;
+    if (matches.isEmpty) {
+      return const Center(child: Text('No campus places match that search.'));
+    }
+    return ListView.builder(
+      itemCount: matches.length,
+      itemBuilder: (context, index) {
+        final feature = matches[index];
+        final location = feature.where;
+        return ListTile(
+          leading: CircleAvatar(child: Icon(mapPlaceIcon(feature.kind))),
+          title: Text(feature.name),
+          subtitle: Text(
+            location.isEmpty
+                ? feature.kindName
+                : '${feature.kindName} · $location',
+          ),
+          onTap: () => close(context, feature),
+        );
+      },
+    );
+  }
+}
+
 class _MapToolbar extends StatelessWidget {
   const _MapToolbar({
     required this.kinds,
     required this.selectedKind,
     required this.onKindChanged,
     required this.onFit,
+    required this.onSearch,
   });
 
   final Map<String, String> kinds;
   final String? selectedKind;
   final ValueChanged<String?> onKindChanged;
   final VoidCallback onFit;
+  final VoidCallback onSearch;
 
   @override
   Widget build(BuildContext context) {
@@ -452,6 +582,12 @@ class _MapToolbar extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
+        IconButton.filledTonal(
+          tooltip: 'Search campus places',
+          onPressed: onSearch,
+          icon: const Icon(Icons.search_rounded),
+        ),
+        const SizedBox(width: 8),
         if (kinds.isNotEmpty)
           PopupMenuButton<String>(
             tooltip: 'Filter map places',
@@ -948,6 +1084,7 @@ enum MapFamily {
 
 /// Familiar, distinct symbols shared by the map, filters, and place cards.
 IconData mapPlaceIcon(String kind) => switch (kind) {
+  '_campus' => Icons.location_city_rounded,
   'water' => Icons.water_drop_rounded,
   'ev_charge' => Icons.ev_station_rounded,
   'blue_light' => Icons.emergency_share_rounded,
@@ -960,6 +1097,7 @@ IconData mapPlaceIcon(String kind) => switch (kind) {
   'bus_stop' => Icons.directions_bus_rounded,
   'bike_rack' => Icons.pedal_bike_rounded,
   'reload' => Icons.add_card_rounded,
+  'time_clock' => Icons.punch_clock_rounded,
   _ when kind.startsWith('_event:') => Icons.event_rounded,
   _ => Icons.place_rounded,
 };
@@ -1204,6 +1342,33 @@ class CampusMapPainter extends CustomPainter {
     _paintPaths(canvas, geometry, mapRect);
     for (final family in MapFamily.values.where((family) => family.isBuilt)) {
       drawFamily(family);
+    }
+
+    final selectedBuilding = features
+        .where(
+          (feature) =>
+              feature.id == selectedId && feature.geometryType != 'Point',
+        )
+        .firstOrNull;
+    if (selectedBuilding != null) {
+      final outline = Path();
+      for (final ring in selectedBuilding.coordinates) {
+        if (ring.length < 3) continue;
+        outline.addPolygon([
+          for (final coordinate in ring) projection.project(coordinate),
+        ], true);
+      }
+      canvas.drawPath(
+        outline,
+        Paint()..color = scheme.primary.withValues(alpha: 0.3),
+      );
+      canvas.drawPath(
+        outline,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.6 / zoom
+          ..color = scheme.primary,
+      );
     }
 
     _paintBuildingLabels(canvas, geometry.labels, scheme);
