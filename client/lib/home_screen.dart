@@ -9,22 +9,30 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_reorderable_grid_view/widgets/widgets.dart';
 
 import 'cards/dining_card.dart';
+import 'cards/dashboard_event_cards.dart';
 import 'cards/events_card.dart';
 import 'cards/housing_card.dart';
 import 'cards/visiting_chefs_card.dart';
 import 'config.dart';
 import 'models/api_models.dart';
 import 'services/api.dart';
-import 'services/cache.dart';
+import 'services/dashboard.dart';
 import 'theme/tokens.dart';
 
 const List<String> _defaultOrder = ['dining', 'events', 'chefs', 'housing'];
 
-const Map<String, ({String label, IconData icon})> _cardCatalogue = {
-  'dining': (label: 'Dining', icon: Icons.restaurant_rounded),
-  'events': (label: 'Events', icon: Icons.event_note_rounded),
-  'chefs': (label: 'Visiting Chefs', icon: Icons.restaurant_menu_rounded),
-  'housing': (label: 'Mailing Address', icon: Icons.markunread_mailbox_rounded),
+/// The icon each module type shows in the card library and the hidden chips.
+/// The name comes from `moduleLabels` beside the type itself, so the library
+/// and the renderer cannot drift apart.
+const Map<ModuleType, IconData> moduleIcons = {
+  ModuleType.diningStatus: Icons.restaurant_rounded,
+  ModuleType.generalEvents: Icons.event_note_rounded,
+  ModuleType.clubEvents: Icons.groups_rounded,
+  ModuleType.calendar: Icons.calendar_month_rounded,
+  ModuleType.visitingChefs: Icons.restaurant_menu_rounded,
+  ModuleType.mailingAddress: Icons.markunread_mailbox_rounded,
+  ModuleType.facilityHours: Icons.fitness_center_rounded,
+  ModuleType.campusMap: Icons.map_rounded,
 };
 
 /// Card height. Cards grow to use spare vertical room, but stop before they
@@ -122,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Edit mode reveals the remove buttons and the add row.
   bool _editing = false;
+  String? _selectedId;
 
   @override
   void initState() {
@@ -135,31 +144,54 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  /// Every instance, hidden ones included. The order here is the saved reading
+  /// order and is what persists; what is shown is derived from it.
+  List<CardInstance> _instances = defaultDashboard;
+
   Future<void> _restoreOrder() async {
-    final saved = await ResponseCache.instance.readOrder('cards');
-    final hidden = await ResponseCache.instance.readOrder('cards_hidden');
+    // One source of truth. Both this screen and the shell used to read and
+    // write the same two preference keys independently, which is how they
+    // could disagree about what was hidden.
+    final loaded = await DashboardStore.load();
     if (!mounted) return;
-
-    final known = _cardCatalogue.keys.toList();
-    final validHidden = hidden.where(known.contains).toList();
-
-    // Tolerate a stored order from an older build that added or removed cards.
-    final merged = saved.isEmpty
-        ? known
-        : [
-            ...saved.where(known.contains),
-            ...known.where((id) => !saved.contains(id) && !validHidden.contains(id)),
-          ];
-
     setState(() {
-      _hidden = validHidden;
-      _order = merged.where((id) => !validHidden.contains(id)).toList();
+      _instances = loaded;
+      _syncFromInstances();
     });
   }
 
+  void _syncFromInstances() {
+    _order = [
+      for (final card in _instances)
+        if (!card.hidden) card.id,
+    ];
+    _hidden = [
+      for (final card in _instances)
+        if (card.hidden) card.id,
+    ];
+  }
+
+  CardInstance? _instance(String id) {
+    for (final card in _instances) {
+      if (card.id == id) return card;
+    }
+    return null;
+  }
+
   Future<void> _persist() async {
-    await ResponseCache.instance.writeOrder('cards', _order);
-    await ResponseCache.instance.writeOrder('cards_hidden', _hidden);
+    // Saved order follows the visible order, with hidden cards kept where they
+    // were so unhiding one puts it back rather than at the end.
+    final byId = {for (final card in _instances) card.id: card};
+    final rebuilt = <CardInstance>[
+      for (final id in _order)
+        if (byId[id] != null) byId[id]!.copyWith(hidden: false),
+    ];
+    for (final card in _instances) {
+      if (_order.contains(card.id)) continue;
+      rebuilt.add(card.copyWith(hidden: true));
+    }
+    _instances = rebuilt;
+    await DashboardStore.save(rebuilt);
   }
 
   void _removeCard(String id) {
@@ -178,23 +210,100 @@ class _HomeScreenState extends State<HomeScreen> {
     _persist();
   }
 
-  Widget _cardFor(String id, bool showDragHandle) => switch (id) {
-    'dining' => DiningCard(
+  Future<void> _addModule(ModuleType type) async {
+    final base = type.id;
+    var index = 0;
+    while (_instances.any((card) => card.id == '$base-$index')) {
+      index++;
+    }
+    final card = CardInstance(
+      id: '$base-$index',
+      type: type,
+      size: (supportedSizes[type] ?? const [CardSize.standard]).first,
+    );
+    setState(() {
+      _instances = [..._instances, card];
+      _order = [..._order, card.id];
+      _selectedId = card.id;
+    });
+    await _persist();
+  }
+
+  Future<void> _updateCard(CardInstance updated) async {
+    setState(() {
+      _instances = [
+        for (final card in _instances)
+          if (card.id == updated.id) updated else card,
+      ];
+    });
+    await _persist();
+  }
+
+  void _moveCard(String id, int delta) {
+    final from = _order.indexOf(id);
+    final to = (from + delta).clamp(0, _order.length - 1);
+    if (from < 0 || from == to) return;
+    setState(() {
+      final next = [..._order];
+      final moved = next.removeAt(from);
+      next.insert(to, moved);
+      _order = next;
+    });
+    _persist();
+  }
+
+  List<({String key, String name})> get _organizers {
+    final found = <String, String>{};
+    for (final event in widget.events.value?.data ?? const <CampusEvent>[]) {
+      final key = event.organizerKey;
+      if (key == null || key.isEmpty) continue;
+      found[key] = event.organizer ?? key;
+    }
+    final values = [for (final entry in found.entries) (key: entry.key, name: entry.value)];
+    values.sort((a, b) => a.name.compareTo(b.name));
+    return values;
+  }
+
+  Widget _cardFor(String id, bool showDragHandle) {
+    final card = _instance(id);
+    if (card == null) return const SizedBox.shrink();
+    return _moduleFor(card, showDragHandle);
+  }
+
+  /// One module type to one widget. This is the seam the spec's later stages
+  /// hang off: adding a card type is a case here plus an entry in the library,
+  /// not a change to how the grid works.
+  Widget _moduleFor(CardInstance card, bool showDragHandle) =>
+      switch (card.type) {
+    ModuleType.diningStatus => DiningCard(
       result: widget.dining,
       dragHandle: _DragHandle(visible: showDragHandle),
       onShowAll: () => widget.onGoToTab(1),
     ),
-    'events' => EventsCard(
+    ModuleType.generalEvents => EventsCard(
       result: widget.events,
       dragHandle: _DragHandle(visible: showDragHandle),
       onShowAll: () => widget.onGoToTab(2),
     ),
-    'chefs' => VisitingChefsCard(
+    ModuleType.clubEvents => ScopedEventsCard(
+      result: widget.events,
+      organizerKey: card.scope,
+      compact: card.size == CardSize.compact,
+      dragHandle: _DragHandle(visible: showDragHandle),
+      onShowAll: () => widget.onGoToTab(2),
+    ),
+    ModuleType.calendar => EventCalendarCard(
+      result: widget.events,
+      organizerKey: card.scope,
+      dragHandle: _DragHandle(visible: showDragHandle),
+      onShowAll: () => widget.onGoToTab(2),
+    ),
+    ModuleType.visitingChefs => VisitingChefsCard(
       result: widget.chefs,
       dragHandle: _DragHandle(visible: showDragHandle),
       onShowAll: () => widget.onGoToTab(1),
     ),
-    'housing' => HousingCard(
+    ModuleType.mailingAddress => HousingCard(
       areas: widget.areas,
       api: widget.api,
       dragHandle: _DragHandle(visible: showDragHandle),
@@ -225,7 +334,11 @@ class _HomeScreenState extends State<HomeScreen> {
           available,
           _order.length,
         );
-        final rows = (_order.length / columns).ceil();
+        final cells = _order.fold<int>(0, (sum, id) {
+          final card = _instance(id);
+          return sum + (card?.size.columns ?? 1).clamp(1, columns);
+        });
+        final rows = (cells / columns).ceil();
         final perRow = rows > 0 ? available / rows : _minCardHeight;
         final cardHeight = perRow
             .clamp(_minCardHeight, _maxCardHeight)
@@ -233,22 +346,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
         final children = [
           for (final id in _order)
-            Padding(
+            SizedBox(
               key: ValueKey(id),
-              padding: const EdgeInsets.all(_cardGutter),
-              child: _HoverCard(
-                builder: (hovered) => Stack(
-                  children: [
-                    // Handles also stay visible while editing, so it is
-                    // obvious which cards can be moved.
-                    _cardFor(id, hovered || _editing),
-                    if (_editing)
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: _RemoveButton(onTap: () => _removeCard(id)),
-                      ),
-                  ],
+              width: (constraints.maxWidth - 16) /
+                  columns *
+                  ((_instance(id)?.size.columns ?? 1).clamp(1, columns)),
+              height: (_instance(id)?.size == CardSize.compact
+                      ? cardHeight * .58
+                      : cardHeight) +
+                  _cardGutter * 2,
+              child: Padding(
+                padding: const EdgeInsets.all(_cardGutter),
+                child: _HoverCard(
+                  builder: (hovered) => Stack(
+                    children: [
+                      _cardFor(id, hovered || _editing),
+                      if (_editing)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Row(
+                            children: [
+                              _InspectButton(
+                                selected: _selectedId == id,
+                                onTap: () => setState(() => _selectedId = id),
+                              ),
+                              const SizedBox(width: 6),
+                              _RemoveButton(onTap: () => _removeCard(id)),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -273,15 +402,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       setState(() => _order = reorderedListFunction(_order));
                       _persist();
                     },
-                    builder: (wrapped) => GridView(
+                    builder: (wrapped) => Wrap(
                       key: _gridKey,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: columns,
-                        // The card height plus the gutter on each side.
-                        mainAxisExtent: cardHeight + _cardGutter * 2,
-                      ),
                       children: wrapped,
                     ),
                     children: children,
@@ -292,8 +414,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: _EditBar(
                   editing: _editing,
                   hidden: _hidden,
+                  cards: {for (final c in _instances) c.id: c},
                   onToggle: () => setState(() => _editing = !_editing),
                   onAdd: _addCard,
+                  onAddModule: _addModule,
+                  selected: _selectedId == null ? null : _instance(_selectedId!),
+                  organizers: _organizers,
+                  onUpdate: _updateCard,
+                  onMove: (delta) => _moveCard(_selectedId!, delta),
                 ),
               ),
               const SliverToBoxAdapter(child: _Colophon()),
@@ -310,12 +438,18 @@ class _EditBar extends StatelessWidget {
   const _EditBar({
     required this.editing,
     required this.hidden,
+    required this.cards,
     required this.onToggle,
     required this.onAdd,
   });
 
   final bool editing;
   final List<String> hidden;
+
+  /// Instance id to instance, so a hidden chip can name its module rather than
+  /// guessing from an id.
+  final Map<String, CardInstance> cards;
+
   final VoidCallback onToggle;
   final ValueChanged<String> onAdd;
 
@@ -400,11 +534,17 @@ class _EditBar extends StatelessWidget {
                             Icon(Icons.add_rounded,
                                 size: 17, color: scheme.primary),
                             const SizedBox(width: 7),
-                            Icon(_cardCatalogue[id]!.icon,
-                                size: 17, color: scheme.onSurfaceVariant),
+                            Icon(
+                              moduleIcons[cards[id]?.type] ??
+                                  Icons.widgets_rounded,
+                              size: 17,
+                              color: scheme.onSurfaceVariant,
+                            ),
                             const SizedBox(width: 7),
-                            Text(_cardCatalogue[id]!.label,
-                                style: text.bodyMedium),
+                            Text(
+                              moduleLabels[cards[id]?.type] ?? 'Card',
+                              style: text.bodyMedium,
+                            ),
                           ],
                         ),
                       ),

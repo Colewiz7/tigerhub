@@ -19,6 +19,7 @@ import 'screens/dining_screen.dart';
 import 'screens/events_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'services/cache.dart';
+import 'services/dashboard.dart';
 import 'services/subscriptions.dart';
 import 'services/preferences.dart';
 import 'services/api.dart';
@@ -50,8 +51,11 @@ class _AppShellState extends State<AppShell> {
   bool _animateTabChange = true;
 
   // Mirrored here so Settings and the Today grid stay in step.
-  List<String> _cards = const ['dining', 'events', 'chefs', 'housing'];
+  // Instance ids, not the old string ids, and derived from one place so this
+  // cannot drift from what the store hands back.
+  List<String> _cards = [for (final c in defaultDashboard) c.id];
   List<String> _hiddenCards = const [];
+  List<CardInstance> _dashboard = defaultDashboard;
 
   Result<Collection<DiningLocation>> _dining = const Result(
     value: null,
@@ -111,24 +115,36 @@ class _AppShellState extends State<AppShell> {
     if (mounted) setState(() {});
   }
 
+  /// Reads through the same store the Today grid writes.
+  ///
+  /// These used to be two independent readers and writers of the same two
+  /// preference keys, which is how the shell and the grid could disagree about
+  /// what was hidden.
   Future<void> _restoreCards() async {
-    final cache = ResponseCache.instance;
-    final order = await cache.readOrder('cards');
-    final hidden = await cache.readOrder('cards_hidden');
+    final loaded = await DashboardStore.load();
     if (!mounted) return;
     setState(() {
-      if (order.isNotEmpty) _cards = order;
-      _hiddenCards = hidden;
+      _cards = [for (final c in loaded) if (!c.hidden) c.id];
+      _hiddenCards = [for (final c in loaded) if (c.hidden) c.id];
+      _dashboard = loaded;
     });
   }
 
   Future<void> _setCards(List<String> order, List<String> hidden) async {
+    final byId = {for (final card in _dashboard) card.id: card};
+    final rebuilt = <CardInstance>[
+      for (final id in order)
+        if (byId[id] != null) byId[id]!.copyWith(hidden: false),
+      for (final card in _dashboard)
+        if (!order.contains(card.id)) card.copyWith(hidden: true),
+    ];
+
     setState(() {
       _cards = order;
       _hiddenCards = hidden;
+      _dashboard = rebuilt;
     });
-    await ResponseCache.instance.writeOrder('cards', order);
-    await ResponseCache.instance.writeOrder('cards_hidden', hidden);
+    await DashboardStore.save(rebuilt);
   }
 
   final _subscriptions = Subscriptions();

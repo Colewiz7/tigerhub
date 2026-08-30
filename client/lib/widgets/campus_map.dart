@@ -580,7 +580,7 @@ class CampusMapProjection {
   CampusMapFeature? nearest(Offset position) {
     CampusMapFeature? nearestFeature;
     var nearestDistance = 28.0;
-    for (final feature in features) {
+    for (final feature in features.where((f) => f.geometryType == 'Point')) {
       final anchor = feature.anchor;
       if (anchor == null) continue;
       final distance = (project(anchor) - position).distance;
