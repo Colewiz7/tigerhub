@@ -87,10 +87,16 @@ class ScallopedBadge extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 2),
                   child: Text(
                     label!,
+                    // Full opacity, larger and heavier than the rest of the
+                    // small caps in the app. This sits on the saturated
+                    // primary rather than on a surface, and at 85% of a 10px
+                    // semibold it was not readable.
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: foreground.withValues(alpha: 0.85),
-                      fontSize: size * 0.112,
-                      fontVariations: Weights.semibold,
+                      color: foreground,
+                      fontSize: size * 0.135,
+                      height: 1.1,
+                      letterSpacing: 0.6,
+                      fontVariations: Weights.bold,
                     ),
                     maxLines: 1,
                   ),

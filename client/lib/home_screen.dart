@@ -27,6 +27,64 @@ const Map<String, ({String label, IconData icon})> _cardCatalogue = {
   'housing': (label: 'Mailing Address', icon: Icons.markunread_mailbox_rounded),
 };
 
+/// Card height. Cards grow to use spare vertical room, but stop before they
+/// get silly.
+const double homeMinCardHeight = 560;
+
+/// High enough that a single row fills a large window rather than leaving a
+/// band of dead space under it.
+const double homeMaxCardHeight = 860;
+
+/// The most columns the width can carry without the cards getting narrow.
+int _widthColumns(double width) {
+  if (width < 820) return 1;
+  if (width < 1300) return 2;
+  if (width < 1850) return 3;
+  return 4;
+}
+
+/// How many columns to actually use, given the height as well as the width.
+///
+/// Width alone spread the cards into one wide row and left a band of dead
+/// space underneath, and with four cards and three columns it stranded the
+/// fourth alone on its own row while there was room beside it.
+///
+/// So among the column counts the width allows, this prefers one that fills
+/// the height, then one that leaves no ragged last row. Four cards in a tall
+/// window become two by two rather than three and a widow.
+int homeGridColumns(double width, double available, int count) {
+  final maxColumns = _widthColumns(width);
+  if (count <= 1 || available <= 0) return 1;
+
+  int emptyCells(int columns) {
+    final rows = (count / columns).ceil();
+    return rows * columns - count;
+  }
+
+  var best = maxColumns;
+  var bestScore = -1;
+
+  for (var columns = maxColumns; columns >= 1; columns--) {
+    final rows = (count / columns).ceil();
+    final height = available / rows;
+
+    // Only consider layouts whose cards land in the designed range: taller
+    // than the minimum they were drawn against, and short enough that the
+    // row is not left floating above dead space.
+    if (height < homeMinCardHeight || height > homeMaxCardHeight) continue;
+
+    // Prefer a full last row, then the wider layout.
+    final score = (emptyCells(columns) == 0 ? 100 : 0) + columns;
+    if (score > bestScore) {
+      bestScore = score;
+      best = columns;
+    }
+  }
+
+  return best;
+}
+
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -146,31 +204,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Columns grow with width, so a wide window is not four cards huddled in
   /// the top left corner.
-  static int _columnsFor(double width) {
-    if (width < 820) return 1;
-    if (width < 1300) return 2;
-    if (width < 1850) return 3;
-    return 4;
-  }
 
   /// Card height. Cards grow to use spare vertical room, which BoundedList
   /// turns into extra rows for free, but stop before they get silly.
-  static const double _minCardHeight = 560;
+  static const double _minCardHeight = homeMinCardHeight;
   // High enough that a single row of cards fills a large window, rather
   // than leaving a band of dead space under it.
-  static const double _maxCardHeight = 860;
+  static const double _maxCardHeight = homeMaxCardHeight;
   static const double _cardGutter = 6;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = _columnsFor(constraints.maxWidth);
-        final rows = (_order.length / columns).ceil();
-
         // Fill the viewport when there is room, without ever shrinking below
         // the height the cards were designed against.
         final available = constraints.maxHeight - _Colophon.height;
+        final columns = homeGridColumns(
+          constraints.maxWidth,
+          available,
+          _order.length,
+        );
+        final rows = (_order.length / columns).ceil();
         final perRow = rows > 0 ? available / rows : _minCardHeight;
         final cardHeight = perRow
             .clamp(_minCardHeight, _maxCardHeight)

@@ -57,4 +57,8 @@ class Weights {
   static const List<FontVariation> regular = [FontVariation('wght', 400)];
   static const List<FontVariation> medium = [FontVariation('wght', 500)];
   static const List<FontVariation> semibold = [FontVariation('wght', 600)];
+
+  /// For small text that has to hold up against a saturated fill. The badge
+  /// caption sits on the orange primary at under 12px, where 600 reads thin.
+  static const List<FontVariation> bold = [FontVariation('wght', 700)];
 }
