@@ -1,0 +1,49 @@
+[
+    {
+        "hours": [
+            {
+                "closes_at": "21:00",
+                "days": [
+                    "MONDAY",
+                    "TUESDAY",
+                    "WEDNESDAY",
+                    "THURSDAY"
+                ],
+                "opens_at": "09:00",
+                "season": "academic",
+                "service": "general"
+            },
+            {
+                "closes_at": "19:00",
+                "days": [
+                    "FRIDAY"
+                ],
+                "opens_at": "09:00",
+                "season": "academic",
+                "service": "general"
+            },
+            {
+                "closes_at": "19:00",
+                "days": [
+                    "SATURDAY"
+                ],
+                "opens_at": "12:00",
+                "season": "academic",
+                "service": "general"
+            },
+            {
+                "closes_at": "21:00",
+                "days": [
+                    "SUNDAY"
+                ],
+                "opens_at": "12:00",
+                "season": "academic",
+                "service": "general"
+            }
+        ],
+        "id": "shed-general-makerspace",
+        "last_verified": "2026-08-28",
+        "location": "SHED-1330",
+        "name": "General Makerspace"
+    }
+]

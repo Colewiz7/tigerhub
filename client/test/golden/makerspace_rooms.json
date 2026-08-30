@@ -1,0 +1,66 @@
+{
+    "data": [
+        {
+            "available": 0,
+            "in_use": 0,
+            "machines": 2,
+            "room": "3D Printing"
+        },
+        {
+            "available": 0,
+            "in_use": 0,
+            "machines": 7,
+            "room": "Atrium 3D Print Farm"
+        },
+        {
+            "available": 6,
+            "in_use": 0,
+            "machines": 6,
+            "room": "Electronics"
+        },
+        {
+            "available": 3,
+            "in_use": 0,
+            "machines": 3,
+            "room": "Laser Cutting"
+        },
+        {
+            "available": 13,
+            "in_use": 0,
+            "machines": 9,
+            "room": "Manual Shop"
+        },
+        {
+            "available": 0,
+            "in_use": 1,
+            "machines": 1,
+            "room": "Other Equipment & Tools"
+        },
+        {
+            "available": 1,
+            "in_use": 1,
+            "machines": 5,
+            "room": "South Metal Shop"
+        },
+        {
+            "available": 7,
+            "in_use": 1,
+            "machines": 6,
+            "room": "Textiles"
+        },
+        {
+            "available": 0,
+            "in_use": 0,
+            "machines": 2,
+            "room": "Vinyl Cutting"
+        },
+        {
+            "available": 17,
+            "in_use": 1,
+            "machines": 15,
+            "room": "Wood Shop"
+        }
+    ],
+    "last_updated": "2026-08-30T06:05:02Z",
+    "stale": false
+}

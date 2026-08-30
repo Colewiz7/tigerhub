@@ -1,0 +1,456 @@
+{
+    "data": [
+        {
+            "event_count": 460,
+            "organizer": "RIT",
+            "organizer_key": "RIT",
+            "source": "drupal"
+        },
+        {
+            "event_count": 241,
+            "organizer": "RIT FoodShare",
+            "organizer_key": "FOODSHARE",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 86,
+            "organizer": "Cru",
+            "organizer_key": "CRU",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 70,
+            "organizer": "Catholic Newman Community at RIT",
+            "organizer_key": "NEWMAN",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 56,
+            "organizer": "Chabad at RIT",
+            "organizer_key": "CHABAD",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 41,
+            "organizer": "Center for Leadership and Civic Engagement",
+            "organizer_key": "CLCE",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 41,
+            "organizer": "NTID Communication Studies and Services",
+            "organizer_key": "NTIDCSS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 38,
+            "organizer": "Muslim Student Association",
+            "organizer_key": "MSA",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 35,
+            "organizer": "Men's Hockey",
+            "organizer_key": "MEN'S_HOCKEY",
+            "source": "athletics"
+        },
+        {
+            "event_count": 34,
+            "organizer": "RIT Pagans",
+            "organizer_key": "RITPAGANS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 34,
+            "organizer": "Women's Hockey",
+            "organizer_key": "WOMEN'S_HOCKEY",
+            "source": "athletics"
+        },
+        {
+            "event_count": 33,
+            "organizer": "RIT Hillel",
+            "organizer_key": "HILLEL",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 32,
+            "organizer": "Counseling & Psychological Services",
+            "organizer_key": "CAPS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 32,
+            "organizer": "FirstByte",
+            "organizer_key": "FIRSTBYTE",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 30,
+            "organizer": "Women's Volleyball",
+            "organizer_key": "WOMEN'S_VOLLEYBALL",
+            "source": "athletics"
+        },
+        {
+            "event_count": 29,
+            "organizer": "No Voice Zone",
+            "organizer_key": "NVZ",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 24,
+            "organizer": "Center for Residence Life",
+            "organizer_key": "RESLIFE",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 22,
+            "organizer": "RIT 365 Facilitators",
+            "organizer_key": "365FACILITATORS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 17,
+            "organizer": "Spectrum Support Program",
+            "organizer_key": "SSP",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 16,
+            "organizer": "Men's Soccer",
+            "organizer_key": "MEN'S_SOCCER",
+            "source": "athletics"
+        },
+        {
+            "event_count": 15,
+            "organizer": "Campus Life: Building Operations & Vending",
+            "organizer_key": "CCLBUILDINGOPS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 15,
+            "organizer": "Women's Soccer",
+            "organizer_key": "WOMEN'S_SOCCER",
+            "source": "athletics"
+        },
+        {
+            "event_count": 13,
+            "organizer": "Campus Life: Commuter and Transfer Programming",
+            "organizer_key": "COMMUTER",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 13,
+            "organizer": "Men's Swimming & Diving",
+            "organizer_key": "MEN'S_SWIMMING_&_DIVING",
+            "source": "athletics"
+        },
+        {
+            "event_count": 13,
+            "organizer": "Women's Swimming & Diving",
+            "organizer_key": "WOMEN'S_SWIMMING_&_DIVING",
+            "source": "athletics"
+        },
+        {
+            "event_count": 11,
+            "organizer": "Performing Arts Scholars",
+            "organizer_key": "PERFORMINGARTS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 10,
+            "organizer": "International Student Services",
+            "organizer_key": "ISS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 9,
+            "organizer": "Health Promotion",
+            "organizer_key": "HEALTHPROMOTION",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 9,
+            "organizer": "Men's Cross Country",
+            "organizer_key": "MEN'S_CROSS_COUNTRY",
+            "source": "athletics"
+        },
+        {
+            "event_count": 9,
+            "organizer": "Wellness Collaborative",
+            "organizer_key": "WELLNESSCOLLABORATIVE",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 9,
+            "organizer": "Women's Cross Country",
+            "organizer_key": "WOMEN'S_CROSS_COUNTRY",
+            "source": "athletics"
+        },
+        {
+            "event_count": 8,
+            "organizer": "Community and Education",
+            "organizer_key": "MOSAIC",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 8,
+            "organizer": "Campus Life: Women, Gender, and Sexuality Resource Center",
+            "organizer_key": "WGSRC",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 7,
+            "organizer": "College of Liberal Arts Student Services",
+            "organizer_key": "COLLEGEOFLIBERALARTS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 6,
+            "organizer": "ASC: Peer Education",
+            "organizer_key": "RITSI",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 5,
+            "organizer": "Computing Organization for Multicultural Students",
+            "organizer_key": "COMS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 5,
+            "organizer": "Campus Life: New Student Orientation",
+            "organizer_key": "RITNSO",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 4,
+            "organizer": "RIT Education Abroad",
+            "organizer_key": "EDUCATIONABROAD",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 4,
+            "organizer": "Hands of Fire",
+            "organizer_key": "HOF",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 4,
+            "organizer": "KGCOE Kate Gleason College of Engineering",
+            "organizer_key": "KGCOE",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 4,
+            "organizer": "Men's Rowing",
+            "organizer_key": "MEN'S_ROWING",
+            "source": "athletics"
+        },
+        {
+            "event_count": 4,
+            "organizer": "Women's Rowing",
+            "organizer_key": "WOMEN'S_ROWING",
+            "source": "athletics"
+        },
+        {
+            "event_count": 4,
+            "organizer": "Women in Engineering",
+            "organizer_key": "WOMENINENGINEERING",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 3,
+            "organizer": "College of Art and Design Student Services",
+            "organizer_key": "CADSS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 3,
+            "organizer": "Campus Life: Fraternity & Sorority Life",
+            "organizer_key": "FSL",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 3,
+            "organizer": "NTID Student Life Team",
+            "organizer_key": "SLT",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 2,
+            "organizer": "Accelerated Scholars",
+            "organizer_key": "ACCELERATED",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 2,
+            "organizer": "CSTEP",
+            "organizer_key": "CSTEP",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 2,
+            "organizer": "Future Stewards Program",
+            "organizer_key": "FSP",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 2,
+            "organizer": "Goodbye Goodbuy!",
+            "organizer_key": "GOODBYEGOODBUY",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 2,
+            "organizer": "RIT Graduate School",
+            "organizer_key": "GRADUATEEDUCATION",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 2,
+            "organizer": "Women in Technology",
+            "organizer_key": "WIT",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Afro Dance Club",
+            "organizer_key": "AFDC",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Archive Collective",
+            "organizer_key": "ARC",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Auxiliary Services",
+            "organizer_key": "AUXSERVICES",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "College Activities Board (CAB)",
+            "organizer_key": "CAB",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Campus Life",
+            "organizer_key": "CAMPUSLIFE",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Campus Life: Events",
+            "organizer_key": "CCLEVENTS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Center for Engagement and Student Success",
+            "organizer_key": "CES",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "CET Honors Group",
+            "organizer_key": "CETH",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Campus Life: Clubs & Organizations",
+            "organizer_key": "CLUBS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Recreation and Wellness Programs: Clubs & Organizations",
+            "organizer_key": "CLUBSPORTS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Climate and Sustainability Leadership Program",
+            "organizer_key": "CSLP",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "ECCO: Engineers of Color Creating Opportunities",
+            "organizer_key": "ECCO",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Intramurals",
+            "organizer_key": "INTRAMURALS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "McNair Program",
+            "organizer_key": "MCNAIR",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Neurodiverse Hiring Initiative",
+            "organizer_key": "NHI",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Recreation and Wellness Programs ",
+            "organizer_key": "RECSPORTS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Bee Keepers Club",
+            "organizer_key": "RITBKC",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Fencing Club",
+            "organizer_key": "RITFENCE",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Campus Life: Spirituality and Religious Life",
+            "organizer_key": "SRL",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Society of Women Engineers",
+            "organizer_key": "SWE",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "University Exploration",
+            "organizer_key": "UNIVERSITYEXPLORATION",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Varsity Athletics",
+            "organizer_key": "VARSITYATHLETICS",
+            "source": "campusgroups"
+        },
+        {
+            "event_count": 1,
+            "organizer": "Women in Computing",
+            "organizer_key": "WIC",
+            "source": "campusgroups"
+        }
+    ],
+    "last_updated": null,
+    "stale": false
+}

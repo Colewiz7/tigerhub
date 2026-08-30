@@ -1,0 +1,454 @@
+{
+    "data": [
+        {
+            "id": "499",
+            "name": "BYOF 3D Printers",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "3D Printing",
+            "sub_name": "Prusa i3 Mk3S+"
+        },
+        {
+            "id": "37",
+            "name": "PLA Self-Serve Print Farm",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "3D Printing",
+            "sub_name": "Prusa Core One"
+        },
+        {
+            "id": "205",
+            "name": "Carbon Fiber 3D Printing",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Atrium 3D Print Farm",
+            "sub_name": "Full Service: Markforged Mark Two"
+        },
+        {
+            "id": "235",
+            "name": "Large-Format 3D Printing",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Atrium 3D Print Farm",
+            "sub_name": "Full-Service: Prusa XL"
+        },
+        {
+            "id": "204",
+            "name": "PETG 3D Print Farm",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Atrium 3D Print Farm",
+            "sub_name": "Self-Service: Prusa i3 Mk4"
+        },
+        {
+            "id": "202",
+            "name": "Resin Printers",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Atrium 3D Print Farm",
+            "sub_name": "Full Service: Formlabs Form 4, Form 3L"
+        },
+        {
+            "id": "203",
+            "name": "SLS Nylon 3D Printer",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Atrium 3D Print Farm",
+            "sub_name": "Full-Service: Formlabs Form Fuse 1+"
+        },
+        {
+            "id": "334",
+            "name": "Test: New Quiz Content",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Atrium 3D Print Farm",
+            "sub_name": null
+        },
+        {
+            "id": "206",
+            "name": "Very Large-Format 3D Printing",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Atrium 3D Print Farm",
+            "sub_name": "Full Service: BigRep ONE V4"
+        },
+        {
+            "id": "33",
+            "name": "Electronics Work Station",
+            "num_available": 6,
+            "num_in_use": 0,
+            "room": "Electronics",
+            "sub_name": null
+        },
+        {
+            "id": "367",
+            "name": "Hot Air Reflow Pencil",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Electronics",
+            "sub_name": "Metcal HCT2"
+        },
+        {
+            "id": "368",
+            "name": "Multi-Channel Power Supply",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Electronics",
+            "sub_name": "Keithley 2231A-30-3, Matrix MPS-3263"
+        },
+        {
+            "id": "34",
+            "name": "Multimeter (Benchtop)",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Electronics",
+            "sub_name": "Keithley DMM6500, Siglent SDM3045X"
+        },
+        {
+            "id": "369",
+            "name": "Oscilloscope",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Electronics",
+            "sub_name": "Tektronix TBS 2000B"
+        },
+        {
+            "id": "13",
+            "name": "Soldering Iron",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Electronics",
+            "sub_name": "Weller 1010"
+        },
+        {
+            "id": "26",
+            "name": "Fusion Edge Laser Cutter",
+            "num_available": 2,
+            "num_in_use": 0,
+            "room": "Laser Cutting",
+            "sub_name": "Epilog Fusion Edge 12/24 60W"
+        },
+        {
+            "id": "28",
+            "name": "Fusion Pro Laser Cutter",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Laser Cutting",
+            "sub_name": "Epilog Fusion Pro 48 120W/50W"
+        },
+        {
+            "id": "27",
+            "name": "Rotary Axis",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Laser Cutting",
+            "sub_name": "Compatible with all Laser Cutters"
+        },
+        {
+            "id": "35",
+            "name": "Cold Saw",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Manual Shop",
+            "sub_name": "Baileigh CS-275EU"
+        },
+        {
+            "id": "29",
+            "name": "Conversational Lathe (Large)",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Manual Shop",
+            "sub_name": "ProtoTrak TRL 1630RX"
+        },
+        {
+            "id": "32",
+            "name": "Horizontal Bandsaw",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Manual Shop",
+            "sub_name": "JET 814GH"
+        },
+        {
+            "id": "24",
+            "name": "Manual/Conversational Knee Mill",
+            "num_available": 4,
+            "num_in_use": 0,
+            "room": "Manual Shop",
+            "sub_name": "ProtoTrak K3 KMX"
+        },
+        {
+            "id": "25",
+            "name": "Manual/Conversational Lathe",
+            "num_available": 2,
+            "num_in_use": 0,
+            "room": "Manual Shop",
+            "sub_name": "ProtoTrak TRL 1440EX"
+        },
+        {
+            "id": "30",
+            "name": "Metal Bandsaw",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Manual Shop",
+            "sub_name": "Laguna 14CX"
+        },
+        {
+            "id": "40",
+            "name": "Metal Belt Sander",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Manual Shop",
+            "sub_name": "Buck Tool BD4802"
+        },
+        {
+            "id": "23",
+            "name": "Metal Drill Press",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Manual Shop",
+            "sub_name": "Powermatic PM2820EVS"
+        },
+        {
+            "id": "71",
+            "name": "Rotary Grinding Station",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Manual Shop",
+            "sub_name": "Metal Shop - Grinding and Cutoff"
+        },
+        {
+            "id": "39",
+            "name": "Vinyl Cutter (Large)",
+            "num_available": 0,
+            "num_in_use": 1,
+            "room": "Other Equipment & Tools",
+            "sub_name": "Roland GS24"
+        },
+        {
+            "id": "16",
+            "name": "CNC Lathe",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "South Metal Shop",
+            "sub_name": "Haas ST-10"
+        },
+        {
+            "id": "17",
+            "name": "CNC Mill",
+            "num_available": 0,
+            "num_in_use": 1,
+            "room": "South Metal Shop",
+            "sub_name": "Haas TM-1P"
+        },
+        {
+            "id": "19",
+            "name": "Metal Laser Cutter",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "South Metal Shop",
+            "sub_name": "Fablight 4500W"
+        },
+        {
+            "id": "18",
+            "name": "Waterjet",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "South Metal Shop",
+            "sub_name": "Omax MicroMax w/ Tilt-A-Jet 5th Axis"
+        },
+        {
+            "id": "42",
+            "name": "Welding Booth",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "South Metal Shop",
+            "sub_name": "Miller Multimatic 220 - MIG & TIG"
+        },
+        {
+            "id": "11",
+            "name": "Embroidery Machine (Large)",
+            "num_available": 0,
+            "num_in_use": 1,
+            "room": "Textiles",
+            "sub_name": "Bernina E16"
+        },
+        {
+            "id": "9",
+            "name": "Embroidery Machine (Small)",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Textiles",
+            "sub_name": "Bernina 590"
+        },
+        {
+            "id": "466",
+            "name": "Ironing Station",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Textiles",
+            "sub_name": null
+        },
+        {
+            "id": "10",
+            "name": "Quilting Machine",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Textiles",
+            "sub_name": "Bernina Q20"
+        },
+        {
+            "id": "12",
+            "name": "Serger",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Textiles",
+            "sub_name": "Bernina L460"
+        },
+        {
+            "id": "8",
+            "name": "Sewing Machine",
+            "num_available": 5,
+            "num_in_use": 0,
+            "room": "Textiles",
+            "sub_name": "Bernina 475"
+        },
+        {
+            "id": "169",
+            "name": "Vinyl Cutter (Small)",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Vinyl Cutting",
+            "sub_name": "Cricut Maker 4"
+        },
+        {
+            "id": "170",
+            "name": "Vinyl Heat Press",
+            "num_available": 0,
+            "num_in_use": 0,
+            "room": "Vinyl Cutting",
+            "sub_name": null
+        },
+        {
+            "id": "22",
+            "name": "18\" Scroll Saw",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "JET JWSS-18B"
+        },
+        {
+            "id": "3",
+            "name": "20\" Planer",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Laguna Tools PX20"
+        },
+        {
+            "id": "14",
+            "name": "8\" Jointer",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Laguna Tools JX8"
+        },
+        {
+            "id": "15",
+            "name": "CNC Router",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Shopsabre IS-510"
+        },
+        {
+            "id": "5",
+            "name": "Disk/Belt Sander",
+            "num_available": 2,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Laguna Tools DB126"
+        },
+        {
+            "id": "532",
+            "name": "Drum Sander",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": null
+        },
+        {
+            "id": "41",
+            "name": "Heated Paint Booth",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": null
+        },
+        {
+            "id": "20",
+            "name": "Miter Saw",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Festool KAPEX KS 120 REB"
+        },
+        {
+            "id": "70",
+            "name": "Rotary Sanding Station",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Wood Shop - Sanding"
+        },
+        {
+            "id": "7",
+            "name": "Router Table",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Sawstop"
+        },
+        {
+            "id": "21",
+            "name": "Spindle Sander",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Laguna Tools SS24T"
+        },
+        {
+            "id": "4",
+            "name": "Tablesaw",
+            "num_available": 1,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Sawstop Professional Cabinet Saw"
+        },
+        {
+            "id": "6",
+            "name": "Wood Bandsaw",
+            "num_available": 2,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Laguna Tools 18BX"
+        },
+        {
+            "id": "31",
+            "name": "Wood Drill Press",
+            "num_available": 2,
+            "num_in_use": 0,
+            "room": "Wood Shop",
+            "sub_name": "Powermatic PM2800B"
+        },
+        {
+            "id": "301",
+            "name": "Wood Lathe",
+            "num_available": 0,
+            "num_in_use": 1,
+            "room": "Wood Shop",
+            "sub_name": "Laguna Tools 12|16"
+        }
+    ],
+    "last_updated": "2026-08-30T06:05:02Z",
+    "stale": false
+}

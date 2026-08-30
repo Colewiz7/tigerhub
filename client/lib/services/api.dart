@@ -3,14 +3,16 @@
 /// Every read follows the same shape: return cached data immediately, then
 /// refresh in the background. The three UI states below are deliberately
 /// distinct and must not be collapsed into one loading state.
+///
+/// The name is now slightly historical. There is no API and no server: a
+/// [Backend] resolves each path on the device. The shape it returns is the same
+/// envelope the server used to send, which is exactly why none of the models or
+/// screens below had to change when the server went away.
 library;
 
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:http/http.dart' as http;
-
-import '../config.dart';
+import '../data/backend.dart';
 import '../models/api_models.dart';
 import 'cache.dart';
 
@@ -50,17 +52,12 @@ class Result<T> {
 }
 
 class ApiClient {
-  ApiClient({http.Client? client, ResponseCache? cache})
-      : _client = client ?? http.Client(),
+  ApiClient({Backend? backend, ResponseCache? cache})
+      : _backend = backend ?? LocalBackend(),
         _cache = cache ?? ResponseCache.instance;
 
-  final http.Client _client;
+  final Backend _backend;
   final ResponseCache _cache;
-
-  static const Duration _timeout = Duration(seconds: 8);
-
-  Uri _uri(String path, [Map<String, String>? query]) =>
-      Uri.parse('${AppConfig.apiBaseUrl}$path').replace(queryParameters: query);
 
   /// Fetch with cache fallback.
   ///
@@ -88,16 +85,11 @@ class ApiClient {
     }
 
     try {
-      final response =
-          await _client.get(_uri(path, query)).timeout(_timeout);
-      if (response.statusCode != 200) {
-        throw http.ClientException('HTTP ${response.statusCode}', _uri(path, query));
-      }
-      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      final body = await _backend.fetch(path, query);
       await _cache.write(cacheKey, body);
 
-      // The server reports its own staleness, so the client mirrors that
-      // signal rather than inventing a second one.
+      // The backend reports its own staleness, so the presentation layer
+      // mirrors that signal rather than inventing a second one.
       final serverStale = body['stale'] as bool? ?? false;
       yield Result<T>(
         value: parse(body),
@@ -214,14 +206,7 @@ class ApiClient {
     }
 
     try {
-      final response = await _client.get(_uri(path)).timeout(_timeout);
-      if (response.statusCode != 200) {
-        throw http.ClientException('HTTP ${response.statusCode}', _uri(path));
-      }
-      final decoded = jsonDecode(response.body);
-      final body = <String, dynamic>{
-        'items': decoded is List ? decoded : const [],
-      };
+      final body = await _backend.fetch(path);
       await _cache.write(path, body);
       yield Result<List<T>>(
         value: decode(body),
@@ -249,5 +234,5 @@ class ApiClient {
         query: {'name': name, if (unit != null && unit.isNotEmpty) 'unit': unit},
       );
 
-  void dispose() => _client.close();
+  void dispose() => _backend.close();
 }
