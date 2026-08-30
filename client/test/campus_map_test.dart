@@ -213,6 +213,51 @@ void main() {
     });
   });
 
+  group('the projection is reused, but only while it is still valid', () {
+    // Building one measured 7.27ms of a 13.9ms paint, so it is cached. A cache
+    // that held on too long would silently project into a stale rect, which is
+    // far worse than the cost it saves.
+    setUp(CampusMapProjection.resetCacheForTest);
+
+    test('identical inputs reuse the same projection', () {
+      const size = Size(900, 500);
+      expect(
+        identical(
+          CampusMapProjection(const [west, east], size),
+          CampusMapProjection(const [west, east], size),
+        ),
+        isTrue,
+      );
+    });
+
+    test('a resized window rebuilds it', () {
+      final a = CampusMapProjection(const [west, east], const Size(900, 500));
+      final b = CampusMapProjection(const [west, east], const Size(500, 900));
+      expect(identical(a, b), isFalse);
+      expect(a.mapRect, isNot(b.mapRect));
+    });
+
+    test('a changed feature list rebuilds it', () {
+      final a = CampusMapProjection(const [west, east], const Size(900, 500));
+      final b = CampusMapProjection(
+        const [west, east, remote],
+        const Size(900, 500),
+      );
+      expect(identical(a, b), isFalse);
+    });
+
+    test('a changed bounds list rebuilds it', () {
+      const size = Size(900, 500);
+      final a = CampusMapProjection(const [west, east], size);
+      final b = CampusMapProjection(
+        const [west, east],
+        size,
+        boundsFeatures: const [west],
+      );
+      expect(identical(a, b), isFalse);
+    });
+  });
+
   test('the map fills the panel it is given', () {
     // Being isotropic is not enough on its own. Fitting the campus into a wide
     // panel used 60% of it and stranded 357px of dead width, which is why the
@@ -252,6 +297,8 @@ void main() {
     expect(find.byTooltip('Fit campus'), findsOneWidget);
     expect(find.text('West fountain'), findsOneWidget);
     expect(find.text('East AED'), findsOneWidget);
+    expect(find.byIcon(Icons.water_drop_rounded), findsWidgets);
+    expect(find.byIcon(Icons.health_and_safety_rounded), findsWidgets);
     expect(find.byType(CustomPaint), findsWidgets);
   });
 
