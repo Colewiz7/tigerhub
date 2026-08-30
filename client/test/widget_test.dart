@@ -21,6 +21,8 @@ import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/widgets/menu_section.dart';
 import 'package:tigerhub/services/preferences.dart';
+import 'package:tigerhub/widgets/jump_list.dart';
+import 'package:tigerhub/widgets/section_nav.dart';
 import 'package:tigerhub/widgets/week_grid.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
 import 'package:tigerhub/widgets/content_column.dart';
@@ -396,6 +398,8 @@ void main() {
   _responsiveLayout();
   _weekGridAndClosed();
   _menus();
+  _sectionNav();
+  _jumpRail();
 
   test('age formatting', () {
     final now = DateTime.now();
@@ -1426,5 +1430,142 @@ void _menus() {
       expect(knownAllergens, contains('Treenut'));
       expect(knownAllergens, isNot(contains('Peanut')));
     });
+  });
+}
+
+/// One navigation idiom, shared by Campus and Settings.
+void _sectionNav() {
+  List<SectionSpec> specs(int n) => [
+        for (var i = 0; i < n; i++)
+          SectionSpec(
+            id: 'id$i',
+            title: 'Section $i',
+            subtitle: 'sub $i',
+            icon: Icons.circle,
+            builder: (context) => Text('content $i'),
+          ),
+      ];
+
+  Widget wrap(List<SectionSpec> s) => MaterialApp(
+        theme: AppTheme.from(_fallbackScheme()),
+        home: Scaffold(body: SectionScaffold(sections: s)),
+      );
+
+  testWidgets('wide shows the nav and the first section together',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(wrap(specs(3)));
+
+    expect(find.text('Section 0'), findsOneWidget);
+    expect(find.text('Section 2'), findsOneWidget);
+    // First section's content is already open, no dead landing state.
+    expect(find.text('content 0'), findsOneWidget);
+  });
+
+  testWidgets('selecting swaps the pane without leaving the screen',
+      (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(wrap(specs(3)));
+
+    await tester.tap(find.text('Section 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('content 2'), findsOneWidget);
+    expect(find.text('content 0'), findsNothing);
+    // The nav is still there.
+    expect(find.text('Section 0'), findsOneWidget);
+  });
+
+  testWidgets('narrow shows only the list, content is pushed', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(600, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(wrap(specs(3)));
+
+    expect(find.text('Section 0'), findsOneWidget);
+    expect(find.text('content 0'), findsNothing,
+        reason: 'a narrow window has no room for two panes');
+
+    await tester.tap(find.text('Section 1'));
+    await tester.pumpAndSettle();
+    expect(find.text('content 1'), findsOneWidget);
+  });
+
+  testWidgets('an empty section list renders nothing rather than throwing',
+      (tester) async {
+    await tester.pumpWidget(wrap(const []));
+    expect(tester.takeException(), isNull);
+  });
+}
+
+/// The jump rail on long grouped lists.
+void _jumpRail() {
+  List<JumpGroup> groups(int n) => [
+        for (var i = 0; i < n; i++)
+          JumpGroup(
+            label: 'Group $i',
+            icon: Icons.circle,
+            count: i + 1,
+            builder: (context) => SizedBox(
+              height: 400,
+              child: Text('body $i'),
+            ),
+          ),
+      ];
+
+  /// The rail reacts to the space it is given, so the test view has to be
+  /// sized honestly. devicePixelRatio is pinned to 1 because the default of 3
+  /// silently divides the logical width and puts every case below the
+  /// breakpoint.
+  Future<void> pump(WidgetTester tester, List<JumpGroup> g, Size size,
+      {Widget? footer}) async {
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = size;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.from(_fallbackScheme()),
+      home: Scaffold(body: JumpList(groups: g, footer: footer)),
+    ));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('a wide window gets a rail listing every group', (tester) async {
+    await pump(tester, groups(4), const Size(1400, 800));
+    expect(find.text('Group 0'), findsOneWidget);
+    expect(find.text('Group 3'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a narrow window drops the rail rather than cramping the list',
+      (tester) async {
+    await pump(tester, groups(4), const Size(700, 800));
+    // Only the body remains, so the first group's content is what shows.
+    expect(find.text('body 0'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a single group needs no rail', (tester) async {
+    await pump(tester, groups(1), const Size(1400, 800));
+    // Nothing to jump between, so the rail would be pure decoration.
+    expect(find.text('body 0'), findsOneWidget);
+    expect(find.byIcon(Icons.circle), findsNothing);
+  });
+
+  testWidgets('tapping a rail entry scrolls to that group', (tester) async {
+    await pump(tester, groups(5), const Size(1400, 800));
+    expect(find.text('body 0'), findsOneWidget);
+
+    await tester.tap(find.text('Group 3'));
+    await tester.pumpAndSettle();
+    expect(find.text('body 3'), findsOneWidget,
+        reason: 'the rail is for getting somewhere, not decoration');
+  });
+
+  testWidgets('a footer renders after the last group', (tester) async {
+    await pump(tester, groups(2), const Size(1400, 800),
+        footer: const Text('the footer'));
+    await tester.drag(find.text('body 0'), const Offset(0, -900));
+    await tester.pumpAndSettle();
+    expect(find.text('the footer'), findsOneWidget);
   });
 }

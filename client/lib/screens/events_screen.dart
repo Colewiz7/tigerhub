@@ -12,7 +12,7 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../services/event_filter.dart';
 import '../services/preferences.dart';
-import '../widgets/content_column.dart';
+import '../widgets/jump_list.dart';
 import '../widgets/freshness.dart';
 import '../widgets/hidden_footer.dart';
 import '../widgets/status_row.dart';
@@ -58,54 +58,53 @@ class _EventsScreenState extends State<EventsScreen> {
     final filtered = filterEvents(events, _prefs);
     final text = Theme.of(context).textTheme;
 
-    return ResponsiveList(
-      itemCount: filtered.groups.length + 1,
-      itemBuilder: (context, index) {
-        if (index == filtered.groups.length) {
-          return _TotalFooter(hidden: filtered.hiddenTotal);
-        }
-
-        final group = filtered.groups[index];
-        final open = _expanded.contains(group.organizer);
-        final shown = group.visible.take(_perGroup).toList();
-        final overflow = group.visible.length - shown.length;
-
-        return Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GroupHeader(
-                  icon: iconForOrganizer(group.organizer),
-                  title: group.organizer,
-                  count: group.visible.length,
-                ),
-                for (final item in shown)
-                  EventRow(event: item.event, boosted: item.boosted),
-                if (overflow > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, top: 2, bottom: 4),
-                    child: Text(
-                      '+$overflow more from this organizer',
-                      style: text.bodySmall,
-                    ),
+    return JumpList(
+      footer: _TotalFooter(hidden: filtered.hiddenTotal),
+      groups: [
+        for (final group in filtered.groups)
+          JumpGroup(
+            label: group.organizer,
+            icon: iconForOrganizer(group.organizer),
+            count: group.visible.length,
+            builder: (context) {
+              final open = _expanded.contains(group.organizer);
+              final shown = group.visible.take(_perGroup).toList();
+              final overflow = group.visible.length - shown.length;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GroupHeader(
+                    icon: iconForOrganizer(group.organizer),
+                    title: group.organizer,
+                    count: group.visible.length,
                   ),
-                HiddenFooter(
-                  count: group.hiddenCount,
-                  expanded: open,
-                  onToggle: () => setState(() {
-                    open
-                        ? _expanded.remove(group.organizer)
-                        : _expanded.add(group.organizer);
-                  }),
-                ),
-              if (open)
-                for (final item in group.hidden)
-                  EventRow(event: item.event, forceDimmed: true),
-            ],
+                  for (final item in shown)
+                    EventRow(event: item.event, boosted: item.boosted),
+                  if (overflow > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, top: 2, bottom: 4),
+                      child: Text(
+                        '+$overflow more from this organizer',
+                        style: text.bodySmall,
+                      ),
+                    ),
+                  HiddenFooter(
+                    count: group.hiddenCount,
+                    expanded: open,
+                    onToggle: () => setState(() {
+                      open
+                          ? _expanded.remove(group.organizer)
+                          : _expanded.add(group.organizer);
+                    }),
+                  ),
+                  if (open)
+                    for (final item in group.hidden)
+                      EventRow(event: item.event, forceDimmed: true),
+                ],
+              );
+            },
           ),
-        );
-      },
+      ],
     );
   }
 }
