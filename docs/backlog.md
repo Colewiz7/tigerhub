@@ -6,6 +6,47 @@ say why rather than leaving it to rot.
 
 ---
 
+## Event dedupe, now that the overlap is measurable
+
+Observed 2026-08-30. CLAUDE.md section 8 decision 2 deliberately shipped **no
+dedupe for MVP**, on the grounds that the real overlap should be observed before
+anyone writes fuzzy matching. Here it is.
+
+**138 collisions across 1604 events**, and they are *exact* matches on a
+normalised title plus the exact start instant. Mostly CampusGroups against
+Drupal, both publishing the same official event:
+
+```
+co op connections    16 Sep 15:00    campusgroups + drupal
+co op connections    23 Sep 15:00    campusgroups + drupal
+...
+```
+
+**No fuzzy matching is needed.** Lowercase the title, collapse non-alphanumerics
+to single spaces, pair that with the UTC instant, and the duplicates fall out
+exactly. That is a much smaller job than decision 2 anticipated.
+
+**This only became measurable after the Drupal time fix.** While every Drupal
+event was pinned to midnight it could never share an instant with the
+CampusGroups copy of itself, so the overlap was invisible and would have looked
+like zero.
+
+**When building it, decide which copy wins rather than picking arbitrarily.**
+They are not equivalent:
+
+- CampusGroups carries the real organizer (`X-CG-CATEGORY=club_acronym`), which
+  is what the grouping, collapsing and muting UI runs on. Drupal hardcodes
+  organizer to "RIT".
+- Drupal carries `building` and `room` as separate fields. CampusGroups carries
+  a single free text `location`.
+- Athletics fixtures also appear in Drupal, and the athletics copy has the
+  better organizer (the sport) and the fuller location.
+
+So the merge probably wants fields from both rather than one record discarded.
+Keep `source` on whatever survives; it is a first class column for a reason.
+
+---
+
 ## Motion and loading animations
 
 Requested 2026-08-30. Handed to Codex alongside the map work, so this is
