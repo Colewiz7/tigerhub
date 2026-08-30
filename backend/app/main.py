@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import db, scheduler as scheduler_module, settings
-from app.api import campus, dining, events, health, makerspace, recreation
+from app.api import campus, dining, events, health, makerspace, places, recreation
 from app.config import ConfigError, load_config
 from app.config.static import set_config
 
@@ -75,6 +75,7 @@ app.include_router(dining.router)
 app.include_router(events.router)
 app.include_router(makerspace.router)
 app.include_router(recreation.router)
+app.include_router(places.router)
 app.include_router(campus.router)
 
 

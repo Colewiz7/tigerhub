@@ -374,3 +374,46 @@ def test_athletics_keeps_the_venue():
     rows = athletics.parse(fixture_bytes("athletics.ics"))
     located = [r for r in rows if r["location"]]
     assert located, "fixtures carry a venue and it is worth showing"
+
+
+def test_campus_places_groups_by_sub_category_not_position():
+    """A payload carries every sub the parent contains. Grouping on menu.id
+    means a reordering upstream cannot mix water fountains into ATMs."""
+    from app.scrapers import campus_places
+
+    groups = campus_places.parse(fixture_text("maps_category_35.data"))
+    assert 270 in groups, "hydration stations are the point of this source"
+    water = groups[270]
+    assert len(water) > 50
+    assert all("hydration" in p["name"].lower() for p in water)
+
+    # Its sibling in the same payload stays separate.
+    if 195 in groups:
+        assert all("hydration" not in p["name"].lower() for p in groups[195])
+
+
+def test_campus_places_keeps_the_details_that_make_it_findable():
+    from app.scrapers import campus_places
+
+    water = campus_places.parse(fixture_text("maps_category_35.data"))[270]
+    located = [p for p in water if p["building"] and p["floor"]]
+    assert located, "a fountain without a building or floor is not findable"
+
+    described = [p for p in water if p["note"]]
+    assert described, "the human note is the most useful field here"
+    assert all(p["kind_name"] == "Water fountains" for p in water)
+
+
+def test_campus_places_ignores_sub_categories_we_did_not_ask_for():
+    from app.scrapers import campus_places
+
+    groups = campus_places.parse(fixture_text("maps_category_35.data"))
+    # Solar fields and pollinator gardens are in this payload and are noise.
+    assert set(groups) <= set(campus_places.KINDS)
+
+
+def test_campus_places_survives_a_broken_payload():
+    from app.scrapers import campus_places
+
+    assert campus_places.parse("not turbo stream at all") == {}
+    assert campus_places.parse("") == {}

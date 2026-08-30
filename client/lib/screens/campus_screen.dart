@@ -18,6 +18,7 @@ import '../theme/tokens.dart';
 import '../widgets/content_column.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
+import '../widgets/places_sheet.dart';
 import '../widgets/week_grid.dart';
 
 class CampusScreen extends StatefulWidget {
@@ -39,6 +40,8 @@ class _CampusScreenState extends State<CampusScreen> {
       const Result(value: null, state: DataState.priming);
   Result<Collection<RecreationFacility>> _rec =
       const Result(value: null, state: DataState.priming);
+  Result<Collection<PlaceKind>> _kinds =
+      const Result(value: null, state: DataState.priming);
 
   @override
   void initState() {
@@ -54,6 +57,9 @@ class _CampusScreenState extends State<CampusScreen> {
     });
     widget.api.recreation().listen((r) {
       if (mounted) setState(() => _rec = r);
+    });
+    widget.api.placeKinds().listen((r) {
+      if (mounted) setState(() => _kinds = r);
     });
   }
 
@@ -77,6 +83,42 @@ class _CampusScreenState extends State<CampusScreen> {
           for (final office in _offices.value?.data ?? const <PostOffice>[])
             _PostOfficeBlock(office: office),
           if (_offices.isPriming) const PrimingPlaceholder(label: 'Loading post offices'),
+
+          const SizedBox(height: 22),
+
+          _Heading(
+            title: 'Find on campus',
+            subtitle: 'From the campus map, with the building, floor and a note '
+                'on where exactly to look.',
+            state: _kinds.state,
+            fetchedAt: _kinds.fetchedAt,
+          ),
+          if (_kinds.isPriming)
+            const PrimingPlaceholder(label: 'Loading places')
+          else
+            for (final kind in _kinds.value?.data ?? const <PlaceKind>[])
+              StatusRow(
+                icon: iconForPlaceKind(kind.kind),
+                title: kind.kindName,
+                subtitle: '${kind.count} on campus',
+                onTap: () => showModalBottomSheet<void>(
+                  context: context,
+                  showDragHandle: true,
+                  isScrollControlled: true,
+                  constraints: const BoxConstraints(maxWidth: 720),
+                  builder: (context) => PlacesSheet(
+                    api: widget.api,
+                    kind: kind.kind,
+                    title: kind.kindName,
+                    icon: iconForPlaceKind(kind.kind),
+                  ),
+                ),
+                trailing: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
 
           const SizedBox(height: 22),
 

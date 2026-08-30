@@ -39,6 +39,9 @@ INTERVAL_RECREATION_MINUTES = int(os.getenv("RIT_TIMES_INTERVAL_RECREATION", "36
 # whole month, so fetching all twelve at once would pull roughly 80 MB in a
 # burst for data that changes daily at most.
 INTERVAL_MENUS_MINUTES = int(os.getenv("RIT_TIMES_INTERVAL_MENUS", "45"))
+# Campus points of interest are physical infrastructure. Water fountains do not
+# move, so twice a day is generous.
+INTERVAL_PLACES_MINUTES = int(os.getenv("RIT_TIMES_INTERVAL_PLACES", "720"))
 
 # Static config entries older than this are reported as stale by /health/sources.
 CONFIG_STALE_AFTER_DAYS = int(os.getenv("RIT_TIMES_CONFIG_STALE_DAYS", "120"))
