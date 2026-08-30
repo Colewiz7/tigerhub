@@ -55,8 +55,9 @@ class ScopedEventsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final events = _scopedEvents(result, organizerKey);
     final future = events
-        .where((event) => (event.endsAt ?? event.startsAt)
-            .isAfter(DateTime.now()))
+        .where(
+          (event) => (event.endsAt ?? event.startsAt).isAfter(DateTime.now()),
+        )
         .toList();
     final shown = future.isEmpty ? events : future;
 
@@ -70,9 +71,8 @@ class ScopedEventsCard extends StatelessWidget {
           ? null
           : Text(
               '${events.length} events',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+              style: Theme.of(context).textTheme.labelLarge
+                  ?.copyWith(color: Theme.of(context).colorScheme.primary),
             ),
       child: events.isEmpty
           ? const EmptyState(kind: EmptyKind.noEvents)
@@ -166,12 +166,17 @@ class _EventCalendarCardState extends State<EventCalendarCard> {
                           padding: const EdgeInsets.symmetric(vertical: 9),
                           child: Column(
                             children: [
-                              Text(_weekdays[days[i].weekday - 1],
-                                  style: text.labelSmall),
+                              Text(
+                                _weekdays[days[i].weekday - 1],
+                                style: text.labelSmall,
+                              ),
                               const SizedBox(height: 3),
                               Text('${days[i].day}', style: text.titleMedium),
                               const SizedBox(height: 2),
-                              Text('${byDay[i].length}', style: text.labelSmall),
+                              Text(
+                                '${byDay[i].length}',
+                                style: text.labelSmall,
+                              ),
                             ],
                           ),
                         ),

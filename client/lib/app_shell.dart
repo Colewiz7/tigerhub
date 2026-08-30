@@ -124,8 +124,14 @@ class _AppShellState extends State<AppShell> {
     final loaded = await DashboardStore.load();
     if (!mounted) return;
     setState(() {
-      _cards = [for (final c in loaded) if (!c.hidden) c.id];
-      _hiddenCards = [for (final c in loaded) if (c.hidden) c.id];
+      _cards = [
+        for (final c in loaded)
+          if (!c.hidden) c.id,
+      ];
+      _hiddenCards = [
+        for (final c in loaded)
+          if (c.hidden) c.id,
+      ];
       _dashboard = loaded;
     });
   }
@@ -157,18 +163,26 @@ class _AppShellState extends State<AppShell> {
     _subscriptions.cancelAll();
 
     _subscriptions
-      ..add(widget.api.dining().listen((r) {
-        if (mounted) setState(() => _dining = r);
-      }))
-      ..add(widget.api.events().listen((r) {
-        if (mounted) setState(() => _events = r);
-      }))
-      ..add(widget.api.visitingChefs().listen((r) {
-        if (mounted) setState(() => _chefs = r);
-      }))
-      ..add(widget.api.housingAreas().listen((r) {
-        if (mounted) setState(() => _areas = r);
-      }));
+      ..add(
+        widget.api.dining().listen((r) {
+          if (mounted) setState(() => _dining = r);
+        }),
+      )
+      ..add(
+        widget.api.events().listen((r) {
+          if (mounted) setState(() => _events = r);
+        }),
+      )
+      ..add(
+        widget.api.visitingChefs().listen((r) {
+          if (mounted) setState(() => _chefs = r);
+        }),
+      )
+      ..add(
+        widget.api.housingAreas().listen((r) {
+          if (mounted) setState(() => _areas = r);
+        }),
+      );
   }
 
   void _go(int index, {bool animate = true}) => setState(() {
@@ -315,7 +329,8 @@ class _TabStackState extends State<_TabStack> {
     setState(() => _outgoing = old.index);
 
     final media = MediaQuery.maybeOf(context);
-    final reduceMotion = (media?.disableAnimations ?? false) ||
+    final reduceMotion =
+        (media?.disableAnimations ?? false) ||
         (media?.accessibleNavigation ?? false);
 
     if (reduceMotion || !widget.animate) {
@@ -337,7 +352,8 @@ class _TabStackState extends State<_TabStack> {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.maybeOf(context);
-    final reduceMotion = (media?.disableAnimations ?? false) ||
+    final reduceMotion =
+        (media?.disableAnimations ?? false) ||
         (media?.accessibleNavigation ?? false);
     final duration = reduceMotion || !widget.animate
         ? Duration.zero
@@ -346,12 +362,13 @@ class _TabStackState extends State<_TabStack> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        for (var childIndex = 0;
-            childIndex < widget.children.length;
-            childIndex++)
+        for (
+          var childIndex = 0;
+          childIndex < widget.children.length;
+          childIndex++
+        )
           Offstage(
-            offstage:
-                childIndex != widget.index && childIndex != _outgoing,
+            offstage: childIndex != widget.index && childIndex != _outgoing,
             child: IgnorePointer(
               ignoring: childIndex != widget.index,
               child: ExcludeSemantics(

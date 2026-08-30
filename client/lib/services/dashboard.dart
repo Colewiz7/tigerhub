@@ -81,7 +81,11 @@ enum CardSize {
 /// width, so neither offers every size.
 const Map<ModuleType, List<CardSize>> supportedSizes = {
   ModuleType.diningStatus: [CardSize.compact, CardSize.standard],
-  ModuleType.generalEvents: [CardSize.compact, CardSize.standard, CardSize.wide],
+  ModuleType.generalEvents: [
+    CardSize.compact,
+    CardSize.standard,
+    CardSize.wide,
+  ],
   ModuleType.clubEvents: [CardSize.compact, CardSize.standard, CardSize.wide],
   ModuleType.calendar: [CardSize.standard, CardSize.wide],
   ModuleType.visitingChefs: [CardSize.compact, CardSize.standard],
@@ -118,14 +122,13 @@ class CardInstance {
     String? scope,
     bool? hidden,
     bool clearScope = false,
-  }) =>
-      CardInstance(
-        id: id,
-        type: type,
-        size: size ?? this.size,
-        scope: clearScope ? null : (scope ?? this.scope),
-        hidden: hidden ?? this.hidden,
-      );
+  }) => CardInstance(
+    id: id,
+    type: type,
+    size: size ?? this.size,
+    scope: clearScope ? null : (scope ?? this.scope),
+    hidden: hidden ?? this.hidden,
+  );
 
   /// Falls back rather than throwing: a size this module does not support, or
   /// a type from a newer build, must not cost someone their whole dashboard.
@@ -146,12 +149,12 @@ class CardInstance {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type.id,
-        'size': size.id,
-        if (scope != null) 'scope': scope,
-        if (hidden) 'hidden': true,
-      };
+    'id': id,
+    'type': type.id,
+    'size': size.id,
+    if (scope != null) 'scope': scope,
+    if (hidden) 'hidden': true,
+  };
 }
 
 /// What each module is called and which glyph identifies it, for the card
@@ -196,20 +199,24 @@ List<CardInstance> migrateLegacy(List<String> order, List<String> hidden) {
   for (final legacy in order) {
     final mapped = _legacyCards[legacy];
     if (mapped == null || !placed.add(legacy)) continue;
-    out.add(CardInstance(
-      id: mapped.id,
-      type: mapped.type,
-      hidden: hidden.contains(legacy),
-    ));
+    out.add(
+      CardInstance(
+        id: mapped.id,
+        type: mapped.type,
+        hidden: hidden.contains(legacy),
+      ),
+    );
   }
 
   for (final entry in _legacyCards.entries) {
     if (placed.contains(entry.key)) continue;
-    out.add(CardInstance(
-      id: entry.value.id,
-      type: entry.value.type,
-      hidden: hidden.contains(entry.key),
-    ));
+    out.add(
+      CardInstance(
+        id: entry.value.id,
+        type: entry.value.type,
+        hidden: hidden.contains(entry.key),
+      ),
+    );
   }
 
   return out;
@@ -257,9 +264,6 @@ class DashboardStore {
     return migrated;
   }
 
-  static Future<void> save(List<CardInstance> cards) =>
-      ResponseCache.instance.writeOrder(
-        _key,
-        [for (final card in cards) jsonEncode(card.toJson())],
-      );
+  static Future<void> save(List<CardInstance> cards) => ResponseCache.instance
+      .writeOrder(_key, [for (final card in cards) jsonEncode(card.toJson())]);
 }
