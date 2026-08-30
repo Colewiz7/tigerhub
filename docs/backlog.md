@@ -1,12 +1,12 @@
 # Backlog
 
-Things decided but not yet built. Newest first. Anything here is a real
-request, not a maybe. If something turns out to be a bad idea, delete it and
-say why rather than leaving it to rot.
+Historical implementation briefs. Everything currently recorded below has been
+built; completed briefs remain here because they document constraints and the
+reasoning behind the implementation. New unfinished work belongs at the top.
 
 ---
 
-## Event dedupe, now that the overlap is measurable
+## Event dedupe, now that the overlap is measurable  *(done)*
 
 Observed 2026-08-30. CLAUDE.md section 8 decision 2 deliberately shipped **no
 dedupe for MVP**, on the grounds that the real overlap should be observed before
@@ -47,7 +47,7 @@ Keep `source` on whatever survives; it is a first class column for a reason.
 
 ---
 
-## Motion and loading animations
+## Motion and loading animations  *(done)*
 
 Requested 2026-08-30. Handed to Codex alongside the map work, so this is
 written as a briefing.
@@ -137,7 +137,7 @@ nothing:
 
 ---
 
-## Campus map, with events placed on it
+## Campus map, with events placed on it  *(done)*
 
 Requested 2026-08-30. Likely handed to Codex/ChatGPT, so this is written as a
 briefing rather than a note to self.
@@ -215,7 +215,7 @@ palette in CLAUDE.md section 4 no matter what is drawn on top of it.
 
 ---
 
-## Masthead wordmark: orange on "Tiger", with tiger striping
+## Masthead wordmark: orange on "Tiger", with tiger striping  *(done)*
 
 Requested 2026-08-30.
 
@@ -250,7 +250,7 @@ Related: [[app-icon]] uses the same tiger idea, so the two should agree.
 
 ---
 
-## Mailing address: copy buttons, and a default address that drives the app
+## Mailing address: copy buttons, and a default address that drives the app  *(done)*
 
 Requested 2026-08-30.
 

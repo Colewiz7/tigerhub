@@ -110,9 +110,48 @@ class _SectionScaffoldState extends State<SectionScaffold> {
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: section.builder(context),
+            child: _SectionPaneStack(
+              sections: widget.sections,
+              selectedId: section.id,
+            ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _SectionPaneStack extends StatelessWidget {
+  const _SectionPaneStack({required this.sections, required this.selectedId});
+
+  final List<SectionSpec> sections;
+  final String selectedId;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.maybeOf(context);
+    final reduceMotion =
+        (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false);
+    final duration = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        for (final section in sections)
+          Visibility(
+            visible: section.id == selectedId,
+            maintainState: true,
+            child: AnimatedOpacity(
+              key: ValueKey(section.id),
+              opacity: section.id == selectedId ? 1 : 0,
+              duration: duration,
+              curve: Curves.easeOutCubic,
+              child: section.builder(context),
+            ),
+          ),
       ],
     );
   }
@@ -131,16 +170,16 @@ class _NavList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
-        children: [
-          for (final section in sections)
-            SectionNavRow(
-              spec: section,
-              active: section.id == selected,
-              onTap: () => onSelect(section),
-            ),
-        ],
-      );
+    padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+    children: [
+      for (final section in sections)
+        SectionNavRow(
+          spec: section,
+          active: section.id == selected,
+          onTap: () => onSelect(section),
+        ),
+    ],
+  );
 }
 
 class SectionNavRow extends StatelessWidget {
@@ -163,8 +202,9 @@ class SectionNavRow extends StatelessWidget {
     final background = active
         ? scheme.primary.withValues(alpha: 0.22)
         : scheme.surfaceContainerHigh;
-    final badge =
-        active ? scheme.primary : scheme.primary.withValues(alpha: 0.30);
+    final badge = active
+        ? scheme.primary
+        : scheme.primary.withValues(alpha: 0.30);
     final iconColor = active ? scheme.onPrimary : scheme.primary;
 
     return Padding(
@@ -183,8 +223,10 @@ class SectionNavRow extends StatelessWidget {
                 Container(
                   width: StatusRow.badgeSize,
                   height: StatusRow.badgeSize,
-                  decoration:
-                      BoxDecoration(shape: BoxShape.circle, color: badge),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: badge,
+                  ),
                   child: spec.glyph == null
                       ? Icon(spec.icon, size: 21, color: iconColor)
                       : Glyph(spec.glyph!, size: 21, color: iconColor),

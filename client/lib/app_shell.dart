@@ -44,6 +44,7 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   int _index = 0;
   bool _showSettings = false;
+  bool _animateTabChange = true;
 
   // Mirrored here so Settings and the Today grid stay in step.
   List<String> _cards = const ['dining', 'events', 'chefs', 'housing'];
@@ -141,7 +142,10 @@ class _AppShellState extends State<AppShell> {
     });
   }
 
-  void _go(int index) => setState(() => _index = index);
+  void _go(int index, {bool animate = true}) => setState(() {
+    _animateTabChange = animate;
+    _index = index;
+  });
 
   /// First run only, and only once the areas are in hand.
   ///
@@ -171,7 +175,7 @@ class _AppShellState extends State<AppShell> {
       body: CallbackShortcuts(
         bindings: {
           for (var i = 0; i < _tabs.length; i++)
-            SingleActivator(_digits[i]): () => _go(i),
+            SingleActivator(_digits[i]): () => _go(i, animate: false),
           // Conventional settings shortcut.
           const SingleActivator(LogicalKeyboardKey.comma, control: true): () =>
               setState(() => _showSettings = !_showSettings),
@@ -198,8 +202,9 @@ class _AppShellState extends State<AppShell> {
                           hiddenCards: _hiddenCards,
                           onCardsChanged: _setCards,
                         )
-                      : IndexedStack(
+                      : _TabStack(
                           index: _index,
+                          animate: _animateTabChange,
                           children: [
                             HomeScreen(
                               api: widget.api,
@@ -212,23 +217,74 @@ class _AppShellState extends State<AppShell> {
                             ),
                             DiningScreen(result: _dining, api: widget.api),
                             EventsScreen(result: _events),
-                            CampusScreen(api: widget.api, areas: _areas),
+                            CampusScreen(
+                              api: widget.api,
+                              areas: _areas,
+                              events: _events,
+                            ),
                           ],
                         ),
                 ),
                 AppTabBar(
                   tabs: _tabs,
                   index: _showSettings ? -1 : _index,
-                  onSelect: (i) => setState(() {
-                    _showSettings = false;
-                    _index = i;
-                  }),
+                  onSelect: (i) {
+                    if (_showSettings) {
+                      setState(() => _showSettings = false);
+                    }
+                    _go(i);
+                  },
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TabStack extends StatelessWidget {
+  const _TabStack({
+    required this.index,
+    required this.animate,
+    required this.children,
+  });
+
+  final int index;
+  final bool animate;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.maybeOf(context);
+    final reduceMotion =
+        (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false);
+    final duration = reduceMotion || !animate
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        for (var childIndex = 0; childIndex < children.length; childIndex++)
+          IgnorePointer(
+            ignoring: childIndex != index,
+            child: ExcludeSemantics(
+              excluding: childIndex != index,
+              child: TickerMode(
+                enabled: childIndex == index,
+                child: AnimatedOpacity(
+                  opacity: childIndex == index ? 1 : 0,
+                  duration: duration,
+                  curve: Curves.easeOutCubic,
+                  child: children[childIndex],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

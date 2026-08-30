@@ -4,6 +4,7 @@ import 'package:tigerhub/widgets/arc_progress.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
 import 'package:tigerhub/widgets/freshness.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart';
+import 'package:tigerhub/widgets/tab_bar.dart';
 
 Widget wrap(Widget child, {bool reduceMotion = false}) => MaterialApp(
   home: MediaQuery(
@@ -71,5 +72,32 @@ void main() {
     await tester.pumpWidget(wrap(const ArcProgress(value: 0.6)));
 
     expect(find.byType(TweenAnimationBuilder<double>), findsOneWidget);
+  });
+
+  testWidgets('tab indicators keep their final state with reduced motion', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      wrap(
+        AppTabBar(
+          tabs: const [
+            TabSpec(icon: Icons.home_rounded, label: 'TODAY'),
+            TabSpec(icon: Icons.map_rounded, label: 'CAMPUS'),
+          ],
+          index: 0,
+          onSelect: (_) {},
+        ),
+        reduceMotion: true,
+      ),
+    );
+
+    final indicators = tester.widgetList<TweenAnimationBuilder<double>>(
+      find.byType(TweenAnimationBuilder<double>),
+    );
+    expect(indicators, hasLength(2));
+    expect(
+      indicators.every((indicator) => indicator.duration == Duration.zero),
+      isTrue,
+    );
   });
 }

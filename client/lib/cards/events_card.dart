@@ -17,8 +17,24 @@ import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/glyph.dart';
 import '../widgets/freshness.dart';
+import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
 import 'event_row.dart';
+
+/// Count events on the viewer's current calendar day.
+///
+/// Event instants arrive with an offset, while the device may represent them
+/// in UTC internally. Converting both sides to local time keeps "today" tied
+/// to the day the student sees on their clock.
+int eventsToday(List<CampusEvent> events, {DateTime? now}) {
+  final localNow = (now ?? DateTime.now()).toLocal();
+  return events.where((event) {
+    final start = event.startsAt.toLocal();
+    return start.year == localNow.year &&
+        start.month == localNow.month &&
+        start.day == localNow.day;
+  }).length;
+}
 
 /// Organizer type drives the header icon.
 IconData iconForOrganizer(String name) {
@@ -32,17 +48,27 @@ IconData iconForOrganizer(String name) {
   if (n.contains('cross country') || n.contains('track')) {
     return Icons.directions_run_rounded;
   }
-  if (n.contains('swim') || n.contains('diving')) return Icons.pool_rounded;
+  if (n.contains('swim') || n.contains('diving')) {
+    return Icons.pool_rounded;
+  }
   if (n.contains('rowing')) return Icons.rowing_rounded;
   if (n.contains('tennis')) return Icons.sports_tennis_rounded;
-  if (n.contains('lacrosse') || n.contains('baseball') || n.contains('softball')) {
+  if (n.contains('lacrosse') ||
+      n.contains('baseball') ||
+      n.contains('softball')) {
     return Icons.sports_baseball_rounded;
   }
-  if (n.contains('food') || n.contains('dining')) return Icons.volunteer_activism_rounded;
-  if (n.contains('council') || n.contains('board') || n.contains('government')) {
+  if (n.contains('food') || n.contains('dining')) {
+    return Icons.volunteer_activism_rounded;
+  }
+  if (n.contains('council') ||
+      n.contains('board') ||
+      n.contains('government')) {
     return Icons.groups_rounded;
   }
-  if (n.contains('residence') || n.contains('housing')) return Icons.home_rounded;
+  if (n.contains('residence') || n.contains('housing')) {
+    return Icons.home_rounded;
+  }
   return Icons.celebration_rounded;
 }
 
@@ -61,6 +87,7 @@ class EventsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final events = result.value?.data ?? const <CampusEvent>[];
+    final today = eventsToday(events);
 
     return CardShell(
       glyph: GlyphKind.events,
@@ -68,6 +95,17 @@ class EventsCard extends StatelessWidget {
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
+      // "Today" is the useful card-level answer. The full feed can span
+      // weeks, so its total would look impressive without helping a student
+      // decide whether there is anything happening now.
+      hero: events.isEmpty
+          ? null
+          : ScallopedBadge(
+              value: '$today',
+              label: 'TODAY',
+              size: 88,
+              filled: today > 0,
+            ),
       child: switch ((result.isPriming, events.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading events'),
         (_, true) => const EmptyState(kind: EmptyKind.noEvents),

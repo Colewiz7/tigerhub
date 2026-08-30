@@ -13,6 +13,7 @@ import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/glyph.dart';
 import '../widgets/freshness.dart';
+import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
 
 class VisitingChefsCard extends StatelessWidget {
@@ -38,20 +39,30 @@ class VisitingChefsCard extends StatelessWidget {
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
+      // This feed is already scoped to today, so its count is honest and
+      // immediately useful. The individual chef name remains the hero of each
+      // row; this is the one card-level number.
+      hero: all.isEmpty
+          ? null
+          : ScallopedBadge(
+              value: '${all.length}',
+              label: all.length == 1 ? 'CHEF TODAY' : 'CHEFS TODAY',
+              size: 88,
+            ),
       child: switch ((result.isPriming, all.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading today'),
         (_, true) => const EmptyState(kind: EmptyKind.noVisitingChefs),
         _ => BoundedList(
-            itemCount: all.length,
-            itemHeight: StatusRow.height,
-            noun: 'chefs',
-            onShowAll: onShowAll,
-            itemBuilder: (context, index) => StatusRow(
-              icon: Icons.restaurant_menu_rounded,
-              title: all[index].name,
-              subtitle: all[index].locationName,
-            ),
+          itemCount: all.length,
+          itemHeight: StatusRow.height,
+          noun: 'chefs',
+          onShowAll: onShowAll,
+          itemBuilder: (context, index) => StatusRow(
+            icon: Icons.restaurant_menu_rounded,
+            title: all[index].name,
+            subtitle: all[index].locationName,
           ),
+        ),
       },
     );
   }

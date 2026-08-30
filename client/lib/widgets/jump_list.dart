@@ -62,8 +62,9 @@ class _JumpListState extends State<JumpList> {
 
   GlobalKey _keyFor(int index) => _keys.putIfAbsent(index, GlobalKey.new);
 
-  Iterable<int> get _builtIndices =>
-      _keys.entries.where((e) => e.value.currentContext != null).map((e) => e.key);
+  Iterable<int> get _builtIndices => _keys.entries
+      .where((e) => e.value.currentContext != null)
+      .map((e) => e.key);
 
   /// A far group has not been built yet, so its key has no context and there is
   /// nothing for ensureVisible to scroll to. Walk the viewport toward it a
@@ -191,52 +192,75 @@ class _Rail extends StatelessWidget {
       itemCount: groups.length,
       itemBuilder: (context, index) {
         final on = index == active;
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Material(
-            elevation: 0,
-            color: on
-                ? scheme.primary.withValues(alpha: 0.20)
-                : Colors.transparent,
-            borderRadius: Shapes.small,
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              onTap: () => onSelect(index),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-                child: Row(
-                  children: [
-                    Icon(
-                      groups[index].icon,
-                      size: 17,
-                      color: on ? scheme.primary : scheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        groups[index].label,
-                        style: text.bodySmall?.copyWith(
-                          color: on ? scheme.primary : scheme.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Right aligned in a fixed box so the counts line up with
-                    // each other instead of chasing the ragged label ends.
-                    SizedBox(
-                      width: 22,
-                      child: Text(
-                        '${groups[index].count}',
-                        textAlign: TextAlign.right,
-                        style: text.bodySmall?.copyWith(
-                          color: on ? scheme.primary : scheme.onSurfaceVariant,
+        final media = MediaQuery.maybeOf(context);
+        final reduceMotion =
+            (media?.disableAnimations ?? false) ||
+            (media?.accessibleNavigation ?? false);
+        return TweenAnimationBuilder<double>(
+          tween: Tween(end: on ? 1 : 0),
+          duration: reduceMotion
+              ? Duration.zero
+              : const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, _) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Material(
+              elevation: 0,
+              color: scheme.primary.withValues(alpha: 0.20 * value),
+              borderRadius: Shapes.small,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => onSelect(index),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 11,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        groups[index].icon,
+                        size: 17,
+                        color: Color.lerp(
+                          scheme.onSurfaceVariant,
+                          scheme.primary,
+                          value,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          groups[index].label,
+                          style: text.bodySmall?.copyWith(
+                            color: Color.lerp(
+                              scheme.onSurface,
+                              scheme.primary,
+                              value,
+                            ),
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Right aligned in a fixed box so the counts line up with
+                      // each other instead of chasing the ragged label ends.
+                      SizedBox(
+                        width: 22,
+                        child: Text(
+                          '${groups[index].count}',
+                          textAlign: TextAlign.right,
+                          style: text.bodySmall?.copyWith(
+                            color: Color.lerp(
+                              scheme.onSurfaceVariant,
+                              scheme.primary,
+                              value,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

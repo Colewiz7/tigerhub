@@ -62,6 +62,10 @@ class _Tab extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final color = active ? scheme.primary : scheme.onSurfaceVariant;
+    final media = MediaQuery.maybeOf(context);
+    final reduceMotion =
+        (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false);
 
     return InkWell(
       onTap: onTap,
@@ -74,20 +78,29 @@ class _Tab extends StatelessWidget {
           Text(
             spec.label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: color,
-                  fontVariations: active ? Weights.semibold : Weights.regular,
-                ),
+              color: color,
+              fontVariations: active ? Weights.semibold : Weights.regular,
+            ),
           ),
           const SizedBox(height: 8),
           // The underline is the whole indicator.
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            curve: Curves.easeOut,
-            height: 3,
-            width: active ? 34 : 0,
-            decoration: BoxDecoration(
-              color: scheme.primary,
-              borderRadius: BorderRadius.circular(2),
+          TweenAnimationBuilder<double>(
+            tween: Tween(end: active ? 1 : 0),
+            duration: reduceMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 160),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) => Opacity(
+              opacity: value,
+              child: Transform.scale(scaleX: value, child: child),
+            ),
+            child: Container(
+              height: 3,
+              width: 34,
+              decoration: BoxDecoration(
+                color: scheme.primary,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
           ),
           const SizedBox(height: 6),
