@@ -10,7 +10,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'config.dart';
 import 'home_screen.dart';
 import 'screens/setup_screen.dart';
 import 'models/api_models.dart';
@@ -21,6 +20,7 @@ import 'screens/settings/settings_screen.dart';
 import 'services/cache.dart';
 import 'services/preferences.dart';
 import 'services/api.dart';
+import 'widgets/wordmark.dart';
 import 'theme/dynamic_theme.dart';
 import 'widgets/tab_bar.dart';
 
@@ -233,49 +233,6 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-/// The masthead wordmark.
-///
-/// Set in the display face rather than the UI face, and split so the second
-/// half carries the accent. That accent comes from the live scheme, so the
-/// wordmark tracks the wallpaper like everything else.
-class _Wordmark extends StatelessWidget {
-  const _Wordmark();
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    const style = TextStyle(
-      fontFamily: 'SpaceGrotesk',
-      fontSize: 31,
-      fontWeight: FontWeight.w700,
-      letterSpacing: -0.6,
-      height: 1.0,
-    );
-
-    // Split at the internal capital, so the name stays defined in one place.
-    final name = AppConfig.appName;
-    final split = name.indexOf(RegExp(r'(?<=.)[A-Z]'));
-    final head = split > 0 ? name.substring(0, split) : name;
-    final tail = split > 0 ? name.substring(split) : '';
-
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(
-            text: head,
-            style: style.copyWith(color: scheme.onSurface),
-          ),
-          if (tail.isNotEmpty)
-            TextSpan(
-              text: tail,
-              style: style.copyWith(color: scheme.primary),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 const List<LogicalKeyboardKey> _digits = [
   LogicalKeyboardKey.digit1,
   LogicalKeyboardKey.digit2,
@@ -310,7 +267,7 @@ class _Masthead extends StatelessWidget {
             excludeFromSemantics: true,
           ),
           const SizedBox(width: 8),
-          const _Wordmark(),
+          const Wordmark(),
           const Spacer(),
           Tooltip(
             message: settingsOpen ? 'Close settings' : 'Settings',

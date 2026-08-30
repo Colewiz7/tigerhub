@@ -89,6 +89,17 @@ flutter:
           weight: 500
         - asset: assets/fonts/SpaceGrotesk-Bold.otf
           weight: 700
+    # The same face under its real name, so SVG art can ask for it the way SVG
+    # does. Codex's wordmark carries font-family="Space Grotesk", which does
+    # not match "SpaceGrotesk" and would silently fall back to the default
+    # sans: the wordmark would still render, just in the wrong typeface, which
+    # is the kind of thing nobody notices until it ships.
+    - family: Space Grotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-Medium.otf
+          weight: 500
+        - asset: assets/fonts/SpaceGrotesk-Bold.otf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:
