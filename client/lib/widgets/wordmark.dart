@@ -34,6 +34,10 @@ class Wordmark extends StatelessWidget {
               // through them. See scripts/flatten-wordmark.py.
               ? 'assets/generated/wordmark/tigerhub-wide-flat.svg'
               : 'assets/generated/wordmark/tigerhub-compact-flat.svg',
+          // flutter_svg caches parsed pictures. A stable widget key kept the
+          // dark currentColor picture alive when the OS switched to light
+          // mode, leaving "Hub" almost white on white until restart.
+          key: ValueKey(scheme.onSurface),
           height: wide ? 40 : 34,
           // "Hub" is painted with fill="currentColor" so it can follow the
           // theme. flutter_svg defaults currentColor to black, and the
@@ -48,4 +52,3 @@ class Wordmark extends StatelessWidget {
     );
   }
 }
-
