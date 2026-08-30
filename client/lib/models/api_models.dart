@@ -308,6 +308,66 @@ class PostOffice {
       );
 }
 
+class Dish {
+  const Dish({
+    required this.name,
+    this.category,
+    this.allergens = const [],
+    this.dietary = const [],
+    this.calories,
+  });
+
+  final String name;
+  final String? category;
+
+  /// Exactly as RIT publishes them. Never interpreted or extended.
+  final List<String> allergens;
+  final List<String> dietary;
+  final double? calories;
+
+  factory Dish.fromJson(Map<String, dynamic> json) => Dish(
+        name: json['name'] as String? ?? '',
+        category: json['category'] as String?,
+        allergens: (json['allergens'] as List<dynamic>? ?? const [])
+            .map((e) => e as String)
+            .toList(),
+        dietary: (json['dietary'] as List<dynamic>? ?? const [])
+            .map((e) => e as String)
+            .toList(),
+        calories: (json['calories'] as num?)?.toDouble(),
+      );
+
+  bool get isVegan => dietary.any((d) => d.toLowerCase() == 'vegan');
+  bool get isVegetarian =>
+      dietary.any((d) => d.toLowerCase().contains('vegetarian')) || isVegan;
+
+  /// A "may contain traces" note is a weaker claim than a listed allergen, so
+  /// the two are separated rather than merged.
+  bool mentions(String allergen) =>
+      allergens.any((a) => a.toLowerCase().contains(allergen.toLowerCase()));
+}
+
+class MenuDay {
+  const MenuDay({
+    required this.locationId,
+    required this.serviceDate,
+    required this.dishes,
+  });
+
+  final int locationId;
+  final DateTime serviceDate;
+  final List<Dish> dishes;
+
+  factory MenuDay.fromJson(Map<String, dynamic> json) => MenuDay(
+        locationId: json['location_id'] as int? ?? 0,
+        serviceDate:
+            DateTime.tryParse(json['service_date'] as String? ?? '') ?? DateTime.now(),
+        dishes: (json['dishes'] as List<dynamic>? ?? const [])
+            .map((e) => Dish.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
 class OccupancyHour {
   const OccupancyHour({
     required this.hour,

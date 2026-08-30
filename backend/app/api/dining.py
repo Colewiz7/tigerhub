@@ -6,10 +6,10 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app import hours as hours_lib
 from app import settings
-from app.api.schemas import Collection, DiningLocation, MenuItem, Occupancy, OpenSpan
+from app.api.schemas import Collection, DiningLocation, Dish, MenuDay, MenuItem, Occupancy, OpenSpan
 from app.config import get_config
 from app import freshness
-from app.models import dining, occupancy as occupancy_model
+from app.models import dining, menus as menus_model, occupancy as occupancy_model
 
 router = APIRouter(prefix="/dining", tags=["dining"])
 
@@ -132,6 +132,32 @@ def get_dining(location_id: int):
         "occupancy_status": (reading or {}).get("open_status"),
     }
     return _build(enriched, hours_lib.group_by_date(rows), now)
+
+
+@router.get("/{location_id}/menu", response_model=MenuDay)
+def menu(location_id: int, on: date | None = Query(None, description="Defaults to today")):
+    """The published menu for one location on one date.
+
+    Allergen and dietary tags come straight from FD MealPlanner and are passed
+    through unchanged. Only 12 of the 24 dining locations publish a menu at all,
+    so an empty dish list is a normal answer, not an error.
+    """
+    service_date = on or datetime.now(settings.CAMPUS_TZ).date()
+    rows = menus_model.on_date(location_id, service_date)
+    return MenuDay(
+        location_id=location_id,
+        service_date=service_date,
+        dishes=[
+            Dish(
+                name=row["name"],
+                category=row["category"],
+                allergens=[a for a in (row["allergens"] or "").split(",") if a],
+                dietary=[d for d in (row["dietary"] or "").split(",") if d],
+                calories=row["calories"],
+            )
+            for row in rows
+        ],
+    )
 
 
 @router.get("/{location_id}/occupancy")

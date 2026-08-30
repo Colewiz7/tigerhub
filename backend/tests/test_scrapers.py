@@ -242,3 +242,88 @@ def test_recreation_hours_cell_parsing():
         {"opens_at": "10:00", "closes_at": "23:00"}
     ]
     assert len(parse_hours_cell("6:45am - 8:45am, 12pm - 1:45pm, 7pm - 10pm")) == 3
+
+
+def test_fd_menus_parses_allergens_and_dietary_verbatim():
+    """These tags are passed through unchanged. Getting an allergen wrong is
+    not a cosmetic bug."""
+    from app.scrapers import fd_menus
+
+    dishes = fd_menus.parse(fixture_json("fd_meals.json"))
+    assert dishes
+
+    tagged = [d for d in dishes if d["allergens"]]
+    assert tagged, "the whole point of this source is the allergen data"
+
+    allergens = {a for d in tagged for a in d["allergens"].split(",")}
+    # Verbatim from RIT, including their exact spelling.
+    assert "Gluten" in allergens
+    assert "Milk" in allergens
+
+    dietary = {
+        v for d in dishes if d["dietary"] for v in d["dietary"].split(",")
+    }
+    assert "Vegan" in dietary
+    assert "Vegetarian" in dietary
+
+
+def test_fd_menus_never_invents_halal_or_kosher():
+    """RIT does not tag either, so neither may ever appear."""
+    from app.scrapers import fd_menus
+
+    dishes = fd_menus.parse(fixture_json("fd_meals.json"))
+    values = {
+        v.lower()
+        for d in dishes
+        if d["dietary"]
+        for v in d["dietary"].split(",")
+    }
+    assert "halal" not in values
+    assert "kosher" not in values
+
+
+def test_fd_menus_flattens_a_day_at_a_time():
+    """One row per dish per date. The live response carries a whole month,
+    which is why it is several megabytes and why the scraper rotates one
+    location per run. The fixture is trimmed to four days to keep the repo
+    small."""
+    from app.scrapers import fd_menus
+
+    payload = fixture_json("fd_meals.json")
+    dishes = fd_menus.parse(payload)
+
+    published = {day["strMenuForDate"] for day in payload["result"]}
+    dates = {d["service_date"] for d in dishes}
+
+    assert dates <= published, "no dish may appear on a date FD did not publish"
+    assert dishes, "the fixture has menus in it"
+    # A published day with nothing on it is normal, not a parse failure, so
+    # this deliberately does not require every date to survive.
+    assert len(dates) >= 2
+
+
+def test_fd_menus_skips_hidden_entries_and_deduplicates():
+    from app.scrapers import fd_menus
+
+    payload = {
+        "result": [
+            {
+                "strMenuForDate": "2026-09-01",
+                "allMenuRecipes": [
+                    {"componentName": "Soup", "isShowOnMenu": 1},
+                    {"componentName": "Soup", "isShowOnMenu": 1},
+                    {"componentName": "Hidden thing", "isShowOnMenu": 0},
+                    {"componentName": "", "isShowOnMenu": 1},
+                ],
+            }
+        ]
+    }
+    dishes = fd_menus.parse(payload)
+    assert [d["name"] for d in dishes] == ["Soup"]
+
+
+def test_fd_menus_tolerates_a_broken_payload():
+    from app.scrapers import fd_menus
+
+    assert fd_menus.parse({}) == []
+    assert fd_menus.parse({"result": None}) == []

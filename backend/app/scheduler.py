@@ -13,6 +13,7 @@ from app import settings
 from app.scrapers import (
     campusgroups,
     drupal_events,
+    fd_menus,
     makerspace,
     maps_occupancy,
     recreation,
@@ -30,6 +31,7 @@ JOBS = [
     ("makerspace", makerspace.run, settings.INTERVAL_MAKERSPACE_MINUTES, 60),
     ("occupancy", maps_occupancy.run, settings.INTERVAL_OCCUPANCY_MINUTES, 80),
     ("recreation", recreation.run, settings.INTERVAL_RECREATION_MINUTES, 100),
+    ("menus", fd_menus.run, settings.INTERVAL_MENUS_MINUTES, 120),
 ]
 
 

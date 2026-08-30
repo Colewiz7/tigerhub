@@ -92,6 +92,9 @@ def _write(tmp_path, housing=None, offices=None, shed=None):
     (tmp_path / "housing_areas.json").write_text(json.dumps(housing or {
         "last_verified": "2026-08-28", "areas": [],
     }))
+    (tmp_path / "fd_locations.json").write_text(json.dumps({
+        "last_verified": "2026-08-30", "tenant_id": 20, "locations": [],
+    }))
     (tmp_path / "dining_categories.json").write_text(json.dumps({
         "last_verified": "2026-08-28",
         "categories": [{"id": "other", "name": "Everything else", "order": 1}],
@@ -193,6 +196,9 @@ def test_dining_category_lookup_falls_back_for_an_unknown_location():
 
 def test_unknown_dining_category_is_fatal(tmp_path):
     _write(tmp_path)
+    (tmp_path / "fd_locations.json").write_text(json.dumps({
+        "last_verified": "2026-08-30", "tenant_id": 20, "locations": [],
+    }))
     (tmp_path / "dining_categories.json").write_text(json.dumps({
         "last_verified": "2026-08-28",
         "categories": [{"id": "market", "name": "Markets", "order": 1}],

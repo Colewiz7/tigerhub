@@ -46,9 +46,13 @@ class Preferences extends ChangeNotifier {
   static const _boostKey = 'boost_keywords';
   static const _keywordsEnabledKey = 'keyword_rules_enabled';
   static const _pinnedKey = 'pinned_dining';
+  static const _dietKey = 'diet_filters';
+  static const _avoidKey = 'avoid_allergens';
 
   Set<String> _muted = {};
   Set<String> _pinned = {};
+  Set<String> _diet = {};
+  Set<String> _avoid = {};
   List<String> _hide = defaultHideKeywords;
   List<String> _boost = defaultBoostKeywords;
   bool _keywordRulesEnabled = true;
@@ -59,6 +63,13 @@ class Preferences extends ChangeNotifier {
 
   /// Dining location ids, as strings. Pinned locations sort to the top.
   Set<String> get pinnedDining => _pinned;
+
+  /// Dietary tags to keep, for example Vegan. Empty means no filter.
+  Set<String> get dietFilters => _diet;
+
+  /// Allergens to flag. Dishes are marked, never silently removed, because a
+  /// missing dish is indistinguishable from a dish that was never published.
+  Set<String> get avoidAllergens => _avoid;
   List<String> get hideKeywords => _hide;
   List<String> get boostKeywords => _boost;
   bool get keywordRulesEnabled => _keywordRulesEnabled;
@@ -67,6 +78,8 @@ class Preferences extends ChangeNotifier {
     final cache = ResponseCache.instance;
     _muted = (await cache.readOrder(_mutedKey)).toSet();
     _pinned = (await cache.readOrder(_pinnedKey)).toSet();
+    _diet = (await cache.readOrder(_dietKey)).toSet();
+    _avoid = (await cache.readOrder(_avoidKey)).toSet();
 
     // An empty stored list is meaningful (the user cleared it), so absence has
     // to be distinguishable from emptiness. A stored marker entry does that.
@@ -101,6 +114,20 @@ class Preferences extends ChangeNotifier {
   }
 
   bool isPinned(int locationId) => _pinned.contains('$locationId');
+
+  Future<void> toggleDiet(String tag) async {
+    _diet = _diet.contains(tag) ? ({..._diet}..remove(tag)) : {..._diet, tag};
+    notifyListeners();
+    await ResponseCache.instance.writeOrder(_dietKey, _diet.toList());
+  }
+
+  Future<void> toggleAvoid(String allergen) async {
+    _avoid = _avoid.contains(allergen)
+        ? ({..._avoid}..remove(allergen))
+        : {..._avoid, allergen};
+    notifyListeners();
+    await ResponseCache.instance.writeOrder(_avoidKey, _avoid.toList());
+  }
 
   Future<void> togglePinned(int locationId) async {
     final key = '$locationId';
@@ -164,6 +191,8 @@ class Preferences extends ChangeNotifier {
   void resetForTests() {
     _muted = {};
     _pinned = {};
+    _diet = {};
+    _avoid = {};
     _hide = defaultHideKeywords;
     _boost = defaultBoostKeywords;
     _keywordRulesEnabled = true;

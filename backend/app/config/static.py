@@ -154,6 +154,23 @@ class DiningCategoryFile(_Strict):
         return category_id
 
 
+class FdLocation(_Strict):
+    fd_location_id: int
+    fd_account_id: int
+    fd_name: str
+    dining_id: int
+
+
+class FdLocationFile(_Strict):
+    last_verified: date | None = None
+    source_url: str | None = None
+    source_note: str | None = None
+    tenant_id: int
+    locations: list[FdLocation]
+    # Named so a future reader knows they were considered, not forgotten.
+    unmapped: list[str] = []
+
+
 class PostOfficeFile(_Strict):
     last_verified: date | None = None
     source_url: str | None = None
@@ -181,6 +198,7 @@ class StaticConfig(BaseModel):
     shed: ShedFile
     housing: HousingFile
     dining_categories: DiningCategoryFile
+    fd_locations: FdLocationFile
 
     def area(self, area_id: str) -> HousingArea | None:
         return next((a for a in self.housing.areas if a.id == area_id), None)
@@ -221,6 +239,7 @@ _FILES = {
     "shed": ("shed_hours.json", ShedFile),
     "housing": ("housing_areas.json", HousingFile),
     "dining_categories": ("dining_categories.json", DiningCategoryFile),
+    "fd_locations": ("fd_locations.json", FdLocationFile),
 }
 
 _cache: StaticConfig | None = None
@@ -289,6 +308,14 @@ def _check_referential_integrity(config: StaticConfig) -> None:
     duplicates = _duplicates([c.id for c in config.dining_categories.categories])
     if duplicates:
         raise ConfigError(f"duplicate dining category id(s): {duplicates}")
+
+    # Two FD locations pointing at one dining location would silently overwrite
+    # each other's menu.
+    duplicates = _duplicates(
+        [str(loc.dining_id) for loc in config.fd_locations.locations]
+    )
+    if duplicates:
+        raise ConfigError(f"two FD locations map to dining id(s): {duplicates}")
 
 
 def _duplicates(values: list[str]) -> list[str]:

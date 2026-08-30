@@ -147,6 +147,11 @@ class ApiClient {
         (j) => Collection.fromJson(j, PostOffice.fromJson),
       );
 
+  /// Today's menu for one location. Only 12 of 24 publish one, so an empty
+  /// dish list is a normal answer.
+  Stream<Result<MenuDay>> menu(int locationId) =>
+      watch('/dining/$locationId/menu', MenuDay.fromJson);
+
   /// The 24 hour occupancy series for one location. Only the five locations
   /// with a sensor return anything.
   Stream<Result<OccupancyHistory>> occupancyHistory(int locationId) =>

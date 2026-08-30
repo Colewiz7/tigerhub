@@ -58,6 +58,20 @@ class DiningLocation(BaseModel):
     occupancy: Occupancy | None = None
 
 
+class Dish(BaseModel):
+    name: str
+    category: str | None = None
+    # Verbatim as RIT publishes them. Never interpreted or extended.
+    allergens: list[str] = []
+    dietary: list[str] = []
+    calories: float | None = None
+
+
+class MenuDay(BaseModel):
+    location_id: int
+    service_date: date
+    dishes: list[Dish] = []
+
 class MenuItem(BaseModel):
     id: int
     location_id: int

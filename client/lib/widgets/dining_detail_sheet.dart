@@ -14,6 +14,7 @@ import '../services/preferences.dart';
 import '../theme/semantic.dart';
 import '../theme/tokens.dart';
 import '../widgets/freshness.dart';
+import '../widgets/menu_section.dart';
 import '../widgets/occupancy_chart.dart';
 
 class DiningDetailSheet extends StatefulWidget {
@@ -33,6 +34,7 @@ class DiningDetailSheet extends StatefulWidget {
 class _DiningDetailSheetState extends State<DiningDetailSheet> {
   final _prefs = Preferences.instance;
   Result<OccupancyHistory>? _history;
+  Result<MenuDay>? _menu;
 
   @override
   void initState() {
@@ -43,6 +45,9 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
         if (mounted) setState(() => _history = r);
       });
     }
+    widget.api.menu(widget.location.id).listen((r) {
+      if (mounted) setState(() => _menu = r);
+    });
   }
 
   @override
@@ -159,6 +164,19 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                   style: text.bodySmall,
                 ),
               ],
+            ],
+
+            if (_menu?.value != null && _menu!.value!.dishes.isNotEmpty) ...[
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Text('ON THE MENU TODAY', style: text.labelSmall),
+                  const Spacer(),
+                  Text('${_menu!.value!.dishes.length}', style: text.labelSmall),
+                ],
+              ),
+              const SizedBox(height: 10),
+              MenuSection(menu: _menu!.value!, prefs: _prefs),
             ],
 
             if (location.description != null &&

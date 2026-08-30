@@ -19,6 +19,8 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/theme/semantic.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/tokens.dart';
+import 'package:tigerhub/widgets/menu_section.dart';
+import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/widgets/week_grid.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
 import 'package:tigerhub/widgets/content_column.dart';
@@ -393,6 +395,7 @@ void main() {
   _shippedPalette();
   _responsiveLayout();
   _weekGridAndClosed();
+  _menus();
 
   test('age formatting', () {
     final now = DateTime.now();
@@ -1313,6 +1316,115 @@ void _weekGridAndClosed() {
         expect((lum(sem.closed) - lum(sem.open)).abs(), greaterThan(20));
         expect((lum(sem.closed) - lum(sem.busy)).abs(), greaterThan(20));
       }
+    });
+  });
+}
+
+/// Menus, allergens and the rules around them.
+void _menus() {
+  Dish dish(String name, {List<String> allergens = const [], List<String> diet = const []}) =>
+      Dish(name: name, allergens: allergens, dietary: diet);
+
+  group('dish tags', () {
+    test('vegan implies vegetarian, but not the other way round', () {
+      expect(dish('a', diet: ['Vegan']).isVegetarian, isTrue);
+      expect(dish('a', diet: ['Vegan']).isVegan, isTrue);
+      expect(dish('b', diet: ['Vegetarian']).isVegan, isFalse);
+      expect(dish('c').isVegetarian, isFalse);
+    });
+
+    test('a traces note still counts as a mention, since it is a warning', () {
+      final d = dish('x', allergens: ['May Contain Traces of Milk']);
+      expect(d.mentions('Milk'), isTrue);
+    });
+
+    test('matching is not case sensitive', () {
+      expect(dish('x', allergens: ['Treenut']).mentions('treenut'), isTrue);
+    });
+  });
+
+  group('menu rendering', () {
+    Widget wrap(MenuDay menu) => MaterialApp(
+          theme: AppTheme.from(_fallbackScheme()),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: MenuSection(menu: menu, prefs: Preferences.instance),
+            ),
+          ),
+        );
+
+    MenuDay menu(List<Dish> dishes) =>
+        MenuDay(locationId: 1, serviceDate: DateTime(2026, 8, 31), dishes: dishes);
+
+    setUp(() => Preferences.instance.resetForTests());
+
+    testWidgets('an empty menu explains itself rather than showing nothing',
+        (tester) async {
+      await tester.pumpWidget(wrap(menu([])));
+      expect(find.textContaining('No menu published'), findsOneWidget);
+    });
+
+    testWidgets('tags render exactly as published, not tidied', (tester) async {
+      await tester.pumpWidget(wrap(menu([
+        dish('Bagel',
+            allergens: ['Wheat', 'May Contain Traces of Milk'],
+            diet: ['Vegan', 'Vegetarian']),
+      ])));
+      // The weaker claim stays a weaker claim.
+      expect(find.text('May Contain Traces of Milk'), findsOneWidget);
+      expect(find.text('Wheat'), findsOneWidget);
+      expect(find.text('Vegan'), findsOneWidget);
+    });
+
+    testWidgets('the safety caveat is always present', (tester) async {
+      await tester.pumpWidget(wrap(menu([dish('Soup')])));
+      expect(find.textContaining('cross'), findsOneWidget);
+      expect(find.textContaining('ask the staff'), findsOneWidget);
+    });
+
+    testWidgets('a flagged allergen marks the dish, it does not remove it',
+        (tester) async {
+      await Preferences.instance.load();
+      await Preferences.instance.toggleAvoid('Milk');
+      await tester.pumpWidget(wrap(menu([
+        dish('Cheese Danish', allergens: ['Milk']),
+        dish('Plain Bagel', allergens: ['Wheat']),
+      ])));
+      // Both still on screen. Hiding food from someone looking for food is the
+      // wrong failure.
+      expect(find.text('Cheese Danish'), findsOneWidget);
+      expect(find.text('Plain Bagel'), findsOneWidget);
+      expect(find.text('CONTAINS MILK'), findsOneWidget);
+    });
+
+    testWidgets('a dietary filter demotes rather than deletes', (tester) async {
+      await Preferences.instance.load();
+      await Preferences.instance.toggleDiet('Vegan');
+      await tester.pumpWidget(wrap(menu([
+        dish('Bagel', diet: ['Vegan']),
+        dish('Danish', diet: ['Vegetarian']),
+      ])));
+      expect(find.text('Bagel'), findsOneWidget);
+      expect(find.text('Danish'), findsOneWidget,
+          reason: 'a hidden dish looks the same as one never published');
+      expect(find.textContaining('do not match your filters'), findsOneWidget);
+    });
+  });
+
+  group('halal and kosher are never claimed', () {
+    test('the offered tags are only what RIT actually publishes', () {
+      expect(knownDietaryTags, ['Vegan', 'Vegetarian']);
+      final lowered = knownDietaryTags.map((t) => t.toLowerCase());
+      expect(lowered, isNot(contains('halal')));
+      expect(lowered, isNot(contains('kosher')));
+    });
+
+    test('the allergen list matches what RIT tags, with no invented entries', () {
+      // Peanut is deliberately absent as a standalone tag: RIT only ever
+      // mentions peanuts inside a "may contain traces" string.
+      expect(knownAllergens, contains('Gluten'));
+      expect(knownAllergens, contains('Treenut'));
+      expect(knownAllergens, isNot(contains('Peanut')));
     });
   });
 }
