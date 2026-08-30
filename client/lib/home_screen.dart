@@ -10,6 +10,7 @@ import 'package:flutter_reorderable_grid_view/widgets/widgets.dart';
 
 import 'cards/dining_card.dart';
 import 'cards/dashboard_event_cards.dart';
+import 'cards/dashboard_campus_cards.dart';
 import 'cards/calendar_card.dart';
 import 'cards/events_card.dart';
 import 'cards/housing_card.dart';
@@ -266,6 +267,19 @@ class _HomeScreenState extends State<HomeScreen> {
     return values;
   }
 
+  List<({String key, String name})> get _diningCategories {
+    final found = <String, String>{};
+    for (final location
+        in widget.dining.value?.data ?? const <DiningLocation>[]) {
+      found[location.category] = location.categoryName;
+    }
+    final values = [
+      for (final entry in found.entries) (key: entry.key, name: entry.value),
+    ];
+    values.sort((a, b) => a.name.compareTo(b.name));
+    return values;
+  }
+
   Widget _cardFor(String id, bool showDragHandle) {
     final card = _instance(id);
     if (card == null) return const SizedBox.shrink();
@@ -279,11 +293,15 @@ class _HomeScreenState extends State<HomeScreen> {
       switch (card.type) {
         ModuleType.diningStatus => DiningCard(
           result: widget.dining,
+          category: card.scope,
+          compact: card.size == CardSize.compact,
           dragHandle: _DragHandle(visible: showDragHandle),
           onShowAll: () => widget.onGoToTab(1),
         ),
         ModuleType.generalEvents => EventsCard(
           result: widget.events,
+          organizerKey: card.scope,
+          compact: card.size == CardSize.compact,
           dragHandle: _DragHandle(visible: showDragHandle),
           onShowAll: () => widget.onGoToTab(2),
         ),
@@ -303,6 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         ModuleType.visitingChefs => VisitingChefsCard(
           result: widget.chefs,
+          compact: card.size == CardSize.compact,
           dragHandle: _DragHandle(visible: showDragHandle),
           onShowAll: () => widget.onGoToTab(1),
         ),
@@ -311,7 +330,17 @@ class _HomeScreenState extends State<HomeScreen> {
           api: widget.api,
           dragHandle: _DragHandle(visible: showDragHandle),
         ),
-        _ => const SizedBox.shrink(),
+        ModuleType.facilityHours => FacilityHoursCard(
+          api: widget.api,
+          facilityName: card.scope,
+          compact: card.size == CardSize.compact,
+          dragHandle: _DragHandle(visible: showDragHandle),
+        ),
+        ModuleType.campusMap => DashboardMapCard(
+          api: widget.api,
+          events: widget.events,
+          dragHandle: _DragHandle(visible: showDragHandle),
+        ),
       };
 
   /// Columns grow with width, so a wide window is not four cards huddled in
@@ -425,6 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ? null
                       : _instance(_selectedId!),
                   organizers: _organizers,
+                  diningCategories: _diningCategories,
                   onUpdate: _updateCard,
                   onMove: (delta) => _moveCard(_selectedId!, delta),
                 ),
@@ -449,6 +479,7 @@ class _EditBar extends StatelessWidget {
     required this.onAddModule,
     required this.selected,
     required this.organizers,
+    required this.diningCategories,
     required this.onUpdate,
     required this.onMove,
   });
@@ -465,6 +496,7 @@ class _EditBar extends StatelessWidget {
   final ValueChanged<ModuleType> onAddModule;
   final CardInstance? selected;
   final List<({String key, String name})> organizers;
+  final List<({String key, String name})> diningCategories;
   final ValueChanged<CardInstance> onUpdate;
   final ValueChanged<int> onMove;
 
@@ -475,6 +507,8 @@ class _EditBar extends StatelessWidget {
     ModuleType.calendar,
     ModuleType.visitingChefs,
     ModuleType.mailingAddress,
+    ModuleType.facilityHours,
+    ModuleType.campusMap,
   ];
 
   Future<void> _showLibrary(BuildContext context) async {
@@ -503,6 +537,8 @@ class _EditBar extends StatelessWidget {
                 subtitle: Text(switch (type) {
                   ModuleType.clubEvents => 'Follow one organization',
                   ModuleType.calendar => 'Browse the next seven days',
+                  ModuleType.facilityHours => 'See today’s recreation hours',
+                  ModuleType.campusMap => 'Keep campus wayfinding on Today',
                   _ => 'Add another ${moduleLabels[type]!.toLowerCase()} card',
                 }),
                 trailing: const Icon(Icons.add_rounded),
@@ -633,7 +669,42 @@ class _EditBar extends StatelessWidget {
                           ),
                       ],
                     ),
-                    if (selected!.type == ModuleType.clubEvents ||
+                    if (selected!.type == ModuleType.diningStatus) ...[
+                      const SizedBox(height: 12),
+                      Text('DINING CATEGORY', style: text.labelSmall),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<String>(
+                        initialValue:
+                            diningCategories.any(
+                              (item) => item.key == selected!.scope,
+                            )
+                            ? selected!.scope
+                            : '',
+                        decoration: const InputDecoration(
+                          hintText: 'All dining',
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                        ),
+                        items: [
+                          const DropdownMenuItem(
+                            value: '',
+                            child: Text('All dining'),
+                          ),
+                          for (final category in diningCategories)
+                            DropdownMenuItem(
+                              value: category.key,
+                              child: Text(category.name),
+                            ),
+                        ],
+                        onChanged: (value) => onUpdate(
+                          value == null || value.isEmpty
+                              ? selected!.copyWith(clearScope: true)
+                              : selected!.copyWith(scope: value),
+                        ),
+                      ),
+                    ],
+                    if (selected!.type == ModuleType.generalEvents ||
+                        selected!.type == ModuleType.clubEvents ||
                         selected!.type == ModuleType.calendar) ...[
                       const SizedBox(height: 12),
                       Text('ORGANIZATION', style: text.labelSmall),
@@ -642,13 +713,17 @@ class _EditBar extends StatelessWidget {
                         initialValue:
                             organizers.any((o) => o.key == selected!.scope)
                             ? selected!.scope
-                            : null,
+                            : '',
                         decoration: const InputDecoration(
                           hintText: 'All organizations',
                           border: OutlineInputBorder(),
                           isDense: true,
                         ),
                         items: [
+                          const DropdownMenuItem(
+                            value: '',
+                            child: Text('All organizations'),
+                          ),
                           for (final organizer in organizers)
                             DropdownMenuItem(
                               value: organizer.key,
@@ -656,7 +731,7 @@ class _EditBar extends StatelessWidget {
                             ),
                         ],
                         onChanged: (value) => onUpdate(
-                          value == null
+                          value == null || value.isEmpty
                               ? selected!.copyWith(clearScope: true)
                               : selected!.copyWith(scope: value),
                         ),

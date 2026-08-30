@@ -104,8 +104,13 @@ void main() {
       final source = file.readAsStringSync();
       if (!source.contains('.listen(')) continue;
 
+      // The property is that the subscription is kept and cancelled, not that
+      // it is kept in any particular way. A field plus `_subscription?.cancel()`
+      // in dispose is just as correct as the bag, and an earlier version of
+      // this test failed such a file for using the wrong idiom.
       final held = source.contains('_subscriptions.add(') ||
-          source.contains('..add(');
+          source.contains('..add(') ||
+          source.contains('.cancel()');
       if (!held) offenders.add(file.path);
     }
 
