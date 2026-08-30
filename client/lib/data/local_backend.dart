@@ -24,6 +24,7 @@ import 'dart:async';
 
 import 'backend.dart';
 import 'campus_time.dart';
+import 'merge_events.dart';
 import 'sources/athletics.dart';
 import 'sources/campus_places.dart';
 import 'sources/campusgroups.dart';
@@ -382,7 +383,13 @@ class LocalBackend implements Backend {
     final organizers = _list(query?['organizer']);
     final muted = _list(query?['mute']);
 
-    final matched = <Map<String, dynamic>>[];
+    // Window first, then merge, then the user's filters.
+    //
+    // The order matters. Merging after an organizer filter would be useless,
+    // because the filter would already have kept one copy and dropped the
+    // other, leaving nothing to merge. And filtering before merging would test
+    // the Drupal copy's "RIT" organizer rather than the club's.
+    final inWindow = <Map<String, dynamic>>[];
     for (final event in all) {
       // Compared as instants, not as text. The three feeds store different
       // UTC offsets, so the backend's string comparison put an event with a
@@ -391,7 +398,11 @@ class LocalBackend implements Backend {
       if (startsAt == null) continue;
       final at = startsAt.toUtc();
       if (at.isBefore(begins) || !at.isBefore(ends)) continue;
+      inWindow.add(event);
+    }
 
+    final matched = <Map<String, dynamic>>[];
+    for (final event in mergeDuplicateEvents(inWindow)) {
       final source = event['source'] as String?;
       if (sources != null && !sources.contains(source)) continue;
 
@@ -420,8 +431,9 @@ class LocalBackend implements Backend {
   Future<Map<String, dynamic>> _organizers() async {
     final (all, stale, _) = await _allEvents();
 
+    // Merged, so the rail's counts match the list it jumps to.
     final counts = <String, Map<String, dynamic>>{};
-    for (final event in all) {
+    for (final event in mergeDuplicateEvents(all)) {
       if (event['organizer'] == null) continue;
       final key = '${event['organizer_key']}\u0000${event['organizer']}'
           '\u0000${event['source']}';
