@@ -1,1 +1,0 @@
-"""RIT Times backend."""
