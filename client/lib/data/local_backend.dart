@@ -270,7 +270,8 @@ class LocalBackend implements Backend {
       case '/dining/visiting-chefs':
         return _menuCategory(visitingChef);
       case '/dining/specials':
-        return _menuCategory('Special');
+        // Everything on today's menu, not a category called "Special".
+        return _menuCategory(null);
       case '/events':
         return _events(query);
       case '/events/organizers':
@@ -336,7 +337,7 @@ class LocalBackend implements Backend {
     return _envelope('tigercenter_dining', data, fetchedAt);
   }
 
-  Future<Map<String, dynamic>> _menuCategory(String category) async {
+  Future<Map<String, dynamic>> _menuCategory(String? category) async {
     final (snapshot, fetchedAt) = await _snapshot('tigercenter_dining');
     final data = snapshot == null
         ? const <Map<String, dynamic>>[]
