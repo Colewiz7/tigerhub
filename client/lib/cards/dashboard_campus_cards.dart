@@ -47,6 +47,11 @@ class FacilityHoursCard extends StatelessWidget {
           kind: EmptyKind.sourceDown,
           title: 'Facility hours are unavailable',
         ),
+        // Kept as a plain Column rather than BoundedList, deliberately.
+        // BoundedList pins every row to StatusRow.height so its arithmetic is
+        // exact, but a facility's hours subtitle wraps to two lines at narrow
+        // widths and overflows that box by 4px. The fixed-height contract is
+        // the thing that does not hold here.
         _ => Column(
           mainAxisSize: MainAxisSize.min,
           children: [

@@ -22,14 +22,11 @@ class VisitingChefsCard extends StatelessWidget {
     required this.result,
     this.dragHandle,
     this.onShowAll,
-    this.compact = false,
   });
 
   final Result<Collection<MenuItem>> result;
   final Widget? dragHandle;
   final VoidCallback? onShowAll;
-  final bool compact;
-
   @override
   Widget build(BuildContext context) {
     final all = result.value?.data ?? const <MenuItem>[];
@@ -55,7 +52,12 @@ class VisitingChefsCard extends StatelessWidget {
         (true, _) => const PrimingPlaceholder(label: 'Loading today'),
         (_, true) => const EmptyState(kind: EmptyKind.noVisitingChefs),
         _ => BoundedList(
-          itemCount: compact ? 1 : all.length,
+          // Not capped for a compact card. A compact card is already a shorter
+          // box (58% of the row height), and BoundedList measures the box it
+          // is given, so a hardcoded cap of one row just stranded a single
+          // chef at the top with the rest of the card empty beneath it. The
+          // widget exists precisely so nobody has to guess this number.
+          itemCount: all.length,
           itemHeight: StatusRow.height,
           noun: 'chefs',
           onShowAll: onShowAll,

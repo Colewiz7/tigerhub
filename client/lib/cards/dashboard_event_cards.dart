@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
+import '../widgets/status_row.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/glyph.dart';
 import 'event_row.dart';
@@ -76,20 +78,15 @@ class ScopedEventsCard extends StatelessWidget {
             ),
       child: events.isEmpty
           ? const EmptyState(kind: EmptyKind.noEvents)
-          : Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final event in shown.take(compact ? 1 : 5))
-                  EventRow(event: event),
-                if (!compact && shown.length > 5 && onShowAll != null)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: onShowAll,
-                      child: Text('+${shown.length - 5} more'),
-                    ),
-                  ),
-              ],
+          // BoundedList rather than a hardcoded take() plus a bespoke "+N
+          // more" button: the cap was a guess, and every other card counts its
+          // overflow the same way.
+          : BoundedList(
+              itemCount: shown.length,
+              itemHeight: StatusRow.height,
+              noun: 'events',
+              onShowAll: onShowAll,
+              itemBuilder: (context, index) => EventRow(event: shown[index]),
             ),
     );
   }
