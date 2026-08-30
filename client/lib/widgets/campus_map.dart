@@ -1165,28 +1165,7 @@ class CampusMapPainter extends CustomPainter {
     _paintBuildingLabels(canvas, geometry.labels, scheme);
     _paintScaleBar(canvas, projection, mapRect, scheme);
 
-    final pointKinds = {
-      for (final feature in features)
-        if (feature.geometryType == 'Point') feature.kind,
-    };
-    // "All places" is an overview, not twelve full pin layers stacked on one
-    // another. A selected category gets finer clusters; the mixed overview
-    // groups much more aggressively and uses the apps symbol to say that the
-    // count contains different kinds of place.
-    final clusterCell = pointKinds.length > 1 ? 110.0 : 46.0;
-    final buckets =
-        <(int, int), List<({CampusMapFeature feature, Offset at})>>{};
-    for (final feature in features.where((f) => f.geometryType == 'Point')) {
-      final anchor = feature.anchor;
-      if (anchor == null) continue;
-      final center = projection.project(anchor);
-      if (!mapRect.inflate(12).contains(center)) continue;
-      final key = (
-        (center.dx / clusterCell).floor(),
-        (center.dy / clusterCell).floor(),
-      );
-      buckets.putIfAbsent(key, () => []).add((feature: feature, at: center));
-    }
+    final buckets = geometry.pins;
 
     for (final bucket in buckets.values) {
       final center = Offset(
@@ -1318,10 +1297,11 @@ class CampusMapPainter extends CustomPainter {
     if (cached != null &&
         identical(cached.projection, projection) &&
         identical(cached.features, features) &&
-        identical(cached.paths, paths)) {
+        identical(cached.paths, paths) &&
+        cached.scheme == scheme) {
       return cached;
     }
-    return _geometryCache = _MapGeometry(projection, features, paths);
+    return _geometryCache = _MapGeometry(projection, features, paths, scheme);
   }
 
   void _paintScaleBar(
@@ -1374,49 +1354,41 @@ class CampusMapPainter extends CustomPainter {
 
   void _paintBuildingLabels(
     Canvas canvas,
-    List<({String text, Rect bounds, double area})> candidates,
+    List<({TextPainter painter, Rect bounds, double area})> candidates,
     ColorScheme scheme,
   ) {
     final ordered = [...candidates]..sort((a, b) => b.area.compareTo(a.area));
     final taken = <Rect>[];
 
     for (final candidate in ordered) {
-      final painter = TextPainter(
-        text: TextSpan(
-          text: candidate.text,
-          style: TextStyle(
-            color: scheme.onSurfaceVariant,
-            // Constant on screen, so zooming in shrinks the label against the
-            // building and lets more of them fit. At a fixed size the same
-            // handful of labels just grew with everything else, and zooming
-            // revealed nothing.
-            fontSize: 9 / zoom,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2 / zoom,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
+      final painter = candidate.painter;
+      // The painter was measured once at the base size. Dividing by the zoom
+      // gives what it covers on the canvas, without measuring it again.
+      final width = painter.width / zoom;
+      final height = painter.height / zoom;
 
       // Must sit inside the building with a little room, or it reads as a
       // label for whatever is next door.
-      if (painter.width + 6 / zoom > candidate.bounds.width ||
-          painter.height + 4 / zoom > candidate.bounds.height) {
+      if (width + 6 / zoom > candidate.bounds.width ||
+          height + 4 / zoom > candidate.bounds.height) {
         continue;
       }
 
       final rect = Rect.fromCenter(
         center: candidate.bounds.center,
-        width: painter.width + 4 / zoom,
-        height: painter.height + 2 / zoom,
+        width: width + 4 / zoom,
+        height: height + 2 / zoom,
       );
       if (taken.any(rect.overlaps)) continue;
 
       taken.add(rect);
-      painter.paint(
-        canvas,
-        candidate.bounds.center - Offset(painter.width / 2, painter.height / 2),
-      );
+      canvas.save();
+      canvas.translate(candidate.bounds.center.dx, candidate.bounds.center.dy);
+      // Constant on screen, so zooming in shrinks the label against the
+      // building and lets more of them fit.
+      canvas.scale(1 / zoom);
+      painter.paint(canvas, Offset(-painter.width / 2, -painter.height / 2));
+      canvas.restore();
     }
   }
 
@@ -1512,7 +1484,7 @@ class CampusMapPainter extends CustomPainter {
 /// network is two draw calls rather than 1824, and the work happens once per
 /// projection rather than once per frame.
 class _MapGeometry {
-  _MapGeometry(this.projection, this.features, this.paths) {
+  _MapGeometry(this.projection, this.features, this.paths, this.scheme) {
     for (final feature in features) {
       if (feature.geometryType == 'Point') continue;
       final family = mapFamily(feature);
@@ -1529,8 +1501,21 @@ class _MapGeometry {
         final abbreviation = feature.building;
         if (abbreviation == null || abbreviation.isEmpty) continue;
         final bounds = outline.getBounds();
+        // Laid out once, at a base size. The zoom is applied as a transform
+        // when it is drawn, so a zoom frame never measures text again.
         labels.add((
-          text: abbreviation,
+          painter: TextPainter(
+            text: TextSpan(
+              text: abbreviation,
+              style: TextStyle(
+                color: scheme.onSurfaceVariant,
+                fontSize: labelBaseSize,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+            ),
+            textDirection: TextDirection.ltr,
+          )..layout(),
           bounds: bounds,
           area: bounds.width * bounds.height,
         ));
@@ -1538,14 +1523,44 @@ class _MapGeometry {
     }
     foot = _network(paths.foot);
     road = _network(paths.road);
+
+    pointKinds = {
+      for (final feature in features)
+        if (feature.geometryType == 'Point') feature.kind,
+    };
+    // "All places" is an overview, not twelve full pin layers stacked on one
+    // another. A selected category gets finer clusters; the mixed overview
+    // groups much more aggressively.
+    clusterCell = pointKinds.length > 1 ? 110.0 : 46.0;
+    final visible = projection.mapRect.inflate(12);
+    for (final feature in features) {
+      if (feature.geometryType != 'Point') continue;
+      final anchor = feature.anchor;
+      if (anchor == null) continue;
+      final center = projection.project(anchor);
+      if (!visible.contains(center)) continue;
+      final key = (
+        (center.dx / clusterCell).floor(),
+        (center.dy / clusterCell).floor(),
+      );
+      pins.putIfAbsent(key, () => []).add((feature: feature, at: center));
+    }
   }
+
+  /// Labels are measured at this size and scaled when drawn.
+  static const double labelBaseSize = 9;
 
   final CampusMapProjection projection;
   final List<CampusMapFeature> features;
   final CampusPaths paths;
+  final ColorScheme scheme;
 
   final Map<MapFamily, Path> areas = {};
-  final List<({String text, Rect bounds, double area})> labels = [];
+  final List<({TextPainter painter, Rect bounds, double area})> labels = [];
+  final Map<(int, int), List<({CampusMapFeature feature, Offset at})>> pins =
+      {};
+  late final Set<String> pointKinds;
+  late final double clusterCell;
   late final Path foot;
   late final Path road;
 
