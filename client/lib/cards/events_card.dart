@@ -79,6 +79,7 @@ class EventsCard extends StatelessWidget {
     this.dragHandle,
     this.onShowAll,
     this.organizerKey,
+    this.compact = false,
   });
 
   final Result<Collection<CampusEvent>> result;
@@ -92,6 +93,7 @@ class EventsCard extends StatelessWidget {
   /// templates in the card library: "show me one club" is the common task and
   /// should not require walking through a scope editor to reach.
   final String? organizerKey;
+  final bool compact;
 
   bool get _scoped => organizerKey != null;
 
@@ -134,11 +136,26 @@ class EventsCard extends StatelessWidget {
             // being quiet, and saying so avoids looking broken.
             title: _scoped ? 'Nothing from this club yet' : null,
           ),
+        _ when compact => _Compact(events: events),
         // Grouping by organizer is pointless when they are all one organizer.
         _ when _scoped => _Flat(events: events, onShowAll: onShowAll),
         _ => _Grouped(events: events, onShowAll: onShowAll),
       },
     );
+  }
+}
+
+class _Compact extends StatelessWidget {
+  const _Compact({required this.events});
+
+  final List<CampusEvent> events;
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final ordered = [...events]..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+    final next = ordered.where((event) => (event.endsAt ?? event.startsAt).isAfter(now)).firstOrNull;
+    return EventRow(event: next ?? ordered.first);
   }
 }
 
