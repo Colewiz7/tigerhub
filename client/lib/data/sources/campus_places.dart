@@ -45,6 +45,11 @@ const Map<int, (String, String)> placeKinds = {
   279: ('lactation', 'Lactation rooms'),
   87: ('vending', 'Vending machines'),
   83: ('convenience', 'Convenience stores'),
+  452: ('food_share', 'FoodShare'),
+  449: ('bottle_return', 'Bottle and can return'),
+  440: ('support_services', 'Confidential support services'),
+  183: ('higi_kiosk', 'Higi health kiosks'),
+  187: ('gym', 'Gyms'),
 };
 
 /// One request per parent category returns every sub it contains, so a handful
@@ -68,10 +73,12 @@ const Map<int, (String, String)> placeKinds = {
 ///
 /// Their point features are ignored, because those kinds are not in
 /// [placeKinds]; only the geometry comes through.
-/// 39 is Employees, which is where the Workday time clocks live. It is the
-/// only parent here fetched purely for a student-facing kind rather than for
-/// outlines or a cluster of kinds, and it carries 63 clocks.
-const List<int> placeParents = [3, 11, 47, 35, 19, 27, 23, 15, 7, 39];
+/// 39 is Employees, which is where the Workday time clocks live, and 31 is
+/// Better Me Wellness, which carries the Higi health kiosks and the gyms.
+/// Those two are the only parents fetched purely for their pins rather than
+/// for outlines or a cluster of kinds, and they are the only two that cost a
+/// request the app was not already making.
+const List<int> placeParents = [3, 11, 47, 35, 19, 27, 23, 15, 7, 39, 31];
 
 /// What this source currently asks maps.rit.edu for.
 ///

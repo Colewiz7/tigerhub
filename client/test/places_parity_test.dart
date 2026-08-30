@@ -7,7 +7,9 @@
 /// checked against the backend's decoder over two real 260 KB payloads rather
 /// than over a toy example.
 ///
-/// 236 places across four kinds, every field compared.
+/// 236 places across the four kinds the backend knew, every field compared.
+/// The port now claims more kinds than the backend did, so the assertion is
+/// that nothing it produced was lost, not that the two sets are identical.
 library;
 
 import 'dart:convert';
@@ -33,10 +35,16 @@ void main() {
       File('test/golden/campus_places_parse.json').readAsStringSync(),
     ) as Map<String, dynamic>);
 
+    // Superset, not equality. The golden file is the Python backend's own
+    // output, and the backend only ever knew four kinds in these two payloads.
+    // The port has since claimed categories the backend never asked for, so
+    // the same fixture legitimately decodes more now. What parity means here
+    // is that nothing the backend produced may disappear or change, which the
+    // per-field comparison below is what actually enforces.
     expect(
       actual.keys.toSet(),
-      expected.keys.toSet(),
-      reason: 'a whole kind went missing or appeared',
+      containsAll(expected.keys.toSet()),
+      reason: 'a kind the backend produced went missing',
     );
 
     for (final kind in expected.keys) {

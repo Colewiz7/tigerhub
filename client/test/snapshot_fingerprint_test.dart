@@ -39,10 +39,15 @@ void main() {
 
   test('it names the categories this change added', () {
     // Guards the specific regression: these are the ids that were invisible.
-    for (final id in [199, 527, 236, 211, 528, 279, 87, 83]) {
+    for (final id in [
+      199, 527, 236, 211, 528, 279, 87, 83, 452, 449, 440, 183, 187,
+    ]) {
       expect(placeKinds.containsKey(id), isTrue, reason: 'kind $id');
       expect(campusPlacesFingerprint, contains('$id'));
     }
+    // A kind whose parent is never fetched is dead weight, and nothing else
+    // would say so. 39 and 31 are the two parents these additions needed.
     expect(placeParents, contains(39));
+    expect(placeParents, contains(31));
   });
 }
