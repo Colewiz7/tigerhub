@@ -14,6 +14,38 @@ struct _MyApplication {
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
+
+// Set the window and taskbar icon from the bundled asset.
+//
+// GTK normally resolves an icon by name out of the desktop icon theme, which
+// only works once a .desktop file and icons are installed system wide. This app
+// is run straight out of its build directory as often as not, so the icon is
+// loaded from the bundle beside the executable instead. That way alt-tab and
+// the taskbar show the tiger whether or not anything has been installed.
+//
+// Several sizes are offered rather than one, so the compositor picks the right
+// one instead of scaling a 512 down to 24 and turning the clock face to mush.
+static void set_window_icon(GtkWindow* window) {
+  g_autofree gchar* exe = g_file_read_link("/proc/self/exe", nullptr);
+  if (exe == nullptr) return;
+  g_autofree gchar* dir = g_path_get_dirname(exe);
+
+  static const char* sizes[] = {"48", "64", "96", "128", "192", "256", "512"};
+  GList* icons = nullptr;
+
+  for (size_t i = 0; i < G_N_ELEMENTS(sizes); i++) {
+    g_autofree gchar* name = g_strdup_printf("app-icon-%s.png", sizes[i]);
+    g_autofree gchar* path = g_build_filename(
+        dir, "data", "flutter_assets", "assets", "icons", name, nullptr);
+    GdkPixbuf* pixbuf = gdk_pixbuf_new_from_file(path, nullptr);
+    if (pixbuf != nullptr) icons = g_list_prepend(icons, pixbuf);
+  }
+
+  if (icons == nullptr) return;
+  gtk_window_set_icon_list(window, icons);
+  g_list_free_full(icons, g_object_unref);
+}
+
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
@@ -66,13 +98,14 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "tigerhub");
+    gtk_header_bar_set_title(header_bar, "TigerHub");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "tigerhub");
+    gtk_window_set_title(window, "TigerHub");
   }
 
+  set_window_icon(window);
   gtk_window_set_default_size(window, 1280, 720);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();

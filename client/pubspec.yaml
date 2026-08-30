@@ -65,7 +65,9 @@ flutter:
 
   assets:
     - assets/config/
+    - assets/icons/
     - assets/fonts/
+    - assets/images/
 
   fonts:
     # Rubik variable font (SIL OFL). Bundled rather than fetched at runtime,
