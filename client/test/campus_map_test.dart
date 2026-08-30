@@ -72,6 +72,25 @@ Widget app({bool priming = false, List<CampusEvent> events = const []}) =>
     );
 
 void main() {
+  test('every place category has its own map symbol', () {
+    const kinds = [
+      'water',
+      'ev_charge',
+      'blue_light',
+      'aed',
+      'restroom_all_gender',
+      'restroom_accessible',
+      'atm',
+      'changing_table',
+      'entrance_accessible',
+      'bus_stop',
+      'bike_rack',
+      'reload',
+    ];
+
+    expect(kinds.map(mapPlaceIcon).toSet(), hasLength(kinds.length));
+  });
+
   test('projection keeps longitude on X and north toward the top', () {
     final projection = CampusMapProjection(const [
       west,
@@ -131,6 +150,43 @@ void main() {
         reason: 'equal ground distances must project equally at $size',
       );
     }
+  });
+
+  group('zooming reveals more, rather than magnifying the same thing', () {
+    test('the scale bar measures a shorter distance as you zoom in', () {
+      // The bar is held at a fifth of the screen, so zooming in has to pick a
+      // smaller round number rather than run the bar off the edge.
+      expect(scaleBarMetres(500), 500);
+      expect(scaleBarMetres(120), 200);
+      expect(scaleBarMetres(30), 50);
+      expect(scaleBarMetres(8), 10);
+    });
+
+    test('it never picks a distance smaller than what has to fit', () {
+      for (final target in [7.0, 45.0, 99.0, 260.0, 900.0]) {
+        expect(
+          scaleBarMetres(target),
+          greaterThanOrEqualTo(target),
+          reason: 'a bar labelled less than it spans would be wrong',
+        );
+      }
+    });
+
+    test('the painter redraws when the zoom changes', () {
+      // Without this the canvas is painted once in unzoomed coordinates and
+      // the viewer just scales the result, so labels grow with the buildings
+      // and no new ones ever appear.
+      final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFF76902));
+      CampusMapPainter at(double zoom) => CampusMapPainter(
+        features: const [west, east],
+        selectedId: null,
+        scheme: scheme,
+        zoom: zoom,
+      );
+
+      expect(at(2).shouldRepaint(at(1)), isTrue);
+      expect(at(1).shouldRepaint(at(1)), isFalse);
+    });
   });
 
   test('the map fills the panel it is given', () {
