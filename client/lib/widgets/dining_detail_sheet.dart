@@ -16,6 +16,7 @@ import '../theme/tokens.dart';
 import '../widgets/freshness.dart';
 import '../widgets/menu_section.dart';
 import '../widgets/occupancy_chart.dart';
+import '../services/subscriptions.dart';
 
 class DiningDetailSheet extends StatefulWidget {
   const DiningDetailSheet({
@@ -36,22 +37,27 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
   Result<OccupancyHistory>? _history;
   Result<MenuDay>? _menu;
 
+  /// Held so they can be cancelled. Dangling subscriptions let a previous
+  /// visit's results land after the current ones and overwrite them.
+  final _subscriptions = Subscriptions();
+
   @override
   void initState() {
     super.initState();
     _prefs.addListener(_onChanged);
     if (widget.location.occupancy != null) {
-      widget.api.occupancyHistory(widget.location.id).listen((r) {
+      _subscriptions.add(widget.api.occupancyHistory(widget.location.id).listen((r) {
         if (mounted) setState(() => _history = r);
-      });
+      }));
     }
-    widget.api.menu(widget.location.id).listen((r) {
+    _subscriptions.add(widget.api.menu(widget.location.id).listen((r) {
       if (mounted) setState(() => _menu = r);
-    });
+    }));
   }
 
   @override
   void dispose() {
+    _subscriptions.dispose();
     _prefs.removeListener(_onChanged);
     super.dispose();
   }

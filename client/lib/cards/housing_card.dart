@@ -20,6 +20,7 @@ import '../widgets/card_shell.dart';
 import '../widgets/glyph.dart';
 import '../widgets/copyable_address.dart';
 import '../widgets/freshness.dart';
+import '../services/subscriptions.dart';
 
 class HousingCard extends StatefulWidget {
   const HousingCard({
@@ -41,6 +42,10 @@ class _HousingCardState extends State<HousingCard> {
   String? _areaId;
   final _unit = TextEditingController();
   Result<MailingAddress>? _address;
+
+  /// Held so they can be cancelled. Dangling subscriptions let a previous
+  /// visit's results land after the current ones and overwrite them.
+  final _subscriptions = Subscriptions();
 
   @override
   void initState() {
@@ -74,6 +79,7 @@ class _HousingCardState extends State<HousingCard> {
 
   @override
   void dispose() {
+    _subscriptions.dispose();
     _unit.dispose();
     super.dispose();
   }
@@ -81,9 +87,9 @@ class _HousingCardState extends State<HousingCard> {
   void _load() {
     final areaId = _areaId;
     if (areaId == null) return;
-    widget.api.address(areaId, 'Your Name', _unit.text.trim()).listen((result) {
+    _subscriptions.add(widget.api.address(areaId, 'Your Name', _unit.text.trim()).listen((result) {
       if (mounted) setState(() => _address = result);
-    });
+    }));
     _remember();
   }
 

@@ -14,6 +14,7 @@ import '../services/api.dart';
 import '../theme/tokens.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
+import '../services/subscriptions.dart';
 
 class PlacesSheet extends StatefulWidget {
   const PlacesSheet({
@@ -37,12 +38,22 @@ class _PlacesSheetState extends State<PlacesSheet> {
   Result<Collection<CampusPlace>>? _result;
   String _query = '';
 
+  /// Held so they can be cancelled. Dangling subscriptions let a previous
+  /// visit's results land after the current ones and overwrite them.
+  final _subscriptions = Subscriptions();
+
   @override
   void initState() {
     super.initState();
-    widget.api.places(widget.kind).listen((r) {
+    _subscriptions.add(widget.api.places(widget.kind).listen((r) {
       if (mounted) setState(() => _result = r);
-    });
+    }));
+  }
+
+  @override
+  void dispose() {
+    _subscriptions.dispose();
+    super.dispose();
   }
 
   @override
