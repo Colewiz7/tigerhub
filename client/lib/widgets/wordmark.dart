@@ -19,19 +19,28 @@ class Wordmark extends StatelessWidget {
   static const double _wideFrom = 230;
 
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) {
-          final wide = constraints.maxWidth >= _wideFrom;
-          return SvgPicture.asset(
-            wide
-                ? 'assets/generated/wordmark/tigerhub-wide.svg'
-                : 'assets/generated/wordmark/tigerhub-compact.svg',
-            height: wide ? 40 : 34,
-            // The art names the app, so it is the label rather than being
-            // decorative. Without this a screen reader announces nothing here.
-            semanticsLabel: AppConfig.appName,
-          );
-        },
-      );
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= _wideFrom;
+        return SvgPicture.asset(
+          wide
+              ? 'assets/generated/wordmark/tigerhub-wide.svg'
+              : 'assets/generated/wordmark/tigerhub-compact.svg',
+          height: wide ? 40 : 34,
+          // "Hub" is painted with fill="currentColor" so it can follow the
+          // theme. flutter_svg defaults currentColor to black, and the
+          // masthead sits on a near-black surface, so without this the second
+          // half of the app's own name is invisible in the dark theme.
+          theme: SvgTheme(currentColor: scheme.onSurface),
+          // The art names the app, so it is the label rather than being
+          // decorative. Without this a screen reader announces nothing here.
+          semanticsLabel: AppConfig.appName,
+        );
+      },
+    );
+  }
 }
 
