@@ -172,6 +172,43 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
+/// The masthead wordmark.
+///
+/// Set in the display face rather than the UI face, and split so the second
+/// half carries the accent. That accent comes from the live scheme, so the
+/// wordmark tracks the wallpaper like everything else.
+class _Wordmark extends StatelessWidget {
+  const _Wordmark();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    const style = TextStyle(
+      fontFamily: 'SpaceGrotesk',
+      fontSize: 31,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -0.6,
+      height: 1.0,
+    );
+
+    // Split at the internal capital, so the name stays defined in one place.
+    final name = AppConfig.appName;
+    final split = name.indexOf(RegExp(r'(?<=.)[A-Z]'));
+    final head = split > 0 ? name.substring(0, split) : name;
+    final tail = split > 0 ? name.substring(split) : '';
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: head, style: style.copyWith(color: scheme.onSurface)),
+          if (tail.isNotEmpty)
+            TextSpan(text: tail, style: style.copyWith(color: scheme.primary)),
+        ],
+      ),
+    );
+  }
+}
+
 const List<LogicalKeyboardKey> _digits = [
   LogicalKeyboardKey.digit1,
   LogicalKeyboardKey.digit2,
@@ -199,10 +236,7 @@ class _Masthead extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(26, 20, 26, 12),
       child: Row(
         children: [
-          Text(
-            AppConfig.appName,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 30),
-          ),
+          const _Wordmark(),
           const Spacer(),
           Tooltip(
             message: settingsOpen ? 'Close settings' : 'Settings',

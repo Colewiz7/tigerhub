@@ -72,6 +72,14 @@ flutter:
     - family: Rubik
       fonts:
         - asset: assets/fonts/Rubik.ttf
+    # Display face, masthead only. Space Grotesk is SIL OFL, bundled for the
+    # same offline reason as Rubik.
+    - family: SpaceGrotesk
+      fonts:
+        - asset: assets/fonts/SpaceGrotesk-Medium.otf
+          weight: 500
+        - asset: assets/fonts/SpaceGrotesk-Bold.otf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

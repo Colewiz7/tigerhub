@@ -53,7 +53,11 @@ class ScallopedBadge extends StatelessWidget {
                 value,
                 style: Theme.of(context).textTheme.displayMedium?.copyWith(
                       color: foreground,
-                      fontSize: size * 0.32,
+                      fontSize: size * 0.34,
+                      // The display scale is deliberately light, but at badge
+                      // size that reads as thin and washed out against the
+                      // filled accent, so this one steps up.
+                      fontVariations: Weights.medium,
                     ),
                 maxLines: 1,
               ),
@@ -63,8 +67,9 @@ class ScallopedBadge extends StatelessWidget {
                   child: Text(
                     label!,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: foreground.withValues(alpha: 0.75),
-                          fontSize: size * 0.105,
+                          color: foreground.withValues(alpha: 0.85),
+                          fontSize: size * 0.112,
+                          fontVariations: Weights.semibold,
                         ),
                     maxLines: 1,
                   ),

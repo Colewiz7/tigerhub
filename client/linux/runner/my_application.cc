@@ -42,6 +42,27 @@ static void my_application_activate(GApplication* application) {
     }
   }
 #endif
+
+  // A GTK header bar is client side decoration. Under a tiling compositor the
+  // window manager already frames the window, so the header bar is a second
+  // title bar stacked on the first and just eats vertical space. Detect the
+  // tiling compositors we care about and drop it.
+  const gchar* desktop = g_getenv("XDG_CURRENT_DESKTOP");
+  const gchar* session = g_getenv("XDG_SESSION_DESKTOP");
+  const gchar* tiling[] = {"Hyprland", "sway", "river", "niri", "Wayfire", nullptr};
+  for (int i = 0; tiling[i] != nullptr; i++) {
+    if ((desktop != nullptr && g_ascii_strcasecmp(desktop, tiling[i]) == 0) ||
+        (session != nullptr && g_ascii_strcasecmp(session, tiling[i]) == 0)) {
+      use_header_bar = FALSE;
+      break;
+    }
+  }
+  // Hyprland does not always set XDG_CURRENT_DESKTOP, but it always exports
+  // this, so it is the more reliable signal.
+  if (g_getenv("HYPRLAND_INSTANCE_SIGNATURE") != nullptr) {
+    use_header_bar = FALSE;
+  }
+
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));

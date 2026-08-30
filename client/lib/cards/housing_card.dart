@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../services/cache.dart';
 import '../theme/tokens.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
@@ -39,6 +40,35 @@ class _HousingCardState extends State<HousingCard> {
   final _unit = TextEditingController();
   Result<MailingAddress>? _address;
 
+  static const _areaKey = 'housing_area';
+  static const _unitKey = 'housing_unit';
+
+  @override
+  void initState() {
+    super.initState();
+    _restore();
+  }
+
+  /// Default to whatever was picked last. Re-choosing your own dorm every time
+  /// is the kind of small friction that makes a lookup not worth opening.
+  Future<void> _restore() async {
+    final cache = ResponseCache.instance;
+    final area = await cache.readOrder(_areaKey);
+    final unit = await cache.readOrder(_unitKey);
+    if (!mounted || area.isEmpty) return;
+    setState(() {
+      _areaId = area.first;
+      if (unit.isNotEmpty) _unit.text = unit.first;
+    });
+    _load();
+  }
+
+  Future<void> _remember() async {
+    final cache = ResponseCache.instance;
+    await cache.writeOrder(_areaKey, [?_areaId]);
+    await cache.writeOrder(_unitKey, [if (_unit.text.trim().isNotEmpty) _unit.text.trim()]);
+  }
+
   @override
   void dispose() {
     _unit.dispose();
@@ -51,6 +81,7 @@ class _HousingCardState extends State<HousingCard> {
     widget.api.address(areaId, 'Your Name', _unit.text.trim()).listen((result) {
       if (mounted) setState(() => _address = result);
     });
+    _remember();
   }
 
   @override
