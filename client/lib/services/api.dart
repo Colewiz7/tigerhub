@@ -147,6 +147,11 @@ class ApiClient {
         (j) => Collection.fromJson(j, PostOffice.fromJson),
       );
 
+  /// The 24 hour occupancy series for one location. Only the five locations
+  /// with a sensor return anything.
+  Stream<Result<OccupancyHistory>> occupancyHistory(int locationId) =>
+      watch('/dining/$locationId/occupancy', OccupancyHistory.fromJson);
+
   Stream<Result<Collection<RecreationFacility>>> recreation() => watch(
         '/recreation/hours',
         (j) => Collection.fromJson(j, RecreationFacility.fromJson),

@@ -22,6 +22,7 @@ import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
 import 'package:tigerhub/widgets/more_row.dart';
 import 'package:tigerhub/screens/campus_screen.dart' show currentSeason;
+import 'package:tigerhub/widgets/occupancy_chart.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart';
 import 'package:tigerhub/widgets/occupancy_chip.dart';
 
@@ -386,6 +387,7 @@ void main() {
   _visualStructure();
   _statusAndGrouping();
   _quickWins();
+  _pinningAndChart();
 
   test('age formatting', () {
     final now = DateTime.now();
@@ -999,6 +1001,84 @@ void _quickWins() {
           .value;
       // The display scale is 300. At badge size that read as washed out.
       expect(weight, greaterThan(300));
+    });
+  });
+}
+
+/// Pinning, and the occupancy chart's colour reasoning.
+void _pinningAndChart() {
+  DiningLocation loc(int id, String name, {bool open = true}) => DiningLocation(
+        id: id,
+        name: name,
+        isOpen: open,
+        categoryName: 'Everything else',
+        categoryOrder: 3,
+      );
+
+  group('pinning', () {
+    test('a pinned location outranks everything, including open ones', () {
+      final list = [
+        loc(1, 'Alpha'),
+        loc(2, 'Bravo'),
+        loc(3, 'Pinned but closed', open: false),
+      ]..sort((a, b) => compareForDisplay(a, b, pinned: {'3'}));
+      expect(list.first.name, 'Pinned but closed',
+          reason: 'a pin is an explicit statement of interest');
+    });
+
+    test('without a pin set the normal order holds', () {
+      final list = [
+        loc(3, 'Closed', open: false),
+        loc(1, 'Alpha'),
+      ]..sort(compareForDisplay);
+      expect(list.first.name, 'Alpha');
+    });
+
+    test('groups respect pins too', () {
+      final groups = groupByCategory(
+        [loc(1, 'Zulu'), loc(2, 'Alpha')],
+        pinned: {'1'},
+      );
+      expect(groups.single.value.first.name, 'Zulu');
+    });
+  });
+
+  group('occupancy chart', () {
+    List<OccupancyHour> series(int nowToday, int nowAverage) => [
+          for (var h = 0; h < 24; h++)
+            OccupancyHour(
+              hour: h,
+              today: h == 12 ? nowToday : 10,
+              oneWeekAgo: 10,
+              average: h == 12 ? nowAverage : 10,
+            ),
+        ];
+
+    test('the comparison is stated in words, not left to two similar colours', () {
+      // The wallpaper palette is near monochrome, so primary and
+      // onSurfaceVariant sit only dE 10.9 apart. Two series would be
+      // unreadable, so the comparison is a sentence.
+      expect(busynessCaption(series(30, 10), 12), contains('Busier'));
+      expect(busynessCaption(series(3, 10), 12), contains('Quieter'));
+      expect(busynessCaption(series(10, 10), 12), contains('as usual'));
+    });
+
+    test('a missing hour or a zero baseline yields no claim', () {
+      expect(busynessCaption(series(10, 0), 12), isEmpty);
+      expect(busynessCaption(const [], 12), isEmpty);
+    });
+
+    testWidgets('renders one bar per published hour and no legend',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.from(_fallbackScheme()),
+        home: Scaffold(
+          body: OccupancyChart(hourly: series(20, 10), nowHour: 12),
+        ),
+      ));
+      expect(tester.takeException(), isNull);
+      // One series, so the caption names it and there is no legend box.
+      expect(find.byType(Tooltip), findsNWidgets(24));
     });
   });
 }
