@@ -116,7 +116,18 @@ void main() {
       }
     });
 
-    test('anything you can walk into is built', () {
+    test('a building is classified by what kind of building it is', () {
+      // Colour coding is only useful if the categories are actually told
+      // apart. Residential is 106 of the 150 outlines, academic 30.
+      expect(mapFamily(feature('Residential Building')), MapFamily.residential);
+      expect(mapFamily(feature('Academic Building')), MapFamily.academic);
+      expect(mapFamily(feature('Athletic Building')), MapFamily.athletic);
+      for (final kind in ['Green Building', 'Restaurants', 'Campus structure']) {
+        expect(mapFamily(feature(kind)), MapFamily.otherBuilt, reason: kind);
+      }
+    });
+
+    test('every building kind still counts as built', () {
       for (final kind in [
         'Residential Building',
         'Academic Building',
@@ -125,13 +136,15 @@ void main() {
         'Restaurants',
         'Campus structure',
       ]) {
-        expect(mapFamily(feature(kind)), MapFamily.built, reason: kind);
+        expect(mapFamily(feature(kind)).isBuilt, isTrue, reason: kind);
       }
+      expect(MapFamily.parking.isBuilt, isFalse);
+      expect(MapFamily.open.isBuilt, isFalse);
     });
 
     test('built draws last so it sits on top of ground', () {
       expect(MapFamily.open.rank, lessThan(MapFamily.parking.rank));
-      expect(MapFamily.parking.rank, lessThan(MapFamily.built.rank));
+      expect(MapFamily.parking.rank, lessThan(MapFamily.residential.rank));
     });
   });
 
