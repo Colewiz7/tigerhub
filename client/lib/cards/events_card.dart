@@ -78,20 +78,40 @@ class EventsCard extends StatelessWidget {
     required this.result,
     this.dragHandle,
     this.onShowAll,
+    this.organizerKey,
   });
 
   final Result<Collection<CampusEvent>> result;
   final Widget? dragHandle;
   final VoidCallback? onShowAll;
 
+  /// Narrows this card to one organizer, which is what makes a club events
+  /// card different from the general one. Null shows everything, grouped.
+  ///
+  /// One renderer serves both, as the spec allows, but they stay separate
+  /// templates in the card library: "show me one club" is the common task and
+  /// should not require walking through a scope editor to reach.
+  final String? organizerKey;
+
+  bool get _scoped => organizerKey != null;
+
   @override
   Widget build(BuildContext context) {
-    final events = result.value?.data ?? const <CampusEvent>[];
+    final all = result.value?.data ?? const <CampusEvent>[];
+    final events = _scoped
+        ? [for (final e in all) if (e.organizerKey == organizerKey) e]
+        : all;
     final today = eventsToday(events);
+
+    // The club's own name, taken from its events rather than stored on the
+    // card, so a club that renames itself is not stuck with the old label.
+    final title = _scoped
+        ? (events.isEmpty ? 'Club events' : events.first.organizer ?? 'Club events')
+        : 'Events';
 
     return CardShell(
       glyph: GlyphKind.events,
-      title: 'Events',
+      title: title,
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
@@ -108,9 +128,41 @@ class EventsCard extends StatelessWidget {
             ),
       child: switch ((result.isPriming, events.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading events'),
-        (_, true) => const EmptyState(kind: EmptyKind.noEvents),
+        (_, true) => EmptyState(
+            kind: EmptyKind.noEvents,
+            // A club with nothing on is a different fact from the whole campus
+            // being quiet, and saying so avoids looking broken.
+            title: _scoped ? 'Nothing from this club yet' : null,
+          ),
+        // Grouping by organizer is pointless when they are all one organizer.
+        _ when _scoped => _Flat(events: events, onShowAll: onShowAll),
         _ => _Grouped(events: events, onShowAll: onShowAll),
       },
+    );
+  }
+}
+
+/// A single club's events, in time order.
+///
+/// No group headers: every row shares one organizer, so a header per row would
+/// repeat the card's own title down the page.
+class _Flat extends StatelessWidget {
+  const _Flat({required this.events, this.onShowAll});
+
+  final List<CampusEvent> events;
+  final VoidCallback? onShowAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final ordered = [...events]
+      ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
+
+    return BoundedList(
+      itemCount: ordered.length,
+      itemHeight: StatusRow.height,
+      noun: 'events',
+      onShowAll: onShowAll,
+      itemBuilder: (context, i) => EventRow(event: ordered[i]),
     );
   }
 }
