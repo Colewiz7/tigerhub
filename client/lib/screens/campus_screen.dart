@@ -406,6 +406,25 @@ class _PostOfficeBlock extends StatelessWidget {
   }
 }
 
+/// Rules sharing a day label, collapsed into one entry.
+///
+/// The shipping window runs 9:00 to 1:00 and 1:30 to 4:00 on the same weekdays,
+/// which arrives as two rules and rendered as two blocks each captioned
+/// "MON TO FRI". Two identical headings read as two separate rules rather than
+/// as one closure over lunch.
+List<(String, List<HoursRule>)> groupRulesByDay(List<HoursRule> rules) {
+  final out = <(String, List<HoursRule>)>[];
+  for (final rule in rules) {
+    final label = _dayLabel(rule.days);
+    if (out.isNotEmpty && out.last.$1 == label) {
+      out.last.$2.add(rule);
+    } else {
+      out.add((label, [rule]));
+    }
+  }
+  return out;
+}
+
 /// One service, with its times set large and centred.
 ///
 /// The times are the thing people came for, so they get the space rather than
@@ -420,6 +439,7 @@ class _ServiceHours extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final grouped = groupRulesByDay(rules);
 
     return Container(
       width: double.infinity,
@@ -432,7 +452,7 @@ class _ServiceHours extends StatelessWidget {
         children: [
           Text(_serviceLabel(service).toUpperCase(), style: text.labelSmall),
           const SizedBox(height: 16),
-          for (var i = 0; i < rules.length; i++) ...[
+          for (var i = 0; i < grouped.length; i++) ...[
             if (i > 0) ...[
               const SizedBox(height: 16),
               // A rule per line ran together. A hairline separates them so
@@ -448,21 +468,28 @@ class _ServiceHours extends StatelessWidget {
               children: [
                 // The day comes first and small, so the eye lands on the time.
                 Text(
-                  _dayLabel(rules[i].days).toUpperCase(),
+                  grouped[i].$1.toUpperCase(),
                   textAlign: TextAlign.center,
                   style: text.labelSmall,
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  '${_time(rules[i].opensAt)} to ${_time(rules[i].closesAt)}',
-                  textAlign: TextAlign.center,
-                  style: text.displayMedium?.copyWith(
-                    fontSize: 29,
-                    height: 1.15,
-                    fontVariations: Weights.medium,
-                    color: scheme.onSurface,
+                // A split shift is several spans on the same days. They share
+                // one heading, because repeating "MON TO FRI" above each half
+                // reads as two different rules rather than one lunch break.
+                for (var j = 0; j < grouped[i].$2.length; j++) ...[
+                  if (j > 0) const SizedBox(height: 4),
+                  Text(
+                    '${_time(grouped[i].$2[j].opensAt)} to '
+                    '${_time(grouped[i].$2[j].closesAt)}',
+                    textAlign: TextAlign.center,
+                    style: text.displayMedium?.copyWith(
+                      fontSize: 29,
+                      height: 1.15,
+                      fontVariations: Weights.medium,
+                      color: scheme.onSurface,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ],
