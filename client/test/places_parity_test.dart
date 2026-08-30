@@ -80,6 +80,14 @@ void main() {
         isTrue,
       );
       expect(
+        features.any(
+          (feature) =>
+              (feature['geometry'] as Map<String, dynamic>)['type'] != 'Point',
+        ),
+        isTrue,
+        reason: 'discarding the polygon backdrop leaves dots on an empty map',
+      );
+      expect(
         places.values
             .expand((rows) => rows)
             .every((row) => !row.containsKey('geometry')),

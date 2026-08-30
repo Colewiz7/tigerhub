@@ -52,11 +52,18 @@ class _CampusMapViewState extends State<CampusMapView> {
     }
 
     final kinds = <String, String>{
-      for (final feature in all) feature.kind: feature.kindName,
+      for (final feature in all)
+        if (!feature.kind.startsWith('_')) feature.kind: feature.kindName,
     };
+    final backdrop = [
+      for (final feature in all)
+        if (feature.kind == '_campus') feature,
+    ];
     final visible = [
       for (final feature in all)
-        if (_kind == null || feature.kind == _kind) feature,
+        if (!feature.kind.startsWith('_') &&
+            (_kind == null || feature.kind == _kind))
+          feature,
     ];
     final eventMap = mapCampusEvents(
       widget.events?.value?.data ?? const <CampusEvent>[],
@@ -65,7 +72,10 @@ class _CampusMapViewState extends State<CampusMapView> {
     final eventFeatures = [
       for (final group in eventMap.groups) group.mapFeature,
     ];
-    final mapFeatures = _showEvents ? eventFeatures : visible;
+    final mapFeatures = [
+      ...backdrop,
+      ...(_showEvents ? eventFeatures : visible),
+    ];
     final selected = visible.where((f) => f.id == _selectedId).firstOrNull;
     final selectedEvent = eventMap.groups
         .where((group) => group.id == _selectedId)
@@ -74,35 +84,64 @@ class _CampusMapViewState extends State<CampusMapView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SegmentedButton<bool>(
-          segments: const [
-            ButtonSegment(value: false, label: Text('Places')),
-            ButtonSegment(value: true, label: Text('Events')),
-          ],
-          selected: {_showEvents},
-          onSelectionChanged: (selection) => setState(() {
-            _showEvents = selection.single;
-            _selectedId = null;
-            _transform.value = Matrix4.identity();
-          }),
-        ),
-        const SizedBox(height: 8),
-        _MapToolbar(
-          kinds: _showEvents ? const {} : kinds,
-          selectedKind: _kind,
-          onKindChanged: (kind) => setState(() {
-            _kind = kind;
-            _selectedId = null;
-            _transform.value = Matrix4.identity();
-          }),
-          onFit: () => _transform.value = Matrix4.identity(),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final mode = SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  icon: Icon(Icons.place_rounded),
+                  label: Text('Places'),
+                ),
+                ButtonSegment(
+                  value: true,
+                  icon: Icon(Icons.event_rounded),
+                  label: Text('Events'),
+                ),
+              ],
+              selected: {_showEvents},
+              onSelectionChanged: (selection) => setState(() {
+                _showEvents = selection.single;
+                _selectedId = null;
+                _transform.value = Matrix4.identity();
+              }),
+            );
+            final toolbar = _MapToolbar(
+              kinds: _showEvents ? const {} : kinds,
+              selectedKind: _kind,
+              onKindChanged: (kind) => setState(() {
+                _kind = kind;
+                _selectedId = null;
+                _transform.value = Matrix4.identity();
+              }),
+              onFit: () => _transform.value = Matrix4.identity(),
+            );
+
+            if (constraints.maxWidth < 620) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  mode,
+                  const SizedBox(height: 8),
+                  Align(alignment: Alignment.centerRight, child: toolbar),
+                ],
+              );
+            }
+            return Row(
+              children: [
+                SizedBox(width: 320, child: mode),
+                const Spacer(),
+                toolbar,
+              ],
+            );
+          },
         ),
         const SizedBox(height: 10),
         Expanded(
           child: ClipRRect(
             borderRadius: Shapes.card,
             child: ColoredBox(
-              color: Theme.of(context).colorScheme.surfaceContainerLowest,
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
               child: LayoutBuilder(
                 builder: (context, constraints) => InteractiveViewer(
                   transformationController: _transform,
@@ -304,40 +343,54 @@ class _MapToolbar extends StatelessWidget {
   final VoidCallback onFit;
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              if (kinds.isNotEmpty) ...[
-                ChoiceChip(
-                  label: const Text('All'),
-                  selected: selectedKind == null,
-                  onSelected: (_) => onKindChanged(null),
-                ),
-                for (final entry in kinds.entries) ...[
-                  const SizedBox(width: 7),
-                  ChoiceChip(
-                    label: Text(entry.value),
-                    selected: selectedKind == entry.key,
-                    onSelected: (_) => onKindChanged(entry.key),
-                  ),
-                ],
-              ],
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final selectedLabel = selectedKind == null
+        ? 'All places'
+        : kinds[selectedKind] ?? 'All places';
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (kinds.isNotEmpty)
+          PopupMenuButton<String>(
+            tooltip: 'Filter map places',
+            onSelected: (value) => onKindChanged(value.isEmpty ? null : value),
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: '', child: Text('All places')),
+              for (final entry in kinds.entries)
+                PopupMenuItem(value: entry.key, child: Text(entry.value)),
             ],
+            child: Material(
+              color: scheme.surfaceContainerHigh,
+              shape: Shapes.pill,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 11,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.tune_rounded, size: 19),
+                    const SizedBox(width: 8),
+                    Text(selectedLabel),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.expand_more_rounded, size: 18),
+                  ],
+                ),
+              ),
+            ),
           ),
+        const SizedBox(width: 8),
+        IconButton.filledTonal(
+          tooltip: 'Fit campus',
+          onPressed: onFit,
+          icon: const Icon(Icons.center_focus_strong_rounded),
         ),
-      ),
-      const SizedBox(width: 8),
-      IconButton.filledTonal(
-        tooltip: 'Fit campus',
-        onPressed: onFit,
-        icon: const Icon(Icons.center_focus_strong_rounded),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _PlaceStrip extends StatelessWidget {
@@ -454,9 +507,20 @@ class CampusMapProjection {
     this.size, {
     List<CampusMapFeature>? boundsFeatures,
   }) {
-    final points = (boundsFeatures ?? features).expand(
-      (f) => f.coordinates.expand((ring) => ring),
-    );
+    final candidates = boundsFeatures ?? features;
+    final anchors = [for (final feature in candidates) ?feature.anchor];
+    final medianLongitude = _median(anchors.map((p) => p.longitude).toList());
+    final medianLatitude = _median(anchors.map((p) => p.latitude).toList());
+    final core = candidates.where((feature) {
+      final anchor = feature.anchor;
+      if (anchor == null) return false;
+      // RIT publishes a few locations several miles from the main campus,
+      // including the Inn and downtown partner buildings. They stay in the
+      // result list, but must not shrink the initial campus view to dots.
+      return (anchor.longitude - medianLongitude).abs() <= 0.03 &&
+          (anchor.latitude - medianLatitude).abs() <= 0.025;
+    });
+    final points = core.expand((f) => f.coordinates.expand((ring) => ring));
     if (points.isEmpty) return;
     minLongitude = points.map((p) => p.longitude).reduce(math.min);
     maxLongitude = points.map((p) => p.longitude).reduce(math.max);
@@ -473,14 +537,43 @@ class CampusMapProjection {
 
   static const double padding = 34;
 
+  static double _median(List<double> values) {
+    if (values.isEmpty) return 0;
+    values.sort();
+    final middle = values.length ~/ 2;
+    return values.length.isOdd
+        ? values[middle]
+        : (values[middle - 1] + values[middle]) / 2;
+  }
+
+  Rect get mapRect {
+    final longitudeSpan = math.max(maxLongitude - minLongitude, 0.000001);
+    final latitudeSpan = math.max(maxLatitude - minLatitude, 0.000001);
+    final latitudeRadians = ((minLatitude + maxLatitude) / 2) * math.pi / 180;
+    final geographicWidth = longitudeSpan * math.cos(latitudeRadians);
+    final availableWidth = math.max(size.width - padding * 2, 1);
+    final availableHeight = math.max(size.height - padding * 2, 1);
+    final scale = math.min(
+      availableWidth / geographicWidth,
+      availableHeight / latitudeSpan,
+    );
+    final width = geographicWidth * scale;
+    final height = latitudeSpan * scale;
+    return Rect.fromLTWH(
+      (size.width - width) / 2,
+      (size.height - height) / 2,
+      width,
+      height,
+    );
+  }
+
   Offset project(GeoCoordinate point) {
     final longitudeSpan = math.max(maxLongitude - minLongitude, 0.000001);
     final latitudeSpan = math.max(maxLatitude - minLatitude, 0.000001);
-    final width = math.max(size.width - padding * 2, 1);
-    final height = math.max(size.height - padding * 2, 1);
+    final rect = mapRect;
     return Offset(
-      padding + (point.longitude - minLongitude) / longitudeSpan * width,
-      padding + (maxLatitude - point.latitude) / latitudeSpan * height,
+      rect.left + (point.longitude - minLongitude) / longitudeSpan * rect.width,
+      rect.top + (maxLatitude - point.latitude) / latitudeSpan * rect.height,
     );
   }
 
@@ -520,11 +613,24 @@ class CampusMapPainter extends CustomPainter {
       size,
       boundsFeatures: boundsFeatures,
     );
+    final mapRect = projection.mapRect;
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(mapRect.inflate(18), const Radius.circular(32)),
+      Paint()..color = scheme.primary.withValues(alpha: 0.035),
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(mapRect.inflate(18), const Radius.circular(32)),
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1
+        ..color = scheme.primary.withValues(alpha: 0.12),
+    );
+
     final polygonFill = Paint()..color = scheme.surfaceContainerHigh;
     final polygonEdge = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = scheme.outlineVariant;
+      ..strokeWidth = 1.25
+      ..color = scheme.primary.withValues(alpha: 0.42);
 
     for (final feature in features.where((f) => f.geometryType != 'Point')) {
       for (final ring in feature.coordinates) {
@@ -544,28 +650,52 @@ class CampusMapPainter extends CustomPainter {
       }
     }
 
-    for (final feature in features) {
+    final buckets =
+        <(int, int), List<({CampusMapFeature feature, Offset at})>>{};
+    for (final feature in features.where((f) => f.geometryType == 'Point')) {
       final anchor = feature.anchor;
       if (anchor == null) continue;
       final center = projection.project(anchor);
-      final selected = feature.id == selectedId;
-      final radius = selected ? 13.0 : 9.0;
-      final eventCount = feature.kind.startsWith('_event:')
-          ? int.tryParse(feature.kind.substring(7))
-          : null;
+      final key = ((center.dx / 30).floor(), (center.dy / 30).floor());
+      buckets.putIfAbsent(key, () => []).add((feature: feature, at: center));
+    }
+
+    for (final bucket in buckets.values) {
+      final center = Offset(
+        bucket.map((item) => item.at.dx).reduce((a, b) => a + b) /
+            bucket.length,
+        bucket.map((item) => item.at.dy).reduce((a, b) => a + b) /
+            bucket.length,
+      );
+      final selected = bucket.any((item) => item.feature.id == selectedId);
+      final eventCount = bucket.fold<int>(0, (total, item) {
+        final kind = item.feature.kind;
+        return total +
+            (kind.startsWith('_event:')
+                ? int.tryParse(kind.substring(7)) ?? 1
+                : 1);
+      });
+      final clustered = bucket.length > 1;
+      final radius = selected
+          ? 15.0
+          : clustered
+          ? 12.0
+          : 8.0;
       canvas.drawPath(
         _scallop(center, radius),
         Paint()
-          ..color = selected || eventCount != null
+          ..color = selected || bucket.first.feature.kind.startsWith('_event:')
               ? scheme.primary
-              : scheme.tertiaryContainer,
+              : scheme.primaryContainer,
       );
-      if (eventCount != null) {
+      if (clustered || bucket.first.feature.kind.startsWith('_event:')) {
         final label = TextPainter(
           text: TextSpan(
             text: '$eventCount',
             style: TextStyle(
-              color: scheme.onPrimary,
+              color: selected || bucket.first.feature.kind.startsWith('_event:')
+                  ? scheme.onPrimary
+                  : scheme.onPrimaryContainer,
               fontSize: 10,
               fontWeight: FontWeight.w700,
             ),
@@ -578,7 +708,7 @@ class CampusMapPainter extends CustomPainter {
           center,
           selected ? 3 : 2,
           Paint()
-            ..color = selected ? scheme.onPrimary : scheme.onTertiaryContainer,
+            ..color = selected ? scheme.onPrimary : scheme.onPrimaryContainer,
         );
       }
     }

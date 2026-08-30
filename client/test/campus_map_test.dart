@@ -31,6 +31,17 @@ const east = CampusMapFeature(
   note: 'Near the main entrance',
 );
 
+const remote = CampusMapFeature(
+  id: 3,
+  kind: 'aed',
+  kindName: 'Defibrillators',
+  name: 'Downtown AED',
+  geometryType: 'Point',
+  coordinates: [
+    [GeoCoordinate(-77.50, 43.14)],
+  ],
+);
+
 Widget app({bool priming = false, List<CampusEvent> events = const []}) =>
     MaterialApp(
       theme: AppTheme.from(
@@ -73,12 +84,28 @@ void main() {
     expect(projection.nearest(westPoint)?.id, west.id);
   });
 
+  test('initial fit ignores remote places without deleting them', () {
+    final projection = CampusMapProjection(const [
+      west,
+      east,
+      remote,
+    ], const Size(800, 500));
+
+    expect(projection.maxLongitude, lessThan(-77.60));
+    expect(
+      projection.nearest(projection.project(remote.anchor!))?.id,
+      remote.id,
+    );
+  });
+
   testWidgets('map exposes filters, fit control, and list equivalent', (
     tester,
   ) async {
     await tester.pumpWidget(app());
 
-    expect(find.text('All'), findsOneWidget);
+    expect(find.text('All places'), findsOneWidget);
+    await tester.tap(find.byTooltip('Filter map places'));
+    await tester.pumpAndSettle();
     expect(find.text('Water fountains'), findsOneWidget);
     expect(find.text('Defibrillators'), findsOneWidget);
     expect(find.byTooltip('Fit campus'), findsOneWidget);

@@ -128,9 +128,7 @@ List<Map<String, dynamic>> parseCampusMapFeatures(String raw) {
       if (sub is! Map<String, dynamic>) continue;
       final menu = sub['menu'];
       final subId = menu is Map<String, dynamic> ? menu['id'] : null;
-      if (subId is! int || !placeKinds.containsKey(subId)) continue;
-
-      final (kind, kindName) = placeKinds[subId]!;
+      final placeKind = subId is int ? placeKinds[subId] : null;
       for (final location in sub['locations'] as List<dynamic>? ?? const []) {
         if (location is! Map<String, dynamic>) continue;
         final props = location['properties'];
@@ -153,7 +151,18 @@ List<Map<String, dynamic>> parseCampusMapFeatures(String raw) {
         if (!const {'Point', 'Polygon', 'MultiPolygon'}.contains(type)) {
           continue;
         }
-        if (!seen.add('$subId:$id')) continue;
+
+        // Point features are the twelve student-facing place categories. A
+        // parent payload also carries polygon geometry for buildings and
+        // campus structures outside those categories. The old parser applied
+        // the place-category allowlist to every geometry type, which silently
+        // discarded every outline and left the map as dots on an empty field.
+        if (type == 'Point' && placeKind == null) continue;
+        final kind = placeKind?.$1 ?? '_campus';
+        final kindName = placeKind?.$2 ?? 'Campus structure';
+
+        // The same building geometry appears in several parent payloads.
+        if (!seen.add('$kind:$id')) continue;
 
         out.add({
           'id': id,
@@ -175,6 +184,7 @@ List<Map<String, dynamic>> parseCampusMapFeatures(String raw) {
 Future<Map<String, dynamic>> scrapeCampusPlaces(Upstream http) async {
   final byKind = <String, List<Map<String, dynamic>>>{};
   final mapFeatures = <Map<String, dynamic>>[];
+  final seenMapFeatures = <String>{};
   final failures = <int>[];
 
   // Sequential on purpose. Six categories at roughly 250 KB each is small, but
@@ -185,7 +195,10 @@ Future<Map<String, dynamic>> scrapeCampusPlaces(Upstream http) async {
         campusPlacesUrl.replaceFirst('{id}', '$parent'),
       );
       final groups = parseCampusPlaces(raw);
-      mapFeatures.addAll(parseCampusMapFeatures(raw));
+      for (final feature in parseCampusMapFeatures(raw)) {
+        final key = '${feature['kind']}:${feature['id']}';
+        if (seenMapFeatures.add(key)) mapFeatures.add(feature);
+      }
       groups.forEach((subId, places) {
         if (places.isEmpty) return;
         byKind[placeKinds[subId]!.$1] = places;
