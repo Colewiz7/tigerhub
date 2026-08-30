@@ -89,21 +89,22 @@ void main() {
     // It used to force a minimum 2.35:1 aspect so a wide window looked full.
     // The campus inside the bounds is 2342m by 2085m, so that stretched
     // longitude by 2.09x: buildings came out twice as wide as they are and the
-    // angles between them were wrong. A square patch of ground must project to
-    // a square patch of pixels.
-    const size = Size(1200, 600);
-    final projection = CampusMapProjection(
-      const [
+    // angles between them were wrong. Equal distances on the ground must come
+    // out as equal distances in pixels, whatever shape the window is.
+    for (final size in [
+      const Size(1200, 600),
+      const Size(600, 900),
+      const Size(800, 800),
+    ]) {
+      final projection = CampusMapProjection(const [
         CampusMapFeature(
           id: 1,
           kind: '_campus',
           kindName: 'Academic Building',
-          name: 'Square block',
+          name: 'Block',
           geometryType: 'Polygon',
           coordinates: [
             [
-              // Sized so the ground covered is square: a degree of longitude
-              // is cos(latitude) as long as a degree of latitude.
               GeoCoordinate(-77.68, 43.08),
               GeoCoordinate(-77.66, 43.08),
               GeoCoordinate(-77.66, 43.0946),
@@ -111,16 +112,37 @@ void main() {
             ],
           ],
         ),
-      ],
-      size,
-    );
+      ], size);
 
+      // A degree of longitude is cos(latitude) as long as a degree of
+      // latitude, so these two steps cover the same ground distance.
+      final from = projection.project(const GeoCoordinate(-77.68, 43.08));
+      final acrossX =
+          (projection.project(const GeoCoordinate(-77.66, 43.08)).dx - from.dx)
+              .abs();
+      final acrossY =
+          (projection.project(const GeoCoordinate(-77.68, 43.0946)).dy -
+                  from.dy)
+              .abs();
+
+      expect(
+        acrossX,
+        closeTo(acrossY, acrossY * 0.02),
+        reason: 'equal ground distances must project equally at $size',
+      );
+    }
+  });
+
+  test('the map fills the panel it is given', () {
+    // Being isotropic is not enough on its own. Fitting the campus into a wide
+    // panel used 60% of it and stranded 357px of dead width, which is why the
+    // bounds grow to the window shape rather than the drawing being stretched.
+    const size = Size(970, 553);
+    final projection = CampusMapProjection(const [west, east], size);
     final rect = projection.mapRect;
-    expect(
-      rect.width / rect.height,
-      closeTo(1.0, 0.02),
-      reason: 'square ground must not render as a wide rectangle',
-    );
+
+    expect(rect.width, closeTo(size.width - 68, 1));
+    expect(rect.height, closeTo(size.height - 68, 1));
   });
 
   test('initial fit ignores remote places without deleting them', () {
@@ -218,6 +240,26 @@ void main() {
     expect(find.text('SHED'), findsOneWidget);
     expect(find.text('Near the main entrance'), findsOneWidget);
     expect(find.byTooltip('Close details'), findsOneWidget);
+  });
+
+  test('painted pins announce and activate their place', () {
+    CampusMapFeature? selected;
+    final painter = CampusMapPainter(
+      features: const [west, east],
+      selectedId: null,
+      scheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+      onSelect: (feature) => selected = feature,
+    );
+
+    final pins = painter.semanticsBuilder(const Size(800, 500));
+    final westPin = pins.singleWhere(
+      (pin) => pin.properties.label == 'Water fountains, West fountain, GOL',
+    );
+    expect(westPin.properties.button, isTrue);
+    expect(westPin.properties.onTap, isNotNull);
+
+    westPin.properties.onTap!();
+    expect(selected, west);
   });
 
   testWidgets('priming uses the shared skeleton', (tester) async {
