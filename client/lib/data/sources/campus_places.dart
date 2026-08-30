@@ -143,7 +143,13 @@ List<Map<String, dynamic>> placeKindSummary(Map<String, dynamic>? snapshot) {
   for (final entry in placeKinds.values) {
     final places = kinds[entry.$1] as List<dynamic>?;
     if (places == null || places.isEmpty) continue;
-    out.add({'kind': entry.$1, 'name': entry.$2, 'count': places.length});
+    // kind_name, not name: PlaceKind.fromJson reads that key, and a mismatch
+    // renders the sheet with blank labels rather than failing.
+    out.add({
+      'kind': entry.$1,
+      'kind_name': entry.$2,
+      'count': places.length,
+    });
   }
   return out;
 }

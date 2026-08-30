@@ -485,7 +485,7 @@ class LocalBackend implements Backend {
     final (snapshot, fetchedAt) = await _snapshot(recreationSource);
     return _envelope(
       recreationSource,
-      snapshot?['rows'] as List<dynamic>? ?? const [],
+      recreationFacilities(snapshot),
       fetchedAt,
     );
   }

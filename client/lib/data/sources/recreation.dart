@@ -202,3 +202,60 @@ Future<Map<String, dynamic>> scrapeRecreation(Upstream http) async {
   }
   return {'rows': rows};
 }
+
+// --- projections -------------------------------------------------------
+
+/// Group the flat scraped rows into what the UI reads: one entry per facility,
+/// each holding one entry per date, each holding its spans.
+///
+/// The scrape produces one row per span, because a pool day has several
+/// sessions. The card wants them nested, and a facility with a single
+/// open-to-close range would be a lie about the middle of the day.
+List<Map<String, dynamic>> recreationFacilities(Map<String, dynamic>? snapshot) {
+  final byFacility = <String, Map<String, Map<String, dynamic>>>{};
+  final order = <String>[];
+
+  for (final raw in snapshot?['rows'] as List<dynamic>? ?? const []) {
+    final row = raw as Map<String, dynamic>;
+    final facility = '${row['facility']}';
+    final date = '${row['service_date']}';
+
+    final days = byFacility.putIfAbsent(facility, () {
+      order.add(facility);
+      return <String, Map<String, dynamic>>{};
+    });
+
+    final day = days.putIfAbsent(
+      date,
+      () => {
+        'service_date': date,
+        'closed': row['closed'] == true,
+        'note': row['note'],
+        'spans': <Map<String, dynamic>>[],
+      },
+    );
+
+    if (row['closed'] == true) {
+      day['closed'] = true;
+      day['note'] = row['note'];
+      continue;
+    }
+
+    day['closed'] = false;
+    (day['spans'] as List<Map<String, dynamic>>).add({
+      'opens_at': row['opens_at'],
+      'closes_at': row['closes_at'],
+    });
+  }
+
+  return [
+    for (final facility in order)
+      {
+        'name': facility,
+        'days': [
+          for (final date in (byFacility[facility]!.keys.toList()..sort()))
+            byFacility[facility]![date]!,
+        ],
+      },
+  ];
+}
