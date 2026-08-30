@@ -13,6 +13,8 @@ import '../theme/semantic.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/freshness.dart';
+import '../services/preferences.dart';
+import '../widgets/dining_detail_sheet.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
 
@@ -22,7 +24,14 @@ import '../widgets/status_row.dart';
 /// be the primary key or the other 19 land in an arbitrary order. The rule is:
 /// open with a sensor first, by percent descending, then open without a sensor
 /// alphabetically, then closed last.
-int compareForDisplay(DiningLocation a, DiningLocation b) {
+int compareForDisplay(DiningLocation a, DiningLocation b, {Set<String>? pinned}) {
+  if (pinned != null) {
+    final aPinned = pinned.contains('${a.id}');
+    final bPinned = pinned.contains('${b.id}');
+    // A pin is an explicit statement of interest, so it outranks everything,
+    // including whether the place happens to be open.
+    if (aPinned != bPinned) return aPinned ? -1 : 1;
+  }
   if (a.isOpen != b.isOpen) return a.isOpen ? -1 : 1;
 
   if (a.isOpen) {
@@ -40,8 +49,9 @@ int compareForDisplay(DiningLocation a, DiningLocation b) {
 
 /// Group locations into the configured categories, in configured order.
 List<MapEntry<String, List<DiningLocation>>> groupByCategory(
-  List<DiningLocation> locations,
-) {
+  List<DiningLocation> locations, {
+  Set<String>? pinned,
+}) {
   final groups = <String, List<DiningLocation>>{};
   final order = <String, int>{};
   for (final location in locations) {
@@ -49,7 +59,7 @@ List<MapEntry<String, List<DiningLocation>>> groupByCategory(
     order[location.categoryName] = location.categoryOrder;
   }
   for (final entry in groups.entries) {
-    entry.value.sort(compareForDisplay);
+    entry.value.sort((a, b) => compareForDisplay(a, b, pinned: pinned));
   }
   final entries = groups.entries.toList()
     ..sort((a, b) => (order[a.key] ?? 999).compareTo(order[b.key] ?? 999));
@@ -149,9 +159,13 @@ class _List extends StatelessWidget {
 }
 
 class DiningRow extends StatelessWidget {
-  const DiningRow({super.key, required this.location});
+  const DiningRow({super.key, required this.location, this.api});
 
   final DiningLocation location;
+
+  /// When supplied the row opens a detail sheet. The Today card preview leaves
+  /// it null, since tapping there navigates to the Dining tab instead.
+  final ApiClient? api;
 
   @override
   Widget build(BuildContext context) {
@@ -187,12 +201,25 @@ class DiningRow extends StatelessWidget {
       trailing = null;
     }
 
+    final client = api;
     return StatusRow(
-      icon: iconForVenue(location.name),
+      icon: Preferences.instance.isPinned(location.id)
+          ? Icons.push_pin_rounded
+          : iconForVenue(location.name),
       title: location.name,
       subtitle: when,
       accent: accent,
       emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
+      onTap: client == null
+          ? null
+          : () => showModalBottomSheet<void>(
+                context: context,
+                showDragHandle: true,
+                isScrollControlled: true,
+                constraints: const BoxConstraints(maxWidth: 720),
+                builder: (context) =>
+                    DiningDetailSheet(location: location, api: client),
+              ),
       trailing: trailing,
     );
   }

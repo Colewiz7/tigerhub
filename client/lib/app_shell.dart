@@ -149,7 +149,7 @@ class _AppShellState extends State<AppShell> {
                     onRefresh: _refresh,
                     onGoToTab: _go,
                   ),
-                  DiningScreen(result: _dining),
+                  DiningScreen(result: _dining, api: widget.api),
                   EventsScreen(result: _events),
                   CampusScreen(api: widget.api, areas: _areas),
                 ],

@@ -12,20 +12,48 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/content_column.dart';
 import '../widgets/freshness.dart';
+import '../services/preferences.dart';
 import '../widgets/status_row.dart';
 
-class DiningScreen extends StatelessWidget {
-  const DiningScreen({super.key, required this.result});
+class DiningScreen extends StatefulWidget {
+  const DiningScreen({super.key, required this.result, required this.api});
 
   final Result<Collection<DiningLocation>> result;
+  final ApiClient api;
+
+  @override
+  State<DiningScreen> createState() => _DiningScreenState();
+}
+
+class _DiningScreenState extends State<DiningScreen> {
+  final _prefs = Preferences.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefs.addListener(_onChanged);
+  }
+
+  @override
+  void dispose() {
+    _prefs.removeListener(_onChanged);
+    super.dispose();
+  }
+
+  void _onChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (result.isPriming) {
+    if (widget.result.isPriming) {
       return const PrimingPlaceholder(label: 'Loading dining hours');
     }
 
-    final groups = groupByCategory(result.value?.data ?? const []);
+    final groups = groupByCategory(
+      widget.result.value?.data ?? const [],
+      pinned: _prefs.pinnedDining,
+    );
 
     return ContentColumn(
       child: ListView.builder(
@@ -45,7 +73,7 @@ class DiningScreen extends StatelessWidget {
                   count: openInGroup,
                 ),
                 for (final location in group.value)
-                  DiningRow(location: location),
+                  DiningRow(location: location, api: widget.api),
               ],
             ),
           );

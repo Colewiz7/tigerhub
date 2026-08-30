@@ -58,6 +58,22 @@ class Occupancy {
       );
 }
 
+/// One resolved open period on the current day. All of it computed server
+/// side, so the client only formats it.
+class OpenSpan {
+  const OpenSpan({required this.opensAt, required this.closesAt, this.isException = false});
+
+  final DateTime opensAt;
+  final DateTime closesAt;
+  final bool isException;
+
+  factory OpenSpan.fromJson(Map<String, dynamic> json) => OpenSpan(
+        opensAt: _date(json['opens_at']) ?? DateTime.now(),
+        closesAt: _date(json['closes_at']) ?? DateTime.now(),
+        isException: json['is_exception'] as bool? ?? false,
+      );
+}
+
 class DiningLocation {
   const DiningLocation({
     required this.id,
@@ -67,6 +83,9 @@ class DiningLocation {
     this.categoryName = 'Everything else',
     this.categoryOrder = 999,
     this.summary,
+    this.description,
+    this.mapsUrl,
+    this.today = const [],
     this.opensAt,
     this.closesAt,
     this.nextTransition,
@@ -82,6 +101,15 @@ class DiningLocation {
   final int categoryOrder;
 
   final String? summary;
+
+  /// HTML from TigerCenter, flattened at the point of display.
+  final String? description;
+
+  final String? mapsUrl;
+
+  /// Today's resolved open periods. A location can open twice in a day.
+  final List<OpenSpan> today;
+
   final bool isOpen;
   final DateTime? opensAt;
   final DateTime? closesAt;
@@ -98,6 +126,11 @@ class DiningLocation {
         categoryName: json['category_name'] as String? ?? 'Everything else',
         categoryOrder: json['category_order'] as int? ?? 999,
         summary: json['summary'] as String?,
+        description: json['description'] as String?,
+        mapsUrl: json['maps_url'] as String?,
+        today: (json['today'] as List<dynamic>? ?? const [])
+            .map((e) => OpenSpan.fromJson(e as Map<String, dynamic>))
+            .toList(),
         isOpen: json['is_open'] as bool? ?? false,
         opensAt: _date(json['opens_at']),
         closesAt: _date(json['closes_at']),
@@ -271,6 +304,53 @@ class PostOffice {
         phone: json['phone'] as String?,
         hours: (json['hours'] as List<dynamic>? ?? const [])
             .map((e) => HoursRule.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+class OccupancyHour {
+  const OccupancyHour({
+    required this.hour,
+    required this.today,
+    required this.oneWeekAgo,
+    required this.average,
+  });
+
+  final int hour;
+  final int today;
+  final int oneWeekAgo;
+  final int average;
+
+  factory OccupancyHour.fromJson(Map<String, dynamic> json) => OccupancyHour(
+        hour: json['hour'] as int? ?? 0,
+        today: json['today'] as int? ?? 0,
+        oneWeekAgo: json['one_week_ago'] as int? ?? 0,
+        average: json['average'] as int? ?? 0,
+      );
+}
+
+class OccupancyHistory {
+  const OccupancyHistory({
+    required this.mdoId,
+    required this.hourly,
+    this.count,
+    this.maxOcc,
+    this.openStatus,
+  });
+
+  final int mdoId;
+  final List<OccupancyHour> hourly;
+  final int? count;
+  final int? maxOcc;
+  final String? openStatus;
+
+  factory OccupancyHistory.fromJson(Map<String, dynamic> json) => OccupancyHistory(
+        mdoId: json['mdo_id'] as int? ?? 0,
+        count: json['count'] as int?,
+        maxOcc: json['max_occ'] as int?,
+        openStatus: json['open_status'] as String?,
+        hourly: (json['hourly'] as List<dynamic>? ?? const [])
+            .map((e) => OccupancyHour.fromJson(e as Map<String, dynamic>))
             .toList(),
       );
 }

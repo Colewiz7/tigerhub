@@ -45,8 +45,10 @@ class Preferences extends ChangeNotifier {
   static const _hideKey = 'hide_keywords';
   static const _boostKey = 'boost_keywords';
   static const _keywordsEnabledKey = 'keyword_rules_enabled';
+  static const _pinnedKey = 'pinned_dining';
 
   Set<String> _muted = {};
+  Set<String> _pinned = {};
   List<String> _hide = defaultHideKeywords;
   List<String> _boost = defaultBoostKeywords;
   bool _keywordRulesEnabled = true;
@@ -54,6 +56,9 @@ class Preferences extends ChangeNotifier {
 
   bool get loaded => _loaded;
   Set<String> get mutedOrganizers => _muted;
+
+  /// Dining location ids, as strings. Pinned locations sort to the top.
+  Set<String> get pinnedDining => _pinned;
   List<String> get hideKeywords => _hide;
   List<String> get boostKeywords => _boost;
   bool get keywordRulesEnabled => _keywordRulesEnabled;
@@ -61,6 +66,7 @@ class Preferences extends ChangeNotifier {
   Future<void> load() async {
     final cache = ResponseCache.instance;
     _muted = (await cache.readOrder(_mutedKey)).toSet();
+    _pinned = (await cache.readOrder(_pinnedKey)).toSet();
 
     // An empty stored list is meaningful (the user cleared it), so absence has
     // to be distinguishable from emptiness. A stored marker entry does that.
@@ -92,6 +98,17 @@ class Preferences extends ChangeNotifier {
     }
     notifyListeners();
     await ResponseCache.instance.writeOrder(_mutedKey, _muted.toList());
+  }
+
+  bool isPinned(int locationId) => _pinned.contains('$locationId');
+
+  Future<void> togglePinned(int locationId) async {
+    final key = '$locationId';
+    _pinned = _pinned.contains(key)
+        ? ({..._pinned}..remove(key))
+        : {..._pinned, key};
+    notifyListeners();
+    await ResponseCache.instance.writeOrder(_pinnedKey, _pinned.toList());
   }
 
   Future<void> clearMutes() async {
@@ -132,6 +149,7 @@ class Preferences extends ChangeNotifier {
   @visibleForTesting
   void resetForTests() {
     _muted = {};
+    _pinned = {};
     _hide = defaultHideKeywords;
     _boost = defaultBoostKeywords;
     _keywordRulesEnabled = true;
