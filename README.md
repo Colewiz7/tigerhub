@@ -1,4 +1,4 @@
-# RIT Times
+# TigerHub
 
 A personal, non commercial campus information app for RIT. Dining hours, campus
 events, housing mailing addresses, post office hours, and live SHED makerspace
@@ -12,98 +12,62 @@ equipment availability, in one place.
 ## Layout
 
 ```
-backend/          FastAPI app, scrapers, APScheduler jobs, SQLite cache
-  app/scrapers/   one module per source, each with fetch() and parse()
-  app/models/     every SQL statement in the project lives here
-  app/api/        typed routes, served from cache only
-  app/config/     validated static JSON (post offices, SHED, residence halls)
-  tests/fixtures/ saved real responses, the suite never touches the network
-client/           Flutter app (android, linux, web), not yet scaffolded
-assets/prompts/   asset generation prompts, placeholders until generated
-docs/recon/       captured sample payloads from the recon phase
+client/                  the app, and the only thing that ships
+  lib/data/              the scrapers, cadence, and storage
+    sources/             one file per upstream
+    upstream.dart        the single outbound client, sets the User-Agent
+    local_backend.dart   routes a path to a source, holds the cadence
+    store.dart           snapshots on disk, one JSON file per source
+    hours.dart           the TigerCenter recurrence resolver
+    campus_time.dart     America/New_York without a timezone package
+    turbo_stream.dart    the decoder for the campus map's payload format
+  assets/config/         hand maintained JSON, each with a last_verified date
+  test/golden/           pinned output, and captured upstream payloads
+assets/prompts/          asset generation prompts, placeholders until generated
+docs/backlog.md          decided but not built
+docs/recon/              captured sample payloads from the recon phase
 ```
+
+## There is no server
+
+The app scrapes RIT directly on the device. There is nothing to deploy, nothing
+to keep running, and no account to create.
+
+It used to be a FastAPI service on a homelab. That box gets rebuilt and rebooted
+for other projects, so its uptime could not be promised for something you check
+between classes, and the server was removed on 2026-08-30.
+
+**The cost was the Web target, and with it iOS.** Four of the six upstreams send
+no `Access-Control-Allow-Origin`, so a browser cannot reach them:
+
+```
+tigercenter.rit.edu           no ACAO
+www.rit.edu                   no ACAO
+maps.rit.edu                  no ACAO
+ritathletics.com              no ACAO
+make.rit.edu                  ACAO: https://make.rit.edu   (its own origin only)
+locations.fdmealplanner.com   ACAO: *
+```
+
+Native platforms have no such restriction, so **Linux and Android** are
+unaffected. Web was the iOS story, since native iOS is impossible without a Mac,
+so there is currently no iOS path.
 
 ## Local development
 
-Everything runs on the laptop. Docker is purely a packaging step for the
-homelab later, so there is no need to build an image to work on this.
-
-**Backend, first time:**
+Everything runs on the laptop. There is no service to start.
 
 ```bash
-cd backend
-python3.12 -m venv .venv                      # 3.12 specifically, see note below
-.venv/bin/pip install -r requirements-dev.txt
+scripts/dev build        # build the linux release
+scripts/dev app          # launch it
+scripts/dev app --dev    # flutter run, with hot reload
+scripts/dev test         # flutter analyze plus flutter test
+scripts/dev data         # what has been scraped, and how old it is
+scripts/dev reset        # wipe the snapshots, next launch scrapes fresh
 ```
 
-**Run it:**
-
-```bash
-cd backend
-.venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Open http://127.0.0.1:8000/docs for the interactive API.
-
-On first start the scrapers run in the background and the cache fills within
-about 15 seconds. The API answers immediately the whole time, returning
-`{"data": [], "stale": true}` until each source lands.
-
-**Tests:**
-
-```bash
-cd backend
-.venv/bin/python -m pytest            # 71 tests, no network access
-```
-
-**Useful flags:**
-
-```bash
-# Skip the startup scrape, for fast iteration on routes
-RIT_TIMES_SCRAPE_ON_STARTUP=0 .venv/bin/uvicorn app.main:app --reload
-
-# Point at a throwaway database
-RIT_TIMES_DB=/tmp/scratch.db .venv/bin/uvicorn app.main:app --reload
-```
-
-> **Python 3.12, not 3.13 or newer.** The pinned pydantic has no wheel for
-> newer interpreters and falls back to a source build that fails. 3.12 is also
-> what the Dockerfile uses, so local and container match.
-
-**Client:**
-
-```bash
-cd client
-~/flutter/bin/flutter run -d linux     # native desktop
-~/flutter/bin/flutter run -d chrome    # web, the PWA target
-```
-
-The client defaults to `http://127.0.0.1:8000`. Point it elsewhere without
-editing source:
-
-```bash
-~/flutter/bin/flutter run -d linux --dart-define=API_BASE_URL=https://tigerhub.colewiz.dev
-```
-
-## Deploying
-
-Public host: `tigerhub.colewiz.dev`. On campus: `tigerhub.student.rit.edu`.
-
-```bash
-cd backend
-docker compose up -d --build
-```
-
-Runs as **standalone Docker on the Debian box, deliberately outside the k3s
-cluster**. That is a conscious choice for a small personal service, not an
-oversight, and it is not GitOps managed by Argo CD. SQLite plus APScheduler
-means exactly one replica, so the cluster buys nothing here.
-
-TLS terminates at the Cloudflare Tunnel edge, so the container carries no
-certresolver and no TLS config. The routing labels are still to be filled in by
-copying the existing `lore.colewiz.dev` service pattern verbatim.
-
-The SQLite cache lives on a named volume so it survives a rebuild.
+Android needs the Android SDK installed, which the development machine does not
+currently have. Linux builds and runs with no extra setup.
 
 ## Data sources
 
@@ -113,8 +77,11 @@ The SQLite cache lives on a named volume so it survives a rebuild.
 | CampusGroups iCal | student club events | none |
 | RIT Drupal JSON:API | official university events | none |
 | make.rit.edu GraphQL | live SHED equipment availability | none |
-| maps.rit.edu `.data` | live occupancy for 5 dining locations | none |
-| static JSON config | post office hours, SHED hours, mailing addresses | n/a |
+| ritathletics.com iCal | 182 fixtures, September to March | none |
+| maps.rit.edu `.data` | live occupancy, and campus points of interest | none |
+| FD MealPlanner | menus, allergens and dietary tags | none |
+| rit.edu recreation | gym, fitness and pool hours (HTML) | none |
+| bundled JSON config | post office hours, SHED hours, mail zones | n/a |
 
 Full endpoint detail, response shapes, and the reasoning behind each choice are
 in [CLAUDE.md](CLAUDE.md).
@@ -123,24 +90,34 @@ in [CLAUDE.md](CLAUDE.md).
 
 Enforced in code, not just documented:
 
-- Scheduled scrapes only. No route ever triggers a live upstream fetch.
+- Scheduled scrapes only. A read is served from the stored snapshot, and a
+  source refreshes only when its snapshot is older than that source's cadence,
+  so opening a tab five times does not scrape five times.
+- **This matters more without a server, not less**, because there is now one
+  scraper per install rather than one in total.
 - Every outbound call goes through one client wrapper that sets an honest,
   identifiable User-Agent with a contact address, plus timeouts and backoff.
 - Cadence: dining hourly, events every 3 hours, makerspace every 15 minutes,
   occupancy every 5 minutes.
-- Occupancy polls only the locations that actually publish it (5 of 24), which
-  cuts that job from about 6,900 requests a day to about 1,400.
+- Occupancy polls only the locations that actually publish it, 5 of 24.
+- Menus are fetched for the location being viewed and cached for a day. A month
+  of menus is about 7 MB, and pulling all twelve locations would spend 84 MB of
+  someone's data on places they never open.
 - Login gated endpoints are never contacted. Dining dollars is out of scope.
 
-## Health
+## Offline first
 
-- `GET /health` liveness. Answers as soon as the port is bound and never
-  depends on scraper state, so a cold cache does not read as a failed rollout.
-  This is the one to point a readiness probe at.
-- `GET /health/sources` per scraper `state` (`priming`, `ok`, `stale`,
-  `failing`), last success, last error, and consecutive failures, plus static
-  config entries that are unverified or older than 120 days. Returns 503 only
-  for a real problem. A container that just booted reports `priming` with 200.
+The app must be fully usable with no network at all. This got more important
+without a server, not less: there is no longer a warm cache on a machine
+somewhere that has already done the scraping, so a device with no network has
+only what it stored last time.
+
+- Every response is persisted and replayed on the next launch. Roughly 2 MB.
+- Last known data paints instantly. No cold start spinner.
+- A stale cache never produces an error screen. An error screen is only correct
+  on a first run that has never once succeeded.
+- Post office hours, mail zone formats and SHED hours are bundled with the app,
+  so the thing you look up standing at a counter with no signal always answers.
 
 Every list endpoint returns an envelope, never a bare array:
 
@@ -148,8 +125,9 @@ Every list endpoint returns an envelope, never a bare array:
 { "data": [], "stale": true, "last_updated": null }
 ```
 
-A cold cache answers 200 with an empty `data` and `stale: true`. The client
-shows a subtle indicator, not an error screen.
+That envelope was the server's, and it was kept deliberately when the scraping
+moved onto the device, so the presentation layer did not have to be rewritten
+alongside everything else.
 
 ## Campus mail
 
@@ -171,7 +149,11 @@ sent there is delayed.
 - SHED hours are hardcoded because the upstream GraphQL hours feed is buggy.
   The open and close times came off that payload but the weekday mapping is
   inferred, so treat as provisional and cross check against rit.edu/shed.
-- Routing labels in `docker-compose.yml` are intentionally blank pending the
-  `lore.colewiz.dev` pattern. Everything else in the compose file is complete.
-- The Dockerfile and compose file are unbuilt: no container runtime on the
-  development machine.
+- **No iOS path.** Web was it, and CORS on RIT's endpoints rules Web out. See
+  above.
+- **Android is not set up yet.** The SDK is not installed on the development
+  machine and there is no `android/` directory, so Linux is the only target that
+  currently builds.
+- Menus, allergens and dietary tags describe ingredients, not preparation. They
+  say nothing about shared fryers or surfaces. **Halal and kosher are not
+  published by any source and are never inferred.**
