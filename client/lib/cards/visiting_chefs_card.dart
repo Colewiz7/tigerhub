@@ -22,11 +22,13 @@ class VisitingChefsCard extends StatelessWidget {
     required this.result,
     this.dragHandle,
     this.onShowAll,
+    this.compact = false,
   });
 
   final Result<Collection<MenuItem>> result;
   final Widget? dragHandle;
   final VoidCallback? onShowAll;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +55,7 @@ class VisitingChefsCard extends StatelessWidget {
         (true, _) => const PrimingPlaceholder(label: 'Loading today'),
         (_, true) => const EmptyState(kind: EmptyKind.noVisitingChefs),
         _ => BoundedList(
-          itemCount: all.length,
+          itemCount: compact ? 1 : all.length,
           itemHeight: StatusRow.height,
           noun: 'chefs',
           onShowAll: onShowAll,

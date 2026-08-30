@@ -108,20 +108,33 @@ class DiningCard extends StatelessWidget {
     required this.result,
     this.dragHandle,
     this.onShowAll,
+    this.category,
+    this.compact = false,
   });
 
   final Result<Collection<DiningLocation>> result;
   final Widget? dragHandle;
   final VoidCallback? onShowAll;
+  final String? category;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
-    final locations = result.value?.data ?? const <DiningLocation>[];
+    final all = result.value?.data ?? const <DiningLocation>[];
+    final locations = category == null
+        ? all
+        : [
+            for (final location in all)
+              if (location.category == category) location,
+          ];
     final openNow = locations.where((l) => l.isOpen).length;
+    final title = category == null || locations.isEmpty
+        ? 'Dining'
+        : locations.first.categoryName;
 
     return CardShell(
       glyph: GlyphKind.dining,
-      title: 'Dining',
+      title: title,
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
@@ -136,17 +149,22 @@ class DiningCard extends StatelessWidget {
           kind: EmptyKind.sourceDown,
           title: 'Dining is unavailable',
         ),
-        _ => _List(locations: locations, onShowAll: onShowAll),
+        _ => _List(
+          locations: locations,
+          onShowAll: onShowAll,
+          limit: compact ? 1 : null,
+        ),
       },
     );
   }
 }
 
 class _List extends StatelessWidget {
-  const _List({required this.locations, this.onShowAll});
+  const _List({required this.locations, this.onShowAll, this.limit});
 
   final List<DiningLocation> locations;
   final VoidCallback? onShowAll;
+  final int? limit;
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +174,7 @@ class _List extends StatelessWidget {
     final openNow = sorted.where((location) => location.isOpen).length;
 
     return BoundedList(
-      itemCount: sorted.length,
+      itemCount: limit == null ? sorted.length : sorted.length.clamp(0, limit!),
       itemHeight: StatusRow.height,
       noun: 'open',
       // Open rows sort first, so visible capacity is consumed by open

@@ -517,8 +517,8 @@ class CampusMapProjection {
       // RIT publishes a few locations several miles from the main campus,
       // including the Inn and downtown partner buildings. They stay in the
       // result list, but must not shrink the initial campus view to dots.
-      return (anchor.longitude - medianLongitude).abs() <= 0.03 &&
-          (anchor.latitude - medianLatitude).abs() <= 0.025;
+      return (anchor.longitude - medianLongitude).abs() <= 0.018 &&
+          (anchor.latitude - medianLatitude).abs() <= 0.012;
     });
     final points = core.expand((f) => f.coordinates.expand((ring) => ring));
     if (points.isEmpty) return;
@@ -557,8 +557,16 @@ class CampusMapProjection {
       availableWidth / geographicWidth,
       availableHeight / latitudeSpan,
     );
-    final width = geographicWidth * scale;
+    final naturalWidth = geographicWidth * scale;
     final height = latitudeSpan * scale;
+    // This is a campus wayfinding diagram, not a survey map. On a wide app
+    // window the geographically narrow source bounds otherwise collapse into
+    // a tiny square surrounded by dead space. A restrained horizontal spread
+    // makes buildings and clusters legible while preserving every ordering
+    // and direction relationship.
+    final width = math
+        .min(availableWidth, math.max(naturalWidth, height * 2.35))
+        .toDouble();
     return Rect.fromLTWH(
       (size.width - width) / 2,
       (size.height - height) / 2,
@@ -618,6 +626,32 @@ class CampusMapPainter extends CustomPainter {
       RRect.fromRectAndRadius(mapRect.inflate(18), const Radius.circular(32)),
       Paint()..color = scheme.primary.withValues(alpha: 0.035),
     );
+
+    // A quiet tiger-stripe field gives the map the same identity as the
+    // masthead without competing with pins or pretending to be map data.
+    canvas.save();
+    canvas.clipRRect(
+      RRect.fromRectAndRadius(mapRect.inflate(18), const Radius.circular(32)),
+    );
+    final stripePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 9
+      ..strokeCap = StrokeCap.round
+      ..color = scheme.primary.withValues(alpha: 0.035);
+    for (var y = mapRect.top + 70; y < mapRect.bottom; y += 105) {
+      final stripe = Path()
+        ..moveTo(mapRect.left - 30, y)
+        ..cubicTo(
+          mapRect.left + mapRect.width * .28,
+          y - 34,
+          mapRect.left + mapRect.width * .62,
+          y + 38,
+          mapRect.right + 30,
+          y - 10,
+        );
+      canvas.drawPath(stripe, stripePaint);
+    }
+    canvas.restore();
     canvas.drawRRect(
       RRect.fromRectAndRadius(mapRect.inflate(18), const Radius.circular(32)),
       Paint()
@@ -656,6 +690,7 @@ class CampusMapPainter extends CustomPainter {
       final anchor = feature.anchor;
       if (anchor == null) continue;
       final center = projection.project(anchor);
+      if (!mapRect.inflate(12).contains(center)) continue;
       final key = ((center.dx / 30).floor(), (center.dy / 30).floor());
       buckets.putIfAbsent(key, () => []).add((feature: feature, at: center));
     }
