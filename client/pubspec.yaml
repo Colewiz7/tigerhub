@@ -66,6 +66,7 @@ flutter:
 
   assets:
     - assets/config/
+    - assets/map/
     - assets/icons/
     - assets/generated/empty-states/
     - assets/generated/glyphs/

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/data/campus_paths.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
@@ -186,6 +187,29 @@ void main() {
 
       expect(at(2).shouldRepaint(at(1)), isTrue);
       expect(at(1).shouldRepaint(at(1)), isFalse);
+    });
+
+    test('the map repaints once the walking network finishes loading', () {
+      // The asset decodes after the first frame, so without this the paths
+      // would not appear until something else happened to trigger a repaint.
+      final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFF76902));
+      CampusMapPainter withPaths(CampusPaths paths) => CampusMapPainter(
+        features: const [west, east],
+        selectedId: null,
+        scheme: scheme,
+        paths: paths,
+      );
+
+      final loaded = CampusPaths(
+        foot: const [
+          [GeoCoordinate(-77.68, 43.08), GeoCoordinate(-77.67, 43.085)],
+        ],
+        road: const [],
+      );
+      expect(
+        withPaths(loaded).shouldRepaint(withPaths(const CampusPaths.empty())),
+        isTrue,
+      );
     });
   });
 
