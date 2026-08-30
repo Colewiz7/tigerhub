@@ -37,34 +37,70 @@ const int drupalPageLimit = 50;
 /// Backstop so a pagination bug cannot loop forever.
 const int drupalMaxPages = 20;
 
+/// `3:00 PM`, `15:00`, `15:00:00`. Returns null if it is none of those.
+///
+/// The 12 hour form is the one Drupal actually sends, and missing it is what
+/// made every official RIT event look like an all day event.
+(int, int, int)? parseClockOf(String raw) {
+  final value = raw.trim().toUpperCase();
+  if (value.isEmpty) return null;
+
+  var isPm = false;
+  var isAm = false;
+  var body = value;
+  if (body.endsWith('AM') || body.endsWith('PM')) {
+    isPm = body.endsWith('PM');
+    isAm = !isPm;
+    body = body.substring(0, body.length - 2).trim();
+  }
+
+  final parts = body.split(':');
+  final hour = parts.isEmpty ? null : int.tryParse(parts[0].trim());
+  if (hour == null) return null;
+  final minute = parts.length > 1 ? int.tryParse(parts[1].trim()) : 0;
+  if (minute == null) return null;
+  final second = parts.length > 2 ? int.tryParse(parts[2].trim()) ?? 0 : 0;
+
+  var resolved = hour;
+  if (isPm && hour < 12) resolved = hour + 12;
+  if (isAm && hour == 12) resolved = 0;
+  if (resolved > 23 || minute > 59 || second > 59) return null;
+
+  return (resolved, minute, second);
+}
+
 /// Drupal splits date and time. Recombine into one campus local timestamp.
 ///
-/// A date with no time is an all day event, which is how 79 of the ~450 records
-/// arrive.
+/// **Drupal publishes the time in 12 hour form**, as `"3:00 PM"`. The backend
+/// only ever tried `%H:%M:%S` and `%H:%M`, so every parse failed and fell
+/// through to the all day branch: 456 of 460 official RIT events carried a
+/// stated start time that was thrown away and rendered as midnight, all day.
+/// That is why the Events tab showed everything from RIT as ALL DAY.
+///
+/// Only a date with genuinely no time is an all day event, which is the
+/// remaining 4.
+///
+/// A stated `12:00 AM` is treated as a real midnight, not as an all day marker.
+/// Twelve records pair it with an `11:59 PM` end, which probably is a CMS
+/// spelling of "all day", but guessing that would also hide a genuine midnight
+/// event, and this file does not infer what the source did not say.
 (String?, bool) combineDrupalMoment(Object? day, Object? clock) {
   if (day is! String || day.isEmpty) return (null, false);
 
   final date = DateTime.tryParse(day);
   if (date == null) return (null, false);
 
-  String midnight() => CampusTime.format(
-        CampusTime.wall(date.year, date.month, date.day),
+  String at(int h, int m, int s) => CampusTime.format(
+        CampusTime.wall(date.year, date.month, date.day, h, m, s),
       );
 
-  if (clock is! String || clock.isEmpty) return (midnight(), true);
+  if (clock is! String || clock.trim().isEmpty) return (at(0, 0, 0), true);
 
-  final parts = clock.split(':');
-  final hour = parts.isNotEmpty ? int.tryParse(parts[0]) : null;
-  final minute = parts.length > 1 ? int.tryParse(parts[1]) : null;
-  if (hour == null || minute == null) return (midnight(), true);
-  final second = parts.length > 2 ? int.tryParse(parts[2]) ?? 0 : 0;
+  final parsed = parseClockOf(clock);
+  if (parsed == null) return (at(0, 0, 0), true);
 
-  return (
-    CampusTime.format(
-      CampusTime.wall(date.year, date.month, date.day, hour, minute, second),
-    ),
-    false,
-  );
+  final (hour, minute, second) = parsed;
+  return (at(hour, minute, second), false);
 }
 
 List<Map<String, dynamic>> parseDrupal(List<dynamic> records) {
