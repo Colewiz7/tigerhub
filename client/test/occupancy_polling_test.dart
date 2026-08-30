@@ -13,33 +13,45 @@ void main() {
   final now = DateTime.utc(2026, 8, 30, 12);
   String ago(Duration d) => now.subtract(d).toIso8601String();
 
-  test('probes only a budget of unknowns on the first run', () {
-    // A cold start knows nothing. Probing all of them is 226 KB each, which is
-    // slow enough that the app can close before the snapshot is written.
+  test('probes everything unknown on the first run', () {
+    // Discovery is a one time cost and the run is checkpointed after every
+    // location, so paying it at once beats dragging it across twenty minutes
+    // of five minute cycles while the app can show no occupancy at all.
     expect(
       occupancyPollList(List.generate(24, (i) => i + 1), const {}, now),
-      [1, 2, 3, 4, 5, 6],
+      List.generate(24, (i) => i + 1),
     );
   });
 
-  test('picks up where the last run stopped, so discovery finishes', () {
+  test('resumes discovery rather than repeating it', () {
     final probes = {
       for (var i = 1; i <= 6; i++)
         '$i': {'has_density': false, 'probed_at': ago(const Duration(minutes: 5))},
     };
     expect(
-      occupancyPollList(List.generate(24, (i) => i + 1), probes, now),
-      [7, 8, 9, 10, 11, 12],
+      occupancyPollList(List.generate(10, (i) => i + 1), probes, now),
+      [7, 8, 9, 10],
     );
   });
 
-  test('always polls a known sensor, budget or not', () {
+  test('polls known sensors first, since those are what the UI wants', () {
     final probes = {
       '20': {'has_density': true, 'probed_at': ago(const Duration(minutes: 5))},
     };
-    final due = occupancyPollList(List.generate(24, (i) => i + 1), probes, now);
+    final due = occupancyPollList([1, 2, 20], probes, now);
     expect(due.first, 20, reason: 'the sensors are the actual feature');
-    expect(due.length, 7, reason: 'one known plus a budget of six probes');
+  });
+
+  test('caps speculative rechecks, which are almost always wasted', () {
+    final probes = {
+      for (var i = 1; i <= 24; i++)
+        '$i': {'has_density': false, 'probed_at': ago(const Duration(hours: 13))},
+    };
+    expect(
+      occupancyPollList(List.generate(24, (i) => i + 1), probes, now).length,
+      6,
+      reason: 'a location without a sensor yesterday still has none today',
+    );
   });
 
   test('then polls only the ones with a sensor', () {

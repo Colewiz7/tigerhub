@@ -133,37 +133,39 @@ Future<Map<String, dynamic>?> fetchOccupancy(Upstream http, int mdoId) async {
 /// traffic and the app loses nothing.
 const Duration occupancyReprobe = Duration(hours: 12);
 
-/// How many unknown locations to probe in a single run.
+/// How many already-probed locations to recheck in a single run.
 ///
-/// Each response is about 226 KB, and the first run knows nothing, so without a
-/// budget a cold start makes 24 sequential requests totalling roughly 5 MB
-/// before it can show a single number. That is slow enough that the app can be
-/// closed before the snapshot is written, which loses the whole run and starts
-/// over on the next launch.
+/// Rechecks are speculative: a location that had no sensor yesterday almost
+/// certainly has none today, and each response is about 226 KB. Capping them
+/// spreads that cost out instead of re-downloading 5 MB twice a day.
 ///
-/// With a budget the known sensors always answer immediately and discovery
-/// finishes over a handful of cycles instead.
-const int occupancyProbeBudget = 6;
+/// The cap deliberately does **not** apply to locations that have never been
+/// probed. Discovery is a one time cost, and until it finishes the app cannot
+/// show occupancy for a location that has a sensor, so dragging it out over
+/// twenty minutes of five minute cycles is worse than paying it at once. The
+/// run is checkpointed after every location, so an interrupted first run
+/// resumes rather than starting over.
+const int occupancyReprobeBudget = 6;
 
 /// Which locations to poll this run.
 ///
-/// Known sensors every time, since that is the actual feature. Then up to
-/// [occupancyProbeBudget] locations that have never been probed or are due a
-/// recheck. Probes are stamped as they happen, so each run picks up where the
-/// last one left off rather than retrying the same ones.
+/// Known sensors first, since that is the actual feature and those answers are
+/// what the UI is waiting on. Then everything never probed. Then a capped
+/// number of rechecks.
 List<int> occupancyPollList(
   List<int> allMdoIds,
   Map<String, dynamic> probes,
   DateTime now, {
-  int probeBudget = occupancyProbeBudget,
+  int reprobeBudget = occupancyReprobeBudget,
 }) {
   final known = <int>[];
-  final candidates = <int>[];
+  final unprobed = <int>[];
+  final rechecks = <int>[];
 
   for (final mdoId in allMdoIds) {
     final probe = probes['$mdoId'] as Map<String, dynamic>?;
     if (probe == null) {
-      candidates.add(mdoId);
+      unprobed.add(mdoId);
       continue;
     }
     if (probe['has_density'] == true) {
@@ -172,11 +174,11 @@ List<int> occupancyPollList(
     }
     final at = DateTime.tryParse(probe['probed_at'] as String? ?? '');
     if (at == null || now.difference(at) > occupancyReprobe) {
-      candidates.add(mdoId);
+      rechecks.add(mdoId);
     }
   }
 
-  return [...known, ...candidates.take(probeBudget)];
+  return [...known, ...unprobed, ...rechecks.take(reprobeBudget)];
 }
 
 /// Poll the dining locations that actually publish occupancy.
