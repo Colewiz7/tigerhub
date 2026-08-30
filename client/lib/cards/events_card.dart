@@ -22,6 +22,20 @@ import 'event_row.dart';
 IconData iconForOrganizer(String name) {
   final n = name.toLowerCase();
   if (n == 'rit') return Icons.school_rounded;
+  // Athletics fixtures group by sport, so the icon follows the sport.
+  if (n.contains('soccer')) return Icons.sports_soccer_rounded;
+  if (n.contains('volleyball')) return Icons.sports_volleyball_rounded;
+  if (n.contains('basketball')) return Icons.sports_basketball_rounded;
+  if (n.contains('hockey')) return Icons.sports_hockey_rounded;
+  if (n.contains('cross country') || n.contains('track')) {
+    return Icons.directions_run_rounded;
+  }
+  if (n.contains('swim') || n.contains('diving')) return Icons.pool_rounded;
+  if (n.contains('rowing')) return Icons.rowing_rounded;
+  if (n.contains('tennis')) return Icons.sports_tennis_rounded;
+  if (n.contains('lacrosse') || n.contains('baseball') || n.contains('softball')) {
+    return Icons.sports_baseball_rounded;
+  }
   if (n.contains('food') || n.contains('dining')) return Icons.volunteer_activism_rounded;
   if (n.contains('council') || n.contains('board') || n.contains('government')) {
     return Icons.groups_rounded;

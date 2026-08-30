@@ -327,3 +327,50 @@ def test_fd_menus_tolerates_a_broken_payload():
 
     assert fd_menus.parse({}) == []
     assert fd_menus.parse({"result": None}) == []
+
+
+def test_athletics_parses_the_ical_feed():
+    """Athletics was written off once because node--athletics_event is empty
+    and the Sidearm JSON endpoints 404. The same site publishes iCal."""
+    from app.scrapers import athletics
+
+    rows = athletics.parse(fixture_bytes("athletics.ics"))
+    assert rows
+    for row in rows:
+        assert row["source"] == "athletics"
+        assert row["uid"]
+        assert row["starts_at"]
+        assert row["event_type"] == "Athletics"
+
+
+def test_athletics_groups_by_sport_so_muting_works():
+    from app.scrapers import athletics
+
+    rows = athletics.parse(fixture_bytes("athletics.ics"))
+    organizers = {row["organizer"] for row in rows}
+    assert "Women's Soccer" in organizers
+    assert "Men's Soccer" in organizers
+    # Keys feed the existing mute UI, so they must be stable and keyless of
+    # spaces.
+    for row in rows:
+        assert " " not in row["organizer_key"]
+        assert row["organizer_key"] == row["organizer_key"].upper()
+
+
+def test_athletics_sport_extraction():
+    from app.scrapers.athletics import sport_of
+
+    assert sport_of("Women's Soccer vs Geneseo - Pride Game") == "Women's Soccer"
+    assert sport_of("Men's Volleyball at Keuka") == "Men's Volleyball"
+    assert sport_of("Men's Cross Country at Tom Balon Alumni Classic") == \
+        "Men's Cross Country"
+    # No vs/at, so it falls back rather than returning nothing.
+    assert sport_of("Swimming and Diving Invitational") is not None
+
+
+def test_athletics_keeps_the_venue():
+    from app.scrapers import athletics
+
+    rows = athletics.parse(fixture_bytes("athletics.ics"))
+    located = [r for r in rows if r["location"]]
+    assert located, "fixtures carry a venue and it is worth showing"

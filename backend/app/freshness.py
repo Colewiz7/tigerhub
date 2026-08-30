@@ -22,6 +22,7 @@ EXPECTED_INTERVAL_MINUTES = {
     "tigercenter_dining": settings.INTERVAL_DINING_MINUTES,
     "campusgroups": settings.INTERVAL_EVENTS_MINUTES,
     "drupal": settings.INTERVAL_EVENTS_MINUTES,
+    "athletics": settings.INTERVAL_EVENTS_MINUTES,
     "makerspace_equipment": settings.INTERVAL_MAKERSPACE_MINUTES,
     "maps_occupancy": settings.INTERVAL_OCCUPANCY_MINUTES,
     "recreation_hours": settings.INTERVAL_RECREATION_MINUTES,

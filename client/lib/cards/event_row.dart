@@ -14,6 +14,7 @@ import '../widgets/status_row.dart';
 
 IconData iconForEventType(String? type) {
   final t = (type ?? '').toLowerCase();
+  if (t.contains('athletics')) return Icons.sports_score_rounded;
   if (t.contains('meeting')) return Icons.groups_rounded;
   if (t.contains('workshop') || t.contains('training')) return Icons.construction_rounded;
   if (t.contains('religious') || t.contains('spiritual')) return Icons.self_improvement_rounded;
