@@ -64,7 +64,33 @@ scripts/dev app --dev    # flutter run, with hot reload
 scripts/dev test         # flutter analyze plus flutter test
 scripts/dev data         # what has been scraped, and how old it is
 scripts/dev reset        # wipe the snapshots, next launch scrapes fresh
+scripts/dev package      # build a single file AppImage into dist/
+scripts/dev install      # desktop entry and icons, for launchers
 ```
+
+## Getting it as one file
+
+```bash
+scripts/dev package
+```
+
+Produces `dist/TigerHub-<version>-x86_64.AppImage`, about 11 MB. One file,
+already executable. Run it, or move it anywhere; nothing needs installing and
+nothing is written outside the file until the app starts and creates its own
+data directory.
+
+The Flutter Linux bundle is relocatable already (its `RUNPATH` is
+`$ORIGIN/lib`), so the AppImage is mostly a wrapper that keeps the binary with
+its `lib/` and `data/`, plus a desktop entry and icon the host can read without
+installing anything.
+
+**What is not bundled:** GTK3, glib and the usual desktop libraries, which are
+expected on the host. That is true of every desktop Linux install, and bundling
+a whole toolkit would multiply the size to guard against a case that does not
+arise.
+
+`appimagetool` is fetched once into `.tools/` on first run. Both `.tools/` and
+`dist/` are gitignored.
 
 Android needs the Android SDK installed, which the development machine does not
 currently have. Linux builds and runs with no extra setup.

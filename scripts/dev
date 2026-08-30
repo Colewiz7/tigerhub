@@ -218,6 +218,7 @@ start, nothing to wait for, and no port.
   scripts/dev reset        wipe the snapshots, next launch scrapes fresh
 
   scripts/dev build        build the linux release
+  scripts/dev package      build a single file AppImage into dist/
   scripts/dev install      add a desktop entry and icons for launchers
   scripts/dev test         flutter analyze plus flutter test
   scripts/dev shot [file]  screenshot the app window, if it is focused
@@ -236,6 +237,7 @@ case "${1:-help}" in
   status|st) shift; cmd_status "$@" ;;
   app|run) shift; cmd_app "$@" ;;
   build) shift; cmd_build "$@" ;;
+  package) shift; "$ROOT/scripts/package" "$@" ;;
   install) shift; "$ROOT/scripts/install-desktop" "$@" ;;
   test) shift; cmd_test "$@" ;;
   data) shift; cmd_data "$@" ;;

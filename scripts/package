@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+# Build TigerHub as a single executable AppImage.
+#
+# One file, chmod +x, double click. No install, no package manager, nothing
+# written outside the file itself until the app runs and makes its own data
+# directory.
+#
+# Why AppImage rather than a tarball: the Flutter Linux bundle is already
+# relocatable (its RUNPATH is $ORIGIN/lib), so the only thing missing is a
+# wrapper that keeps the binary and its lib/ and data/ folders together. An
+# AppImage is exactly that, plus a desktop entry and icon the host can read
+# without anything being installed.
+#
+# What is NOT bundled: GTK3, glib and the usual desktop libraries. They are
+# expected on the host, which is true of every desktop Linux install. This is
+# the normal trade for an app-level AppImage; bundling a whole toolkit would
+# quadruple the size to protect against a case that does not happen.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+CLIENT="$ROOT/client"
+BUNDLE="$CLIENT/build/linux/x64/release/bundle"
+OUT="$ROOT/dist"
+TOOLS="$ROOT/.tools"
+APPDIR="$OUT/TigerHub.AppDir"
+ID="dev.colewiz.tigerhub"
+FLUTTER="${FLUTTER:-$HOME/flutter/bin/flutter}"
+
+if [ -t 1 ]; then
+  B=$'\e[1m'; G=$'\e[32m'; Y=$'\e[33m'; R=$'\e[31m'; N=$'\e[0m'
+else
+  B=""; G=""; Y=""; R=""; N=""
+fi
+say()  { printf '%s==>%s %s\n' "$B" "$N" "$*"; }
+ok()   { printf '%s  ok%s %s\n' "$G" "$N" "$*"; }
+warn() { printf '%s  !!%s %s\n' "$Y" "$N" "$*"; }
+die()  { printf '%s error%s %s\n' "$R" "$N" "$*" >&2; exit 1; }
+
+# The version the AppImage is named with. Kept in step with the User-Agent the
+# scrapers send, so a version seen in RIT's logs matches a file on disk.
+version() {
+  grep -oP "appVersion = '\K[^']+" "$CLIENT/lib/data/upstream.dart" 2>/dev/null \
+    || echo "0.0.0"
+}
+
+fetch_tool() {
+  local tool="$TOOLS/appimagetool"
+  if [ -x "$tool" ]; then echo "$tool"; return 0; fi
+
+  mkdir -p "$TOOLS"
+  say "fetching appimagetool (once, into .tools/)" >&2
+  curl -fsSL --max-time 120 \
+    https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage \
+    -o "$tool" || return 1
+  chmod +x "$tool"
+  echo "$tool"
+}
+
+say "building the release bundle"
+( cd "$CLIENT" && "$FLUTTER" build linux --release ) >/dev/null 2>&1 \
+  || die "flutter build failed. Run: scripts/dev build"
+[ -x "$BUNDLE/tigerhub" ] || die "no bundle at $BUNDLE"
+ok "bundle ready ($(du -sh "$BUNDLE" | cut -f1))"
+
+say "assembling the AppDir"
+rm -rf "$APPDIR"
+mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/share/icons/hicolor/256x256/apps"
+cp -r "$BUNDLE"/. "$APPDIR/usr/bin/"
+
+# AppRun is what the AppImage executes. cd first so the app's own relative
+# lookups (its flutter_assets live beside the binary) resolve the same way they
+# do out of a build directory.
+cat > "$APPDIR/AppRun" <<'APPRUN'
+#!/usr/bin/env bash
+HERE="$(dirname "$(readlink -f "${0}")")"
+cd "$HERE/usr/bin" || exit 1
+exec ./tigerhub "$@"
+APPRUN
+chmod +x "$APPDIR/AppRun"
+
+# Icon has to sit at the AppDir root under the name the desktop entry uses,
+# and again under the icon theme path for hosts that read it properly.
+cp "$ROOT/assets/icons/app-icon-256.png" "$APPDIR/$ID.png"
+cp "$ROOT/assets/icons/app-icon-256.png" \
+   "$APPDIR/usr/share/icons/hicolor/256x256/apps/$ID.png"
+
+# Exec is the bare name: inside an AppImage the path is not known until it runs.
+sed -e "s|^Exec=.*|Exec=tigerhub|" -e "s|^Icon=.*|Icon=$ID|" \
+  "$CLIENT/linux/packaging/$ID.desktop" > "$APPDIR/$ID.desktop"
+ok "AppDir assembled"
+
+TOOL="$(fetch_tool)" || die "could not fetch appimagetool, and it is not in .tools/"
+
+say "packing the AppImage"
+mkdir -p "$OUT"
+TARGET="$OUT/TigerHub-$(version)-x86_64.AppImage"
+rm -f "$TARGET"
+
+# appimagetool is itself an AppImage, so it needs FUSE. --appimage-extract-and-run
+# sidesteps that on machines without it.
+if ! ARCH=x86_64 "$TOOL" "$APPDIR" "$TARGET" >/dev/null 2>&1; then
+  warn "appimagetool needed extracting first, retrying"
+  ARCH=x86_64 "$TOOL" --appimage-extract-and-run "$APPDIR" "$TARGET" >/dev/null 2>&1 \
+    || die "appimagetool failed"
+fi
+
+[ -f "$TARGET" ] || die "no AppImage produced"
+chmod +x "$TARGET"
+rm -rf "$APPDIR"
+
+ok "$(basename "$TARGET") ($(du -h "$TARGET" | cut -f1))"
+echo
+echo "  ${B}$TARGET${N}"
+echo "  Run it directly, or move it anywhere. Nothing needs installing."
