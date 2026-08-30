@@ -3,19 +3,13 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BACKEND="$ROOT/backend"
 CLIENT="$ROOT/client"
-RUN="$ROOT/.run"
-PIDFILE="$RUN/backend.pid"
-LOGFILE="$RUN/backend.log"
 BIN="$CLIENT/build/linux/x64/release/bundle/tigerhub"
 FLUTTER="${FLUTTER:-$HOME/flutter/bin/flutter}"
-PORT="${TIGERHUB_PORT:-8000}"
-BASE="http://127.0.0.1:$PORT"
 
-export CHROME_EXECUTABLE="${CHROME_EXECUTABLE:-/usr/bin/chromium}"
-
-mkdir -p "$RUN"
+# Where the app keeps its scraped snapshots. Matches getApplicationSupportDirectory
+# for the dev.colewiz.tigerhub application id.
+DATA="${XDG_DATA_HOME:-$HOME/.local/share}/dev.colewiz.tigerhub/data"
 
 # Colours, dropped when not a terminal.
 if [ -t 1 ]; then
@@ -28,119 +22,36 @@ ok()   { printf '%s  ok%s %s\n' "$G" "$N" "$*"; }
 warn() { printf '%s  !!%s %s\n' "$Y" "$N" "$*"; }
 die()  { printf '%s error%s %s\n' "$R" "$N" "$*" >&2; exit 1; }
 
-backend_pid() {
-  [ -f "$PIDFILE" ] || return 1
-  local pid; pid="$(cat "$PIDFILE" 2>/dev/null)"
-  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && echo "$pid"
-}
-
-backend_healthy() { curl -sf "$BASE/health" >/dev/null 2>&1; }
-
-require_venv() {
-  [ -x "$BACKEND/.venv/bin/uvicorn" ] || die "backend venv missing. Run: scripts/dev setup"
-}
-
 # ---------------------------------------------------------------- commands
 
-cmd_setup() {
-  say "creating the backend venv (Python 3.12)"
-  command -v python3.12 >/dev/null || die "python3.12 not found"
-  python3.12 -m venv "$BACKEND/.venv" || die "venv failed"
-  "$BACKEND/.venv/bin/pip" install -q --upgrade pip
-  "$BACKEND/.venv/bin/pip" install -q -r "$BACKEND/requirements-dev.txt" || die "pip failed"
-  ok "backend ready"
-  [ -x "$FLUTTER" ] && ok "flutter at $FLUTTER" || warn "flutter not at $FLUTTER"
-}
-
-cmd_up() {
-  require_venv
-  if backend_pid >/dev/null; then ok "backend already running (pid $(backend_pid))"; return; fi
-  if backend_healthy; then
-    warn "something else is already serving port $PORT"
-    warn "stop it with: pkill -f 'uvicorn app.main'"
-    return 1
-  fi
-
-  say "starting backend on $BASE"
-  # `exec` so the recorded pid is uvicorn itself, not a subshell wrapper.
-  # Without it, stopping the wrapper orphans the server and leaves the port
-  # bound. The absolute path also makes the process findable by cmdline.
-  ( cd "$BACKEND" && exec "$BACKEND/.venv/bin/uvicorn" app.main:app \
-      --host 127.0.0.1 --port "$PORT" --log-level warning \
-    ) >"$LOGFILE" 2>&1 &
-  echo $! >"$PIDFILE"
-
-  local i=0
-  until backend_healthy; do
-    i=$((i+1))
-    [ "$i" -gt 40 ] && { warn "did not come up, see: scripts/dev logs"; return 1; }
-    sleep 1
-  done
-  ok "backend up (pid $(cat "$PIDFILE"))"
-
-  say "waiting for the first scrape"
-  i=0
-  until [ "$(curl -s "$BASE/dining" | python3 -c 'import json,sys;print(len(json.load(sys.stdin)["data"]))' 2>/dev/null || echo 0)" -gt 0 ]; do
-    i=$((i+1))
-    [ "$i" -gt 30 ] && { warn "cache still cold, the app will show stale until it fills"; return 0; }
-    sleep 2
-  done
-  ok "cache warm"
-}
-
-cmd_down() {
-  local pid; pid="$(backend_pid || true)"
-  local stopped=0
-
-  if [ -n "$pid" ]; then
-    kill "$pid" 2>/dev/null && { ok "stopped backend (pid $pid)"; stopped=1; }
-  fi
-  rm -f "$PIDFILE"
-
-  # --reload spawns a child, and an earlier run may have left one behind, so
-  # always sweep afterwards rather than trusting the pid file alone.
-  #
-  # pgrep plus an explicit self check, not a bare `pkill -f`. A pattern that
-  # broad also matches any shell whose command line happens to contain it,
-  # including the one running this script.
-  local stray
-  for stray in $(pgrep -f "$BACKEND/.venv/bin/uvicorn" 2>/dev/null); do
-    [ "$stray" = "$$" ] && continue
-    [ "$stray" = "$PPID" ] && continue
-    kill "$stray" 2>/dev/null && stopped=1
-  done
-  [ "$stopped" = "1" ] && [ -z "$pid" ] && ok "stopped a stray backend"
-  [ "$stopped" = "1" ] || ok "backend was not running"
-
-  pkill -x tigerhub 2>/dev/null && ok "closed the app" || true
-
-  # Confirm the port actually freed, rather than reporting success blindly.
-  sleep 1
-  if backend_healthy; then
-    warn "port $PORT is still being served by something else"
-  fi
-}
-
-cmd_restart() { cmd_down; sleep 1; cmd_up; }
-
 cmd_status() {
-  if backend_pid >/dev/null; then ok "backend running (pid $(backend_pid)) on $BASE"
-  elif backend_healthy; then warn "port $PORT is served by a process this script did not start"
-  else warn "backend not running"; fi
-
   pgrep -x tigerhub >/dev/null && ok "app running" || warn "app not running"
-
-  if backend_healthy; then
-    echo
-    curl -s "$BASE/health/sources" | python3 "$ROOT/scripts/_sources.py" 2>/dev/null \
-      || warn "could not read /health/sources"
-  fi
+  echo
+  cmd_data
 }
 
-cmd_logs() { [ -f "$LOGFILE" ] || die "no log yet"; tail -f "$LOGFILE"; }
+# What the app has actually scraped and stored, which is the closest thing to
+# the old /health/sources now that there is no server to ask.
+cmd_data() {
+  [ -d "$DATA" ] || { warn "no snapshots yet at $DATA"; return 0; }
+  local found=0
+  for f in "$DATA"/*.json; do
+    [ -e "$f" ] || continue
+    found=1
+    local name age size
+    name="$(basename "$f" .json)"
+    size="$(du -h "$f" | cut -f1)"
+    age="$(python3 -c "
+import os,sys,time
+m=os.path.getmtime(sys.argv[1]); d=int(time.time()-m)
+print('%dh %dm ago' % (d//3600, (d%3600)//60) if d>=3600 else '%dm ago' % (d//60))
+" "$f")"
+    printf '  %-24s %6s  %s\n' "$name" "$size" "$age"
+  done
+  [ "$found" = 1 ] || warn "no snapshots yet"
+}
 
 cmd_app() {
-  backend_healthy || warn "backend is down, the app will open on cached data only"
   if [ "${1:-}" = "--dev" ]; then
     say "flutter run (hot reload)"
     ( cd "$CLIENT" && "$FLUTTER" run -d linux "${@:2}" )
@@ -158,23 +69,17 @@ cmd_build() {
 }
 
 cmd_test() {
-  require_venv
-  say "backend tests"
-  ( cd "$BACKEND" && .venv/bin/python -m pytest -q ) || die "backend tests failed"
-  say "client tests"
-  ( cd "$CLIENT" && "$FLUTTER" test ) || die "client tests failed"
+  say "analyze"
+  ( cd "$CLIENT" && "$FLUTTER" analyze ) || die "analyze failed"
+  say "tests"
+  ( cd "$CLIENT" && "$FLUTTER" test ) || die "tests failed"
   ok "all green"
 }
 
-cmd_api() {
-  local path="${1:-/dining}"
-  curl -s "$BASE$path" | python3 -m json.tool 2>/dev/null || die "no response from $BASE$path"
-}
-
 cmd_reset() {
-  cmd_down
-  rm -f "$BACKEND/data/rit_times.db"*
-  ok "cache wiped, next start rebuilds it"
+  pgrep -x tigerhub >/dev/null && die "close the app first"
+  rm -rf "$DATA"
+  ok "snapshots wiped, the next launch scrapes from scratch"
 }
 
 # Screenshot just the app window.
@@ -270,41 +175,32 @@ cmd_help() {
   cat <<'HELP'
 TigerHub dev helper
 
-  scripts/dev setup        create the backend venv and install deps (once)
-
-  scripts/dev up           start the backend, wait for the cache to warm
-  scripts/dev down         stop the backend and close the app
-  scripts/dev restart      down then up
-  scripts/dev status       what is running, plus per scraper health
-  scripts/dev logs         tail the backend log
+There is no backend. The app scrapes RIT itself, so there is nothing to
+start, nothing to wait for, and no port.
 
   scripts/dev app          launch the built app
   scripts/dev app --dev    flutter run instead, with hot reload
 
+  scripts/dev status       is the app running, and what has it scraped
+  scripts/dev data         what is cached on disk, and how old it is
+  scripts/dev reset        wipe the snapshots, next launch scrapes fresh
+
   scripts/dev build        build the linux release
-  scripts/dev test         backend pytest plus client flutter test
-  scripts/dev api [path]   pretty print an endpoint, default /dining
+  scripts/dev test         flutter analyze plus flutter test
   scripts/dev shot [file]  screenshot the app window only, cropped
   scripts/dev shot-tabs    capture every tab into response/screenshots/
-  scripts/dev reset        wipe the local scrape cache
 
 Environment:
-  TIGERHUB_PORT=8000       backend port
   FLUTTER=~/flutter/bin/flutter
 HELP
 }
 
 case "${1:-help}" in
-  setup) shift; cmd_setup "$@" ;;
-  up|start) shift; cmd_up "$@" ;;
-  down|stop) shift; cmd_down "$@" ;;
-  restart) shift; cmd_restart "$@" ;;
   status|st) shift; cmd_status "$@" ;;
-  logs|log) shift; cmd_logs "$@" ;;
   app|run) shift; cmd_app "$@" ;;
   build) shift; cmd_build "$@" ;;
   test) shift; cmd_test "$@" ;;
-  api) shift; cmd_api "$@" ;;
+  data) shift; cmd_data "$@" ;;
   shot|screenshot) shift; cmd_shot "$@" ;;
   shot-tabs|tabs) shift; cmd_shot_tabs "$@" ;;
   reset) shift; cmd_reset "$@" ;;
