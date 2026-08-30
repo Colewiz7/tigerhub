@@ -255,7 +255,19 @@ class _AppShellState extends State<AppShell> {
   }
 }
 
-class _TabStack extends StatelessWidget {
+/// The four tabs, keeping every screen's state while only paying for the ones
+/// on screen.
+///
+/// A plain Stack of all four laid out and composited every screen at once,
+/// which got noticeably worse when the campus map arrived: a map canvas was
+/// being laid out continuously while nobody was looking at it.
+///
+/// So everything except the tab being shown, and the one being faded out, is
+/// Offstage. Offstage keeps the State alive, and therefore scroll positions,
+/// subscriptions and any in progress edit, while skipping layout and paint
+/// entirely. The crossfade the motion spec asks for still happens, because the
+/// outgoing tab stays on stage until it finishes.
+class _TabStack extends StatefulWidget {
   const _TabStack({
     required this.index,
     required this.animate,
@@ -267,30 +279,72 @@ class _TabStack extends StatelessWidget {
   final List<Widget> children;
 
   @override
+  State<_TabStack> createState() => _TabStackState();
+}
+
+class _TabStackState extends State<_TabStack> {
+  /// The tab fading out, kept on stage until the fade ends.
+  int? _outgoing;
+  Timer? _settle;
+
+  @override
+  void didUpdateWidget(_TabStack old) {
+    super.didUpdateWidget(old);
+    if (old.index == widget.index) return;
+
+    _settle?.cancel();
+    setState(() => _outgoing = old.index);
+
+    final media = MediaQuery.maybeOf(context);
+    final reduceMotion = (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false);
+
+    if (reduceMotion || !widget.animate) {
+      _outgoing = null;
+      return;
+    }
+
+    _settle = Timer(const Duration(milliseconds: 180), () {
+      if (mounted) setState(() => _outgoing = null);
+    });
+  }
+
+  @override
+  void dispose() {
+    _settle?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
+    final reduceMotion = (media?.disableAnimations ?? false) ||
         (media?.accessibleNavigation ?? false);
-    final duration = reduceMotion || !animate
+    final duration = reduceMotion || !widget.animate
         ? Duration.zero
         : const Duration(milliseconds: 180);
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        for (var childIndex = 0; childIndex < children.length; childIndex++)
-          IgnorePointer(
-            ignoring: childIndex != index,
-            child: ExcludeSemantics(
-              excluding: childIndex != index,
-              child: TickerMode(
-                enabled: childIndex == index,
-                child: AnimatedOpacity(
-                  opacity: childIndex == index ? 1 : 0,
-                  duration: duration,
-                  curve: Curves.easeOutCubic,
-                  child: children[childIndex],
+        for (var childIndex = 0;
+            childIndex < widget.children.length;
+            childIndex++)
+          Offstage(
+            offstage:
+                childIndex != widget.index && childIndex != _outgoing,
+            child: IgnorePointer(
+              ignoring: childIndex != widget.index,
+              child: ExcludeSemantics(
+                excluding: childIndex != widget.index,
+                child: TickerMode(
+                  enabled: childIndex == widget.index,
+                  child: AnimatedOpacity(
+                    opacity: childIndex == widget.index ? 1 : 0,
+                    duration: duration,
+                    curve: Curves.easeOutCubic,
+                    child: widget.children[childIndex],
+                  ),
                 ),
               ),
             ),
