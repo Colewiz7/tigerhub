@@ -25,8 +25,13 @@ import 'dart:async';
 import 'backend.dart';
 import 'campus_time.dart';
 import 'sources/athletics.dart';
+import 'sources/campus_places.dart';
 import 'sources/campusgroups.dart';
 import 'sources/drupal_events.dart';
+import 'sources/fd_menus.dart';
+import 'sources/makerspace.dart';
+import 'sources/maps_occupancy.dart';
+import 'sources/recreation.dart';
 import 'sources/tigercenter.dart';
 import 'static_config.dart';
 import 'store.dart';
@@ -85,6 +90,22 @@ class LocalBackend implements Backend {
       name: athleticsSource,
       cadence: const Duration(minutes: 180),
       scrape: scrapeAthletics,
+    ),
+    makerspaceSource: SourceSpec(
+      name: makerspaceSource,
+      cadence: const Duration(minutes: 15),
+      scrape: scrapeMakerspace,
+    ),
+    campusPlacesSource: SourceSpec(
+      name: campusPlacesSource,
+      // Physical infrastructure. It changes rarely, so twice a day.
+      cadence: const Duration(minutes: 720),
+      scrape: scrapeCampusPlaces,
+    ),
+    recreationSource: SourceSpec(
+      name: recreationSource,
+      cadence: const Duration(minutes: 360),
+      scrape: scrapeRecreation,
     ),
   };
 
@@ -183,7 +204,34 @@ class LocalBackend implements Backend {
         return _events(query);
       case '/events/organizers':
         return _organizers();
+      case '/makerspace/equipment':
+        return _equipment(query);
+      case '/makerspace/rooms':
+        return _rooms();
+      case '/makerspace/hours':
+        return _shedHours();
+      case '/recreation/hours':
+        return _recreation();
+      case '/campus/places':
+        return _placeKinds();
+      case '/post-offices':
+        return _postOffices();
+      case '/housing/areas':
+        return _housingAreas();
     }
+
+    final places = RegExp(r'^/campus/places/([A-Za-z0-9_]+)$').firstMatch(path);
+    if (places != null) return _places(places.group(1)!);
+
+    final menu = RegExp(r'^/dining/(\d+)/menu$').firstMatch(path);
+    if (menu != null) return _menu(int.parse(menu.group(1)!));
+
+    final occupancy = RegExp(r'^/dining/(\d+)/occupancy$').firstMatch(path);
+    if (occupancy != null) return _occupancy(int.parse(occupancy.group(1)!));
+
+    final address =
+        RegExp(r'^/housing/areas/([A-Za-z0-9_-]+)/address$').firstMatch(path);
+    if (address != null) return _address(address.group(1)!, query);
 
     throw UpstreamError('no local source serves $path');
   }
@@ -320,6 +368,207 @@ class LocalBackend implements Backend {
       for (final p in raw.split(',')) if (p.trim().isNotEmpty) p.trim(),
     ];
     return parts.isEmpty ? null : parts;
+  }
+
+  // --- makerspace ---
+
+  Future<Map<String, dynamic>> _equipment(Map<String, String>? query) async {
+    final (snapshot, fetchedAt) = await _snapshot(makerspaceSource);
+    return _envelope(
+      makerspaceSource,
+      equipmentIn(snapshot, query?['room']),
+      fetchedAt,
+    );
+  }
+
+  Future<Map<String, dynamic>> _rooms() async {
+    final (snapshot, fetchedAt) = await _snapshot(makerspaceSource);
+    return _envelope(makerspaceSource, roomSummary(snapshot), fetchedAt);
+  }
+
+  /// SHED hours are static config, not a scrape. Their own hours feed returns
+  /// closed:true on every row with an ISO timestamp where a weekday belongs
+  /// (CLAUDE.md 8, decision 3).
+  ///
+  /// This endpoint returned a bare list rather than an envelope, so it is
+  /// wrapped as items to match what watchList expects.
+  Future<Map<String, dynamic>> _shedHours() async => {
+        'items': StaticConfig.instance.shedSpaces,
+      };
+
+  // --- recreation ---
+
+  Future<Map<String, dynamic>> _recreation() async {
+    final (snapshot, fetchedAt) = await _snapshot(recreationSource);
+    return _envelope(
+      recreationSource,
+      snapshot?['rows'] as List<dynamic>? ?? const [],
+      fetchedAt,
+    );
+  }
+
+  // --- campus places ---
+
+  Future<Map<String, dynamic>> _placeKinds() async {
+    final (snapshot, fetchedAt) = await _snapshot(campusPlacesSource);
+    return _envelope(campusPlacesSource, placeKindSummary(snapshot), fetchedAt);
+  }
+
+  Future<Map<String, dynamic>> _places(String kind) async {
+    final (snapshot, fetchedAt) = await _snapshot(campusPlacesSource);
+    return _envelope(campusPlacesSource, placesOfKind(snapshot, kind), fetchedAt);
+  }
+
+  // --- static config ---
+
+  Future<Map<String, dynamic>> _postOffices() async => {
+        'data': StaticConfig.instance.postOffices,
+        'stale': false,
+        'last_updated': null,
+      };
+
+  /// Mail zones, including the two locations that bypass campus post offices.
+  Future<Map<String, dynamic>> _housingAreas() async {
+    final config = StaticConfig.instance;
+    return {
+      'data': [
+        for (final area in config.housingAreas)
+          {
+            'id': area['id'],
+            'name': area['name'],
+            'post_office': area['post_office'],
+            'line2_format': area['line2_format'],
+            'line2_example': area['line2_example'],
+            'last_verified': area['last_verified'],
+          },
+        for (final delivered in config.directDelivery)
+          {
+            'id': delivered['id'],
+            'name': delivered['name'],
+            'direct_delivery': true,
+            'last_verified': delivered['last_verified'],
+          },
+      ],
+      'stale': false,
+      'last_updated': null,
+    };
+  }
+
+  Future<Map<String, dynamic>> _address(
+    String areaId,
+    Map<String, String>? query,
+  ) async {
+    final config = StaticConfig.instance;
+    final name = query?['name'] ?? 'Your Name';
+    final unit = query?['unit'];
+
+    final lines = config.addressFor(areaId, name, unit);
+    if (lines == null) throw UpstreamError('housing area not found: $areaId');
+
+    final delivered = config.direct(areaId);
+    if (delivered != null) {
+      return {
+        'area_id': delivered['id'],
+        'area_name': delivered['name'],
+        'lines': lines,
+        'unit_supplied': true,
+        'direct_delivery': true,
+        'note': delivered['note'],
+        'source_url': config.housingSourceUrl,
+        'last_verified': delivered['last_verified'],
+        'verified': delivered['last_verified'] != null,
+      };
+    }
+
+    final area = config.area(areaId)!;
+    return {
+      'area_id': area['id'],
+      'area_name': area['name'],
+      'lines': lines,
+      'line2_format': area['line2_format'],
+      'line2_example': area['line2_example'],
+      'unit_supplied': unit != null,
+      'post_office': config.office(area['post_office'] as String?),
+      'source_url': config.housingSourceUrl,
+      'last_verified': area['last_verified'],
+      'verified': area['last_verified'] != null,
+    };
+  }
+
+  // --- per location, fetched on demand ---
+
+  /// Occupancy for one location. Only 5 of 24 publish it, and a location with
+  /// no sensor is the normal case rather than an error.
+  Future<Map<String, dynamic>> _occupancy(int locationId) async {
+    final (dining, _) = await _snapshot('tigercenter_dining');
+    int? mdoId;
+    for (final raw in dining?['locations'] as List<dynamic>? ?? const []) {
+      final loc = raw as Map<String, dynamic>;
+      if (loc['id'] == locationId) mdoId = loc['mdo_id'] as int?;
+    }
+    if (mdoId == null) throw UpstreamError('no mdo_id for location $locationId');
+
+    final key = '/dining/$locationId/occupancy';
+    final store = await _openStore();
+    final stored = await store.read(key);
+    final age = await store.fetchedAt(key);
+
+    if (stored != null &&
+        age != null &&
+        DateTime.now().difference(age) < const Duration(minutes: 5)) {
+      return stored.body;
+    }
+
+    final reading = await fetchOccupancy(_http, mdoId);
+    if (reading == null) {
+      if (stored != null) return stored.body;
+      throw UpstreamError('no occupancy reading for this location');
+    }
+
+    final body = {
+      ...reading,
+      'stale': false,
+      'last_updated': CampusTime.format(CampusTime.nowUtc()),
+    };
+    await store.write(key, body);
+    return body;
+  }
+
+  /// A location's menu for today, fetched on demand rather than rotated.
+  ///
+  /// See the cadence note in `sources/fd_menus.dart`: a month of menus for one
+  /// location is about 7 MB, and pulling all twelve on a device would spend
+  /// 84 MB of someone's data on locations they never open.
+  Future<Map<String, dynamic>> _menu(int locationId) async {
+    final config = StaticConfig.instance;
+    final key = 'fd_menus_$locationId';
+    final store = await _openStore();
+
+    var stored = await store.read(key);
+    final age = await store.fetchedAt(key);
+
+    final due = age == null || DateTime.now().difference(age) > fdMenuCadence;
+    if (due) {
+      try {
+        final fetched = await fetchFdMenus(_http, config, locationId);
+        if (fetched != null) {
+          await store.write(key, fetched);
+          stored = await store.read(key);
+        }
+      } catch (_) {
+        // Falls back to whatever is stored, or to an empty menu.
+      }
+    }
+
+    final today = CampusTime.formatDate(CampusTime.nowUtc());
+    return {
+      'service_date': today,
+      'location_id': locationId,
+      'dishes': dishesOn(stored?.body, today),
+      'stale': stored == null,
+      'last_updated':
+          age == null ? null : CampusTime.format(age.toUtc()),
+    };
   }
 
   @override

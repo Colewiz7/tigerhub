@@ -43,7 +43,12 @@ class JsonStore {
   }
 
   /// For tests, which should not touch the real application support directory.
-  static void overrideForTesting(Directory dir) => _instance = JsonStore._(dir);
+  static JsonStore overrideForTesting(Directory dir) =>
+      _instance = JsonStore._(dir);
+
+  /// The store [overrideForTesting] installed, for injecting directly.
+  static JsonStore get overrideForTestingInstance =>
+      _instance ?? (throw StateError('JsonStore.overrideForTesting() has not run'));
 
   /// `/dining/23/occupancy?x=1` becomes `dining-23-occupancy-x-1`, so a key is
   /// always a single safe filename regardless of what path produced it.

@@ -88,4 +88,100 @@ class StaticConfig {
       _category(id)?['name'] as String? ?? 'Everything else';
 
   int categoryOrder(String id) => _category(id)?['order'] as int? ?? 999;
+
+  // --- FD MealPlanner ---
+
+  int get fdTenantId => file('fd_locations')['tenant_id'] as int? ?? 20;
+
+  /// The FD entry for a TigerCenter dining id, or null when there is none.
+  /// Three arena concessions have no TigerCenter counterpart and are listed
+  /// under `unmapped` so a future reader knows they were considered.
+  Map<String, dynamic>? fdLocationFor(int diningId) {
+    for (final raw in file('fd_locations')['locations'] as List<dynamic>) {
+      final entry = raw as Map<String, dynamic>;
+      if (entry['dining_id'] == diningId) return entry;
+    }
+    return null;
+  }
+
+  // --- post offices ---
+
+  List<Map<String, dynamic>> get postOffices => [
+        for (final o in file('post_offices')['offices'] as List<dynamic>)
+          o as Map<String, dynamic>,
+      ];
+
+  Map<String, dynamic>? office(String? id) {
+    if (id == null) return null;
+    for (final o in postOffices) {
+      if (o['id'] == id) return o;
+    }
+    return null;
+  }
+
+  // --- SHED ---
+
+  List<Map<String, dynamic>> get shedSpaces => [
+        for (final s in file('shed_hours')['spaces'] as List<dynamic>)
+          s as Map<String, dynamic>,
+      ];
+
+  // --- housing ---
+
+  Map<String, dynamic> get _housing => file('housing_areas');
+
+  List<Map<String, dynamic>> get housingAreas => [
+        for (final a in _housing['areas'] as List<dynamic>)
+          a as Map<String, dynamic>,
+      ];
+
+  List<Map<String, dynamic>> get directDelivery => [
+        for (final d in _housing['direct_delivery'] as List<dynamic>)
+          d as Map<String, dynamic>,
+      ];
+
+  String? get housingSourceUrl => _housing['source_url'] as String?;
+
+  Map<String, dynamic>? area(String id) {
+    for (final a in housingAreas) {
+      if (a['id'] == id) return a;
+    }
+    return null;
+  }
+
+  Map<String, dynamic>? direct(String id) {
+    for (final d in directDelivery) {
+      if (d['id'] == id) return d;
+    }
+    return null;
+  }
+
+  /// Build the mailing address lines for an area.
+  ///
+  /// Line 2 is the student's own building/room designator. When it is not
+  /// supplied, the area's documented format is shown as a placeholder rather
+  /// than being invented. RIT runs a zone based system with no per hall street
+  /// addresses (CLAUDE.md 7.9), so there is nothing to look up here.
+  List<String>? addressFor(String areaId, String studentName, String? unit) {
+    final delivered = direct(areaId);
+    if (delivered != null) {
+      return [
+        studentName,
+        '${delivered['street']}',
+        '${delivered['city']} ${delivered['state']} ${delivered['zip']}',
+      ];
+    }
+
+    final target = area(areaId);
+    if (target == null) return null;
+    final post = office(target['post_office'] as String?);
+    if (post == null) return null;
+
+    return [
+      studentName,
+      unit ?? '${target['line2_format']}',
+      '${post['street']}',
+      '${post['city']} ${post['state']} ${post['zip']}',
+    ];
+  }
 }

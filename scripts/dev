@@ -151,18 +151,10 @@ cmd_app() {
   fi
 }
 
-cmd_web() {
-  backend_healthy || warn "backend is down"
-  say "flutter run on chromium"
-  ( cd "$CLIENT" && "$FLUTTER" run -d chrome "$@" )
-}
-
 cmd_build() {
   say "building linux"
   ( cd "$CLIENT" && "$FLUTTER" build linux --release ) || die "linux build failed"
-  say "building web"
-  ( cd "$CLIENT" && "$FLUTTER" build web --release ) || die "web build failed"
-  ok "both targets built"
+  ok "linux built"
 }
 
 cmd_test() {
@@ -288,14 +280,13 @@ TigerHub dev helper
 
   scripts/dev app          launch the built app
   scripts/dev app --dev    flutter run instead, with hot reload
-  scripts/dev web          run in chromium
 
-  scripts/dev build        build linux and web release
+  scripts/dev build        build the linux release
   scripts/dev test         backend pytest plus client flutter test
   scripts/dev api [path]   pretty print an endpoint, default /dining
   scripts/dev shot [file]  screenshot the app window only, cropped
   scripts/dev shot-tabs    capture every tab into response/screenshots/
-  scripts/dev reset        wipe the SQLite cache
+  scripts/dev reset        wipe the local scrape cache
 
 Environment:
   TIGERHUB_PORT=8000       backend port
@@ -311,7 +302,6 @@ case "${1:-help}" in
   status|st) shift; cmd_status "$@" ;;
   logs|log) shift; cmd_logs "$@" ;;
   app|run) shift; cmd_app "$@" ;;
-  web) shift; cmd_web "$@" ;;
   build) shift; cmd_build "$@" ;;
   test) shift; cmd_test "$@" ;;
   api) shift; cmd_api "$@" ;;
