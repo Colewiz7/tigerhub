@@ -63,6 +63,29 @@ class ApiClient {
       ? RemoteBackend(baseUrl: AppConfig.apiBaseUrl)
       : LocalBackend();
 
+  /// Query parameters that are derived from the clock rather than chosen, and
+  /// so must not appear in a cache key.
+  ///
+  /// `start` is midnight today. Including it minted a fresh key every day and
+  /// never reused or removed yesterday's, so the cache grew by one events
+  /// entry of roughly 200 KB per day, forever, in shared_preferences. Android
+  /// reads that whole store into memory at launch.
+  ///
+  /// Dropping it means a launch today can paint yesterday's cached events for
+  /// the moment before the refresh lands. That is the offline first contract
+  /// working as intended, and the envelope's `last_updated` still says how old
+  /// it is.
+  static const Set<String> _volatileParams = {'start'};
+
+  static String cacheKeyFor(String path, Map<String, String>? query) {
+    if (query == null || query.isEmpty) return path;
+    final stable = [
+      for (final entry in query.entries)
+        if (!_volatileParams.contains(entry.key)) '${entry.key}=${entry.value}',
+    ];
+    return stable.isEmpty ? path : '$path?${stable.join('&')}';
+  }
+
   final Backend _backend;
   final ResponseCache _cache;
 
@@ -76,9 +99,7 @@ class ApiClient {
     T Function(Map<String, dynamic>) parse, {
     Map<String, String>? query,
   }) async* {
-    final cacheKey = query == null || query.isEmpty
-        ? path
-        : '$path?${query.entries.map((e) => '${e.key}=${e.value}').join('&')}';
+    final cacheKey = cacheKeyFor(path, query);
 
     final cached = await _cache.read(cacheKey);
     if (cached != null) {

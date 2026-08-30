@@ -87,6 +87,9 @@ class _AppShellState extends State<AppShell> {
     // whether the setup screen shows, and both flip asynchronously.
     Preferences.instance.addListener(_onPreferences);
     Preferences.instance.load();
+    // Housekeeping, not on the critical path: nothing waits on it and a
+    // failure is swallowed.
+    unawaited(ResponseCache.instance.prune());
     _restoreCards();
     _refresh();
     _ticker = Timer.periodic(_tick, (_) => _refresh());
