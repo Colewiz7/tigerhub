@@ -22,9 +22,9 @@ class _TigerHubAppState extends State<TigerHubApp> {
   @override
   void initState() {
     super.initState();
-    _scheme = SchemeController(
-      forceSeed: SchemeController.forceSeedFromEnvironment,
-    )..load();
+    // Built-in palette unless the user has opted in to following the
+    // wallpaper. This runs on many different desktops.
+    _scheme = SchemeController()..restore();
   }
 
   @override
@@ -42,7 +42,19 @@ class _TigerHubAppState extends State<TigerHubApp> {
           return MaterialApp(
             title: AppConfig.appName,
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.from(state.scheme),
+            // Both modes are generated from the same seed and follow the
+            // system, since not everyone runs a dark desktop.
+            theme: AppTheme.from(
+              state.isDynamic
+                  ? state.scheme
+                  : SchemeController.builtIn(Brightness.light),
+            ),
+            darkTheme: AppTheme.from(
+              state.isDynamic
+                  ? state.scheme
+                  : SchemeController.builtIn(Brightness.dark),
+            ),
+            themeMode: ThemeMode.system,
             home: AppShell(api: _api, scheme: _scheme),
           );
         },
