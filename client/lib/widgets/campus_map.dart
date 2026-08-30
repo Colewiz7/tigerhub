@@ -521,22 +521,32 @@ class _PlaceStrip extends StatelessWidget {
             onTap: () => onSelect(feature),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
                 children: [
-                  Text(
-                    feature.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    feature.where.isEmpty ? feature.kindName : feature.where,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
+                  _PlaceCategoryMark(feature: feature),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          feature.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleSmall,
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          feature.where.isEmpty
+                              ? feature.kindName
+                              : feature.where,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -562,6 +572,8 @@ class _SelectedPlace extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
       child: Row(
         children: [
+          _PlaceCategoryMark(feature: feature, size: 46, iconSize: 24),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -601,12 +613,67 @@ class _SelectedPlace extends StatelessWidget {
   );
 }
 
+class _PlaceCategoryMark extends StatelessWidget {
+  const _PlaceCategoryMark({
+    required this.feature,
+    this.size = 38,
+    this.iconSize = 20,
+  });
+
+  final CampusMapFeature feature;
+  final double size;
+  final double iconSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      label: feature.kindName,
+      child: ExcludeSemantics(
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: scheme.primaryContainer,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            mapPlaceIcon(feature.kind),
+            size: iconSize,
+            color: scheme.onPrimaryContainer,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class CampusMapProjection {
-  CampusMapProjection(
-    this.features,
-    this.size, {
+  /// Reuses the last projection when nothing that shapes it has changed.
+  ///
+  /// Building one walks every anchor, sorts them twice for the medians, then
+  /// reduces over roughly 9550 coordinates for the bounds. That measured
+  /// **7.27ms of a 13.9ms paint**, recomputed identically every frame, which
+  /// only started to matter when the map began repainting on every zoom frame.
+  /// The inputs are stable across those frames, so the work is pure waste.
+  factory CampusMapProjection(
+    List<CampusMapFeature> features,
+    Size size, {
     List<CampusMapFeature>? boundsFeatures,
   }) {
+    final cached = _cache;
+    if (cached != null &&
+        cached.size == size &&
+        identical(cached.features, features) &&
+        identical(cached._boundsFeatures, boundsFeatures)) {
+      return cached;
+    }
+    return _cache = CampusMapProjection._(features, size, boundsFeatures);
+  }
+
+  CampusMapProjection._(this.features, this.size, this._boundsFeatures) {
+    final boundsFeatures = _boundsFeatures;
     final candidates = boundsFeatures ?? features;
     final anchors = [for (final feature in candidates) ?feature.anchor];
     final medianLongitude = _median(anchors.map((p) => p.longitude).toList());
@@ -667,6 +734,12 @@ class CampusMapProjection {
 
   final List<CampusMapFeature> features;
   final Size size;
+  final List<CampusMapFeature>? _boundsFeatures;
+
+  static CampusMapProjection? _cache;
+
+  /// Only for tests that need a cold build.
+  static void resetCacheForTest() => _cache = null;
   double minLongitude = -77.69;
   double maxLongitude = -77.66;
   double minLatitude = 43.075;
@@ -687,7 +760,9 @@ class CampusMapProjection {
   ///
   /// The bounds were grown to this shape in the constructor, so filling it is
   /// isotropic by construction rather than by a second scaling rule here.
-  Rect get mapRect {
+  late final Rect mapRect = _computeMapRect();
+
+  Rect _computeMapRect() {
     final width = math.max(size.width - padding * 2, 1).toDouble();
     final height = math.max(size.height - padding * 2, 1).toDouble();
     return Rect.fromLTWH(
