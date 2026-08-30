@@ -33,8 +33,11 @@ class ScallopedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final background =
-        filled ? scheme.primary : scheme.surfaceContainerHighest;
+    final media = MediaQuery.maybeOf(context);
+    final reduceMotion =
+        (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false);
+    final background = filled ? scheme.primary : scheme.surfaceContainerHighest;
     final foreground = filled ? scheme.onPrimary : scheme.onSurface;
 
     return SizedBox(
@@ -49,17 +52,35 @@ class ScallopedBadge extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                value,
-                style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: foreground,
-                      fontSize: size * 0.34,
-                      // The display scale is deliberately light, but at badge
-                      // size that reads as thin and washed out against the
-                      // filled accent, so this one steps up.
-                      fontVariations: Weights.medium,
-                    ),
-                maxLines: 1,
+              AnimatedSwitcher(
+                duration: reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 180),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeOutCubic,
+                transitionBuilder: (child, animation) {
+                  final offset = Tween<Offset>(
+                    begin: const Offset(0, 0.08),
+                    end: Offset.zero,
+                  ).animate(animation);
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(position: offset, child: child),
+                  );
+                },
+                child: Text(
+                  value,
+                  key: ValueKey(value),
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                    color: foreground,
+                    fontSize: size * 0.34,
+                    // The display scale is deliberately light, but at badge
+                    // size that reads as thin and washed out against the
+                    // filled accent, so this one steps up.
+                    fontVariations: Weights.medium,
+                  ),
+                  maxLines: 1,
+                ),
               ),
               if (label != null)
                 Padding(
@@ -67,10 +88,10 @@ class ScallopedBadge extends StatelessWidget {
                   child: Text(
                     label!,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: foreground.withValues(alpha: 0.85),
-                          fontSize: size * 0.112,
-                          fontVariations: Weights.semibold,
-                        ),
+                      color: foreground.withValues(alpha: 0.85),
+                      fontSize: size * 0.112,
+                      fontVariations: Weights.semibold,
+                    ),
                     maxLines: 1,
                   ),
                 ),

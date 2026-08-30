@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../services/api.dart';
-
+import '../theme/tokens.dart';
 
 /// Relative age, formatting only. All real time logic lives on the server.
 String formatAge(DateTime when) {
@@ -62,7 +62,8 @@ class FreshnessLine extends StatelessWidget {
           ],
           Text(
             'updated ${formatAge(fetchedAt!)}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: color),
           ),
         ],
       ),
@@ -70,28 +71,113 @@ class FreshnessLine extends StatelessWidget {
   }
 }
 
-/// The only place a spinner is correct: first launch, never had data.
+/// A content-shaped placeholder for first launch, when no cache exists yet.
+///
+/// It is deliberately static. Priming is usually over in about a second, so a
+/// shimmer would start but rarely finish and make the wait feel longer.
 class PrimingPlaceholder extends StatelessWidget {
   const PrimingPlaceholder({super.key, this.label = 'Loading'});
 
   final String label;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 28),
-        child: Column(
-          children: [
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
-          ],
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final tint = scheme.onSurface.withValues(alpha: 0.12);
+
+    return Semantics(
+      label: label,
+      liveRegion: true,
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            children: [
+              _SkeletonRow(tint: tint, primaryFraction: 0.70),
+              const SizedBox(height: StatusRowGap.value),
+              _SkeletonRow(tint: tint, primaryFraction: 0.52),
+              const SizedBox(height: StatusRowGap.value),
+              _SkeletonRow(tint: tint, primaryFraction: 0.38),
+            ],
+          ),
         ),
-      );
+      ),
+    );
+  }
+}
+
+class StatusRowGap {
+  const StatusRowGap._();
+
+  static const double value = 8;
+}
+
+class _SkeletonRow extends StatelessWidget {
+  const _SkeletonRow({required this.tint, required this.primaryFraction});
+
+  final Color tint;
+  final double primaryFraction;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 64,
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+      borderRadius: Shapes.inner,
+    ),
+    child: Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(color: tint, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 13),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _SkeletonBar(
+                  color: tint,
+                  width: constraints.maxWidth * primaryFraction,
+                  height: 12,
+                ),
+                const SizedBox(height: 7),
+                _SkeletonBar(
+                  color: tint,
+                  width: constraints.maxWidth * primaryFraction * 0.72,
+                  height: 9,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _SkeletonBar extends StatelessWidget {
+  const _SkeletonBar({
+    required this.color,
+    required this.width,
+    required this.height,
+  });
+
+  final Color color;
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: width,
+    height: height,
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(height / 2),
+    ),
+  );
 }

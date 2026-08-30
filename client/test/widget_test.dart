@@ -38,22 +38,28 @@ class _FakeBackend implements Backend {
   _FakeBackend(this.body);
   final Map<String, dynamic> body;
   @override
-  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async => body;
+  Future<Map<String, dynamic>> fetch(
+    String path, [
+    Map<String, String>? q,
+  ]) async => body;
   @override
   void close() {}
 }
 
 class _OfflineBackend implements Backend {
   @override
-  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async =>
-      throw const SocketException('offline');
+  Future<Map<String, dynamic>> fetch(
+    String path, [
+    Map<String, String>? q,
+  ]) async => throw const SocketException('offline');
   @override
   void close() {}
 }
 
 void main() {
   setUp(() {
-    SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
   });
 
   group('data states', () {
@@ -84,7 +90,11 @@ void main() {
       expect(replay.first.state, DataState.stale);
       expect(replay.first.value!.data.single.name, 'Crossroads');
       expect(replay.last.state, DataState.failing);
-      expect(replay.last.hasData, isTrue, reason: 'stale cache must never become an error');
+      expect(
+        replay.last.hasData,
+        isTrue,
+        reason: 'stale cache must never become an error',
+      );
     });
 
     test('server reported staleness is mirrored, not recomputed', () async {
@@ -124,29 +134,40 @@ void main() {
   });
 
   group('occupancy honesty', () {
-    testWidgets('over capacity says busy, not a precise percentage', (tester) async {
+    testWidgets('over capacity says busy, not a precise percentage', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: OccupancyChip(
               occupancy: Occupancy(
-                count: 46, maxOcc: 38, percentFull: 100, overCapacity: true,
+                count: 46,
+                maxOcc: 38,
+                percentFull: 100,
+                overCapacity: true,
               ),
             ),
           ),
         ),
       );
       expect(find.text('busy'), findsOneWidget);
-      expect(find.textContaining('%'), findsNothing,
-          reason: 'a wrong denominator must not be quoted as a precise figure');
+      expect(
+        find.textContaining('%'),
+        findsNothing,
+        reason: 'a wrong denominator must not be quoted as a precise figure',
+      );
     });
 
-    testWidgets('a count with no denominator shows the count, not a ratio',
-        (tester) async {
+    testWidgets('a count with no denominator shows the count, not a ratio', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: OccupancyChip(occupancy: Occupancy(count: 235, percentFull: null)),
+            body: OccupancyChip(
+              occupancy: Occupancy(count: 235, percentFull: null),
+            ),
           ),
         ),
       );
@@ -162,18 +183,24 @@ void main() {
     const footerHeight = 46.0;
 
     Widget boxed(Widget child, {double height = cellHeight}) => MaterialApp(
-          home: Scaffold(body: Center(child: SizedBox(height: height, child: child))),
-        );
+      home: Scaffold(
+        body: Center(
+          child: SizedBox(height: height, child: child),
+        ),
+      ),
+    );
 
     testWidgets('shows only rows that fit and counts the rest', (tester) async {
-      await tester.pumpWidget(boxed(
-        BoundedList(
-          itemCount: 12,
-          itemHeight: rowHeight,
-          noun: 'locations',
-          itemBuilder: (context, i) => Text('row $i'),
+      await tester.pumpWidget(
+        boxed(
+          BoundedList(
+            itemCount: 12,
+            itemHeight: rowHeight,
+            noun: 'locations',
+            itemBuilder: (context, i) => Text('row $i'),
+          ),
         ),
-      ));
+      );
       // (340 - 46) / 44 = 6 rows fit alongside the footer.
       expect(find.text('row 5'), findsOneWidget);
       expect(find.text('row 6'), findsNothing);
@@ -181,53 +208,65 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('the footer is fully inside the box, never clipped',
-        (tester) async {
-      await tester.pumpWidget(boxed(
-        BoundedList(
-          itemCount: 12,
-          itemHeight: rowHeight,
-          noun: 'locations',
-          itemBuilder: (context, i) => Text('row $i'),
+    testWidgets('the footer is fully inside the box, never clipped', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        boxed(
+          BoundedList(
+            itemCount: 12,
+            itemHeight: rowHeight,
+            noun: 'locations',
+            itemBuilder: (context, i) => Text('row $i'),
+          ),
         ),
-      ));
+      );
       final box = tester.getRect(find.byType(BoundedList));
       final footer = tester.getRect(find.byType(MoreRow));
-      expect(footer.bottom, lessThanOrEqualTo(box.bottom + 0.5),
-          reason: 'the "+N more" row must be visible, not cut off');
+      expect(
+        footer.bottom,
+        lessThanOrEqualTo(box.bottom + 0.5),
+        reason: 'the "+N more" row must be visible, not cut off',
+      );
     });
 
     testWidgets('no footer when everything fits', (tester) async {
-      await tester.pumpWidget(boxed(
-        BoundedList(
-          itemCount: 3,
-          itemHeight: rowHeight,
-          noun: 'locations',
-          itemBuilder: (context, i) => Text('row $i'),
+      await tester.pumpWidget(
+        boxed(
+          BoundedList(
+            itemCount: 3,
+            itemHeight: rowHeight,
+            noun: 'locations',
+            itemBuilder: (context, i) => Text('row $i'),
+          ),
         ),
-      ));
+      );
       expect(find.byType(MoreRow), findsNothing);
       expect(find.text('row 2'), findsOneWidget);
     });
 
-    testWidgets('a shorter box withholds more, and still says so',
-        (tester) async {
-      await tester.pumpWidget(boxed(
-        BoundedList(
-          itemCount: 12,
-          itemHeight: rowHeight,
-          noun: 'locations',
-          itemBuilder: (context, i) => Text('row $i'),
+    testWidgets('a shorter box withholds more, and still says so', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        boxed(
+          BoundedList(
+            itemCount: 12,
+            itemHeight: rowHeight,
+            noun: 'locations',
+            itemBuilder: (context, i) => Text('row $i'),
+          ),
+          height: 2 * rowHeight + footerHeight,
         ),
-        height: 2 * rowHeight + footerHeight,
-      ));
+      );
       expect(find.text('row 1'), findsOneWidget);
       expect(find.text('row 2'), findsNothing);
       expect(find.text('+10 locations'), findsOneWidget);
     });
 
-    testWidgets('dining stays useful at the minimum card height',
-        (tester) async {
+    testWidgets('dining stays useful at the minimum card height', (
+      tester,
+    ) async {
       // The grid cell the home screen actually uses. The hero sits inline with
       // the title precisely so the list keeps its rows.
       final locations = [
@@ -241,32 +280,42 @@ void main() {
                 : null,
           ),
       ];
-      await tester.pumpWidget(boxed(
-        DiningCard(
-          result: Result(
-            value: Collection(data: locations, stale: false),
-            state: DataState.ok,
+      await tester.pumpWidget(
+        boxed(
+          DiningCard(
+            result: Result(
+              value: Collection(data: locations, stale: false),
+              state: DataState.ok,
+            ),
           ),
+          height: 560,
         ),
-        height: 560,
-      ));
+      );
       expect(tester.takeException(), isNull);
       final rows = [
         for (var i = 0; i < 24; i++)
-          if (find.text('Place ${i.toString().padLeft(2, '0')}').evaluate().isNotEmpty) i,
+          if (find
+              .text('Place ${i.toString().padLeft(2, '0')}')
+              .evaluate()
+              .isNotEmpty)
+            i,
       ];
       // Rows are containers now, roughly 64px tall, so fewer fit on purpose.
       // The bar is that the card still shows a useful handful, not a count
       // carried over from when rows were bare 38px text lines.
-      expect(rows.length, greaterThanOrEqualTo(3),
-          reason: 'the card must still show a useful number of locations');
+      expect(
+        rows.length,
+        greaterThanOrEqualTo(3),
+        reason: 'the card must still show a useful number of locations',
+      );
       expect(find.byType(MoreRow), findsOneWidget);
       // The badge is still present, just beside the title.
       expect(find.byType(ScallopedBadge), findsOneWidget);
     });
 
-    testWidgets('dining bounds itself and keeps open locations first',
-        (tester) async {
+    testWidgets('dining bounds itself and keeps open locations first', (
+      tester,
+    ) async {
       final locations = [
         for (var i = 0; i < 12; i++)
           DiningLocation(
@@ -275,22 +324,25 @@ void main() {
             isOpen: i < 3,
           ),
       ];
-      await tester.pumpWidget(boxed(
-        DiningCard(
-          result: Result(
-            value: Collection(data: locations, stale: false),
-            state: DataState.ok,
+      await tester.pumpWidget(
+        boxed(
+          DiningCard(
+            result: Result(
+              value: Collection(data: locations, stale: false),
+              state: DataState.ok,
+            ),
           ),
         ),
-      ));
+      );
       expect(tester.takeException(), isNull);
       expect(find.text('Place 00'), findsOneWidget);
       expect(find.text('Place 11'), findsNothing);
       expect(find.byType(MoreRow), findsOneWidget);
     });
 
-    testWidgets('dining footer and visible open rows equal the hero count',
-        (tester) async {
+    testWidgets('dining footer and visible open rows equal the hero count', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(800, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final locations = [
@@ -308,22 +360,25 @@ void main() {
           ),
       ];
 
-      await tester.pumpWidget(boxed(
-        DiningCard(
-          result: Result(
-            value: Collection(data: locations, stale: false),
-            state: DataState.ok,
+      await tester.pumpWidget(
+        boxed(
+          DiningCard(
+            result: Result(
+              value: Collection(data: locations, stale: false),
+              state: DataState.ok,
+            ),
           ),
+          height: 700,
         ),
-        height: 700,
-      ));
+      );
 
       // Match the row TITLE exactly. A prefix match also catches the "Open now"
       // subtitle each row now carries, which double counts.
       final namePattern = RegExp(r'^Open \d\d$');
       final visibleOpen = find
           .byWidgetPredicate(
-            (widget) => widget is Text && namePattern.hasMatch(widget.data ?? ''),
+            (widget) =>
+                widget is Text && namePattern.hasMatch(widget.data ?? ''),
           )
           .evaluate()
           .length;
@@ -331,25 +386,40 @@ void main() {
 
       // Read the hidden count off the footer rather than hardcoding it, so the
       // invariant survives a change in row height.
-      final footer = find
-          .byWidgetPredicate(
-            (widget) => widget is Text && (widget.data?.endsWith(' open') ?? false),
-          )
-          .evaluate()
-          .single
-          .widget as Text;
-      final hiddenOpen =
-          int.parse(footer.data!.replaceAll(RegExp(r'[^0-9]'), ''));
+      final footer =
+          find
+                  .byWidgetPredicate(
+                    (widget) =>
+                        widget is Text &&
+                        (widget.data?.endsWith(' open') ?? false),
+                  )
+                  .evaluate()
+                  .single
+                  .widget
+              as Text;
+      final hiddenOpen = int.parse(
+        footer.data!.replaceAll(RegExp(r'[^0-9]'), ''),
+      );
 
-      expect(visibleOpen + hiddenOpen, heroOpen,
-          reason: 'the footer and the hero must count the same population');
-      expect(find.byWidgetPredicate(
-        (widget) => widget is Text && RegExp(r'^Closed \d\d$').hasMatch(widget.data ?? ''),
-      ), findsNothing, reason: 'open locations must fill the visible rows first');
+      expect(
+        visibleOpen + hiddenOpen,
+        heroOpen,
+        reason: 'the footer and the hero must count the same population',
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Text &&
+              RegExp(r'^Closed \d\d$').hasMatch(widget.data ?? ''),
+        ),
+        findsNothing,
+        reason: 'open locations must fill the visible rows first',
+      );
     });
 
-    testWidgets('more row is tappable for the future detail view',
-        (tester) async {
+    testWidgets('more row is tappable for the future detail view', (
+      tester,
+    ) async {
       var tapped = 0;
       await tester.pumpWidget(
         MaterialApp(
@@ -375,7 +445,9 @@ void main() {
       expect(find.textContaining('updated'), findsNothing);
     });
 
-    testWidgets('stale data shows a quiet timestamp and no spinner', (tester) async {
+    testWidgets('stale data shows a quiet timestamp and no spinner', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -390,7 +462,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
-    testWidgets('failing shows the same text with a warning icon', (tester) async {
+    testWidgets('failing shows the same text with a warning icon', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -477,10 +551,7 @@ void _dynamicColour() {
     });
 
     test('honours the light mode flag', () {
-      final light = schemeFromJson({
-        ..._caelestiaSample,
-        'mode': 'light',
-      });
+      final light = schemeFromJson({..._caelestiaSample, 'mode': 'light'});
       expect(light!.brightness, Brightness.light);
     });
 
@@ -494,36 +565,47 @@ void _dynamicColour() {
 
     test('a payload missing the essential roles falls back rather than half themes', () {
       expect(schemeFromJson({'colours': {}}), isNull);
-      expect(schemeFromJson({'colours': {'primary': 'f6ba96'}}), isNull);
+      expect(
+        schemeFromJson({
+          'colours': {'primary': 'f6ba96'},
+        }),
+        isNull,
+      );
       expect(schemeFromJson({'nope': true}), isNull);
     });
 
-    test('container levels are derived from the tint so nesting stays visible', () {
-      final scheme = schemeFromJson(_caelestiaSample)!;
-      // The file's own container roles sit within a few points of each other,
-      // so they are re-derived by blending surfaceTint over surface.
-      final levels = [
-        scheme.surfaceContainerLowest,
-        scheme.surfaceContainerLow,
-        scheme.surfaceContainer,
-        scheme.surfaceContainerHigh,
-        scheme.surfaceContainerHighest,
-      ];
-      for (var i = 1; i < levels.length; i++) {
-        expect(levels[i].r, greaterThan(levels[i - 1].r));
-      }
-    });
+    test(
+      'container levels are derived from the tint so nesting stays visible',
+      () {
+        final scheme = schemeFromJson(_caelestiaSample)!;
+        // The file's own container roles sit within a few points of each other,
+        // so they are re-derived by blending surfaceTint over surface.
+        final levels = [
+          scheme.surfaceContainerLowest,
+          scheme.surfaceContainerLow,
+          scheme.surfaceContainer,
+          scheme.surfaceContainerHigh,
+          scheme.surfaceContainerHighest,
+        ];
+        for (var i = 1; i < levels.length; i++) {
+          expect(levels[i].r, greaterThan(levels[i - 1].r));
+        }
+      },
+    );
 
-    test('the built-in palette is the default, with no scheme file needed', () async {
-      final controller = SchemeController();
-      await controller.load();
-      expect(controller.state.origin, SchemeOrigin.seed);
-      expect(controller.state.isDynamic, isFalse);
-      // The escape hatch must always produce something readable.
-      final theme = AppTheme.from(controller.state.scheme);
-      expect(theme.colorScheme.primary, isNotNull);
-      controller.dispose();
-    });
+    test(
+      'the built-in palette is the default, with no scheme file needed',
+      () async {
+        final controller = SchemeController();
+        await controller.load();
+        expect(controller.state.origin, SchemeOrigin.seed);
+        expect(controller.state.isDynamic, isFalse);
+        // The escape hatch must always produce something readable.
+        final theme = AppTheme.from(controller.state.scheme);
+        expect(theme.colorScheme.primary, isNotNull);
+        controller.dispose();
+      },
+    );
 
     test('the wallpaper opt in flips back and forth', () async {
       final controller = SchemeController();
@@ -534,13 +616,17 @@ void _dynamicColour() {
       controller.dispose();
     });
 
-    testWidgets('palette icon tooltip identifies source and action', (tester) async {
+    testWidgets('palette icon tooltip identifies source and action', (
+      tester,
+    ) async {
       final controller = SchemeController();
       await controller.load();
       final api = ApiClient(backend: _OfflineBackend());
 
       await tester.pumpWidget(
-        MaterialApp(home: AppShell(api: api, scheme: controller)),
+        MaterialApp(
+          home: AppShell(api: api, scheme: controller),
+        ),
       );
       await tester.pump();
 
@@ -566,7 +652,10 @@ void _designTokens() {
       // pointRounding + valleyRounding must not exceed 1, so the 1.0/1.0 pair
       // from the brief throws. This asserts the shape actually constructs.
       final badge = Shapes.badge as StarBorder;
-      expect(badge.pointRounding + badge.valleyRounding, lessThanOrEqualTo(1.0));
+      expect(
+        badge.pointRounding + badge.valleyRounding,
+        lessThanOrEqualTo(1.0),
+      );
       expect(badge.points, 7);
       expect(badge.innerRadiusRatio, 0.93);
       // Past roughly 0.95 the lobes flatten into a circle.
@@ -595,12 +684,18 @@ void _designTokens() {
         scheme.surfaceContainerHighest,
       ];
       for (var i = 1; i < levels.length; i++) {
-        expect(levels[i].r, greaterThan(levels[i - 1].r),
-            reason: 'each nested level must step one lighter');
+        expect(
+          levels[i].r,
+          greaterThan(levels[i - 1].r),
+          reason: 'each nested level must step one lighter',
+        );
       }
       for (final c in levels) {
-        expect(c.r, greaterThan(c.b),
-            reason: 'surfaces must be warm tinted, not neutral grey');
+        expect(
+          c.r,
+          greaterThan(c.b),
+          reason: 'surfaces must be warm tinted, not neutral grey',
+        );
       }
     });
   });
@@ -616,44 +711,46 @@ void _screenshotReview() {
       expect(formatClock(DateTime(2026, 8, 28, 23, 59)), '11:59 PM');
     });
 
-    testWidgets('the dining hero counts open locations, not one unrelated one',
-        (tester) async {
-      // Regression: the badge used to show occupancy for a location that was
-      // usually not among the visible rows, which made it meaningless.
-      final locations = [
-        for (var i = 0; i < 10; i++)
-          DiningLocation(
-            id: i,
-            name: 'Place ${i.toString().padLeft(2, '0')}',
-            isOpen: i < 6,
-            // Give the sensor to a location far down the list.
-            occupancy: i == 9
-                ? const Occupancy(count: 165, maxOcc: 136, percentFull: 100)
-                : null,
-          ),
-      ];
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: SizedBox(
-                height: 480,
-                child: DiningCard(
-                  result: Result(
-                    value: Collection(data: locations, stale: false),
-                    state: DataState.ok,
+    testWidgets(
+      'the dining hero counts open locations, not one unrelated one',
+      (tester) async {
+        // Regression: the badge used to show occupancy for a location that was
+        // usually not among the visible rows, which made it meaningless.
+        final locations = [
+          for (var i = 0; i < 10; i++)
+            DiningLocation(
+              id: i,
+              name: 'Place ${i.toString().padLeft(2, '0')}',
+              isOpen: i < 6,
+              // Give the sensor to a location far down the list.
+              occupancy: i == 9
+                  ? const Occupancy(count: 165, maxOcc: 136, percentFull: 100)
+                  : null,
+            ),
+        ];
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: SizedBox(
+                  height: 480,
+                  child: DiningCard(
+                    result: Result(
+                      value: Collection(data: locations, stale: false),
+                      state: DataState.ok,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      );
-      expect(find.text('6'), findsOneWidget);
-      expect(find.text('OPEN NOW'), findsOneWidget);
-      // The unrelated location's number must not be the hero.
-      expect(find.text('165'), findsNothing);
-    });
+        );
+        expect(find.text('6'), findsOneWidget);
+        expect(find.text('OPEN NOW'), findsOneWidget);
+        // The unrelated location's number must not be the hero.
+        expect(find.text('165'), findsNothing);
+      },
+    );
 
     testWidgets('a taller card yields more rows for free', (tester) async {
       Future<int> rowsAt(double height) async {
@@ -682,12 +779,16 @@ void _screenshotReview() {
 
       final short = await rowsAt(344);
       final tall = await rowsAt(560);
-      expect(tall, greaterThan(short),
-          reason: 'growing the card must turn into more rows');
+      expect(
+        tall,
+        greaterThan(short),
+        reason: 'growing the card must turn into more rows',
+      );
     });
 
-    testWidgets('the footer stays inside the box at several window sizes',
-        (tester) async {
+    testWidgets('the footer stays inside the box at several window sizes', (
+      tester,
+    ) async {
       for (final height in [200.0, 344.0, 460.0, 560.0]) {
         await tester.pumpWidget(
           MaterialApp(
@@ -709,8 +810,11 @@ void _screenshotReview() {
         expect(tester.takeException(), isNull, reason: 'at height $height');
         final box = tester.getRect(find.byType(BoundedList));
         final footer = tester.getRect(find.byType(MoreRow));
-        expect(footer.bottom, lessThanOrEqualTo(box.bottom + 0.5),
-            reason: 'footer escaped the box at height $height');
+        expect(
+          footer.bottom,
+          lessThanOrEqualTo(box.bottom + 0.5),
+          reason: 'footer escaped the box at height $height',
+        );
       }
     });
   });
@@ -737,8 +841,11 @@ void _visualStructure() {
         // The old blend produced steps under 2, which made card edges vanish.
         // Calibrated against the real Caelestia panel, whose own steps are
         // modest, so this asserts visible separation rather than a big jump.
-        expect(step, greaterThan(4),
-            reason: 'step $i was only $step, cards would be invisible');
+        expect(
+          step,
+          greaterThan(4),
+          reason: 'step $i was only $step, cards would be invisible',
+        );
       }
 
       // The card must clearly read as a card against the page behind it.
@@ -767,52 +874,65 @@ void _visualStructure() {
       expect(semantic.closed, isNot(semantic.busy));
     });
 
-    test('rebuild against a different scheme, so they follow the wallpaper', () {
-      final warm = Semantic.from(_fallbackScheme());
-      final cool = Semantic.from(
-        ColorScheme.fromSeed(seedColor: const Color(0xFF2196F3),
-            brightness: Brightness.dark),
-      );
-      expect(warm.open, isNot(cool.open),
-          reason: 'status colours must track the active palette');
-    });
+    test(
+      'rebuild against a different scheme, so they follow the wallpaper',
+      () {
+        final warm = Semantic.from(_fallbackScheme());
+        final cool = Semantic.from(
+          ColorScheme.fromSeed(
+            seedColor: const Color(0xFF2196F3),
+            brightness: Brightness.dark,
+          ),
+        );
+        expect(
+          warm.open,
+          isNot(cool.open),
+          reason: 'status colours must track the active palette',
+        );
+      },
+    );
   });
 
   group('container rows', () {
-    testWidgets('a dining row has an icon badge, a title and a subtitle',
-        (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.from(_fallbackScheme()),
-        home: Scaffold(
-          body: DiningRow(
-            location: DiningLocation(
-              id: 1,
-              name: 'Beanz',
-              isOpen: true,
-              closesAt: DateTime(2026, 8, 28, 22),
-            ),
-          ),
-        ),
-      ));
-      expect(find.text('Beanz'), findsOneWidget);
-      expect(find.text('Until 10:00 PM'), findsOneWidget);
-      expect(find.byIcon(Icons.local_cafe_rounded), findsOneWidget);
-      // No pill: open with no sensor is the default state, and the subtitle
-      // already says it is open.
-      expect(find.text('OPEN'), findsNothing);
-    });
-
-    testWidgets('a closed row is dimmed relative to an open one',
-        (tester) async {
-      Future<double> opacityFor(bool isOpen) async {
-        await tester.pumpWidget(MaterialApp(
+    testWidgets('a dining row has an icon badge, a title and a subtitle', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
           theme: AppTheme.from(_fallbackScheme()),
           home: Scaffold(
             body: DiningRow(
-              location: DiningLocation(id: 1, name: 'X', isOpen: isOpen),
+              location: DiningLocation(
+                id: 1,
+                name: 'Beanz',
+                isOpen: true,
+                closesAt: DateTime(2026, 8, 28, 22),
+              ),
             ),
           ),
-        ));
+        ),
+      );
+      expect(find.text('Beanz'), findsOneWidget);
+      expect(find.text('OPEN · until 10:00 PM'), findsOneWidget);
+      expect(find.byIcon(Icons.local_cafe_rounded), findsOneWidget);
+      // No standalone pill. The subtitle still states the status in text.
+      expect(find.text('OPEN'), findsNothing);
+    });
+
+    testWidgets('a closed row is dimmed relative to an open one', (
+      tester,
+    ) async {
+      Future<double> opacityFor(bool isOpen) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.from(_fallbackScheme()),
+            home: Scaffold(
+              body: DiningRow(
+                location: DiningLocation(id: 1, name: 'X', isOpen: isOpen),
+              ),
+            ),
+          ),
+        );
         final op = tester.widgetList<Opacity>(find.byType(Opacity)).first;
         return op.opacity;
       }
@@ -830,47 +950,56 @@ void _visualStructure() {
 
   group('past and future events', () {
     Widget wrap(CampusEvent event, DateTime now) => MaterialApp(
-          theme: AppTheme.from(_fallbackScheme()),
-          home: Scaffold(body: EventRow(event: event, now: now)),
-        );
+      theme: AppTheme.from(_fallbackScheme()),
+      home: Scaffold(
+        body: EventRow(event: event, now: now),
+      ),
+    );
 
     CampusEvent at(DateTime start, {DateTime? end}) => CampusEvent(
-          uid: 'u',
-          source: 'campusgroups',
-          title: 'Dodgeball',
-          startsAt: start,
-          endsAt: end,
-        );
+      uid: 'u',
+      source: 'campusgroups',
+      title: 'Dodgeball',
+      startsAt: start,
+      endsAt: end,
+    );
 
     testWidgets('a finished event is marked and dimmed', (tester) async {
-      await tester.pumpWidget(wrap(
-        at(DateTime(2026, 8, 28, 9), end: DateTime(2026, 8, 28, 10)),
-        DateTime(2026, 8, 28, 14),
-      ));
+      await tester.pumpWidget(
+        wrap(
+          at(DateTime(2026, 8, 28, 9), end: DateTime(2026, 8, 28, 10)),
+          DateTime(2026, 8, 28, 14),
+        ),
+      );
       expect(find.text('ENDED'), findsOneWidget);
       expect(find.byIcon(Icons.history_rounded), findsOneWidget);
     });
 
     testWidgets('an upcoming event is not marked', (tester) async {
-      await tester.pumpWidget(wrap(
-        at(DateTime(2026, 8, 28, 19), end: DateTime(2026, 8, 28, 21)),
-        DateTime(2026, 8, 28, 14),
-      ));
+      await tester.pumpWidget(
+        wrap(
+          at(DateTime(2026, 8, 28, 19), end: DateTime(2026, 8, 28, 21)),
+          DateTime(2026, 8, 28, 14),
+        ),
+      );
       expect(find.text('ENDED'), findsNothing);
       expect(find.byIcon(Icons.history_rounded), findsNothing);
     });
 
     testWidgets('an event with no end uses its start', (tester) async {
       await tester.pumpWidget(
-          wrap(at(DateTime(2026, 8, 28, 9)), DateTime(2026, 8, 28, 14)));
+        wrap(at(DateTime(2026, 8, 28, 9)), DateTime(2026, 8, 28, 14)),
+      );
       expect(find.text('ENDED'), findsOneWidget);
     });
 
     testWidgets('an event running right now counts as future', (tester) async {
-      await tester.pumpWidget(wrap(
-        at(DateTime(2026, 8, 28, 13), end: DateTime(2026, 8, 28, 15)),
-        DateTime(2026, 8, 28, 14),
-      ));
+      await tester.pumpWidget(
+        wrap(
+          at(DateTime(2026, 8, 28, 13), end: DateTime(2026, 8, 28, 15)),
+          DateTime(2026, 8, 28, 14),
+        ),
+      );
       expect(find.text('ENDED'), findsNothing);
     });
   });
@@ -887,26 +1016,30 @@ void _statusAndGrouping() {
     String category = 'other',
     String categoryName = 'Everything else',
     int order = 3,
-  }) =>
-      DiningLocation(
-        id: name.hashCode,
-        name: name,
-        isOpen: open,
-        category: category,
-        categoryName: categoryName,
-        categoryOrder: order,
-        closesAt: open ? DateTime(2026, 8, 28, 22) : null,
-        occupancy: percent == null
-            ? null
-            : Occupancy(count: 10, maxOcc: 20, percentFull: percent, overCapacity: over),
-      );
+  }) => DiningLocation(
+    id: name.hashCode,
+    name: name,
+    isOpen: open,
+    category: category,
+    categoryName: categoryName,
+    categoryOrder: order,
+    closesAt: open ? DateTime(2026, 8, 28, 22) : null,
+    occupancy: percent == null
+        ? null
+        : Occupancy(
+            count: 10,
+            maxOcc: 20,
+            percentFull: percent,
+            overCapacity: over,
+          ),
+  );
 
   Widget wrap(Widget child) => MaterialApp(
-        theme: AppTheme.from(_fallbackScheme()),
-        home: Scaffold(body: child),
-      );
+    theme: AppTheme.from(_fallbackScheme()),
+    home: Scaffold(body: child),
+  );
 
-  group('status badges only when not the default', () {
+  group('status hierarchy', () {
     testWidgets('open with no sensor shows no pill at all', (tester) async {
       await tester.pumpWidget(wrap(DiningRow(location: loc('Beanz'))));
       expect(find.text('OPEN'), findsNothing);
@@ -915,28 +1048,48 @@ void _statusAndGrouping() {
     });
 
     testWidgets('open with a sensor shows the occupancy', (tester) async {
-      await tester.pumpWidget(wrap(DiningRow(location: loc('Crossroads', percent: 86))));
+      await tester.pumpWidget(
+        wrap(DiningRow(location: loc('Crossroads', percent: 86))),
+      );
       expect(find.text('86%'), findsOneWidget);
       expect(find.text('OPEN'), findsNothing);
     });
 
     testWidgets('over capacity shows BUSY, never a percentage', (tester) async {
       await tester.pumpWidget(
-          wrap(DiningRow(location: loc('Midnight Oil', percent: 100, over: true))));
+        wrap(
+          DiningRow(location: loc('Midnight Oil', percent: 100, over: true)),
+        ),
+      );
       expect(find.text('BUSY'), findsOneWidget);
       expect(find.textContaining('%'), findsNothing);
     });
 
     testWidgets('closed shows CLOSED', (tester) async {
-      await tester.pumpWidget(wrap(DiningRow(location: loc('Gracie', open: false))));
-      expect(find.text('CLOSED'), findsOneWidget);
+      await tester.pumpWidget(
+        wrap(DiningRow(location: loc('Gracie', open: false))),
+      );
+      expect(find.textContaining('CLOSED ·'), findsOneWidget);
+      expect(
+        find.text('CLOSED'),
+        findsNothing,
+        reason: 'closed status belongs in the subtitle, not a repeated pill',
+      );
     });
 
-    testWidgets('a column of open rows carries no repeated pills',
-        (tester) async {
-      await tester.pumpWidget(wrap(ListView(children: [
-        for (final n in ['A', 'B', 'C', 'D', 'E']) DiningRow(location: loc(n)),
-      ])));
+    testWidgets('a column of open rows carries no repeated pills', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          ListView(
+            children: [
+              for (final n in ['A', 'B', 'C', 'D', 'E'])
+                DiningRow(location: loc(n)),
+            ],
+          ),
+        ),
+      );
       // The whole point: 13 identical pills was noise.
       expect(find.text('OPEN'), findsNothing);
     });
@@ -952,8 +1105,13 @@ void _statusAndGrouping() {
         loc('Delta'),
       ]..sort(compareForDisplay);
 
-      expect(list.map((l) => l.name).toList(),
-          ['Charlie', 'Bravo', 'Alpha', 'Delta', 'Zulu']);
+      expect(list.map((l) => l.name).toList(), [
+        'Charlie',
+        'Bravo',
+        'Alpha',
+        'Delta',
+        'Zulu',
+      ]);
     });
 
     test('closed locations sort last even with a sensor', () {
@@ -968,18 +1126,30 @@ void _statusAndGrouping() {
       final groups = groupByCategory([
         loc('Other one'),
         loc('A market', category: 'market', categoryName: 'Markets', order: 1),
-        loc('GV thing',
-            category: 'global_village', categoryName: 'Global Village', order: 2),
+        loc(
+          'GV thing',
+          category: 'global_village',
+          categoryName: 'Global Village',
+          order: 2,
+        ),
       ]);
-      expect(groups.map((g) => g.key).toList(),
-          ['Markets', 'Global Village', 'Everything else']);
+      expect(groups.map((g) => g.key).toList(), [
+        'Markets',
+        'Global Village',
+        'Everything else',
+      ]);
     });
 
     test('each group is sorted internally', () {
       final groups = groupByCategory([
         loc('B market', category: 'market', categoryName: 'Markets', order: 1),
-        loc('A market',
-            category: 'market', categoryName: 'Markets', order: 1, percent: 50),
+        loc(
+          'A market',
+          category: 'market',
+          categoryName: 'Markets',
+          order: 1,
+          percent: 50,
+        ),
       ]);
       // The one with a sensor leads its group.
       expect(groups.single.value.first.name, 'A market');
@@ -1010,20 +1180,26 @@ void _quickWins() {
 
     test('open outranks closed and busy in a dark scheme', () {
       final s = Semantic.from(_fallbackScheme());
-      expect(lum(s.open), greaterThan(lum(s.closed)),
-          reason: 'open is the state people scan for');
+      expect(
+        lum(s.open),
+        greaterThan(lum(s.closed)),
+        reason: 'open is the state people scan for',
+      );
     });
   });
 
   group('the hero number is not hairline thin', () {
-    testWidgets('badge value uses a heavier weight than the display scale',
-        (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.from(_fallbackScheme()),
-        home: const Scaffold(
-          body: ScallopedBadge(value: '13', label: 'OPEN NOW'),
+    testWidgets('badge value uses a heavier weight than the display scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.from(_fallbackScheme()),
+          home: const Scaffold(
+            body: ScallopedBadge(value: '13', label: 'OPEN NOW'),
+          ),
         ),
-      ));
+      );
       final value = tester.widget<Text>(find.text('13'));
       final weight = value.style!.fontVariations!
           .firstWhere((v) => v.axis == 'wght')
@@ -1037,12 +1213,12 @@ void _quickWins() {
 /// Pinning, and the occupancy chart's colour reasoning.
 void _pinningAndChart() {
   DiningLocation loc(int id, String name, {bool open = true}) => DiningLocation(
-        id: id,
-        name: name,
-        isOpen: open,
-        categoryName: 'Everything else',
-        categoryOrder: 3,
-      );
+    id: id,
+    name: name,
+    isOpen: open,
+    categoryName: 'Everything else',
+    categoryOrder: 3,
+  );
 
   group('pinning', () {
     test('a pinned location outranks everything, including open ones', () {
@@ -1051,15 +1227,16 @@ void _pinningAndChart() {
         loc(2, 'Bravo'),
         loc(3, 'Pinned but closed', open: false),
       ]..sort((a, b) => compareForDisplay(a, b, pinned: {'3'}));
-      expect(list.first.name, 'Pinned but closed',
-          reason: 'a pin is an explicit statement of interest');
+      expect(
+        list.first.name,
+        'Pinned but closed',
+        reason: 'a pin is an explicit statement of interest',
+      );
     });
 
     test('without a pin set the normal order holds', () {
-      final list = [
-        loc(3, 'Closed', open: false),
-        loc(1, 'Alpha'),
-      ]..sort(compareForDisplay);
+      final list = [loc(3, 'Closed', open: false), loc(1, 'Alpha')]
+        ..sort(compareForDisplay);
       expect(list.first.name, 'Alpha');
     });
 
@@ -1074,37 +1251,43 @@ void _pinningAndChart() {
 
   group('occupancy chart', () {
     List<OccupancyHour> series(int nowToday, int nowAverage) => [
-          for (var h = 0; h < 24; h++)
-            OccupancyHour(
-              hour: h,
-              today: h == 12 ? nowToday : 10,
-              oneWeekAgo: 10,
-              average: h == 12 ? nowAverage : 10,
-            ),
-        ];
+      for (var h = 0; h < 24; h++)
+        OccupancyHour(
+          hour: h,
+          today: h == 12 ? nowToday : 10,
+          oneWeekAgo: 10,
+          average: h == 12 ? nowAverage : 10,
+        ),
+    ];
 
-    test('the comparison is stated in words, not left to two similar colours', () {
-      // The wallpaper palette is near monochrome, so primary and
-      // onSurfaceVariant sit only dE 10.9 apart. Two series would be
-      // unreadable, so the comparison is a sentence.
-      expect(busynessCaption(series(30, 10), 12), contains('Busier'));
-      expect(busynessCaption(series(3, 10), 12), contains('Quieter'));
-      expect(busynessCaption(series(10, 10), 12), contains('as usual'));
-    });
+    test(
+      'the comparison is stated in words, not left to two similar colours',
+      () {
+        // The wallpaper palette is near monochrome, so primary and
+        // onSurfaceVariant sit only dE 10.9 apart. Two series would be
+        // unreadable, so the comparison is a sentence.
+        expect(busynessCaption(series(30, 10), 12), contains('Busier'));
+        expect(busynessCaption(series(3, 10), 12), contains('Quieter'));
+        expect(busynessCaption(series(10, 10), 12), contains('as usual'));
+      },
+    );
 
     test('a missing hour or a zero baseline yields no claim', () {
       expect(busynessCaption(series(10, 0), 12), isEmpty);
       expect(busynessCaption(const [], 12), isEmpty);
     });
 
-    testWidgets('renders one bar per published hour and no legend',
-        (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        theme: AppTheme.from(_fallbackScheme()),
-        home: Scaffold(
-          body: OccupancyChart(hourly: series(20, 10), nowHour: 12),
+    testWidgets('renders one bar per published hour and no legend', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.from(_fallbackScheme()),
+          home: Scaffold(
+            body: OccupancyChart(hourly: series(20, 10), nowHour: 12),
+          ),
         ),
-      ));
+      );
       expect(tester.takeException(), isNull);
       // One series, so the caption names it and there is no legend box.
       expect(find.byType(Tooltip), findsNWidgets(24));
@@ -1123,8 +1306,11 @@ void _shippedPalette() {
       final controller = SchemeController();
       await controller.load();
       expect(controller.state.origin, SchemeOrigin.seed);
-      expect(controller.state.isDynamic, isFalse,
-          reason: 'this ships to many desktops, it cannot assume a wallpaper');
+      expect(
+        controller.state.isDynamic,
+        isFalse,
+        reason: 'this ships to many desktops, it cannot assume a wallpaper',
+      );
       controller.dispose();
     });
 
@@ -1147,8 +1333,11 @@ void _shippedPalette() {
           s.surfaceContainerHighest,
         ];
         for (var i = 1; i < levels.length; i++) {
-          expect((lum(levels[i]) - lum(levels[i - 1])).abs(), greaterThan(3),
-              reason: 'step $i in $brightness is invisible');
+          expect(
+            (lum(levels[i]) - lum(levels[i - 1])).abs(),
+            greaterThan(3),
+            reason: 'step $i in $brightness is invisible',
+          );
         }
       }
     });
@@ -1164,9 +1353,13 @@ void _shippedPalette() {
         final tones = [lum(sem.open), lum(sem.closed), lum(sem.busy)];
         for (var i = 0; i < tones.length; i++) {
           for (var j = i + 1; j < tones.length; j++) {
-            expect((tones[i] - tones[j]).abs(), greaterThan(20),
-                reason: 'a colourblind reader has only lightness to go on '
-                    'in $brightness');
+            expect(
+              (tones[i] - tones[j]).abs(),
+              greaterThan(20),
+              reason:
+                  'a colourblind reader has only lightness to go on '
+                  'in $brightness',
+            );
           }
         }
       }
@@ -1187,20 +1380,18 @@ void _shippedPalette() {
 void _responsiveLayout() {
   group('responsive list', () {
     Widget boxed(double width) => MaterialApp(
-          theme: AppTheme.from(_fallbackScheme()),
-          home: Scaffold(
-            body: SizedBox(
-              width: width,
-              child: ResponsiveList(
-                itemCount: 6,
-                itemBuilder: (context, i) => SizedBox(
-                  height: 60,
-                  child: Text('item $i'),
-                ),
-              ),
-            ),
+      theme: AppTheme.from(_fallbackScheme()),
+      home: Scaffold(
+        body: SizedBox(
+          width: width,
+          child: ResponsiveList(
+            itemCount: 6,
+            itemBuilder: (context, i) =>
+                SizedBox(height: 60, child: Text('item $i')),
           ),
-        );
+        ),
+      ),
+    );
 
     testWidgets('stays one column on a narrow window', (tester) async {
       await tester.binding.setSurfaceSize(const Size(900, 800));
@@ -1227,8 +1418,9 @@ void _responsiveLayout() {
       expect(lefts.length, 2, reason: 'a wide window should use the width');
     });
 
-    testWidgets('items alternate so the columns stay a similar height',
-        (tester) async {
+    testWidgets('items alternate so the columns stay a similar height', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1600, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(boxed(1600));
@@ -1241,8 +1433,9 @@ void _responsiveLayout() {
       expect(zero, isNot(equals(one)));
     });
 
-    testWidgets('every item is still rendered in two column mode',
-        (tester) async {
+    testWidgets('every item is still rendered in two column mode', (
+      tester,
+    ) async {
       await tester.binding.setSurfaceSize(const Size(1600, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
       await tester.pumpWidget(boxed(1600));
@@ -1256,61 +1449,94 @@ void _responsiveLayout() {
 /// The week grid, and the calmer closed colour.
 void _weekGridAndClosed() {
   group('week grid', () {
-    Widget wrap(List<WeekRow> rows, {int start = 6, int end = 24}) => MaterialApp(
+    Widget wrap(List<WeekRow> rows, {int start = 6, int end = 24}) =>
+        MaterialApp(
           theme: AppTheme.from(_fallbackScheme()),
           home: Scaffold(
             body: SizedBox(
               width: 700,
-              child: WeekGrid(rows: rows, highlightIndex: 0,
-                  startHour: start, endHour: end),
+              child: WeekGrid(
+                rows: rows,
+                highlightIndex: 0,
+                startHour: start,
+                endHour: end,
+              ),
             ),
           ),
         );
 
     testWidgets('a multi session day draws a bar per session', (tester) async {
-      await tester.pumpWidget(wrap([
-        const WeekRow(label: 'Today', spans: [
-          DaySpan(startMinutes: 405, endMinutes: 525, label: '6:45 to 8:45'),
-          DaySpan(startMinutes: 720, endMinutes: 825, label: 'noon to 1:45'),
-          DaySpan(startMinutes: 1140, endMinutes: 1320, label: '7 to 10'),
+      await tester.pumpWidget(
+        wrap([
+          const WeekRow(
+            label: 'Today',
+            spans: [
+              DaySpan(
+                startMinutes: 405,
+                endMinutes: 525,
+                label: '6:45 to 8:45',
+              ),
+              DaySpan(
+                startMinutes: 720,
+                endMinutes: 825,
+                label: 'noon to 1:45',
+              ),
+              DaySpan(startMinutes: 1140, endMinutes: 1320, label: '7 to 10'),
+            ],
+          ),
         ]),
-      ]));
+      );
       expect(tester.takeException(), isNull);
       // One tooltip per session, which a single text range could not express.
       expect(find.byType(Tooltip), findsNWidgets(3));
     });
 
-    testWidgets('a closed day says so instead of drawing an empty row',
-        (tester) async {
-      await tester.pumpWidget(wrap([
-        const WeekRow(label: 'Sunday', spans: [], note: 'CLOSED'),
-      ]));
+    testWidgets('a closed day says so instead of drawing an empty row', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap([const WeekRow(label: 'Sunday', spans: [], note: 'CLOSED')]),
+      );
       expect(find.text('CLOSED'), findsOneWidget);
       expect(find.byType(Tooltip), findsNothing);
     });
 
-    testWidgets('later sessions sit further right than earlier ones',
-        (tester) async {
-      await tester.pumpWidget(wrap([
-        const WeekRow(label: 'Today', spans: [
-          DaySpan(startMinutes: 420, endMinutes: 480, label: 'morning'),
-          DaySpan(startMinutes: 1200, endMinutes: 1320, label: 'evening'),
+    testWidgets('later sessions sit further right than earlier ones', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap([
+          const WeekRow(
+            label: 'Today',
+            spans: [
+              DaySpan(startMinutes: 420, endMinutes: 480, label: 'morning'),
+              DaySpan(startMinutes: 1200, endMinutes: 1320, label: 'evening'),
+            ],
+          ),
         ]),
-      ]));
+      );
       final bars = tester.widgetList<Tooltip>(find.byType(Tooltip)).toList();
       final morning = tester.getTopLeft(find.byWidget(bars[0])).dx;
       final evening = tester.getTopLeft(find.byWidget(bars[1])).dx;
-      expect(evening, greaterThan(morning),
-          reason: 'the grid must place time along the axis');
+      expect(
+        evening,
+        greaterThan(morning),
+        reason: 'the grid must place time along the axis',
+      );
     });
 
     testWidgets('renders every published day', (tester) async {
-      await tester.pumpWidget(wrap([
-        for (final d in ['Today', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
-          WeekRow(label: d, spans: const [
-            DaySpan(startMinutes: 600, endMinutes: 1200, label: '10 to 8'),
-          ]),
-      ]));
+      await tester.pumpWidget(
+        wrap([
+          for (final d in ['Today', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
+            WeekRow(
+              label: d,
+              spans: const [
+                DaySpan(startMinutes: 600, endMinutes: 1200, label: '10 to 8'),
+              ],
+            ),
+        ]),
+      );
       expect(find.text('Today'), findsOneWidget);
       expect(find.text('Sun'), findsOneWidget);
     });
@@ -1324,8 +1550,11 @@ void _weekGridAndClosed() {
         // A full chroma red has a large gap between its channels. Muting pulls
         // green and blue up toward red.
         final spread = c.r - c.b;
-        expect(spread, lessThan(0.55),
-            reason: 'closed still reads as an alarm red in $brightness');
+        expect(
+          spread,
+          lessThan(0.55),
+          reason: 'closed still reads as an alarm red in $brightness',
+        );
       }
     });
 
@@ -1343,8 +1572,11 @@ void _weekGridAndClosed() {
 
 /// Menus, allergens and the rules around them.
 void _menus() {
-  Dish dish(String name, {List<String> allergens = const [], List<String> diet = const []}) =>
-      Dish(name: name, allergens: allergens, dietary: diet);
+  Dish dish(
+    String name, {
+    List<String> allergens = const [],
+    List<String> diet = const [],
+  }) => Dish(name: name, allergens: allergens, dietary: diet);
 
   group('dish tags', () {
     test('vegan implies vegetarian, but not the other way round', () {
@@ -1366,31 +1598,41 @@ void _menus() {
 
   group('menu rendering', () {
     Widget wrap(MenuDay menu) => MaterialApp(
-          theme: AppTheme.from(_fallbackScheme()),
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: MenuSection(menu: menu, prefs: Preferences.instance),
-            ),
-          ),
-        );
+      theme: AppTheme.from(_fallbackScheme()),
+      home: Scaffold(
+        body: SingleChildScrollView(
+          child: MenuSection(menu: menu, prefs: Preferences.instance),
+        ),
+      ),
+    );
 
-    MenuDay menu(List<Dish> dishes) =>
-        MenuDay(locationId: 1, serviceDate: DateTime(2026, 8, 31), dishes: dishes);
+    MenuDay menu(List<Dish> dishes) => MenuDay(
+      locationId: 1,
+      serviceDate: DateTime(2026, 8, 31),
+      dishes: dishes,
+    );
 
     setUp(() => Preferences.instance.resetForTests());
 
-    testWidgets('an empty menu explains itself rather than showing nothing',
-        (tester) async {
+    testWidgets('an empty menu explains itself rather than showing nothing', (
+      tester,
+    ) async {
       await tester.pumpWidget(wrap(menu([])));
       expect(find.textContaining('No menu published'), findsOneWidget);
     });
 
     testWidgets('tags render exactly as published, not tidied', (tester) async {
-      await tester.pumpWidget(wrap(menu([
-        dish('Bagel',
-            allergens: ['Wheat', 'May Contain Traces of Milk'],
-            diet: ['Vegan', 'Vegetarian']),
-      ])));
+      await tester.pumpWidget(
+        wrap(
+          menu([
+            dish(
+              'Bagel',
+              allergens: ['Wheat', 'May Contain Traces of Milk'],
+              diet: ['Vegan', 'Vegetarian'],
+            ),
+          ]),
+        ),
+      );
       // The weaker claim stays a weaker claim.
       expect(find.text('May Contain Traces of Milk'), findsOneWidget);
       expect(find.text('Wheat'), findsOneWidget);
@@ -1403,14 +1645,19 @@ void _menus() {
       expect(find.textContaining('ask the staff'), findsOneWidget);
     });
 
-    testWidgets('a flagged allergen marks the dish, it does not remove it',
-        (tester) async {
+    testWidgets('a flagged allergen marks the dish, it does not remove it', (
+      tester,
+    ) async {
       await Preferences.instance.load();
       await Preferences.instance.toggleAvoid('Milk');
-      await tester.pumpWidget(wrap(menu([
-        dish('Cheese Danish', allergens: ['Milk']),
-        dish('Plain Bagel', allergens: ['Wheat']),
-      ])));
+      await tester.pumpWidget(
+        wrap(
+          menu([
+            dish('Cheese Danish', allergens: ['Milk']),
+            dish('Plain Bagel', allergens: ['Wheat']),
+          ]),
+        ),
+      );
       // Both still on screen. Hiding food from someone looking for food is the
       // wrong failure.
       expect(find.text('Cheese Danish'), findsOneWidget);
@@ -1421,13 +1668,20 @@ void _menus() {
     testWidgets('a dietary filter demotes rather than deletes', (tester) async {
       await Preferences.instance.load();
       await Preferences.instance.toggleDiet('Vegan');
-      await tester.pumpWidget(wrap(menu([
-        dish('Bagel', diet: ['Vegan']),
-        dish('Danish', diet: ['Vegetarian']),
-      ])));
+      await tester.pumpWidget(
+        wrap(
+          menu([
+            dish('Bagel', diet: ['Vegan']),
+            dish('Danish', diet: ['Vegetarian']),
+          ]),
+        ),
+      );
       expect(find.text('Bagel'), findsOneWidget);
-      expect(find.text('Danish'), findsOneWidget,
-          reason: 'a hidden dish looks the same as one never published');
+      expect(
+        find.text('Danish'),
+        findsOneWidget,
+        reason: 'a hidden dish looks the same as one never published',
+      );
       expect(find.textContaining('do not match your filters'), findsOneWidget);
     });
   });
@@ -1440,36 +1694,40 @@ void _menus() {
       expect(lowered, isNot(contains('kosher')));
     });
 
-    test('the allergen list matches what RIT tags, with no invented entries', () {
-      // Peanut is deliberately absent as a standalone tag: RIT only ever
-      // mentions peanuts inside a "may contain traces" string.
-      expect(knownAllergens, contains('Gluten'));
-      expect(knownAllergens, contains('Treenut'));
-      expect(knownAllergens, isNot(contains('Peanut')));
-    });
+    test(
+      'the allergen list matches what RIT tags, with no invented entries',
+      () {
+        // Peanut is deliberately absent as a standalone tag: RIT only ever
+        // mentions peanuts inside a "may contain traces" string.
+        expect(knownAllergens, contains('Gluten'));
+        expect(knownAllergens, contains('Treenut'));
+        expect(knownAllergens, isNot(contains('Peanut')));
+      },
+    );
   });
 }
 
 /// One navigation idiom, shared by Campus and Settings.
 void _sectionNav() {
   List<SectionSpec> specs(int n) => [
-        for (var i = 0; i < n; i++)
-          SectionSpec(
-            id: 'id$i',
-            title: 'Section $i',
-            subtitle: 'sub $i',
-            icon: Icons.circle,
-            builder: (context) => Text('content $i'),
-          ),
-      ];
+    for (var i = 0; i < n; i++)
+      SectionSpec(
+        id: 'id$i',
+        title: 'Section $i',
+        subtitle: 'sub $i',
+        icon: Icons.circle,
+        builder: (context) => Text('content $i'),
+      ),
+  ];
 
   Widget wrap(List<SectionSpec> s) => MaterialApp(
-        theme: AppTheme.from(_fallbackScheme()),
-        home: Scaffold(body: SectionScaffold(sections: s)),
-      );
+    theme: AppTheme.from(_fallbackScheme()),
+    home: Scaffold(body: SectionScaffold(sections: s)),
+  );
 
-  testWidgets('wide shows the nav and the first section together',
-      (tester) async {
+  testWidgets('wide shows the nav and the first section together', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(wrap(specs(3)));
@@ -1480,8 +1738,9 @@ void _sectionNav() {
     expect(find.text('content 0'), findsOneWidget);
   });
 
-  testWidgets('selecting swaps the pane without leaving the screen',
-      (tester) async {
+  testWidgets('selecting swaps the pane without leaving the screen', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(1400, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(wrap(specs(3)));
@@ -1500,16 +1759,20 @@ void _sectionNav() {
     await tester.pumpWidget(wrap(specs(3)));
 
     expect(find.text('Section 0'), findsOneWidget);
-    expect(find.text('content 0'), findsNothing,
-        reason: 'a narrow window has no room for two panes');
+    expect(
+      find.text('content 0'),
+      findsNothing,
+      reason: 'a narrow window has no room for two panes',
+    );
 
     await tester.tap(find.text('Section 1'));
     await tester.pumpAndSettle();
     expect(find.text('content 1'), findsOneWidget);
   });
 
-  testWidgets('an empty section list renders nothing rather than throwing',
-      (tester) async {
+  testWidgets('an empty section list renders nothing rather than throwing', (
+    tester,
+  ) async {
     await tester.pumpWidget(wrap(const []));
     expect(tester.takeException(), isNull);
   });
@@ -1518,31 +1781,36 @@ void _sectionNav() {
 /// The jump rail on long grouped lists.
 void _jumpRail() {
   List<JumpGroup> groups(int n) => [
-        for (var i = 0; i < n; i++)
-          JumpGroup(
-            label: 'Group $i',
-            icon: Icons.circle,
-            count: i + 1,
-            builder: (context) => SizedBox(
-              height: 400,
-              child: Text('body $i'),
-            ),
-          ),
-      ];
+    for (var i = 0; i < n; i++)
+      JumpGroup(
+        label: 'Group $i',
+        icon: Icons.circle,
+        count: i + 1,
+        builder: (context) => SizedBox(height: 400, child: Text('body $i')),
+      ),
+  ];
 
   /// The rail reacts to the space it is given, so the test view has to be
   /// sized honestly. devicePixelRatio is pinned to 1 because the default of 3
   /// silently divides the logical width and puts every case below the
   /// breakpoint.
-  Future<void> pump(WidgetTester tester, List<JumpGroup> g, Size size,
-      {Widget? footer}) async {
+  Future<void> pump(
+    WidgetTester tester,
+    List<JumpGroup> g,
+    Size size, {
+    Widget? footer,
+  }) async {
     tester.view.devicePixelRatio = 1.0;
     tester.view.physicalSize = size;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.from(_fallbackScheme()),
-      home: Scaffold(body: JumpList(groups: g, footer: footer)),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.from(_fallbackScheme()),
+        home: Scaffold(
+          body: JumpList(groups: g, footer: footer),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -1553,8 +1821,9 @@ void _jumpRail() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('a narrow window drops the rail rather than cramping the list',
-      (tester) async {
+  testWidgets('a narrow window drops the rail rather than cramping the list', (
+    tester,
+  ) async {
     await pump(tester, groups(4), const Size(700, 800));
     // Only the body remains, so the first group's content is what shows.
     expect(find.text('body 0'), findsOneWidget);
@@ -1574,13 +1843,20 @@ void _jumpRail() {
 
     await tester.tap(find.text('Group 3'));
     await tester.pumpAndSettle();
-    expect(find.text('body 3'), findsOneWidget,
-        reason: 'the rail is for getting somewhere, not decoration');
+    expect(
+      find.text('body 3'),
+      findsOneWidget,
+      reason: 'the rail is for getting somewhere, not decoration',
+    );
   });
 
   testWidgets('a footer renders after the last group', (tester) async {
-    await pump(tester, groups(2), const Size(1400, 800),
-        footer: const Text('the footer'));
+    await pump(
+      tester,
+      groups(2),
+      const Size(1400, 800),
+      footer: const Text('the footer'),
+    );
     await tester.drag(find.text('body 0'), const Offset(0, -900));
     await tester.pumpAndSettle();
     expect(find.text('the footer'), findsOneWidget);

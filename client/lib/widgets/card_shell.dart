@@ -37,6 +37,10 @@ class CardShell extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final media = MediaQuery.maybeOf(context);
+    final reduceMotion =
+        (media?.disableAnimations ?? false) ||
+        (media?.accessibleNavigation ?? false);
 
     return Material(
       elevation: 0,
@@ -60,15 +64,26 @@ class CardShell extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (hero != null) ...[
-                  const SizedBox(width: 10),
-                  hero!,
-                ],
+                if (hero != null) ...[const SizedBox(width: 10), hero!],
                 ?dragHandle,
               ],
             ),
             const SizedBox(height: 12),
-            Flexible(child: child),
+            Flexible(
+              child: AnimatedSwitcher(
+                duration: reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 140),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeOutCubic,
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+                child: KeyedSubtree(
+                  key: ValueKey(state == DataState.priming),
+                  child: child,
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -84,8 +99,6 @@ class RuledRow extends StatelessWidget {
   final bool last;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 7),
-        child: child,
-      );
+  Widget build(BuildContext context) =>
+      Padding(padding: const EdgeInsets.symmetric(vertical: 7), child: child);
 }
