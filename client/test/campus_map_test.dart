@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
@@ -84,6 +85,44 @@ void main() {
     expect(projection.nearest(westPoint)?.id, west.id);
   });
 
+  test('the projection does not stretch one axis against the other', () {
+    // It used to force a minimum 2.35:1 aspect so a wide window looked full.
+    // The campus inside the bounds is 2342m by 2085m, so that stretched
+    // longitude by 2.09x: buildings came out twice as wide as they are and the
+    // angles between them were wrong. A square patch of ground must project to
+    // a square patch of pixels.
+    const size = Size(1200, 600);
+    final projection = CampusMapProjection(
+      const [
+        CampusMapFeature(
+          id: 1,
+          kind: '_campus',
+          kindName: 'Academic Building',
+          name: 'Square block',
+          geometryType: 'Polygon',
+          coordinates: [
+            [
+              // Sized so the ground covered is square: a degree of longitude
+              // is cos(latitude) as long as a degree of latitude.
+              GeoCoordinate(-77.68, 43.08),
+              GeoCoordinate(-77.66, 43.08),
+              GeoCoordinate(-77.66, 43.0946),
+              GeoCoordinate(-77.68, 43.0946),
+            ],
+          ],
+        ),
+      ],
+      size,
+    );
+
+    final rect = projection.mapRect;
+    expect(
+      rect.width / rect.height,
+      closeTo(1.0, 0.02),
+      reason: 'square ground must not render as a wide rectangle',
+    );
+  });
+
   test('initial fit ignores remote places without deleting them', () {
     final projection = CampusMapProjection(const [
       west,
@@ -112,6 +151,63 @@ void main() {
     expect(find.text('West fountain'), findsOneWidget);
     expect(find.text('East AED'), findsOneWidget);
     expect(find.byType(CustomPaint), findsWidgets);
+  });
+
+  testWidgets('the legend names what the outlines mean', (tester) async {
+    // Without it the map asks you to infer that a hollow shape is a car park
+    // and an olive one is grass.
+    await tester.pumpWidget(app());
+
+    expect(find.text('Building'), findsOneWidget);
+    expect(find.text('Parking'), findsOneWidget);
+    expect(find.text('Green space'), findsOneWidget);
+  });
+
+  test('each family is painted differently from the others', () {
+    // The legend is only truthful if the three treatments actually differ.
+    final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFF76902));
+    final built = mapFamilyPaints(MapFamily.built, scheme);
+    final parking = mapFamilyPaints(MapFamily.parking, scheme);
+    final open = mapFamilyPaints(MapFamily.open, scheme);
+
+    expect(built.fill, isNotNull, reason: 'a building is a solid');
+    expect(parking.fill, isNull, reason: 'a lot is hollow, not a building');
+    expect(open.edge, isNull, reason: 'ground has no walls');
+    expect(open.fill!.color, isNot(built.fill!.color));
+    expect(parking.edge!.color, isNot(built.edge!.color));
+  });
+
+  testWidgets('double click and keyboard controls zoom the map', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    final viewer = tester.widget<InteractiveViewer>(
+      find.byType(InteractiveViewer),
+    );
+    final controller = viewer.transformationController!;
+
+    await tester.tap(find.byType(InteractiveViewer));
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tap(find.byType(InteractiveViewer));
+    await tester.pump();
+    expect(controller.value.getMaxScaleOnAxis(), closeTo(1.5, 0.01));
+
+    final mapFocus = tester.widget<Focus>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Focus && widget.focusNode?.debugLabel == 'Campus map',
+      ),
+    );
+    mapFocus.focusNode!.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.equal);
+    await tester.pump();
+    expect(controller.value.getMaxScaleOnAxis(), closeTo(2.25, 0.01));
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.minus);
+    await tester.pump();
+    expect(controller.value.getMaxScaleOnAxis(), closeTo(1.5, 0.01));
+    await tester.pump(const Duration(milliseconds: 400));
   });
 
   testWidgets('selecting the list shows useful place details', (tester) async {
