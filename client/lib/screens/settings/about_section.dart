@@ -33,6 +33,13 @@ const _sources = <({String name, String detail, IconData icon})>[
     detail: 'Live occupancy, 5 dining locations have sensors',
     icon: Icons.map_rounded,
   ),
+  // ODbL requires this credit wherever the data is shown. It is not optional
+  // and must not be dropped to tidy the list up.
+  (
+    name: 'OpenStreetMap',
+    detail: 'Campus walking paths. Map data (c) OpenStreetMap contributors, ODbL',
+    icon: Icons.directions_walk_rounded,
+  ),
 ];
 
 class AboutSection extends StatelessWidget {

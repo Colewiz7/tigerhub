@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
+import '../data/campus_paths.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../theme/tokens.dart';
@@ -33,6 +34,18 @@ class _CampusMapViewState extends State<CampusMapView> {
   String? _kind;
   int? _selectedId;
   bool _showEvents = false;
+
+  /// Empty until the bundled asset decodes. The map paints without it, then
+  /// again with it, rather than holding the whole screen back for 114 KB.
+  CampusPaths _paths = const CampusPaths.empty();
+
+  @override
+  void initState() {
+    super.initState();
+    CampusPaths.load().then((paths) {
+      if (mounted) setState(() => _paths = paths);
+    });
+  }
 
   @override
   void dispose() {
@@ -219,6 +232,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                                   selectedId: _selectedId,
                                   scheme: Theme.of(context).colorScheme,
                                   zoom: matrix.getMaxScaleOnAxis(),
+                                  paths: _paths,
                                   onSelect: (feature) =>
                                       setState(() => _selectedId = feature.id),
                                 ),
@@ -827,6 +841,7 @@ class CampusMapPainter extends CustomPainter {
     required this.scheme,
     this.onSelect,
     this.zoom = 1,
+    this.paths = const CampusPaths.empty(),
   });
 
   final List<CampusMapFeature> features;
@@ -842,6 +857,10 @@ class CampusMapPainter extends CustomPainter {
   /// nothing new. Text and rules divide by it to hold a constant on-screen
   /// size, which also means more building labels fit as you zoom in.
   final double zoom;
+
+  /// The bundled OpenStreetMap walking network. Empty until the asset loads,
+  /// and empty forever if it fails, which costs the paths and nothing else.
+  final CampusPaths paths;
 
   @override
   SemanticsBuilderCallback get semanticsBuilder => _buildSemantics;
@@ -948,8 +967,17 @@ class CampusMapPainter extends CustomPainter {
     final areas = features.where((f) => f.geometryType != 'Point').toList()
       ..sort((a, b) => mapFamily(a).rank.compareTo(mapFamily(b).rank));
 
+    // Paths belong on the ground: over the grass and the lots they cross, and
+    // under the buildings they run between. The list is sorted by family, so
+    // the moment the first building comes up is the moment to draw them.
+    var pathsDrawn = false;
+
     for (final feature in areas) {
       final family = mapFamily(feature);
+      if (!pathsDrawn && family == MapFamily.built) {
+        _paintPaths(canvas, projection, mapRect, scheme);
+        pathsDrawn = true;
+      }
       for (final ring in feature.coordinates) {
         if (ring.length < 3) continue;
         final points = [for (final c in ring) projection.project(c)];
@@ -976,6 +1004,9 @@ class CampusMapPainter extends CustomPainter {
         ));
       }
     }
+
+    // Nothing built in view, so the loop above never reached the trigger.
+    if (!pathsDrawn) _paintPaths(canvas, projection, mapRect, scheme);
 
     _paintBuildingLabels(canvas, labelCandidates, scheme);
     _paintScaleBar(canvas, projection, mapRect, scheme);
@@ -1082,6 +1113,65 @@ class CampusMapPainter extends CustomPainter {
   ///
   /// It is painted into the canvas rather than laid over it, so it zooms with
   /// the map and keeps telling the truth at every zoom level.
+  /// Draws the walking network.
+  ///
+  /// Measured against the map field rather than eyeballed, and deliberately
+  /// not the same role as the parking edge, which would otherwise be the one
+  /// other thin grey line on the map:
+  ///
+  ///                                    light  dark   vs parking edge
+  ///   footway (onSurfaceVariant @0.55)  2.74  4.00   1.37 / 1.56
+  ///   road    (onSurfaceVariant @0.35)  1.82  2.39   1.10 / 1.07
+  ///
+  /// Footpaths are drawn more clearly than roads, which is the right way round
+  /// on a campus you cross on foot. Roads stay wider and fainter so they read
+  /// as context. A road is also a closed-in shape next to a parking outline,
+  /// so form separates them where contrast alone is thin.
+  void _paintPaths(
+    Canvas canvas,
+    CampusMapProjection projection,
+    Rect mapRect,
+    ColorScheme scheme,
+  ) {
+    if (paths.isEmpty) return;
+    final clip = mapRect.inflate(18);
+    canvas.save();
+    canvas.clipRRect(RRect.fromRectAndRadius(clip, const Radius.circular(32)));
+
+    void draw(List<List<GeoCoordinate>> ways, Paint paint) {
+      for (final way in ways) {
+        if (way.length < 2) continue;
+        final first = projection.project(way.first);
+        final line = Path()..moveTo(first.dx, first.dy);
+        for (final point in way.skip(1)) {
+          final at = projection.project(point);
+          line.lineTo(at.dx, at.dy);
+        }
+        canvas.drawPath(line, paint);
+      }
+    }
+
+    draw(
+      paths.road,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = scheme.onSurfaceVariant.withValues(alpha: 0.35),
+    );
+    draw(
+      paths.foot,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.9
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round
+        ..color = scheme.onSurfaceVariant.withValues(alpha: 0.55),
+    );
+    canvas.restore();
+  }
+
   void _paintScaleBar(
     Canvas canvas,
     CampusMapProjection projection,
@@ -1243,7 +1333,8 @@ class CampusMapPainter extends CustomPainter {
       oldDelegate.boundsFeatures != boundsFeatures ||
       oldDelegate.selectedId != selectedId ||
       oldDelegate.scheme != scheme ||
-      oldDelegate.zoom != zoom;
+      oldDelegate.zoom != zoom ||
+      oldDelegate.paths != paths;
 
   @override
   bool shouldRebuildSemantics(CampusMapPainter oldDelegate) =>
