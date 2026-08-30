@@ -154,6 +154,20 @@ class CardInstance {
       };
 }
 
+/// What each module is called and which glyph identifies it, for the card
+/// library and the inspector. Kept beside the type rather than in the widget
+/// layer so the Add Card flow and the renderer cannot disagree.
+const Map<ModuleType, String> moduleLabels = {
+  ModuleType.diningStatus: 'Dining',
+  ModuleType.generalEvents: 'Events',
+  ModuleType.clubEvents: 'Club events',
+  ModuleType.calendar: 'Calendar',
+  ModuleType.visitingChefs: 'Visiting Chefs',
+  ModuleType.mailingAddress: 'Mailing Address',
+  ModuleType.facilityHours: 'Facility hours',
+  ModuleType.campusMap: 'Campus map',
+};
+
 /// The four cards the app shipped with, as instances.
 const List<CardInstance> defaultDashboard = [
   CardInstance(id: 'dining-0', type: ModuleType.diningStatus),
@@ -233,7 +247,14 @@ class DashboardStore {
     final order = await cache.readOrder(_legacyOrderKey);
     final hidden = await cache.readOrder(_legacyHiddenKey);
     if (order.isEmpty && hidden.isEmpty) return defaultDashboard;
-    return migrateLegacy(order, hidden);
+
+    // Written back, not just returned. Migrating on every launch would work,
+    // but it would leave the old keys authoritative forever and give the new
+    // fields, scope and size, nowhere to live until the user happened to edit
+    // something.
+    final migrated = migrateLegacy(order, hidden);
+    await save(migrated);
+    return migrated;
   }
 
   static Future<void> save(List<CardInstance> cards) =>

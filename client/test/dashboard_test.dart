@@ -167,6 +167,23 @@ void main() {
           defaultDashboard.map((c) => c.type).toList());
     });
 
+    test('migrating writes the new format, so it only happens once', () async {
+      await ResponseCache.instance
+          .writeOrder('cards', ['events', 'dining', 'chefs', 'housing']);
+
+      await DashboardStore.load();
+
+      // Leaving the old keys authoritative would mean scope and size had
+      // nowhere to live until the user happened to edit something.
+      final saved = await ResponseCache.instance.readOrder('dashboard_v2');
+      expect(saved, isNotEmpty);
+
+      // And the second load comes from the new format, not the old one.
+      await ResponseCache.instance.writeOrder('cards', const []);
+      final again = await DashboardStore.load();
+      expect(again.first.type, ModuleType.generalEvents);
+    });
+
     test('the old format is picked up when the new one is absent', () async {
       await ResponseCache.instance
           .writeOrder('cards', ['housing', 'dining', 'events', 'chefs']);
