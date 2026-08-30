@@ -11,6 +11,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from app import settings
 from app.scrapers import (
+    athletics,
     campusgroups,
     drupal_events,
     fd_menus,
@@ -32,6 +33,7 @@ JOBS = [
     ("occupancy", maps_occupancy.run, settings.INTERVAL_OCCUPANCY_MINUTES, 80),
     ("recreation", recreation.run, settings.INTERVAL_RECREATION_MINUTES, 100),
     ("menus", fd_menus.run, settings.INTERVAL_MENUS_MINUTES, 120),
+    ("athletics", athletics.run, settings.INTERVAL_EVENTS_MINUTES, 140),
 ]
 
 

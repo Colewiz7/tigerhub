@@ -1,0 +1,336 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//SIDEARM Sports//NONSGML SIDEARM//EN
+X-WR-CALNAME: Athletics
+X-PUBLISHED-TTL:PT120M
+BEGIN:VEVENT
+UID:vcal_15261-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260901T200000Z
+DTEND:20260901T220000Z
+LOCATION:Rochester\, N.Y. / Judson Stadium
+SUMMARY:Women's Soccer vs Geneseo - Pride Game
+DESCRIPTION:Women's Soccer vs Geneseo - Pride Game\nStreaming Video: https://ritathletics.com/calendar.ashx/calendar.ics?Live=1900\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15261&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15279-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260901T220000Z
+DTEND:20260902T000000Z
+LOCATION:Keuka Park\, NY / JMW Center
+SUMMARY:Women's Volleyball at Keuka
+DESCRIPTION:Women's Volleyball at Keuka\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15279&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15325-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260901T230000Z
+DTEND:20260902T010000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Brockport - Doug May Memorial Game
+DESCRIPTION:Men's Soccer vs Brockport - Doug May Memorial Game\nStreaming Video: https://ritathletics.com/showcase?Live=1934\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15325&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15280-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260904T200000Z
+DTEND:20260904T220000Z
+LOCATION:Latrobe\, PA / Robert S. Carey Center
+SUMMARY:Women's Volleyball vs Westminster
+DESCRIPTION:Women's Volleyball vs Westminster\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15280&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15326-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260904T230000Z
+DTEND:20260905T010000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Fredonia
+DESCRIPTION:Men's Soccer vs Fredonia\nStreaming Video: https://ritathletics.com/showcase?Live=1935\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15326&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15281-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260905T000000Z
+DTEND:20260905T020000Z
+LOCATION:Latrobe\, Pa. / Robert S. Carey Center
+SUMMARY:Women's Volleyball at Saint Vincent
+DESCRIPTION:Women's Volleyball at Saint Vincent\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15281&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15307-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260905T150000Z
+DTEND:20260905T180000Z
+LOCATION:Brockport\, N.Y. / Sweden Town Park
+SUMMARY:Men's Cross Country at Tom Balon Alumni Classic - Hosted by Brockport
+DESCRIPTION:Men's Cross Country at Tom Balon Alumni Classic - Hosted by Brockport\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15307&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15316-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260905T150000Z
+DTEND:20260905T180000Z
+LOCATION:Brockport\, N.Y. / Sweden Town Park
+SUMMARY:Women's Cross Country at Tom Balon Alumni Classic - Hosted by Brockport
+DESCRIPTION:Women's Cross Country at Tom Balon Alumni Classic - Hosted by Brockport\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15316&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15282-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260905T180000Z
+DTEND:20260905T200000Z
+LOCATION:Latrobe\, PA / Robert S. Carey Center
+SUMMARY:Women's Volleyball vs Bethany
+DESCRIPTION:Women's Volleyball vs Bethany\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15282&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15283-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260905T200000Z
+DTEND:20260905T220000Z
+LOCATION:Latrobe\, PA / Robert S. Carey Center
+SUMMARY:Women's Volleyball vs Grove City
+DESCRIPTION:Women's Volleyball vs Grove City\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15283&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15262-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260906T170000Z
+DTEND:20260906T190000Z
+LOCATION:Meadville\, Pa. / Robertson Blue Tiurf
+SUMMARY:Women's Soccer at Allegheny
+DESCRIPTION:Women's Soccer at Allegheny\nStreaming Video: https://pacdigitalnetwork.com/allegheny/\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15262&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15263-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260909T200000Z
+DTEND:20260909T220000Z
+LOCATION:Pittsford\, N.Y. / Growney Stadium
+SUMMARY:Women's Soccer at St. John Fisher
+DESCRIPTION:Women's Soccer at St. John Fisher\nStreaming Video: https://www.empire8network.com/stjohnfisher/\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15263&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15284-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260909T220000Z
+DTEND:20260910T000000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs Geneseo
+DESCRIPTION:Women's Volleyball vs Geneseo\nStreaming Video: https://ritathletics.com/showcase?Live=1924\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15284&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15327-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260909T230000Z
+DTEND:20260910T010000Z
+LOCATION:Rochester\, NY
+SUMMARY:Men's Soccer at St. John Fisher
+DESCRIPTION:Men's Soccer at St. John Fisher\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15327&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15285-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260911T223000Z
+DTEND:20260912T003000Z
+LOCATION:Boston\, MA / Clark Athletic Center
+SUMMARY:Women's Volleyball vs Amherst
+DESCRIPTION:Women's Volleyball vs Amherst\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15285&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15286-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260912T150000Z
+DTEND:20260912T170000Z
+LOCATION:Boston\, MA / Clark Athletic Center
+SUMMARY:Women's Volleyball at UMass Boston
+DESCRIPTION:Women's Volleyball at UMass Boston\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15286&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15264-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260912T180000Z
+DTEND:20260912T200000Z
+LOCATION:Rochester\, N.Y. / Judson Stadium
+SUMMARY:Women's Soccer vs Ohio Northern
+DESCRIPTION:Women's Soccer vs Ohio Northern\nStreaming Video: https://ritathletics.com/calendar.ashx/calendar.ics?Live=1901\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15264&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15328-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260912T180000Z
+DTEND:20260912T200000Z
+LOCATION:Potsdam\, NY
+SUMMARY:Men's Soccer at Clarkson
+DESCRIPTION:Men's Soccer at Clarkson\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15328&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15287-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260912T200000Z
+DTEND:20260912T220000Z
+LOCATION:Boston\, MA / Clark Athletic Center
+SUMMARY:Women's Volleyball vs Plattsburgh
+DESCRIPTION:Women's Volleyball vs Plattsburgh\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15287&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15329-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260916T230000Z
+DTEND:20260917T010000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Buffalo State
+DESCRIPTION:Men's Soccer vs Buffalo State\nStreaming Video: https://ritathletics.com/showcase?Live=1936\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15329&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15288-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260918T220000Z
+DTEND:20260919T000000Z
+LOCATION:Brockport\, NY / Vlogianitis Gymnasium
+SUMMARY:Women's Volleyball at Brockport
+DESCRIPTION:Women's Volleyball at Brockport\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15288&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15317-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260919T140000Z
+DTEND:20260919T170000Z
+LOCATION:Rochester\, N.Y. / Genesee Valley Park
+SUMMARY:Women's Cross Country at Yellowjacket Invitational - Hosted by Rochester
+DESCRIPTION:Women's Cross Country at Yellowjacket Invitational - Hosted by Rochester\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15317&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15308-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260919T140000Z
+DTEND:20260919T170000Z
+LOCATION:Rochester\, N.Y. / Genesee Valley Park
+SUMMARY:Men's Cross Country at Yellowjacket Invitational - Hosted by Rochester
+DESCRIPTION:Men's Cross Country at Yellowjacket Invitational - Hosted by Rochester\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15308&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15330-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260919T170000Z
+DTEND:20260919T190000Z
+LOCATION:Alfred\, NY
+SUMMARY:Men's Soccer at Alfred State 
+DESCRIPTION:Men's Soccer at Alfred State \n
+URL:https://ritathletics.com/calendar.aspx?game_id=15330&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15289-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260919T170000Z
+DTEND:20260919T190000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs St. John Fisher
+DESCRIPTION:Women's Volleyball vs St. John Fisher\nStreaming Video: https://ritathletics.com/showcase?Live=1925\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15289&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15265-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260919T180000Z
+DTEND:20260919T200000Z
+LOCATION:Rochester\, N.Y. / Judson Stadium
+SUMMARY:Women's Soccer vs Clarkson - Tiger Den - Ted Lasso Themed
+DESCRIPTION:Women's Soccer vs Clarkson - Tiger Den - Ted Lasso Themed\nStreaming Video: https://ritathletics.com/calendar.ashx/calendar.ics?Live=1902\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15265&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15372-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART;VALUE=DATE:20260920
+DTEND;VALUE=DATE:20260921
+LOCATION:Ithaca\, N.Y. / Cayuga Inlet
+SUMMARY:Women's Rowing at Cayuga Sprints
+DESCRIPTION:Women's Rowing at Cayuga Sprints\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15372&amp;sport_id=6
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15266-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260922T200000Z
+DTEND:20260922T220000Z
+LOCATION:Fredonia\, N.Y. / University Stadium
+SUMMARY:Women's Soccer at Fredonia
+DESCRIPTION:Women's Soccer at Fredonia\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15266&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15331-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260923T230000Z
+DTEND:20260924T010000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Hobart - Tiger Den
+DESCRIPTION:Men's Soccer vs Hobart - Tiger Den\nStreaming Video: https://ritathletics.com/showcase?Live=1937\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15331&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15192-ritathletics.com
+DTSTAMP:20260830T052002Z
+DTSTART:20260925T220000Z
+DTEND:20260926T010000Z
+LOCATION:Potsdam\, NY/Cheel Arena
+SUMMARY:Women's Hockey at Clarkson
+DESCRIPTION:Women's Hockey at Clarkson\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15192&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+END:VCALENDAR
