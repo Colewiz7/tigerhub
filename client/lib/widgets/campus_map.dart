@@ -660,29 +660,53 @@ class CampusMapPainter extends CustomPainter {
         ..color = scheme.primary.withValues(alpha: 0.12),
     );
 
-    final polygonFill = Paint()..color = scheme.surfaceContainerHigh;
+    // Measured, not picked by eye. Against the map background the surface
+    // steps are all too close to carry a shape on their own, and the light
+    // scheme is the worse of the two:
+    //
+    //                        light   dark
+    //   surfaceContainerHigh  1.22   1.35
+    //   surfaceContainerHighest 1.29  1.58
+    //   outlineVariant edge on fill  1.32 both
+    //
+    // So the edge carries the building rather than the fill, and it uses
+    // `outline` (3.48 light, 3.88 dark) rather than `outlineVariant`. The fill
+    // stays quiet. This is why buildings read as faint wireframes before: both
+    // the fill and the edge were within a third of their background.
+    final polygonFill = Paint()..color = scheme.surfaceContainerHighest;
     final polygonEdge = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.25
-      ..color = scheme.primary.withValues(alpha: 0.42);
+      ..strokeWidth = 1.1
+      ..color = scheme.outline;
+
+    // Collected while the polygons are drawn, so a label knows the shape it
+    // belongs to and can be skipped when it will not fit inside it.
+    final labelCandidates = <({String text, Rect bounds, double area})>[];
 
     for (final feature in features.where((f) => f.geometryType != 'Point')) {
       for (final ring in feature.coordinates) {
         if (ring.length < 3) continue;
-        final path = Path()
-          ..moveTo(
-            projection.project(ring.first).dx,
-            projection.project(ring.first).dy,
-          );
-        for (final coordinate in ring.skip(1)) {
-          final point = projection.project(coordinate);
+        final points = [for (final c in ring) projection.project(c)];
+        final path = Path()..moveTo(points.first.dx, points.first.dy);
+        for (final point in points.skip(1)) {
           path.lineTo(point.dx, point.dy);
         }
         path.close();
         canvas.drawPath(path, polygonFill);
         canvas.drawPath(path, polygonEdge);
+
+        final abbreviation = feature.building;
+        if (abbreviation == null || abbreviation.isEmpty) continue;
+        final bounds = path.getBounds();
+        labelCandidates.add((
+          text: abbreviation,
+          bounds: bounds,
+          area: bounds.width * bounds.height,
+        ));
       }
     }
+
+    _paintBuildingLabels(canvas, labelCandidates, scheme);
 
     final buckets =
         <(int, int), List<({CampusMapFeature feature, Offset at})>>{};
@@ -746,6 +770,57 @@ class CampusMapPainter extends CustomPainter {
             ..color = selected ? scheme.onPrimary : scheme.onPrimaryContainer,
         );
       }
+    }
+  }
+
+  /// Building abbreviations, where they fit.
+  ///
+  /// Without these the map is a field of identical shapes and there is no way
+  /// to tell which one is Wallace or Golisano. They are supporting labels, not
+  /// a cartographic layer: a label is drawn only when it fits inside its own
+  /// building and does not land on one already drawn, and bigger buildings get
+  /// first claim, because they are the ones people navigate by.
+  void _paintBuildingLabels(
+    Canvas canvas,
+    List<({String text, Rect bounds, double area})> candidates,
+    ColorScheme scheme,
+  ) {
+    final ordered = [...candidates]..sort((a, b) => b.area.compareTo(a.area));
+    final taken = <Rect>[];
+
+    for (final candidate in ordered) {
+      final painter = TextPainter(
+        text: TextSpan(
+          text: candidate.text,
+          style: TextStyle(
+            color: scheme.onSurfaceVariant,
+            fontSize: 9,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
+
+      // Must sit inside the building with a little room, or it reads as a
+      // label for whatever is next door.
+      if (painter.width + 6 > candidate.bounds.width ||
+          painter.height + 4 > candidate.bounds.height) {
+        continue;
+      }
+
+      final rect = Rect.fromCenter(
+        center: candidate.bounds.center,
+        width: painter.width + 4,
+        height: painter.height + 2,
+      );
+      if (taken.any(rect.overlaps)) continue;
+
+      taken.add(rect);
+      painter.paint(
+        canvas,
+        candidate.bounds.center - Offset(painter.width / 2, painter.height / 2),
+      );
     }
   }
 
