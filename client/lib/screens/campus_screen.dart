@@ -18,6 +18,7 @@ import '../theme/tokens.dart';
 import '../widgets/content_column.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
+import '../widgets/week_grid.dart';
 
 class CampusScreen extends StatefulWidget {
   const CampusScreen({super.key, required this.api, required this.areas});
@@ -254,10 +255,10 @@ class _PostOfficeBlock extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
             for (final service in services.entries) ...[
               _ServiceHours(service: service.key, rules: service.value),
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
             ],
             if (office.locationNote != null) ...[
               Text(office.locationNote!, style: text.bodySmall),
@@ -298,7 +299,7 @@ class _ServiceHours extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHigh,
         borderRadius: Shapes.inner,
@@ -306,30 +307,41 @@ class _ServiceHours extends StatelessWidget {
       child: Column(
         children: [
           Text(_serviceLabel(service).toUpperCase(), style: text.labelSmall),
-          const SizedBox(height: 10),
-          for (final rule in rules)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Column(
-                children: [
-                  Text(
-                    '${_time(rule.opensAt)} to ${_time(rule.closesAt)}',
-                    textAlign: TextAlign.center,
-                    style: text.displayMedium?.copyWith(
-                      fontSize: 27,
-                      fontVariations: Weights.medium,
-                      color: scheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _dayLabel(rule.days),
-                    textAlign: TextAlign.center,
-                    style: text.bodySmall,
-                  ),
-                ],
+          const SizedBox(height: 16),
+          for (var i = 0; i < rules.length; i++) ...[
+            if (i > 0) ...[
+              const SizedBox(height: 16),
+              // A rule per line ran together. A hairline separates them so
+              // "weekdays" and "Saturday" read as two facts, not one block.
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: scheme.outlineVariant.withValues(alpha: 0.35),
               ),
+              const SizedBox(height: 16),
+            ],
+            Column(
+              children: [
+                // The day comes first and small, so the eye lands on the time.
+                Text(
+                  _dayLabel(rules[i].days).toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: text.labelSmall,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${_time(rules[i].opensAt)} to ${_time(rules[i].closesAt)}',
+                  textAlign: TextAlign.center,
+                  style: text.displayMedium?.copyWith(
+                    fontSize: 29,
+                    height: 1.15,
+                    fontVariations: Weights.medium,
+                    color: scheme.onSurface,
+                  ),
+                ),
+              ],
             ),
+          ],
         ],
       ),
     );
@@ -418,6 +430,7 @@ class _RecreationRow extends StatelessWidget {
 }
 
 /// The whole published week for one facility.
+/// The whole published week for one facility, as a grid.
 class _WeekSheet extends StatelessWidget {
   const _WeekSheet({required this.facility});
 
@@ -427,10 +440,39 @@ class _WeekSheet extends StatelessWidget {
     'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
   ];
 
+  static int _minutes(String hhmm) {
+    final parts = hhmm.split(':');
+    if (parts.length < 2) return 0;
+    return (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
+  }
+
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    final semantic = Semantic.of(context);
+
+    final rows = [
+      for (var i = 0; i < facility.days.length; i++)
+        WeekRow(
+          label: i == 0
+              ? 'Today'
+              : _dayNames[facility.days[i].serviceDate.weekday - 1],
+          note: facility.days[i].note,
+          spans: [
+            for (final span in facility.days[i].spans)
+              DaySpan(
+                startMinutes: _minutes(span.opensAt),
+                endMinutes: _minutes(span.closesAt),
+                label: '${_time(span.opensAt)} to ${_time(span.closesAt)}',
+              ),
+          ],
+        ),
+    ];
+
+    // Fit the window to the data rather than assuming a range.
+    final starts = rows.expand((r) => r.spans).map((s) => s.startMinutes);
+    final ends = rows.expand((r) => r.spans).map((s) => s.endMinutes);
+    final from = starts.isEmpty ? 6 : (starts.reduce((a, b) => a < b ? a : b) ~/ 60);
+    final to = ends.isEmpty ? 24 : ((ends.reduce((a, b) => a > b ? a : b) + 59) ~/ 60);
 
     return SafeArea(
       child: Padding(
@@ -440,49 +482,15 @@ class _WeekSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(facility.name, style: text.titleLarge?.copyWith(fontSize: 22)),
-            const SizedBox(height: 14),
-            for (var i = 0; i < facility.days.length; i++)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 118,
-                      child: Text(
-                        i == 0
-                            ? 'Today'
-                            : _dayNames[facility.days[i].serviceDate.weekday - 1],
-                        style: text.bodySmall,
-                      ),
-                    ),
-                    Expanded(
-                      child: facility.days[i].closed ||
-                              facility.days[i].spans.isEmpty
-                          ? Text(
-                              facility.days[i].note ?? 'Closed',
-                              style: text.bodyMedium
-                                  ?.copyWith(color: semantic.closed),
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                for (final span in facility.days[i].spans)
-                                  Text(
-                                    '${_time(span.opensAt)} to ${_time(span.closesAt)}',
-                                    style: text.bodyMedium,
-                                  ),
-                              ],
-                            ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 6),
-            Text(
-              'From RIT Recreation and Wellness.',
-              style: text.bodySmall,
+            const SizedBox(height: 16),
+            WeekGrid(
+              rows: rows,
+              highlightIndex: 0,
+              startHour: from.clamp(0, 23),
+              endHour: to.clamp(1, 24),
             ),
+            const SizedBox(height: 14),
+            Text('From RIT Recreation and Wellness.', style: text.bodySmall),
           ],
         ),
       ),

@@ -19,6 +19,7 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/theme/semantic.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/tokens.dart';
+import 'package:tigerhub/widgets/week_grid.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
 import 'package:tigerhub/widgets/content_column.dart';
 import 'package:tigerhub/widgets/more_row.dart';
@@ -391,6 +392,7 @@ void main() {
   _pinningAndChart();
   _shippedPalette();
   _responsiveLayout();
+  _weekGridAndClosed();
 
   test('age formatting', () {
     final now = DateTime.now();
@@ -1222,6 +1224,94 @@ void _responsiveLayout() {
       await tester.pumpWidget(boxed(1600));
       for (var i = 0; i < 6; i++) {
         expect(find.text('item $i'), findsOneWidget);
+      }
+    });
+  });
+}
+
+/// The week grid, and the calmer closed colour.
+void _weekGridAndClosed() {
+  group('week grid', () {
+    Widget wrap(List<WeekRow> rows, {int start = 6, int end = 24}) => MaterialApp(
+          theme: AppTheme.from(_fallbackScheme()),
+          home: Scaffold(
+            body: SizedBox(
+              width: 700,
+              child: WeekGrid(rows: rows, highlightIndex: 0,
+                  startHour: start, endHour: end),
+            ),
+          ),
+        );
+
+    testWidgets('a multi session day draws a bar per session', (tester) async {
+      await tester.pumpWidget(wrap([
+        const WeekRow(label: 'Today', spans: [
+          DaySpan(startMinutes: 405, endMinutes: 525, label: '6:45 to 8:45'),
+          DaySpan(startMinutes: 720, endMinutes: 825, label: 'noon to 1:45'),
+          DaySpan(startMinutes: 1140, endMinutes: 1320, label: '7 to 10'),
+        ]),
+      ]));
+      expect(tester.takeException(), isNull);
+      // One tooltip per session, which a single text range could not express.
+      expect(find.byType(Tooltip), findsNWidgets(3));
+    });
+
+    testWidgets('a closed day says so instead of drawing an empty row',
+        (tester) async {
+      await tester.pumpWidget(wrap([
+        const WeekRow(label: 'Sunday', spans: [], note: 'CLOSED'),
+      ]));
+      expect(find.text('CLOSED'), findsOneWidget);
+      expect(find.byType(Tooltip), findsNothing);
+    });
+
+    testWidgets('later sessions sit further right than earlier ones',
+        (tester) async {
+      await tester.pumpWidget(wrap([
+        const WeekRow(label: 'Today', spans: [
+          DaySpan(startMinutes: 420, endMinutes: 480, label: 'morning'),
+          DaySpan(startMinutes: 1200, endMinutes: 1320, label: 'evening'),
+        ]),
+      ]));
+      final bars = tester.widgetList<Tooltip>(find.byType(Tooltip)).toList();
+      final morning = tester.getTopLeft(find.byWidget(bars[0])).dx;
+      final evening = tester.getTopLeft(find.byWidget(bars[1])).dx;
+      expect(evening, greaterThan(morning),
+          reason: 'the grid must place time along the axis');
+    });
+
+    testWidgets('renders every published day', (tester) async {
+      await tester.pumpWidget(wrap([
+        for (final d in ['Today', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'])
+          WeekRow(label: d, spans: const [
+            DaySpan(startMinutes: 600, endMinutes: 1200, label: '10 to 8'),
+          ]),
+      ]));
+      expect(find.text('Today'), findsOneWidget);
+      expect(find.text('Sun'), findsOneWidget);
+    });
+  });
+
+  group('closed reads as terracotta, not alarm', () {
+    test('is muted relative to a full chroma red, in both modes', () {
+      for (final brightness in [Brightness.dark, Brightness.light]) {
+        final sem = Semantic.from(SchemeController.builtIn(brightness));
+        final c = sem.closed;
+        // A full chroma red has a large gap between its channels. Muting pulls
+        // green and blue up toward red.
+        final spread = c.r - c.b;
+        expect(spread, lessThan(0.55),
+            reason: 'closed still reads as an alarm red in $brightness');
+      }
+    });
+
+    test('muting did not cost the separation', () {
+      double lum(Color c) =>
+          0.2126 * c.r * 255 + 0.7152 * c.g * 255 + 0.0722 * c.b * 255;
+      for (final brightness in [Brightness.dark, Brightness.light]) {
+        final sem = Semantic.from(SchemeController.builtIn(brightness));
+        expect((lum(sem.closed) - lum(sem.open)).abs(), greaterThan(20));
+        expect((lum(sem.closed) - lum(sem.busy)).abs(), greaterThan(20));
       }
     });
   });

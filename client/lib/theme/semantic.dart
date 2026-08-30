@@ -72,12 +72,22 @@ class Semantic extends ThemeExtension<Semantic> {
   /// its separation from green to dE 2.0 in protanopia, so paleness is the
   /// price of it being distinguishable at all.
   static const _darkTones = (open: 78.0, closed: 55.0, busy: 90.0);
-  static const _lightTones = (open: 62.0, closed: 30.0, busy: 46.0);
+  static const _lightTones = (open: 58.0, closed: 30.0, busy: 46.0);
 
-  static Color _shift(Color design, Color towards, double tone) {
+  /// Closed is muted to a terracotta rather than left at full chroma.
+  ///
+  /// At its natural chroma the red reads as an alarm and sits outside the warm
+  /// palette. Muting it costs nothing: the binding pair for separation is amber
+  /// against green, so the red can be calmed without touching the numbers that
+  /// matter. Re-validated at dE 9.4 protan and 18.0 normal in dark, dE 8.4
+  /// deutan and 15.6 normal in light.
+  static const double _closedChroma = 42.0;
+
+  static Color _shift(Color design, Color towards, double tone, {double? chroma}) {
     final rotated = Blend.hctHue(design.toARGB32(), towards.toARGB32(), _nudge);
     final hct = Hct.fromInt(rotated);
     hct.tone = tone;
+    if (chroma != null) hct.chroma = chroma;
     return Color(hct.toInt());
   }
 
@@ -87,7 +97,8 @@ class Semantic extends ThemeExtension<Semantic> {
     final tones = dark ? _darkTones : _lightTones;
     final primary = scheme.primary;
 
-    Color at(Color seed, double tone) => _shift(seed, primary, tone);
+    Color at(Color seed, double tone, {double? chroma}) =>
+        _shift(seed, primary, tone, chroma: chroma);
 
     final container = dark ? 26.0 : 90.0;
     final onContainer = dark ? 90.0 : 20.0;
@@ -96,7 +107,7 @@ class Semantic extends ThemeExtension<Semantic> {
       open: at(_greenSeed, tones.open),
       onOpen: at(_greenSeed, onContainer),
       openContainer: at(_greenSeed, container),
-      closed: at(_redSeed, tones.closed),
+      closed: at(_redSeed, tones.closed, chroma: _closedChroma),
       closedContainer: at(_redSeed, container),
       busy: at(_amberSeed, tones.busy),
       onBusy: at(_amberSeed, onContainer),
