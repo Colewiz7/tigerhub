@@ -6,6 +6,96 @@ say why rather than leaving it to rot.
 
 ---
 
+## Motion and loading animations
+
+Requested 2026-08-30. Handed to Codex alongside the map work, so this is
+written as a briefing.
+
+Reference the **Caelestia** and **end-4 (illogical-impulse)** dotfiles for feel.
+Both are Quickshell/QML, so nothing ports as code, only as idiom: Material 3
+expressive easing, gentle spring overshoot, staggered reveals, surfaces that
+morph rather than cut. The app already follows their colour spirit (CLAUDE.md
+4), and this is the same borrowing applied to motion.
+
+### Read this before writing a single loading spinner
+
+**Most loading animations would be wrong in this app.** CLAUDE.md 3.1 is a hard
+requirement: last known data paints instantly on launch, and a stale cache never
+shows a spinner or an error. There is exactly one state where a loading
+animation is correct, and it is named in the code:
+
+```
+DataState.priming   never had data, first run only   <- the ONLY loading state
+DataState.ok        fresh
+DataState.stale     have data, it is old             <- paint at full opacity
+DataState.failing   have data, refresh errored       <- paint at full opacity
+```
+
+Putting a spinner on `stale` or `failing` would undo the entire offline first
+design. Those two states get a quiet timestamp, never a loader.
+
+**And priming is brief.** Measured on a wiped cache, 2026-08-30:
+
+```
+dining, makerspace, recreation   1.0 s
+campusgroups (1 MB iCal)         2.0 s
+drupal (10 paginated requests)   2.6 s
+athletics                        4.6 s
+```
+
+So a loading animation has about a second to be useful on the card people look
+at first. Anything with a long intro will still be playing after the data
+arrives, which makes the app feel slower than it is. Prefer a skeleton that
+settles into content over a spinner that has to finish.
+
+### Where motion actually earns its keep here
+
+Named specifically, because "add animations" applied evenly would be worse than
+nothing:
+
+- **Data updating in place.** The refresh ticker replaces content behind the
+  user every two minutes. Right now values swap instantly, which reads as a
+  glitch. A short cross fade, or a number that counts to its new value, turns it
+  into an update. This is the highest value item on the list.
+- **The scalloped badge hero number.** One per card, the biggest thing on it.
+  Worth a settle on first appearance and on change.
+- **`ArcProgress`** (`widgets/`), the occupancy indicator: sweep to value rather
+  than appearing at it.
+- **The detail sheet.** Tapping a dining row opens it. A Hero from the row's
+  badge into the sheet is the obvious win.
+- **Tab and section switches.** Four tabs, plus the section rails in Campus and
+  Settings. Currently hard cuts.
+- **The jump rail's active marker** (`widgets/jump_list.dart`) tracks scroll
+  position. It should slide between entries, not blink.
+- **Staggered reveal of a list on first paint only.** Never on a refresh, or
+  every tick makes the whole list dance.
+
+### Where motion must not go
+
+- Anything that delays content already in hand. Cache paints now.
+- `stale` and `failing`. See above.
+- The status colours. CLAUDE.md 4: status always ships with a text label, never
+  colour alone. Motion does not count as a label either, and a pulsing "open"
+  chip is not an accessible substitute for the word.
+- Long or looping ambient motion on a screen someone glances at for four
+  seconds.
+
+### Constraints
+
+- **Respect reduced motion.** `MediaQuery.disableAnimationsOf(context)` and
+  `accessibleNavigation`. Every animation needs a still fallback that is not
+  simply "nothing renders". This is usually forgotten and is not optional.
+- **Ask before adding a dependency** (CLAUDE.md). Flutter's built in implicit
+  animations, `AnimatedSwitcher`, `Hero`, `TweenAnimationBuilder` and
+  `AnimationController` cover everything above. `flutter_animate` is a
+  dependency and needs Cole's approval first.
+- Curves already in use: `Curves.easeOutCubic` at 260 ms in
+  `jump_list.dart`. Match that unless there is a reason not to.
+- Targets are Linux desktop and Android. Assume a compositor that may already
+  be doing its own animation; do not fight it.
+
+---
+
 ## Campus map, with events placed on it
 
 Requested 2026-08-30. Likely handed to Codex/ChatGPT, so this is written as a

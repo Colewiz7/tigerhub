@@ -149,4 +149,28 @@ void main() {
     expect(find.textContaining('Global Village Post Office'), findsWidgets);
     expect(find.textContaining('6000 Reynolds Drive'), findsWidgets);
   });
+
+  testWidgets('a split shift is captioned once, not twice', (tester) async {
+    await pumpCampus(tester);
+
+    // The shipping window closes over lunch, arriving as two rules on the same
+    // weekdays. Captioning each half "MON TO FRI" reads as two separate rules.
+    final labels = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data ?? '')
+        .where((d) => d == 'MON TO FRI')
+        .length;
+
+    expect(labels, greaterThan(0), reason: 'no weekday hours rendered at all');
+
+    final times = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data ?? '')
+        .where((d) => d.contains(' to ') && RegExp(r'\d').hasMatch(d))
+        .length;
+
+    expect(times, greaterThan(labels),
+        reason: 'every time got its own caption, so the split shift reads as '
+            'two rules rather than one lunch closure');
+  });
 }
