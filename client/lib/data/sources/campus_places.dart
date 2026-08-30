@@ -38,6 +38,13 @@ const Map<int, (String, String)> placeKinds = {
   119: ('bike_rack', 'Bike racks'),
   232: ('reload', 'Tiger Spend reload stations'),
   199: ('time_clock', 'Workday time clocks'),
+  527: ('printer', 'Printers'),
+  236: ('study_area', 'Study areas'),
+  211: ('computer_lab', 'Computer labs'),
+  528: ('connection_hub', 'Connection Hub'),
+  279: ('lactation', 'Lactation rooms'),
+  87: ('vending', 'Vending machines'),
+  83: ('convenience', 'Convenience stores'),
 };
 
 /// One request per parent category returns every sub it contains, so a handful

@@ -1,4 +1,5 @@
-/// Workday time clocks.
+/// Workday time clocks, and the categories that were already being downloaded
+/// and thrown away.
 ///
 /// Cole asked for them on the map. They were reachable all along: CLAUDE.md
 /// 7.9.2 recorded that the map's category ids run into the hundreds and that
@@ -27,6 +28,54 @@ void main() {
     // here: the app would simply never see a clock.
     expect(placeParents, contains(39));
     expect(placeKinds[199], ('time_clock', 'Workday time clocks'));
+  });
+
+  group('categories that were already on the wire', () {
+    // Parent 47, "Other", was already fetched for its outlines and yielded
+    // exactly zero registered kinds: every point in it was parsed and dropped
+    // because nothing claimed the sub-category. Registering them costs no
+    // extra request at all.
+    final other = File(
+      'test/fixtures/campus_places_other.data',
+    ).readAsStringSync();
+
+    test('parent 47 now yields the kinds it was carrying all along', () {
+      final bySub = parseCampusPlaces(other);
+      expect(bySub[527]!.length, 5, reason: 'printers');
+      expect(bySub[236]!.length, 7, reason: 'study areas');
+      expect(bySub[211]!.length, 20, reason: 'computer labs');
+      expect(bySub[528]!.length, 4, reason: 'connection hub');
+    });
+
+    test('and every one of them is mapped', () {
+      final features = parseCampusMapFeatures(other);
+      for (final kind in [
+        'printer',
+        'study_area',
+        'computer_lab',
+        'connection_hub',
+      ]) {
+        final mapped = features.where((f) => f['kind'] == kind);
+        expect(mapped, isNotEmpty, reason: kind);
+        for (final feature in mapped) {
+          final coordinates =
+              (feature['geometry'] as Map)['coordinates'] as List<dynamic>;
+          expect(coordinates[0] as double, inInclusiveRange(-77.70, -77.65));
+          expect(coordinates[1] as double, inInclusiveRange(43.07, 43.10));
+        }
+      }
+    });
+
+    test('the kinds added from parents already in the list are registered', () {
+      // These live under 7 (Dining) and 27 (Amenities), both long since
+      // fetched. Same story: downloaded, then dropped for want of a kind.
+      expect(placeKinds[87], ('vending', 'Vending machines'));
+      expect(placeKinds[83], ('convenience', 'Convenience stores'));
+      expect(placeKinds[279], ('lactation', 'Lactation rooms'));
+      for (final parent in [7, 27, 47]) {
+        expect(placeParents, contains(parent));
+      }
+    });
   });
 
   test('every clock arrives with a real position', () {

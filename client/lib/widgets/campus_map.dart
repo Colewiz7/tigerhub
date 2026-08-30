@@ -306,6 +306,18 @@ class _CampusMapViewState extends State<CampusMapView> {
                           scheme: Theme.of(context).colorScheme,
                         ),
                       ),
+                      Positioned(
+                        right: 12,
+                        bottom: 12,
+                        child: ValueListenableBuilder<Matrix4>(
+                          valueListenable: _transform,
+                          builder: (context, matrix, _) => _MapZoomControls(
+                            zoom: matrix.getMaxScaleOnAxis(),
+                            onZoomIn: () => _zoomBy(1.5),
+                            onZoomOut: () => _zoomBy(1 / 1.5),
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 },
@@ -352,6 +364,74 @@ class _CampusMapViewState extends State<CampusMapView> {
                   feature: selected ?? selectedBuilding!,
                   onClose: () => setState(() => _selectedId = null),
                 ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MapZoomControls extends StatelessWidget {
+  const _MapZoomControls({
+    required this.zoom,
+    required this.onZoomIn,
+    required this.onZoomOut,
+  });
+
+  final double zoom;
+  final VoidCallback onZoomIn;
+  final VoidCallback onZoomOut;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (zoom < 1.15) ...[
+          Material(
+            color: scheme.surface.withValues(alpha: 0.92),
+            shape: Shapes.pill,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.route_rounded, size: 16, color: scheme.primary),
+                  const SizedBox(width: 7),
+                  const Text('Zoom in for walking paths'),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+        Material(
+          color: scheme.surface.withValues(alpha: 0.92),
+          borderRadius: Shapes.inner,
+          clipBehavior: Clip.antiAlias,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                tooltip: 'Zoom out',
+                onPressed: zoom > 1.01 ? onZoomOut : null,
+                icon: const Icon(Icons.remove_rounded),
+              ),
+              SizedBox(
+                width: 38,
+                child: Text(
+                  '${zoom.round()}×',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelMedium,
+                ),
+              ),
+              IconButton(
+                tooltip: 'Zoom in',
+                onPressed: zoom < 4.99 ? onZoomIn : null,
+                icon: const Icon(Icons.add_rounded),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -1098,6 +1178,13 @@ IconData mapPlaceIcon(String kind) => switch (kind) {
   'bike_rack' => Icons.pedal_bike_rounded,
   'reload' => Icons.add_card_rounded,
   'time_clock' => Icons.punch_clock_rounded,
+  'printer' => Icons.print_rounded,
+  'study_area' => Icons.menu_book_rounded,
+  'computer_lab' => Icons.computer_rounded,
+  'connection_hub' => Icons.hub_rounded,
+  'lactation' => Icons.child_care_rounded,
+  'vending' => Icons.local_drink_rounded,
+  'convenience' => Icons.storefront_rounded,
   _ when kind.startsWith('_event:') => Icons.event_rounded,
   _ => Icons.place_rounded,
 };
