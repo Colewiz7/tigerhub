@@ -680,7 +680,7 @@ class _SelectedPlace extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
       child: Row(
         children: [
-          _PlaceCategoryMark(feature: feature, size: 46, iconSize: 24),
+          _PlaceCategoryMark(feature: feature, size: 46, iconSize: 21),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -725,7 +725,7 @@ class _PlaceCategoryMark extends StatelessWidget {
   const _PlaceCategoryMark({
     required this.feature,
     this.size = 38,
-    this.iconSize = 20,
+    this.iconSize = 17,
   });
 
   final CampusMapFeature feature;
@@ -959,6 +959,22 @@ IconData mapPlaceIcon(String kind) => switch (kind) {
   _ => Icons.place_rounded,
 };
 
+/// Category colour families drawn only from the active dynamic scheme.
+///
+/// These are navigation colours, not open/closed status colours. Shape and
+/// icon still carry the category, so colour is never the only distinction.
+(Color, Color) mapPinPalette(String kind, ColorScheme scheme) => switch (kind) {
+  'water' ||
+  'ev_charge' ||
+  'bus_stop' ||
+  'bike_rack' => (scheme.secondaryContainer, scheme.onSecondaryContainer),
+  'aed' || 'blue_light' || 'restroom_accessible' || 'entrance_accessible' => (
+    scheme.tertiaryContainer,
+    scheme.onTertiaryContainer,
+  ),
+  _ => (scheme.primaryContainer, scheme.onPrimaryContainer),
+};
+
 /// How each family is painted, in one place, so the map and the legend that
 /// explains it cannot disagree.
 ///
@@ -1185,19 +1201,17 @@ class CampusMapPainter extends CustomPainter {
       final clustered = bucket.length > 1;
       final radius = selected
           ? 18.0
+          : geometry.categoryOverview
+          ? 20.0
           : clustered
           ? 16.0
           : 13.0;
       final isEvent = bucket.first.feature.kind.startsWith('_event:');
-      final foreground = selected || isEvent
-          ? scheme.onPrimary
-          : scheme.onPrimaryContainer;
+      final palette = mapPinPalette(bucket.first.feature.kind, scheme);
+      final foreground = selected || isEvent ? scheme.onPrimary : palette.$2;
       canvas.drawPath(
         _scallop(center, radius),
-        Paint()
-          ..color = selected || isEvent
-              ? scheme.primary
-              : scheme.primaryContainer,
+        Paint()..color = selected || isEvent ? scheme.primary : palette.$1,
       );
       if (clustered || isEvent) {
         final kinds = {for (final item in bucket) item.feature.kind};
@@ -1528,10 +1542,10 @@ class _MapGeometry {
       for (final feature in features)
         if (feature.geometryType == 'Point') feature.kind,
     };
-    // "All places" is an overview, not twelve full pin layers stacked on one
-    // another. A selected category gets finer clusters; the mixed overview
-    // groups much more aggressively.
-    clusterCell = pointKinds.length > 1 ? 110.0 : 46.0;
+    categoryOverview =
+        pointKinds.length > 1 &&
+        pointKinds.every((kind) => !kind.startsWith('_event:'));
+    clusterCell = 46.0;
     final visible = projection.mapRect.inflate(12);
     for (final feature in features) {
       if (feature.geometryType != 'Point') continue;
@@ -1539,10 +1553,16 @@ class _MapGeometry {
       if (anchor == null) continue;
       final center = projection.project(anchor);
       if (!visible.contains(center)) continue;
-      final key = (
-        (center.dx / clusterCell).floor(),
-        (center.dy / clusterCell).floor(),
-      );
+      // The overview gets one meaningful marker per category. Once a category
+      // is selected, nearby individual places use spatial clusters. Event
+      // groups keep spatial clustering as well because each group has a
+      // synthetic kind of its own.
+      final Object key = categoryOverview
+          ? feature.kind
+          : (
+              (center.dx / clusterCell).floor(),
+              (center.dy / clusterCell).floor(),
+            );
       pins.putIfAbsent(key, () => []).add((feature: feature, at: center));
     }
   }
@@ -1557,9 +1577,9 @@ class _MapGeometry {
 
   final Map<MapFamily, Path> areas = {};
   final List<({TextPainter painter, Rect bounds, double area})> labels = [];
-  final Map<(int, int), List<({CampusMapFeature feature, Offset at})>> pins =
-      {};
+  final Map<Object, List<({CampusMapFeature feature, Offset at})>> pins = {};
   late final Set<String> pointKinds;
+  late final bool categoryOverview;
   late final double clusterCell;
   late final Path foot;
   late final Path road;

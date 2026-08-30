@@ -16,6 +16,7 @@ import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
+import 'package:tigerhub/widgets/page_veil.dart';
 
 /// Answers every path with an empty but well formed envelope, so the shell
 /// builds its real widget tree without touching the network.
@@ -122,6 +123,29 @@ void main() {
     expect(find.text('MAP'), findsOneWidget);
     await tester.tap(find.text('MAP'));
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
+    scheme.dispose();
+  });
+
+  testWidgets('a tab switch is covered while the new tab comes up',
+      (tester) async {
+    // Cole: switching pages "looks weird". The incoming tab assembles in view,
+    // and the Map tab genuinely does work on first open. The veil covers that,
+    // then gets out of the way on its own.
+    final scheme = await pumpShell(tester);
+
+    expect(find.byType(PageVeil), findsNothing,
+        reason: 'nothing to cover before a switch happens');
+
+    await tester.tap(find.text('MAP'));
+    await tester.pump();
+    expect(find.byType(PageVeil), findsOneWidget);
+    expect(find.text('MAP'), findsWidgets);
+
+    await tester.pumpAndSettle();
+    expect(find.byType(PageVeil), findsNothing,
+        reason: 'the veil must never outstay the tab it was covering');
     expect(tester.takeException(), isNull);
 
     scheme.dispose();

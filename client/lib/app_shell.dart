@@ -25,6 +25,7 @@ import 'services/preferences.dart';
 import 'services/api.dart';
 import 'widgets/wordmark.dart';
 import 'theme/dynamic_theme.dart';
+import 'widgets/page_veil.dart';
 import 'widgets/tab_bar.dart';
 
 const List<TabSpec> _tabs = [
@@ -320,6 +321,12 @@ class _TabStackState extends State<_TabStack> {
   int? _outgoing;
   Timer? _settle;
 
+  /// Covers the content while the incoming tab comes up. Without it you watch
+  /// a tab assemble, which Cole described as looking weird. The Map tab is the
+  /// honest case: it lays out a canvas and builds its geometry from cold.
+  bool _veiled = false;
+  Timer? _unveil;
+
   @override
   void didUpdateWidget(_TabStack old) {
     super.didUpdateWidget(old);
@@ -338,6 +345,12 @@ class _TabStackState extends State<_TabStack> {
       return;
     }
 
+    _veiled = true;
+    _unveil?.cancel();
+    _unveil = Timer(PageVeil.hold, () {
+      if (mounted) setState(() => _veiled = false);
+    });
+
     _settle = Timer(const Duration(milliseconds: 180), () {
       if (mounted) setState(() => _outgoing = null);
     });
@@ -346,6 +359,7 @@ class _TabStackState extends State<_TabStack> {
   @override
   void dispose() {
     _settle?.cancel();
+    _unveil?.cancel();
     super.dispose();
   }
 
@@ -385,6 +399,19 @@ class _TabStackState extends State<_TabStack> {
               ),
             ),
           ),
+        // Over everything, so the incoming tab assembles out of sight.
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: _veiled ? 1 : 0,
+              duration: PageVeil.fade,
+              curve: Curves.easeOutCubic,
+              child: _veiled
+                  ? PageVeil(label: _tabs[widget.index].label)
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ),
       ],
     );
   }
