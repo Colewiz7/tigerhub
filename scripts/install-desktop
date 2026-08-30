@@ -8,22 +8,47 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUNDLE="$ROOT/client/build/linux/x64/release/bundle"
-BIN="$BUNDLE/tigerhub"
 ID="dev.colewiz.tigerhub"
+
+# Where the launcher entry points.
+#
+# Not at the build directory. A desktop entry cannot hold a relative path, so
+# it was pinned straight at build/linux/x64/release/bundle/tigerhub, and that
+# path stops existing the moment anyone runs flutter clean. A launcher entry
+# that dangles after a routine clean is not an installed app.
+#
+# So: prefer the packaged AppImage, which is the thing meant to be kept, and
+# go through a stable symlink in ~/.local/bin. The AppImage filename carries
+# the version, and pointing the entry straight at it would break the launcher
+# on every version bump.
+LAUNCHER="${XDG_BIN_HOME:-$HOME/.local/bin}/tigerhub"
+TARGET="${1:-}"
+if [ "$TARGET" = "--uninstall" ]; then TARGET=""; fi
+if [ -z "$TARGET" ]; then
+  TARGET="$(ls -1t "$ROOT"/dist/*.AppImage 2>/dev/null | head -1 || true)"
+fi
+[ -n "$TARGET" ] || TARGET="$BUNDLE/tigerhub"
+BIN="$LAUNCHER"
 
 APPS="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
 ICONS="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor"
 
 if [ "${1:-}" = "--uninstall" ]; then
-  rm -f "$APPS/$ID.desktop"
+  rm -f "$APPS/$ID.desktop" "$LAUNCHER"
   for size in 48 64 96 128 192 256 512; do
     rm -f "$ICONS/${size}x${size}/apps/$ID.png"
   done
-  echo "removed $ID.desktop and its icons"
+  echo "removed $ID.desktop, its icons, and $LAUNCHER"
   exit 0
 fi
 
-[ -x "$BIN" ] || { echo "no release build. Run: scripts/dev build" >&2; exit 1; }
+[ -x "$TARGET" ] || {
+  echo "nothing to install. Run scripts/package, or scripts/dev build" >&2
+  exit 1
+}
+
+mkdir -p "$(dirname "$LAUNCHER")"
+ln -sfn "$TARGET" "$LAUNCHER"
 
 mkdir -p "$APPS"
 sed -e "s|^Exec=.*|Exec=$BIN|" -e "s|^Icon=.*|Icon=$ID|" \
@@ -41,3 +66,5 @@ command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -qtf "${ICO
 
 echo "installed $ID.desktop and icons under $HOME/.local/share"
 echo "remove with: scripts/install-desktop --uninstall"
+
+echo "launcher entry -> $LAUNCHER -> $TARGET"
