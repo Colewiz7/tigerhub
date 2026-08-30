@@ -123,7 +123,7 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                   Text(
                     open
                         ? (location.closesAt == null
-                            ? 'Open now'
+                            ? 'Open'
                             : 'Open until ${formatClock(location.closesAt!)}')
                         : (location.opensAt == null
                             ? 'Closed'

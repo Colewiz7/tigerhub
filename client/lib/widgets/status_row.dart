@@ -79,7 +79,9 @@ class StatusRow extends StatelessWidget {
                       // what the eye actually lands on.
                       color: tint.withValues(alpha: dimmed ? 0.20 : 0.32),
                     ),
-                    child: Icon(icon, size: 21, color: tint),
+                    // 18 in a 42px circle. At 21 the glyph very nearly filled
+                    // its box, leaving a ring too thin to read as a badge.
+                    child: Icon(icon, size: 18, color: tint),
                   ),
                 ),
                 const SizedBox(width: 13),

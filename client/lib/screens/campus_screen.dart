@@ -498,7 +498,7 @@ class _PostOfficeBlock extends StatelessWidget {
                   ),
                   child: Icon(
                     Icons.local_post_office_rounded,
-                    size: 21,
+                    size: 18,
                     color: scheme.primary,
                   ),
                 ),
@@ -1078,7 +1078,7 @@ class _ShedHoursBlock extends StatelessWidget {
                   ),
                   child: Icon(
                     Icons.construction_rounded,
-                    size: 21,
+                    size: 18,
                     color: scheme.primary,
                   ),
                 ),
