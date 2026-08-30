@@ -30,3 +30,7 @@ client/linux/flutter/ephemeral/
 
 # handoff artefacts, regenerable
 response/
+
+# Build outputs and fetched build tools
+dist/
+.tools/
