@@ -56,6 +56,45 @@ class ResponseCache {
     }
   }
 
+  /// Drop cache entries nothing has refreshed in a while.
+  ///
+  /// A safety net rather than the fix. The cause of unbounded growth was a
+  /// cache key containing midnight-today, which minted a new 200 KB events
+  /// entry daily and never reused the old one; that is fixed in
+  /// `ApiClient.cacheKeyFor`. This clears what already accumulated, and bounds
+  /// anything similar in future, because shared_preferences is read into
+  /// memory whole at launch.
+  ///
+  /// The window is deliberately long. Offline first (CLAUDE.md 3.1) means the
+  /// cache is the app when there is no network, so pruning aggressively would
+  /// empty it for exactly the person who needs it. Growth is already fixed at
+  /// the source by keeping the clock out of cache keys; this is only a net.
+  ///
+  /// Never throws: a cache that cannot be tidied is not worth a crash.
+  Future<int> prune({Duration olderThan = const Duration(days: 30)}) async {
+    var removed = 0;
+    try {
+      final keys = await _prefs.getKeys();
+      final cutoff = DateTime.now().toUtc().subtract(olderThan);
+
+      for (final key in keys) {
+        if (!key.startsWith('cache_at:')) continue;
+        final path = key.substring('cache_at:'.length);
+
+        final stamp = DateTime.tryParse(await _prefs.getString(key) ?? '');
+        // An entry with no readable stamp is junk, so it goes too.
+        if (stamp != null && stamp.isAfter(cutoff)) continue;
+
+        await _prefs.remove(key);
+        await _prefs.remove(_key(path));
+        removed++;
+      }
+    } catch (_) {
+      // Leave whatever is there rather than failing a launch over housekeeping.
+    }
+    return removed;
+  }
+
   Future<List<String>> readOrder(String key) async =>
       await _prefs.getStringList('order:$key') ?? const [];
 
