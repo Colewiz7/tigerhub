@@ -56,7 +56,7 @@ void main() {
   testWidgets('every tab can be opened without throwing', (tester) async {
     final scheme = await pumpShell(tester);
 
-    for (final tab in ['DINING', 'EVENTS', 'CAMPUS', 'TODAY']) {
+    for (final tab in ['DINING', 'EVENTS', 'MAP', 'CAMPUS', 'TODAY']) {
       await tester.tap(find.text(tab));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: 'opening $tab threw');
@@ -103,13 +103,27 @@ void main() {
     final scheme = await pumpShell(tester);
 
     for (var round = 0; round < 4; round++) {
-      for (final tab in ['CAMPUS', 'EVENTS', 'DINING', 'TODAY']) {
+      for (final tab in ['CAMPUS', 'MAP', 'EVENTS', 'DINING', 'TODAY']) {
         await tester.tap(find.text(tab));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull,
             reason: 'round $round threw on $tab');
       }
     }
+    scheme.dispose();
+  });
+
+  testWidgets('the map has its own destination', (tester) async {
+    // It was a section inside Campus, which buried it: the map is something
+    // you open deliberately, not something you scroll past on the way to post
+    // office hours.
+    final scheme = await pumpShell(tester);
+
+    expect(find.text('MAP'), findsOneWidget);
+    await tester.tap(find.text('MAP'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+
     scheme.dispose();
   });
 

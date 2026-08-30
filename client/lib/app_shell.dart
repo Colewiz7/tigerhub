@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'home_screen.dart';
+import 'screens/map_screen.dart';
 import 'screens/setup_screen.dart';
 import 'models/api_models.dart';
 import 'screens/campus_screen.dart';
@@ -29,6 +30,7 @@ const List<TabSpec> _tabs = [
   TabSpec(icon: Icons.grid_view_rounded, label: 'TODAY'),
   TabSpec(icon: Icons.restaurant_rounded, label: 'DINING'),
   TabSpec(icon: Icons.event_note_rounded, label: 'EVENTS'),
+  TabSpec(icon: Icons.map_rounded, label: 'MAP'),
   TabSpec(icon: Icons.location_city_rounded, label: 'CAMPUS'),
 ];
 
@@ -185,7 +187,7 @@ class _AppShellState extends State<AppShell> {
       // makes the UI drivable for screenshots.
       body: CallbackShortcuts(
         bindings: {
-          for (var i = 0; i < _tabs.length; i++)
+          for (var i = 0; i < _tabs.length && i < _digits.length; i++)
             SingleActivator(_digits[i]): () => _go(i, animate: false),
           // Conventional settings shortcut.
           const SingleActivator(LogicalKeyboardKey.comma, control: true): () =>
@@ -228,6 +230,7 @@ class _AppShellState extends State<AppShell> {
                             ),
                             DiningScreen(result: _dining, api: widget.api),
                             EventsScreen(result: _events),
+                            MapScreen(api: widget.api, events: _events),
                             CampusScreen(
                               api: widget.api,
                               areas: _areas,
@@ -359,6 +362,7 @@ const List<LogicalKeyboardKey> _digits = [
   LogicalKeyboardKey.digit2,
   LogicalKeyboardKey.digit3,
   LogicalKeyboardKey.digit4,
+  LogicalKeyboardKey.digit5,
 ];
 
 class _Masthead extends StatelessWidget {

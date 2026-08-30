@@ -20,7 +20,6 @@ import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 import '../widgets/places_sheet.dart';
 import '../widgets/glyph.dart';
-import '../widgets/campus_map.dart';
 import '../widgets/section_nav.dart';
 import '../widgets/week_grid.dart';
 import '../services/subscriptions.dart';
@@ -62,10 +61,6 @@ class _CampusScreenState extends State<CampusScreen> {
     value: null,
     state: DataState.priming,
   );
-  Result<Collection<CampusMapFeature>> _map = const Result(
-    value: null,
-    state: DataState.priming,
-  );
 
   /// Held so they can be cancelled. Dangling subscriptions let a previous
   /// visit's results land after the current ones and overwrite them.
@@ -88,9 +83,6 @@ class _CampusScreenState extends State<CampusScreen> {
     }));
     _subscriptions.add(widget.api.placeKinds().listen((r) {
       if (mounted) setState(() => _kinds = r);
-    }));
-    _subscriptions.add(widget.api.campusMap().listen((r) {
-      if (mounted) setState(() => _map = r);
     }));
   }
 
@@ -125,14 +117,6 @@ class _CampusScreenState extends State<CampusScreen> {
           icon: Icons.travel_explore_rounded,
           glyph: GlyphKind.buildings,
           builder: (context) => _FindSection(api: widget.api, kinds: _kinds),
-        ),
-        SectionSpec(
-          id: 'map',
-          title: 'Campus map',
-          subtitle: 'Offline places from the RIT map',
-          icon: Icons.map_rounded,
-          builder: (context) =>
-              CampusMapView(result: _map, events: widget.events),
         ),
         SectionSpec(
           id: 'rec',
