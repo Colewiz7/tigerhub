@@ -48,6 +48,7 @@ void main() {
     '/dining/specials',
     '/dining/23/menu',
     '/dining/23/occupancy',
+    '/dining/21/menu',
     '/events',
     '/events/organizers',
     '/post-offices',

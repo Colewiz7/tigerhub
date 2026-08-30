@@ -25,6 +25,7 @@ library;
 
 import 'dart:convert';
 
+import '../local_backend.dart' show ScrapeContext;
 import '../upstream.dart';
 
 const String occupancySource = 'maps_occupancy';
@@ -121,4 +122,112 @@ Future<Map<String, dynamic>?> fetchOccupancy(Upstream http, int mdoId) async {
     // One location failing never fails anything else.
     return null;
   }
+}
+
+/// How long before a location that reported no sensor is tried again.
+///
+/// The backend kept an `occupancy_probe` table for exactly this. Polling all 24
+/// dining locations every 5 minutes is 6,912 requests a day for 5 useful
+/// answers. Polling only the ones known to have a sensor is 1,440, and
+/// re-probing the other 19 twice a day adds 38. RIT gets a twentieth of the
+/// traffic and the app loses nothing.
+const Duration occupancyReprobe = Duration(hours: 12);
+
+/// How many unknown locations to probe in a single run.
+///
+/// Each response is about 226 KB, and the first run knows nothing, so without a
+/// budget a cold start makes 24 sequential requests totalling roughly 5 MB
+/// before it can show a single number. That is slow enough that the app can be
+/// closed before the snapshot is written, which loses the whole run and starts
+/// over on the next launch.
+///
+/// With a budget the known sensors always answer immediately and discovery
+/// finishes over a handful of cycles instead.
+const int occupancyProbeBudget = 6;
+
+/// Which locations to poll this run.
+///
+/// Known sensors every time, since that is the actual feature. Then up to
+/// [occupancyProbeBudget] locations that have never been probed or are due a
+/// recheck. Probes are stamped as they happen, so each run picks up where the
+/// last one left off rather than retrying the same ones.
+List<int> occupancyPollList(
+  List<int> allMdoIds,
+  Map<String, dynamic> probes,
+  DateTime now, {
+  int probeBudget = occupancyProbeBudget,
+}) {
+  final known = <int>[];
+  final candidates = <int>[];
+
+  for (final mdoId in allMdoIds) {
+    final probe = probes['$mdoId'] as Map<String, dynamic>?;
+    if (probe == null) {
+      candidates.add(mdoId);
+      continue;
+    }
+    if (probe['has_density'] == true) {
+      known.add(mdoId);
+      continue;
+    }
+    final at = DateTime.tryParse(probe['probed_at'] as String? ?? '');
+    if (at == null || now.difference(at) > occupancyReprobe) {
+      candidates.add(mdoId);
+    }
+  }
+
+  return [...known, ...candidates.take(probeBudget)];
+}
+
+/// Poll the dining locations that actually publish occupancy.
+///
+/// Readings accumulate rather than being replaced wholesale: a location that
+/// fails this run keeps its last reading, which is what the offline first rule
+/// asks for. A location that reports no sensor has its reading dropped, because
+/// that is a real answer rather than a failure.
+Future<Map<String, dynamic>> scrapeOccupancy(ScrapeContext ctx) async {
+  final dining = await ctx.snapshotOf('tigercenter_dining');
+  final locations = dining?['locations'] as List<dynamic>? ?? const [];
+
+  final mdoByLocation = <int, int>{};
+  for (final raw in locations) {
+    final loc = raw as Map<String, dynamic>;
+    final mdoId = loc['mdo_id'];
+    if (mdoId is int) mdoByLocation[loc['id'] as int] = mdoId;
+  }
+  if (mdoByLocation.isEmpty) {
+    // Dining has not been scraped yet, so there is nothing to poll against.
+    // Not an error: the next run will have it.
+    return ctx.previous ?? {'readings': {}, 'probes': {}};
+  }
+
+  final readings = <String, dynamic>{
+    ...?(ctx.previous?['readings'] as Map<String, dynamic>?),
+  };
+  final probes = <String, dynamic>{
+    ...?(ctx.previous?['probes'] as Map<String, dynamic>?),
+  };
+
+  final now = DateTime.now();
+  final due = occupancyPollList(mdoByLocation.values.toList(), probes, now);
+  final stamp = now.toUtc().toIso8601String();
+
+  for (final mdoId in due) {
+    final reading = await fetchOccupancy(ctx.http, mdoId);
+    if (reading == null) {
+      // Expected for most locations: they simply have no sensor.
+      probes['$mdoId'] = {'has_density': false, 'probed_at': stamp};
+      readings.remove('$mdoId');
+    } else {
+      probes['$mdoId'] = {'has_density': true, 'probed_at': stamp};
+      readings['$mdoId'] = reading;
+    }
+
+    // Checkpoint after every location. These are 226 KB each and walked one at
+    // a time, so a run can easily outlive the window being open. Saving as it
+    // goes means discovery resumes instead of restarting from nothing.
+    await ctx.save({'readings': readings, 'probes': probes});
+  }
+
+  return {'readings': readings, 'probes': probes};
 }
