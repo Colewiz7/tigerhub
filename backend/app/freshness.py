@@ -25,6 +25,8 @@ EXPECTED_INTERVAL_MINUTES = {
     "makerspace_equipment": settings.INTERVAL_MAKERSPACE_MINUTES,
     "maps_occupancy": settings.INTERVAL_OCCUPANCY_MINUTES,
     "recreation_hours": settings.INTERVAL_RECREATION_MINUTES,
+    # Rotating, so a full cycle takes twelve runs.
+    "fd_menus": settings.INTERVAL_MENUS_MINUTES * 12,
 }
 
 STARTED_AT = datetime.now(timezone.utc)

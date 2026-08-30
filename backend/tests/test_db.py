@@ -15,6 +15,7 @@ def test_migrations_are_idempotent(temp_db):
         "001_initial",
         "002_occupancy_probe",
         "003_recreation",
+        "004_menus",
     ]
 
 

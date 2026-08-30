@@ -15,10 +15,11 @@ import '../../theme/tokens.dart';
 import '../../widgets/status_row.dart';
 import 'about_section.dart';
 import 'appearance_section.dart';
+import 'dining_section.dart';
 import 'events_section.dart';
 import 'home_section.dart';
 
-enum SettingsSection { events, appearance, home, about }
+enum SettingsSection { events, dining, appearance, home, about }
 
 typedef SettingsSpec = ({String title, String subtitle, IconData icon});
 
@@ -27,6 +28,11 @@ const Map<SettingsSection, SettingsSpec> settingsSections = {
     title: 'Events',
     subtitle: 'Organizer mutes, keyword rules',
     icon: Icons.event_note_rounded,
+  ),
+  SettingsSection.dining: (
+    title: 'Dining',
+    subtitle: 'Dietary filters, allergens to flag',
+    icon: Icons.restaurant_rounded,
   ),
   SettingsSection.appearance: (
     title: 'Appearance',
@@ -73,6 +79,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _content(SettingsSection section) => switch (section) {
         SettingsSection.events =>
           EventsSection(events: widget.events.value?.data ?? const []),
+        SettingsSection.dining => const DiningSection(),
         SettingsSection.appearance => AppearanceSection(scheme: widget.scheme),
         SettingsSection.home => HomeSection(
             cards: widget.cards,
