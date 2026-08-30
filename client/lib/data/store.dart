@@ -62,9 +62,14 @@ class JsonStore {
 
   File _fileFor(String key) => File('${_dir.path}/${fileNameFor(key)}');
 
-  Future<void> write(String key, Map<String, dynamic> body) async {
+  Future<void> write(
+    String key,
+    Map<String, dynamic> body, {
+    String? fingerprint,
+  }) async {
     final envelope = jsonEncode({
       'fetched_at': DateTime.now().toUtc().toIso8601String(),
+      'fingerprint': ?fingerprint,
       'body': body,
     });
 
@@ -91,6 +96,24 @@ class JsonStore {
     } catch (_) {
       // A corrupt snapshot is not worth crashing over. Treat it as a miss and
       // let the next refresh replace it.
+      return null;
+    }
+  }
+
+  /// What the source's inputs looked like when [key] was written.
+  ///
+  /// A snapshot is only comparable to what the app would fetch today if it was
+  /// built from the same request set. Registering a new map category changed
+  /// what a scrape returns without changing its schedule, so a 12 hour cadence
+  /// meant the new places did not appear until the next day.
+  Future<String?> fingerprintOf(String key) async {
+    final file = _fileFor(key);
+    if (!await file.exists()) return null;
+    try {
+      final decoded = jsonDecode(await file.readAsString());
+      if (decoded is! Map<String, dynamic>) return null;
+      return decoded['fingerprint'] as String?;
+    } catch (_) {
       return null;
     }
   }

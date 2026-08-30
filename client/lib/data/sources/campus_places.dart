@@ -73,6 +73,20 @@ const Map<int, (String, String)> placeKinds = {
 /// outlines or a cluster of kinds, and it carries 63 clocks.
 const List<int> placeParents = [3, 11, 47, 35, 19, 27, 23, 15, 7, 39];
 
+/// What this source currently asks maps.rit.edu for.
+///
+/// Both halves matter and both have bitten. A kind registered without its
+/// parent is never fetched; a parent fetched without the kind registered has
+/// its points parsed and dropped, which is what hid seven categories that were
+/// already on the wire. Either change alters what a scrape returns without
+/// touching its schedule, so the stored snapshot has to be invalidated by the
+/// request set rather than by age alone.
+String get campusPlacesFingerprint {
+  final parents = [...placeParents]..sort();
+  final kinds = placeKinds.keys.toList()..sort();
+  return 'parents:${parents.join(",")}|kinds:${kinds.join(",")}';
+}
+
 String? _trimmed(Object? value) {
   if (value == null) return null;
   final text = '$value'.trim();

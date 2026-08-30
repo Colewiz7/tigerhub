@@ -80,11 +80,23 @@ class SourceSpec {
     required this.name,
     required this.cadence,
     required this.scrape,
+    this.fingerprint,
   });
 
   final String name;
   final Duration cadence;
   final Future<Map<String, dynamic>> Function(ScrapeContext) scrape;
+
+  /// What this source asks upstream for, when that is something the app
+  /// decides rather than something fixed.
+  ///
+  /// The cadence answers "has this data aged out", which is the wrong question
+  /// after the request set itself changes. Registering a new map category made
+  /// a scrape return more than it used to while its schedule stayed put, so
+  /// the new places would not have appeared for another twelve hours. A
+  /// changed fingerprint means the held snapshot answers a question nobody is
+  /// asking any more, so it is refetched regardless of age.
+  final String? fingerprint;
 }
 
 /// How long past its cadence a source's data counts as stale, mirroring
@@ -142,6 +154,7 @@ class LocalBackend implements Backend {
       name: campusPlacesSource,
       // Physical infrastructure. It changes rarely, so twice a day.
       cadence: const Duration(minutes: 720),
+      fingerprint: campusPlacesFingerprint,
       scrape: (ctx) => scrapeCampusPlaces(ctx.http),
     ),
     recreationSource: SourceSpec(
@@ -167,9 +180,14 @@ class LocalBackend implements Backend {
 
     final store = await _openStore();
     if (!force) {
+      final stale =
+          spec.fingerprint != null &&
+          await store.fingerprintOf(name) != spec.fingerprint;
       final held = _memory[name];
       final age = held?.$2 ?? await store.fetchedAt(name);
-      if (age != null && DateTime.now().difference(age) < spec.cadence) {
+      if (!stale &&
+          age != null &&
+          DateTime.now().difference(age) < spec.cadence) {
         return;
       }
     }
@@ -178,7 +196,7 @@ class LocalBackend implements Backend {
     if (running != null) return running;
 
     Future<void> persist(Map<String, dynamic> payload) async {
-      await store.write(name, payload);
+      await store.write(name, payload, fingerprint: spec.fingerprint);
       _memory[name] = (payload, DateTime.now());
     }
 
