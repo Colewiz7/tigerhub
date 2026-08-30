@@ -221,20 +221,27 @@ class _CampusMapViewState extends State<CampusMapView> {
                             // on-screen size instead of growing with the map.
                             child: ValueListenableBuilder<Matrix4>(
                               valueListenable: _transform,
-                              builder: (context, matrix, _) => CustomPaint(
-                                size: Size(
-                                  constraints.maxWidth,
-                                  constraints.maxHeight,
-                                ),
-                                painter: CampusMapPainter(
-                                  features: mapFeatures,
-                                  boundsFeatures: all,
-                                  selectedId: _selectedId,
-                                  scheme: Theme.of(context).colorScheme,
-                                  zoom: matrix.getMaxScaleOnAxis(),
-                                  paths: _paths,
-                                  onSelect: (feature) =>
-                                      setState(() => _selectedId = feature.id),
+                              // Its own layer, so a pan is the compositor
+                              // moving a finished raster rather than Skia
+                              // redrawing 191 outlines and the whole walking
+                              // network for every frame of the gesture.
+                              builder: (context, matrix, _) => RepaintBoundary(
+                                child: CustomPaint(
+                                  size: Size(
+                                    constraints.maxWidth,
+                                    constraints.maxHeight,
+                                  ),
+                                  painter: CampusMapPainter(
+                                    features: mapFeatures,
+                                    boundsFeatures: all,
+                                    selectedId: _selectedId,
+                                    scheme: Theme.of(context).colorScheme,
+                                    zoom: matrix.getMaxScaleOnAxis(),
+                                    paths: _paths,
+                                    onSelect: (feature) => setState(
+                                      () => _selectedId = feature.id,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -270,12 +277,21 @@ class _CampusMapViewState extends State<CampusMapView> {
                         onClose: () => setState(() => _selectedId = null),
                       )
               : selected == null
-              ? _PlaceStrip(
-                  features: visible,
-                  selectedId: _selectedId,
-                  onSelect: (feature) =>
-                      setState(() => _selectedId = feature.id),
-                )
+              ? _kind == null
+                    ? _KindStrip(
+                        features: visible,
+                        onSelect: (kind) => setState(() {
+                          _kind = kind;
+                          _selectedId = null;
+                          _transform.value = Matrix4.identity();
+                        }),
+                      )
+                    : _PlaceStrip(
+                        features: visible,
+                        selectedId: _selectedId,
+                        onSelect: (feature) =>
+                            setState(() => _selectedId = feature.id),
+                      )
               : _SelectedPlace(
                   feature: selected,
                   onClose: () => setState(() => _selectedId = null),
@@ -489,6 +505,98 @@ class _MapToolbar extends StatelessWidget {
           icon: const Icon(Icons.center_focus_strong_rounded),
         ),
       ],
+    );
+  }
+}
+
+class _KindStrip extends StatelessWidget {
+  const _KindStrip({required this.features, required this.onSelect});
+
+  final List<CampusMapFeature> features;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final groups = <String, ({String name, int count})>{};
+    for (final feature in features) {
+      final previous = groups[feature.kind];
+      groups[feature.kind] = (
+        name: feature.kindName,
+        count: (previous?.count ?? 0) + 1,
+      );
+    }
+    final entries = groups.entries.toList()
+      ..sort((a, b) => a.value.name.compareTo(b.value.name));
+
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: entries.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 8),
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        final scheme = Theme.of(context).colorScheme;
+        return SizedBox(
+          width: 210,
+          child: Material(
+            color: scheme.surfaceContainerHigh,
+            borderRadius: Shapes.inner,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: () => onSelect(entry.key),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: scheme.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        mapPlaceIcon(entry.key),
+                        size: 20,
+                        color: scheme.onPrimaryContainer,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entry.value.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${entry.value.count} '
+                            '${entry.value.count == 1 ? 'place' : 'places'}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -1037,53 +1145,24 @@ class CampusMapPainter extends CustomPainter {
 
     // Collected while the polygons are drawn, so a label knows the shape it
     // belongs to and can be skipped when it will not fit inside it.
-    final labelCandidates = <({String text, Rect bounds, double area})>[];
+    final geometry = _geometryFor(projection);
 
-    final areas = features.where((f) => f.geometryType != 'Point').toList()
-      ..sort((a, b) => mapFamily(a).rank.compareTo(mapFamily(b).rank));
-
-    // Paths belong on the ground: over the grass and the lots they cross, and
-    // under the buildings they run between. The list is sorted by family, so
-    // the moment the first building comes up is the moment to draw them.
-    var pathsDrawn = false;
-
-    for (final feature in areas) {
-      final family = mapFamily(feature);
-      if (!pathsDrawn && family == MapFamily.built) {
-        _paintPaths(canvas, projection, mapRect, scheme);
-        pathsDrawn = true;
-      }
-      for (final ring in feature.coordinates) {
-        if (ring.length < 3) continue;
-        final points = [for (final c in ring) projection.project(c)];
-        final path = Path()..moveTo(points.first.dx, points.first.dy);
-        for (final point in points.skip(1)) {
-          path.lineTo(point.dx, point.dy);
-        }
-        path.close();
-        final fill = familyPaints[family]!.fill;
-        final edge = familyPaints[family]!.edge;
-        if (fill != null) canvas.drawPath(path, fill);
-        if (edge != null) canvas.drawPath(path, edge);
-
-        // Only buildings are labelled. A lot number on every parking apron is
-        // the noise that made the campus hard to read in the first place.
-        if (family != MapFamily.built) continue;
-        final abbreviation = feature.building;
-        if (abbreviation == null || abbreviation.isEmpty) continue;
-        final bounds = path.getBounds();
-        labelCandidates.add((
-          text: abbreviation,
-          bounds: bounds,
-          area: bounds.width * bounds.height,
-        ));
-      }
+    void drawFamily(MapFamily family) {
+      final path = geometry.areas[family];
+      if (path == null) return;
+      final fill = familyPaints[family]!.fill;
+      final edge = familyPaints[family]!.edge;
+      if (fill != null) canvas.drawPath(path, fill);
+      if (edge != null) canvas.drawPath(path, edge);
     }
 
-    // Nothing built in view, so the loop above never reached the trigger.
-    if (!pathsDrawn) _paintPaths(canvas, projection, mapRect, scheme);
+    // Ground first, then the paths crossing it, then what you walk into.
+    drawFamily(MapFamily.open);
+    drawFamily(MapFamily.parking);
+    _paintPaths(canvas, geometry, mapRect);
+    drawFamily(MapFamily.built);
 
-    _paintBuildingLabels(canvas, labelCandidates, scheme);
+    _paintBuildingLabels(canvas, geometry.labels, scheme);
     _paintScaleBar(canvas, projection, mapRect, scheme);
 
     final pointKinds = {
@@ -1202,32 +1281,14 @@ class CampusMapPainter extends CustomPainter {
   /// on a campus you cross on foot. Roads stay wider and fainter so they read
   /// as context. A road is also a closed-in shape next to a parking outline,
   /// so form separates them where contrast alone is thin.
-  void _paintPaths(
-    Canvas canvas,
-    CampusMapProjection projection,
-    Rect mapRect,
-    ColorScheme scheme,
-  ) {
+  void _paintPaths(Canvas canvas, _MapGeometry geometry, Rect mapRect) {
     if (paths.isEmpty) return;
-    final clip = mapRect.inflate(18);
     canvas.save();
-    canvas.clipRRect(RRect.fromRectAndRadius(clip, const Radius.circular(32)));
-
-    void draw(List<List<GeoCoordinate>> ways, Paint paint) {
-      for (final way in ways) {
-        if (way.length < 2) continue;
-        final first = projection.project(way.first);
-        final line = Path()..moveTo(first.dx, first.dy);
-        for (final point in way.skip(1)) {
-          final at = projection.project(point);
-          line.lineTo(at.dx, at.dy);
-        }
-        canvas.drawPath(line, paint);
-      }
-    }
-
-    draw(
-      paths.road,
+    canvas.clipRRect(
+      RRect.fromRectAndRadius(mapRect.inflate(18), const Radius.circular(32)),
+    );
+    canvas.drawPath(
+      geometry.road,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.8
@@ -1235,8 +1296,8 @@ class CampusMapPainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round
         ..color = scheme.onSurfaceVariant.withValues(alpha: 0.35),
     );
-    draw(
-      paths.foot,
+    canvas.drawPath(
+      geometry.foot,
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.9
@@ -1245,6 +1306,22 @@ class CampusMapPainter extends CustomPainter {
         ..color = scheme.onSurfaceVariant.withValues(alpha: 0.55),
     );
     canvas.restore();
+  }
+
+  static _MapGeometry? _geometryCache;
+
+  /// Only for tests that need a cold build.
+  static void resetGeometryCacheForTest() => _geometryCache = null;
+
+  _MapGeometry _geometryFor(CampusMapProjection projection) {
+    final cached = _geometryCache;
+    if (cached != null &&
+        identical(cached.projection, projection) &&
+        identical(cached.features, features) &&
+        identical(cached.paths, paths)) {
+      return cached;
+    }
+    return _geometryCache = _MapGeometry(projection, features, paths);
   }
 
   void _paintScaleBar(
@@ -1424,6 +1501,64 @@ class CampusMapPainter extends CustomPainter {
 /// an olive one is grass. The swatches are painted with `mapFamilyPaints`, the
 /// same function the map uses, so the legend cannot describe colours the map
 /// is not drawing.
+/// The projected geometry, built once and reused across frames.
+///
+/// Every frame used to re-project roughly 9550 coordinates, allocate a fresh
+/// Path for each of the 191 outlines and 1824 ways, and then issue one draw
+/// call per way. None of that changes while you are looking at the map, and
+/// 1824 separate strokes give Skia nothing to batch.
+///
+/// Now each layer is a single Path with many subpaths, so the whole walking
+/// network is two draw calls rather than 1824, and the work happens once per
+/// projection rather than once per frame.
+class _MapGeometry {
+  _MapGeometry(this.projection, this.features, this.paths) {
+    for (final feature in features) {
+      if (feature.geometryType == 'Point') continue;
+      final family = mapFamily(feature);
+      final layer = areas.putIfAbsent(family, Path.new);
+      for (final ring in feature.coordinates) {
+        if (ring.length < 3) continue;
+        final outline = Path()
+          ..addPolygon([for (final c in ring) projection.project(c)], true);
+        layer.addPath(outline, Offset.zero);
+
+        // Only buildings are labelled. A lot number on every parking apron is
+        // the noise that made the campus hard to read in the first place.
+        if (family != MapFamily.built) continue;
+        final abbreviation = feature.building;
+        if (abbreviation == null || abbreviation.isEmpty) continue;
+        final bounds = outline.getBounds();
+        labels.add((
+          text: abbreviation,
+          bounds: bounds,
+          area: bounds.width * bounds.height,
+        ));
+      }
+    }
+    foot = _network(paths.foot);
+    road = _network(paths.road);
+  }
+
+  final CampusMapProjection projection;
+  final List<CampusMapFeature> features;
+  final CampusPaths paths;
+
+  final Map<MapFamily, Path> areas = {};
+  final List<({String text, Rect bounds, double area})> labels = [];
+  late final Path foot;
+  late final Path road;
+
+  Path _network(List<List<GeoCoordinate>> ways) {
+    final path = Path();
+    for (final way in ways) {
+      if (way.length < 2) continue;
+      path.addPolygon([for (final c in way) projection.project(c)], false);
+    }
+    return path;
+  }
+}
+
 class _MapLegend extends StatelessWidget {
   const _MapLegend({required this.scheme});
 
