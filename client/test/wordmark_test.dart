@@ -44,8 +44,21 @@ void main() {
     }
   });
 
+  test('the masthead reads outlined wordmarks, not text ones', () {
+    // flutter_svg ignores a clipPath containing <text>, which let the stripes
+    // escape the letterforms entirely. The flattened variants carry outlines.
+    for (final name in ['tigerhub-wide-flat', 'tigerhub-compact-flat']) {
+      final body =
+          File('assets/generated/wordmark/$name.svg').readAsStringSync();
+      expect(body.contains('<text'), isFalse,
+          reason: '$name still has live text, so its stripes will not clip');
+      expect(body, contains('clipPath'),
+          reason: '$name lost its stripe clip in flattening');
+    }
+  });
+
   test('the wordmark files the masthead reads all exist', () {
-    for (final name in ['tigerhub-wide', 'tigerhub-compact']) {
+    for (final name in ['tigerhub-wide-flat', 'tigerhub-compact-flat']) {
       final file = File('assets/generated/wordmark/$name.svg');
       expect(file.existsSync(), isTrue, reason: '$name.svg is missing');
       expect(file.readAsStringSync(), startsWith('<svg'));

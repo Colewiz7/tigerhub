@@ -33,11 +33,17 @@ class _FixtureBackend implements Backend {
 
   final StaticConfig config;
 
-  Map<String, dynamic> _envelope(List<dynamic> data) =>
-      {'data': data, 'stale': false, 'last_updated': null};
+  Map<String, dynamic> _envelope(List<dynamic> data) => {
+    'data': data,
+    'stale': false,
+    'last_updated': null,
+  };
 
   @override
-  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async {
+  Future<Map<String, dynamic>> fetch(
+    String path, [
+    Map<String, String>? q,
+  ]) async {
     switch (path) {
       case '/post-offices':
         return _envelope(config.postOffices);
@@ -61,6 +67,12 @@ class _FixtureBackend implements Backend {
           File('test/fixtures/maps_category_35.data').readAsStringSync(),
         ).forEach((subId, places) => kinds[placeKinds[subId]!.$1] = places);
         return _envelope(placeKindSummary({'kinds': kinds}));
+      case '/campus/map':
+        return _envelope(
+          parseCampusMapFeatures(
+            File('test/fixtures/maps_category_35.data').readAsStringSync(),
+          ),
+        );
     }
     throw UnimplementedError(path);
   }
@@ -101,25 +113,31 @@ void main() {
     tester.view.physicalSize = const Size(1500, 1000);
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902))),
-      home: Scaffold(
-        body: CampusScreen(
-          api: ApiClient(backend: _FixtureBackend(config)),
-          areas: Result(
-            value: Collection(
-              data: config.housingAreas.map(HousingArea.fromJson).toList(),
-              stale: false,
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.from(
+          ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+        ),
+        home: Scaffold(
+          body: CampusScreen(
+            api: ApiClient(backend: _FixtureBackend(config)),
+            areas: Result(
+              value: Collection(
+                data: config.housingAreas.map(HousingArea.fromJson).toList(),
+                stale: false,
+              ),
+              state: DataState.ok,
             ),
-            state: DataState.ok,
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('the gym and pool section actually lists facilities', (tester) async {
+  testWidgets('the gym and pool section actually lists facilities', (
+    tester,
+  ) async {
     await pumpCampus(tester);
 
     await tester.tap(find.text('Gym and pool'));
@@ -127,8 +145,11 @@ void main() {
 
     // The captured page carries nine facilities. Naming one is the point:
     // an empty section and a working one both render without error.
-    expect(find.textContaining('Aquatic'), findsWidgets,
-        reason: 'the pool is missing, which is how the shape bug looked');
+    expect(
+      find.textContaining('Aquatic'),
+      findsWidgets,
+      reason: 'the pool is missing, which is how the shape bug looked',
+    );
   });
 
   testWidgets('find on campus lists a kind with a real label', (tester) async {
@@ -138,8 +159,22 @@ void main() {
     await tester.pumpAndSettle();
 
     // "Water fountains" is the kind_name. A blank here was the other shape bug.
-    expect(find.textContaining('Water'), findsWidgets,
-        reason: 'a place kind rendered without its label');
+    expect(
+      find.textContaining('Water'),
+      findsWidgets,
+      reason: 'a place kind rendered without its label',
+    );
+  });
+
+  testWidgets('campus map renders the captured GeoJSON', (tester) async {
+    await pumpCampus(tester);
+
+    await tester.tap(find.text('Campus map'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Fit campus'), findsOneWidget);
+    expect(find.text('Water fountains'), findsWidgets);
+    expect(find.byType(CustomPaint), findsWidgets);
   });
 
   testWidgets('mail shows a real post office address', (tester) async {
@@ -169,8 +204,12 @@ void main() {
         .where((d) => d.contains(' to ') && RegExp(r'\d').hasMatch(d))
         .length;
 
-    expect(times, greaterThan(labels),
-        reason: 'every time got its own caption, so the split shift reads as '
-            'two rules rather than one lunch closure');
+    expect(
+      times,
+      greaterThan(labels),
+      reason:
+          'every time got its own caption, so the split shift reads as '
+          'two rules rather than one lunch closure',
+    );
   });
 }

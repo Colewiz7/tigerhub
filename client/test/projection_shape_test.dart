@@ -33,29 +33,43 @@ void main() {
     );
     final projected = recreationFacilities({'rows': rows});
 
-    final facilities =
-        projected.map(RecreationFacility.fromJson).toList(growable: false);
+    final facilities = projected
+        .map(RecreationFacility.fromJson)
+        .toList(growable: false);
 
     expect(facilities, isNotEmpty, reason: 'no facilities came through');
-    expect(facilities.every((f) => f.name.isNotEmpty), isTrue,
-        reason: 'a facility with no name renders as a blank heading');
-    expect(facilities.every((f) => f.days.isNotEmpty), isTrue,
-        reason: 'a facility with no days renders as an empty card');
+    expect(
+      facilities.every((f) => f.name.isNotEmpty),
+      isTrue,
+      reason: 'a facility with no name renders as a blank heading',
+    );
+    expect(
+      facilities.every((f) => f.days.isNotEmpty),
+      isTrue,
+      reason: 'a facility with no days renders as an empty card',
+    );
 
     // The pool is the case the nesting exists for: several sessions in one day.
     final multiSession = facilities
         .expand((f) => f.days)
         .any((d) => d.spans.length > 1);
-    expect(multiSession, isTrue,
-        reason: 'a day with several sessions must keep them separate, or the '
-            'card claims the pool is open straight through the afternoon');
+    expect(
+      multiSession,
+      isTrue,
+      reason:
+          'a day with several sessions must keep them separate, or the '
+          'card claims the pool is open straight through the afternoon',
+    );
 
     // Every open day must carry usable times.
     for (final facility in facilities) {
       for (final day in facility.days) {
         if (day.closed) continue;
-        expect(day.spans, isNotEmpty,
-            reason: '${facility.name} is open but has no hours');
+        expect(
+          day.spans,
+          isNotEmpty,
+          reason: '${facility.name} is open but has no hours',
+        );
       }
     }
   });
@@ -74,8 +88,11 @@ void main() {
 
     expect(summary, isNotEmpty);
     expect(summary.every((k) => k.kind.isNotEmpty), isTrue);
-    expect(summary.every((k) => k.kindName.isNotEmpty), isTrue,
-        reason: 'a blank kindName is the exact bug this test was written for');
+    expect(
+      summary.every((k) => k.kindName.isNotEmpty),
+      isTrue,
+      reason: 'a blank kindName is the exact bug this test was written for',
+    );
     expect(summary.every((k) => k.count > 0), isTrue);
   });
 
@@ -85,14 +102,28 @@ void main() {
       File('test/fixtures/maps_category_35.data').readAsStringSync(),
     ).forEach((subId, places) => kinds[placeKinds[subId]!.$1] = places);
 
-    final water = placesOfKind({'kinds': kinds}, 'water')
-        .map(CampusPlace.fromJson)
-        .toList(growable: false);
+    final water = placesOfKind({
+      'kinds': kinds,
+    }, 'water').map(CampusPlace.fromJson).toList(growable: false);
 
     expect(water, isNotEmpty, reason: 'the 96 hydration stations went missing');
     expect(water.every((p) => p.name.isNotEmpty), isTrue);
-    expect(water.any((p) => (p.building ?? '').isNotEmpty), isTrue,
-        reason: 'the building is what makes a fountain findable');
+    expect(
+      water.any((p) => (p.building ?? '').isNotEmpty),
+      isTrue,
+      reason: 'the building is what makes a fountain findable',
+    );
+  });
+
+  test('map features survive the round trip into the model', () {
+    final features = parseCampusMapFeatures(
+      File('test/fixtures/maps_category_35.data').readAsStringSync(),
+    ).map(CampusMapFeature.fromJson).toList(growable: false);
+
+    expect(features, isNotEmpty);
+    expect(features.every((feature) => feature.anchor != null), isTrue);
+    expect(features.every((feature) => feature.name.isNotEmpty), isTrue);
+    expect(features.every((feature) => feature.kindName.isNotEmpty), isTrue);
   });
 
   test('makerspace rooms survive the round trip into the model', () {

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 300" role="img" aria-label="TigerHub priming skeleton mockup">
+  <rect width="560" height="300" rx="30" fill="#241A17"/>
+  <g fill="#FFF1DE" opacity=".12">
+    <path d="M92 42Q106 49 119 43Q130 54 144 52Q151 66 165 70Q164 85 174 95Q167 108 171 122Q158 130 154 144Q139 145 129 155Q116 149 102 153Q94 140 80 136Q79 121 69 111Q76 98 72 84Q85 76 88 62Q103 61 113 51Z"/>
+    <rect x="206" y="55" width="260" height="14" rx="7"/>
+    <rect x="206" y="83" width="194" height="12" rx="6"/>
+    <rect x="206" y="109" width="142" height="12" rx="6"/>
+    <circle cx="98" cy="202" r="14"/>
+    <rect x="126" y="187" width="276" height="12" rx="6"/>
+    <rect x="126" y="209" width="178" height="10" rx="5"/>
+    <circle cx="98" cy="254" r="14"/>
+    <rect x="126" y="239" width="232" height="12" rx="6"/>
+    <rect x="126" y="261" width="146" height="10" rx="5"/>
+  </g>
+</svg>
