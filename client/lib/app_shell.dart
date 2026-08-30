@@ -48,14 +48,22 @@ class _AppShellState extends State<AppShell> {
   List<String> _cards = const ['dining', 'events', 'chefs', 'housing'];
   List<String> _hiddenCards = const [];
 
-  Result<Collection<DiningLocation>> _dining =
-      const Result(value: null, state: DataState.priming);
-  Result<Collection<CampusEvent>> _events =
-      const Result(value: null, state: DataState.priming);
-  Result<Collection<MenuItem>> _chefs =
-      const Result(value: null, state: DataState.priming);
-  Result<Collection<HousingArea>> _areas =
-      const Result(value: null, state: DataState.priming);
+  Result<Collection<DiningLocation>> _dining = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  Result<Collection<CampusEvent>> _events = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  Result<Collection<MenuItem>> _chefs = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  Result<Collection<HousingArea>> _areas = const Result(
+    value: null,
+    state: DataState.priming,
+  );
 
   Timer? _ticker;
 
@@ -144,48 +152,49 @@ class _AppShellState extends State<AppShell> {
         child: Focus(
           autofocus: true,
           child: SafeArea(
-        child: Column(
-          children: [
-            _Masthead(
-              scheme: widget.scheme,
-              settingsOpen: _showSettings,
-              onSettings: () => setState(() => _showSettings = !_showSettings),
-            ),
-            Expanded(
-              child: _showSettings
-                  ? SettingsScreen(
-                      scheme: widget.scheme,
-                      events: _events,
-                      cards: _cards,
-                      hiddenCards: _hiddenCards,
-                      onCardsChanged: _setCards,
-                    )
-                  : IndexedStack(
-                index: _index,
-                children: [
-                  HomeScreen(
-                    api: widget.api,
-                    dining: _dining,
-                    events: _events,
-                    chefs: _chefs,
-                    areas: _areas,
-                    onRefresh: _refresh,
-                    onGoToTab: _go,
-                  ),
-                  DiningScreen(result: _dining, api: widget.api),
-                  EventsScreen(result: _events),
-                  CampusScreen(api: widget.api, areas: _areas),
-                ],
-              ),
-            ),
-            AppTabBar(
-              tabs: _tabs,
-              index: _showSettings ? -1 : _index,
-              onSelect: (i) => setState(() {
-                _showSettings = false;
-                _index = i;
-              }),
-            ),
+            child: Column(
+              children: [
+                _Masthead(
+                  scheme: widget.scheme,
+                  settingsOpen: _showSettings,
+                  onSettings: () =>
+                      setState(() => _showSettings = !_showSettings),
+                ),
+                Expanded(
+                  child: _showSettings
+                      ? SettingsScreen(
+                          scheme: widget.scheme,
+                          events: _events,
+                          cards: _cards,
+                          hiddenCards: _hiddenCards,
+                          onCardsChanged: _setCards,
+                        )
+                      : IndexedStack(
+                          index: _index,
+                          children: [
+                            HomeScreen(
+                              api: widget.api,
+                              dining: _dining,
+                              events: _events,
+                              chefs: _chefs,
+                              areas: _areas,
+                              onRefresh: _refresh,
+                              onGoToTab: _go,
+                            ),
+                            DiningScreen(result: _dining, api: widget.api),
+                            EventsScreen(result: _events),
+                            CampusScreen(api: widget.api, areas: _areas),
+                          ],
+                        ),
+                ),
+                AppTabBar(
+                  tabs: _tabs,
+                  index: _showSettings ? -1 : _index,
+                  onSelect: (i) => setState(() {
+                    _showSettings = false;
+                    _index = i;
+                  }),
+                ),
               ],
             ),
           ),
@@ -223,9 +232,15 @@ class _Wordmark extends StatelessWidget {
     return Text.rich(
       TextSpan(
         children: [
-          TextSpan(text: head, style: style.copyWith(color: scheme.onSurface)),
+          TextSpan(
+            text: head,
+            style: style.copyWith(color: scheme.onSurface),
+          ),
           if (tail.isNotEmpty)
-            TextSpan(text: tail, style: style.copyWith(color: scheme.primary)),
+            TextSpan(
+              text: tail,
+              style: style.copyWith(color: scheme.primary),
+            ),
         ],
       ),
     );
@@ -259,6 +274,13 @@ class _Masthead extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(26, 20, 26, 12),
       child: Row(
         children: [
+          Image.asset(
+            'assets/images/tigerhub-mascot.png',
+            height: 44,
+            filterQuality: FilterQuality.medium,
+            excludeFromSemantics: true,
+          ),
+          const SizedBox(width: 8),
           const _Wordmark(),
           const Spacer(),
           Tooltip(
