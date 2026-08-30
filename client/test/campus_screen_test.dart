@@ -166,15 +166,12 @@ void main() {
     );
   });
 
-  testWidgets('campus map renders the captured GeoJSON', (tester) async {
+  testWidgets('the map is no longer buried inside Campus', (tester) async {
+    // It moved to its own tab, so Campus must not carry a second copy: two
+    // screens subscribing to the same feed for the same pixels is waste, and
+    // the duplicate is the one that goes stale.
     await pumpCampus(tester);
-
-    await tester.tap(find.text('Campus map'));
-    await tester.pumpAndSettle();
-
-    expect(find.byTooltip('Fit campus'), findsOneWidget);
-    expect(find.text('Water fountains'), findsWidgets);
-    expect(find.byType(CustomPaint), findsWidgets);
+    expect(find.text('Campus map'), findsNothing);
   });
 
   testWidgets('mail shows a real post office address', (tester) async {
