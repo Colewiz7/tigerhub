@@ -1,0 +1,2008 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//SIDEARM Sports//NONSGML SIDEARM//EN
+X-WR-CALNAME: Athletics
+X-PUBLISHED-TTL:PT120M
+BEGIN:VEVENT
+UID:vcal_15261-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260901T200000Z
+DTEND:20260901T220000Z
+LOCATION:Rochester\, N.Y. / Judson Stadium
+SUMMARY:Women's Soccer vs Geneseo - Pride Game
+DESCRIPTION:Women's Soccer vs Geneseo - Pride Game\nStreaming Video: https://ritathletics.com/calendar.ashx/calendar.ics?Live=1900\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15261&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15279-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260901T220000Z
+DTEND:20260902T000000Z
+LOCATION:Keuka Park\, NY / JMW Center
+SUMMARY:Women's Volleyball at Keuka
+DESCRIPTION:Women's Volleyball at Keuka\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15279&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15325-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260901T230000Z
+DTEND:20260902T010000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Brockport - Doug May Memorial Game
+DESCRIPTION:Men's Soccer vs Brockport - Doug May Memorial Game\nStreaming Video: https://ritathletics.com/showcase?Live=1934\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15325&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15280-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260904T200000Z
+DTEND:20260904T220000Z
+LOCATION:Latrobe\, PA / Robert S. Carey Center
+SUMMARY:Women's Volleyball vs Westminster
+DESCRIPTION:Women's Volleyball vs Westminster\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15280&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15326-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260904T230000Z
+DTEND:20260905T010000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Fredonia
+DESCRIPTION:Men's Soccer vs Fredonia\nStreaming Video: https://ritathletics.com/showcase?Live=1935\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15326&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15281-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260905T000000Z
+DTEND:20260905T020000Z
+LOCATION:Latrobe\, Pa. / Robert S. Carey Center
+SUMMARY:Women's Volleyball at Saint Vincent
+DESCRIPTION:Women's Volleyball at Saint Vincent\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15281&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15307-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260905T150000Z
+DTEND:20260905T180000Z
+LOCATION:Brockport\, N.Y. / Sweden Town Park
+SUMMARY:Men's Cross Country at Tom Balon Alumni Classic - Hosted by Brockport
+DESCRIPTION:Men's Cross Country at Tom Balon Alumni Classic - Hosted by Brockport\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15307&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15316-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260905T150000Z
+DTEND:20260905T180000Z
+LOCATION:Brockport\, N.Y. / Sweden Town Park
+SUMMARY:Women's Cross Country at Tom Balon Alumni Classic - Hosted by Brockport
+DESCRIPTION:Women's Cross Country at Tom Balon Alumni Classic - Hosted by Brockport\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15316&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15282-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260905T180000Z
+DTEND:20260905T200000Z
+LOCATION:Latrobe\, PA / Robert S. Carey Center
+SUMMARY:Women's Volleyball vs Bethany
+DESCRIPTION:Women's Volleyball vs Bethany\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15282&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15283-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260905T200000Z
+DTEND:20260905T220000Z
+LOCATION:Latrobe\, PA / Robert S. Carey Center
+SUMMARY:Women's Volleyball vs Grove City
+DESCRIPTION:Women's Volleyball vs Grove City\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15283&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15262-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260906T170000Z
+DTEND:20260906T190000Z
+LOCATION:Meadville\, Pa. / Robertson Blue Tiurf
+SUMMARY:Women's Soccer at Allegheny
+DESCRIPTION:Women's Soccer at Allegheny\nStreaming Video: https://pacdigitalnetwork.com/allegheny/\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15262&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15263-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260909T200000Z
+DTEND:20260909T220000Z
+LOCATION:Pittsford\, N.Y. / Growney Stadium
+SUMMARY:Women's Soccer at St. John Fisher
+DESCRIPTION:Women's Soccer at St. John Fisher\nStreaming Video: https://www.empire8network.com/stjohnfisher/\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15263&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15284-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260909T220000Z
+DTEND:20260910T000000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs Geneseo
+DESCRIPTION:Women's Volleyball vs Geneseo\nStreaming Video: https://ritathletics.com/showcase?Live=1924\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15284&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15327-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260909T230000Z
+DTEND:20260910T010000Z
+LOCATION:Rochester\, NY
+SUMMARY:Men's Soccer at St. John Fisher
+DESCRIPTION:Men's Soccer at St. John Fisher\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15327&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15285-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260911T223000Z
+DTEND:20260912T003000Z
+LOCATION:Boston\, MA / Clark Athletic Center
+SUMMARY:Women's Volleyball vs Amherst
+DESCRIPTION:Women's Volleyball vs Amherst\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15285&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15286-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260912T150000Z
+DTEND:20260912T170000Z
+LOCATION:Boston\, MA / Clark Athletic Center
+SUMMARY:Women's Volleyball at UMass Boston
+DESCRIPTION:Women's Volleyball at UMass Boston\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15286&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15264-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260912T180000Z
+DTEND:20260912T200000Z
+LOCATION:Rochester\, N.Y. / Judson Stadium
+SUMMARY:Women's Soccer vs Ohio Northern
+DESCRIPTION:Women's Soccer vs Ohio Northern\nStreaming Video: https://ritathletics.com/calendar.ashx/calendar.ics?Live=1901\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15264&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15328-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260912T180000Z
+DTEND:20260912T200000Z
+LOCATION:Potsdam\, NY
+SUMMARY:Men's Soccer at Clarkson
+DESCRIPTION:Men's Soccer at Clarkson\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15328&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15287-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260912T200000Z
+DTEND:20260912T220000Z
+LOCATION:Boston\, MA / Clark Athletic Center
+SUMMARY:Women's Volleyball vs Plattsburgh
+DESCRIPTION:Women's Volleyball vs Plattsburgh\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15287&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15329-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260916T230000Z
+DTEND:20260917T010000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Buffalo State
+DESCRIPTION:Men's Soccer vs Buffalo State\nStreaming Video: https://ritathletics.com/showcase?Live=1936\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15329&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15288-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260918T220000Z
+DTEND:20260919T000000Z
+LOCATION:Brockport\, NY / Vlogianitis Gymnasium
+SUMMARY:Women's Volleyball at Brockport
+DESCRIPTION:Women's Volleyball at Brockport\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15288&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15317-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260919T140000Z
+DTEND:20260919T170000Z
+LOCATION:Rochester\, N.Y. / Genesee Valley Park
+SUMMARY:Women's Cross Country at Yellowjacket Invitational - Hosted by Rochester
+DESCRIPTION:Women's Cross Country at Yellowjacket Invitational - Hosted by Rochester\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15317&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15308-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260919T140000Z
+DTEND:20260919T170000Z
+LOCATION:Rochester\, N.Y. / Genesee Valley Park
+SUMMARY:Men's Cross Country at Yellowjacket Invitational - Hosted by Rochester
+DESCRIPTION:Men's Cross Country at Yellowjacket Invitational - Hosted by Rochester\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15308&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15330-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260919T170000Z
+DTEND:20260919T190000Z
+LOCATION:Alfred\, NY
+SUMMARY:Men's Soccer at Alfred State 
+DESCRIPTION:Men's Soccer at Alfred State \n
+URL:https://ritathletics.com/calendar.aspx?game_id=15330&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15289-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260919T170000Z
+DTEND:20260919T190000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs St. John Fisher
+DESCRIPTION:Women's Volleyball vs St. John Fisher\nStreaming Video: https://ritathletics.com/showcase?Live=1925\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15289&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15265-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260919T180000Z
+DTEND:20260919T200000Z
+LOCATION:Rochester\, N.Y. / Judson Stadium
+SUMMARY:Women's Soccer vs Clarkson - Tiger Den - Ted Lasso Themed
+DESCRIPTION:Women's Soccer vs Clarkson - Tiger Den - Ted Lasso Themed\nStreaming Video: https://ritathletics.com/calendar.ashx/calendar.ics?Live=1902\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15265&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15372-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20260920
+DTEND;VALUE=DATE:20260921
+LOCATION:Ithaca\, N.Y. / Cayuga Inlet
+SUMMARY:Women's Rowing at Cayuga Sprints
+DESCRIPTION:Women's Rowing at Cayuga Sprints\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15372&amp;sport_id=6
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15266-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260922T200000Z
+DTEND:20260922T220000Z
+LOCATION:Fredonia\, N.Y. / University Stadium
+SUMMARY:Women's Soccer at Fredonia
+DESCRIPTION:Women's Soccer at Fredonia\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15266&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15331-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260923T230000Z
+DTEND:20260924T010000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Hobart - Tiger Den
+DESCRIPTION:Men's Soccer vs Hobart - Tiger Den\nStreaming Video: https://ritathletics.com/showcase?Live=1937\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15331&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15192-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260925T220000Z
+DTEND:20260926T010000Z
+LOCATION:Potsdam\, NY/Cheel Arena
+SUMMARY:Women's Hockey at Clarkson
+DESCRIPTION:Women's Hockey at Clarkson\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15192&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15290-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260925T230000Z
+DTEND:20260926T010000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs Vassar - Tiger Den Match
+DESCRIPTION:Women's Volleyball vs Vassar - Tiger Den Match\nStreaming Video: https://ritathletics.com/showcase?Live=1926\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15290&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15309-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260926T140000Z
+DTEND:20260926T170000Z
+LOCATION:Rochester\, N.Y. / Matt St. James Cross Country Trails
+SUMMARY:Men's Cross Country at Harry F. Anderson Invitational - Hosted by Roberts Wesleyan
+DESCRIPTION:Men's Cross Country at Harry F. Anderson Invitational - Hosted by Roberts Wesleyan\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15309&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15318-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260926T140000Z
+DTEND:20260926T170000Z
+LOCATION:Rochester\, N.Y. / Matt St. James Cross Country Trails
+SUMMARY:Women's Cross Country at Harry F. Anderson Invitational - Hosted by Roberts Wesleyan
+DESCRIPTION:Women's Cross Country at Harry F. Anderson Invitational - Hosted by Roberts Wesleyan\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15318&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15291-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260926T160000Z
+DTEND:20260926T180000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs Bard - Morgan's Message Match
+DESCRIPTION:Women's Volleyball vs Bard - Morgan's Message Match\nStreaming Video: https://ritathletics.com/showcase?Live=1927\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15291&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15267-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260926T180000Z
+DTEND:20260926T200000Z
+LOCATION:Rochester\, N.Y. / Judson Stadium
+SUMMARY:Women's Soccer vs RPI
+DESCRIPTION:Women's Soccer vs RPI\nStreaming Video: https://ritathletics.com/calendar.ashx/calendar.ics?Live=1903\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15267&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15305-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260926T180000Z
+DTEND:20260926T200000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs Bard vs. Fredonia
+DESCRIPTION:Women's Volleyball vs Bard vs. Fredonia\nStreaming Video: https://ritathletics.com/showcase?Live=1928\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15305&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15193-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260926T190000Z
+DTEND:20260926T220000Z
+LOCATION:Potsdam\, NY/Cheel Arena
+SUMMARY:Women's Hockey at Clarkson
+DESCRIPTION:Women's Hockey at Clarkson\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15193&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15332-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260926T200000Z
+DTEND:20260926T220000Z
+LOCATION:Troy\, NY
+SUMMARY:Men's Soccer at RPI
+DESCRIPTION:Men's Soccer at RPI\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15332&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15292-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260926T200000Z
+DTEND:20260926T220000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs Fredonia - Morgan's Message Match
+DESCRIPTION:Women's Volleyball vs Fredonia - Morgan's Message Match\nStreaming Video: https://ritathletics.com/showcase?Live=1929\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15292&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15268-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260930T210000Z
+DTEND:20260930T230000Z
+LOCATION:Rochester\, N.Y. / Fauver Stadium
+SUMMARY:Women's Soccer at Rochester
+DESCRIPTION:Women's Soccer at Rochester\nStreaming Video: https://www.flocollege.com/schools/6469865-university-of-rochester\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15268&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15293-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260930T220000Z
+DTEND:20261001T000000Z
+LOCATION:Ithaca\, NY / Ben Light Gymnasium
+SUMMARY:Women's Volleyball at Ithaca
+DESCRIPTION:Women's Volleyball at Ithaca\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15293&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15333-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20260930T230000Z
+DTEND:20261001T010000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Penn State Behrend - RIT International Student Recognition
+DESCRIPTION:Men's Soccer vs Penn State Behrend - RIT International Student Recognition\nStreaming Video: https://ritathletics.com/showcase?Live=1938\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15333&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15226-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261002
+DTEND;VALUE=DATE:20261003
+LOCATION:Niagara University\, N.Y. / Dwyer Arena
+SUMMARY:Men's Hockey at Niagara
+DESCRIPTION:Men's Hockey at Niagara\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15226&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15319-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261002T160000Z
+DTEND:20261002T190000Z
+LOCATION:Fredonia\, N.Y. / Fredonia Campus Course
+SUMMARY:Women's Cross Country at Kara Hall Memorial Invitational - Hosted by Fredonia
+DESCRIPTION:Women's Cross Country at Kara Hall Memorial Invitational - Hosted by Fredonia\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15319&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15310-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261002T160000Z
+DTEND:20261002T190000Z
+LOCATION:Fredonia\, N.Y. / Fredonia Campus Course
+SUMMARY:Men's Cross Country at Kara Hall Memorial Invitational - Hosted by Fredonia
+DESCRIPTION:Men's Cross Country at Kara Hall Memorial Invitational - Hosted by Fredonia\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15310&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15194-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261002T220000Z
+DTEND:20261003T010000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Colgate
+DESCRIPTION:Women's Hockey vs Colgate\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15194&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15368-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261003
+DTEND;VALUE=DATE:20261004
+LOCATION:Pittsburgh\, Pa.
+SUMMARY:Men's Rowing at Head of the Ohio
+DESCRIPTION:Men's Rowing at Head of the Ohio\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15368&amp;sport_id=5
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15294-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261003T160000Z
+DTEND:20261003T180000Z
+LOCATION:Canton\, NY / Burkman Gymnasium
+SUMMARY:Women's Volleyball at St. Lawrence
+DESCRIPTION:Women's Volleyball at St. Lawrence\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15294&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15334-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261003T170000Z
+DTEND:20261003T190000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Vassar  - Rochester Community Youth Soccer Day
+DESCRIPTION:Men's Soccer vs Vassar  - Rochester Community Youth Soccer Day\nStreaming Video: https://ritathletics.com/showcase?Live=1939\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15334&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15269-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261003T180000Z
+DTEND:20261003T200000Z
+LOCATION:Poughkeepsie\, N.Y. / Gordon Field
+SUMMARY:Women's Soccer at Vassar
+DESCRIPTION:Women's Soccer at Vassar\nStreaming Video: https://boxcast.tv/channel/loahinlmrwacuko8pfih?_gl=1*59kvnd*_gcl_au*MTM2MDIzMzgzNC4xNzgwNTAzOTA0LjM3OTY4NTcwOS4xNzgwNTkxMzA0LjE3ODA1OTI4OTg.*_ga*MTk2MzkyMDE4MS4xNzgwNTAzOTAz*_ga_PXBBF7HVWQ*czE3ODA1OTEyOTMkbzIkZzEkdDE3ODA1OTI4OTckajMkbDAkaDA.\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15269&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15295-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261003T183000Z
+DTEND:20261003T203000Z
+LOCATION:Canton\, NY / Burkman Gymnasium
+SUMMARY:Women's Volleyball vs Potsdam
+DESCRIPTION:Women's Volleyball vs Potsdam\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15295&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15227-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261003T210500Z
+DTEND:20261004T000500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Niagara
+DESCRIPTION:Men's Hockey vs Niagara\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15227&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15195-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261003T220000Z
+DTEND:20261004T010000Z
+LOCATION:Hamilton\, NY/Class of 1965 Arena
+SUMMARY:Women's Hockey at Colgate
+DESCRIPTION:Women's Hockey at Colgate\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15195&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15270-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261006T200000Z
+DTEND:20261006T220000Z
+LOCATION:Geneva\, N.Y. / Cozzens Field
+SUMMARY:Women's Soccer at William Smith
+DESCRIPTION:Women's Soccer at William Smith\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15270&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15335-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261007T230000Z
+DTEND:20261008T010000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Rochester - Faculty/Staff Appreciation Game
+DESCRIPTION:Men's Soccer vs Rochester - Faculty/Staff Appreciation Game\nStreaming Video: https://ritathletics.com/showcase?Live=1940\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15335&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15196-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261009T220000Z
+DTEND:20261010T010000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Delaware
+DESCRIPTION:Women's Hockey vs Delaware\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15196&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15228-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261009T230500Z
+DTEND:20261010T020500Z
+LOCATION:Amherst\, Mass. / Mullins Center
+SUMMARY:Men's Hockey at UMass
+DESCRIPTION:Men's Hockey at UMass\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15228&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15373-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261010
+DTEND;VALUE=DATE:20261011
+LOCATION:Rochester\, N.Y.
+SUMMARY:Women's Rowing at Head of the Genesee
+DESCRIPTION:Women's Rowing at Head of the Genesee\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15373&amp;sport_id=6
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15369-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261010
+DTEND;VALUE=DATE:20261011
+LOCATION:Rochester\, N.Y.
+SUMMARY:Men's Rowing at Head of the Genesee
+DESCRIPTION:Men's Rowing at Head of the Genesee\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15369&amp;sport_id=5
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15320-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261010T140000Z
+DTEND:20261010T170000Z
+LOCATION:Houghton\, N.Y. / Field of Dreams
+SUMMARY:Women's Cross Country at Highlander Invitational - Hosted by Houghton
+DESCRIPTION:Women's Cross Country at Highlander Invitational - Hosted by Houghton\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15320&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15311-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261010T140000Z
+DTEND:20261010T170000Z
+LOCATION:Houghton\, N.Y. / Field of Dreams
+SUMMARY:Men's Cross Country at Highlander Invitational - Hosted by Houghton
+DESCRIPTION:Men's Cross Country at Highlander Invitational - Hosted by Houghton\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15311&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15336-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261010T150000Z
+DTEND:20261010T170000Z
+LOCATION:Schenectady\, NY
+SUMMARY:Men's Soccer at Union
+DESCRIPTION:Men's Soccer at Union\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15336&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15296-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261010T170000Z
+DTEND:20261010T190000Z
+LOCATION:Pittsford\, NY / Kidera Gymnasium
+SUMMARY:Women's Volleyball vs Russell Sage
+DESCRIPTION:Women's Volleyball vs Russell Sage\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15296&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15354-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261010T170000Z
+DTEND:20261010T200000Z
+LOCATION:Troy\, N.Y. / Robinson Pool
+SUMMARY:Women's Swimming & Diving at RPI
+DESCRIPTION:Women's Swimming & Diving at RPI\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15354&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15341-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261010T170000Z
+DTEND:20261010T200000Z
+LOCATION:Troy\, N.Y. / Robinson Pool
+SUMMARY:Men's Swimming & Diving at RPI
+DESCRIPTION:Men's Swimming & Diving at RPI\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15341&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15271-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261010T180000Z
+DTEND:20261010T200000Z
+LOCATION:Rochester\, N.Y. / Judson Stadium
+SUMMARY:Women's Soccer vs Union
+DESCRIPTION:Women's Soccer vs Union\nStreaming Video: https://ritathletics.com/calendar.ashx/calendar.ics?Live=1904\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15271&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15297-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261010T190000Z
+DTEND:20261010T210000Z
+LOCATION:Pittsford\, NY / Kidera Gymnasium
+SUMMARY:Women's Volleyball at Nazareth
+DESCRIPTION:Women's Volleyball at Nazareth\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15297&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15197-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261010T190000Z
+DTEND:20261010T220000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Delaware
+DESCRIPTION:Women's Hockey vs Delaware\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15197&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15229-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261010T230500Z
+DTEND:20261011T020500Z
+LOCATION:Amherst\, Mass. / Mullins Center
+SUMMARY:Men's Hockey at UMass 
+DESCRIPTION:Men's Hockey at UMass \n
+URL:https://ritathletics.com/calendar.aspx?game_id=15229&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15198-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261016
+DTEND;VALUE=DATE:20261017
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Brown
+DESCRIPTION:Women's Hockey vs Brown\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15198&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15374-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261016
+DTEND;VALUE=DATE:20261018
+LOCATION:Cambridge\, Mass.
+SUMMARY:Women's Rowing at Head of the Charles
+DESCRIPTION:Women's Rowing at Head of the Charles\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15374&amp;sport_id=6
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15370-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261016
+DTEND;VALUE=DATE:20261018
+LOCATION:Cambridge\, Mass.
+SUMMARY:Men's Rowing at Head of the Charles
+DESCRIPTION:Men's Rowing at Head of the Charles\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15370&amp;sport_id=5
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15298-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261016T220000Z
+DTEND:20261017T000000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs Widener - Senior Night
+DESCRIPTION:Women's Volleyball vs Widener - Senior Night\nStreaming Video: https://ritathletics.com/showcase?Live=1930\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15298&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15355-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261016T220000Z
+DTEND:20261017T010000Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Women's Swimming & Diving vs Alfred
+DESCRIPTION:Women's Swimming & Diving vs Alfred\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15355&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15342-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261016T220000Z
+DTEND:20261017T010000Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Men's Swimming & Diving vs Alfred
+DESCRIPTION:Men's Swimming & Diving vs Alfred\nStreaming Video: https://ritathletics.com/showcase?Live=1943\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15342&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15199-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261017
+DTEND;VALUE=DATE:20261018
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Brown
+DESCRIPTION:Women's Hockey vs Brown\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15199&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15321-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261017T143000Z
+DTEND:20261017T173000Z
+LOCATION:Oberlin\, Ohio / North Fields - Cross Country Course
+SUMMARY:Women's Cross Country at Oberlin Inter-Regional Rumble - Hosted by Oberlin
+DESCRIPTION:Women's Cross Country at Oberlin Inter-Regional Rumble - Hosted by Oberlin\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15321&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15312-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261017T143000Z
+DTEND:20261017T173000Z
+LOCATION:Oberlin\, Ohio / North Fields - Cross Country Course
+SUMMARY:Men's Cross Country at Oberlin Inter-Regional Rumble - Hosted by Oberlin
+DESCRIPTION:Men's Cross Country at Oberlin Inter-Regional Rumble - Hosted by Oberlin\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15312&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15299-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261017T150000Z
+DTEND:20261017T170000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs Union - Dig Pink Match
+DESCRIPTION:Women's Volleyball vs Union - Dig Pink Match\nStreaming Video: https://ritathletics.com/showcase?Live=1931\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15299&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15306-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261017T173000Z
+DTEND:20261017T193000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs Union vs. Widener
+DESCRIPTION:Women's Volleyball vs Union vs. Widener\nStreaming Video: https://ritathletics.com/showcase?Live=1932\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15306&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15272-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261017T180000Z
+DTEND:20261017T200000Z
+LOCATION:Canton\, N.Y. / Sandy MacAllaster Field
+SUMMARY:Women's Soccer at St. Lawrence
+DESCRIPTION:Women's Soccer at St. Lawrence\nStreaming Video: https://saintsathletics.com/sports/2017/9/22/2017-saints-womens-soccer-broadcasts\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15272&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15337-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261017T190000Z
+DTEND:20261017T210000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs St. Lawrence - Alumni Recognition/Cody Ostrum remembrance
+DESCRIPTION:Men's Soccer vs St. Lawrence - Alumni Recognition/Cody Ostrum remembrance\nStreaming Video: https://ritathletics.com/showcase?Live=1941\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15337&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15230-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261017T230500Z
+DTEND:20261018T020500Z
+LOCATION:Rochester\, N.Y. / Blue Cross Arena
+SUMMARY:Men's Hockey vs Michigan State - Brick City Homecoming and Family Weekend
+DESCRIPTION:Men's Hockey vs Michigan State - Brick City Homecoming and Family Weekend\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15230&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15273-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261021T210000Z
+DTEND:20261021T230000Z
+LOCATION:Rochester\, N.Y. / Judson Stadium
+SUMMARY:Women's Soccer vs Ithaca - Faculty / Staff Appreciation
+DESCRIPTION:Women's Soccer vs Ithaca - Faculty / Staff Appreciation\nStreaming Video: https://ritathletics.com/calendar.ashx/calendar.ics?Live=1905\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15273&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15338-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261021T233000Z
+DTEND:20261022T013000Z
+LOCATION:Ithaca\, NY
+SUMMARY:Men's Soccer at Ithaca
+DESCRIPTION:Men's Soccer at Ithaca\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15338&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15200-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261023T190000Z
+DTEND:20261023T220000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Northeastern
+DESCRIPTION:Women's Hockey vs Northeastern\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15200&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15343-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261023T200000Z
+DTEND:20261024T035959Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Men's Swimming & Diving vs RIT Invitational
+DESCRIPTION:Men's Swimming & Diving vs RIT Invitational\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15343&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15356-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261023T200000Z
+DTEND:20261024T035959Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Women's Swimming & Diving vs RIT Invitational
+DESCRIPTION:Women's Swimming & Diving vs RIT Invitational\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15356&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15300-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261023T220000Z
+DTEND:20261024T000000Z
+LOCATION:Potsdam\, NY / Alumni Gymnasium
+SUMMARY:Women's Volleyball at Clarkson
+DESCRIPTION:Women's Volleyball at Clarkson\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15300&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15231-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261023T230500Z
+DTEND:20261024T020500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs RPI
+DESCRIPTION:Men's Hockey vs RPI\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15231&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15371-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261024
+DTEND;VALUE=DATE:20261025
+LOCATION:Geneva\, N.Y. / Miltenberger and Bennett-Hooper Rowing Center
+SUMMARY:Men's Rowing at Challenge on the Canal
+DESCRIPTION:Men's Rowing at Challenge on the Canal\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15371&amp;sport_id=5
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15375-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261024
+DTEND;VALUE=DATE:20261025
+LOCATION:Geneva\, N.Y. / Miltenberger and Bennett-Hooper Rowing Center
+SUMMARY:Women's Rowing at Challenge on the Canal
+DESCRIPTION:Women's Rowing at Challenge on the Canal\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15375&amp;sport_id=6
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15339-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261024T170000Z
+DTEND:20261024T190000Z
+LOCATION:Annandale-on-Hudson\, NY
+SUMMARY:Men's Soccer at Bard
+DESCRIPTION:Men's Soccer at Bard\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15339&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15274-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261024T180000Z
+DTEND:20261024T200000Z
+LOCATION:Rochester\, N.Y. / Judson Stadium
+SUMMARY:Women's Soccer vs Bard - Senior Day
+DESCRIPTION:Women's Soccer vs Bard - Senior Day\nStreaming Video: https://www.youtube.com/@skidmorecollegethoroughbre4509/streams\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15274&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15301-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261024T180000Z
+DTEND:20261024T200000Z
+LOCATION:Saratoga Springs\, NY / Williamson Sports Center
+SUMMARY:Women's Volleyball at Skidmore
+DESCRIPTION:Women's Volleyball at Skidmore\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15301&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15201-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261024T190000Z
+DTEND:20261024T220000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Northeastern
+DESCRIPTION:Women's Hockey vs Northeastern\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15201&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15232-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261024T230500Z
+DTEND:20261025T020500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs RPI
+DESCRIPTION:Men's Hockey vs RPI\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15232&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15302-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261028T220000Z
+DTEND:20261029T000000Z
+LOCATION:Rochester\, NY / Clark Gymnasium
+SUMMARY:Women's Volleyball vs William Smith
+DESCRIPTION:Women's Volleyball vs William Smith\nStreaming Video: https://ritathletics.com/showcase?Live=1933\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15302&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15202-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261030T220000Z
+DTEND:20261031T010000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Penn State
+DESCRIPTION:Women's Hockey vs Penn State\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15202&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15233-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261030T230500Z
+DTEND:20261031T020500Z
+LOCATION:West Point\, N.Y. / Tait Rink
+SUMMARY:Men's Hockey at Army
+DESCRIPTION:Men's Hockey at Army\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15233&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15303-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261031T140000Z
+DTEND:20261031T160000Z
+LOCATION:Galloway\, NJ / The Sports Center
+SUMMARY:Women's Volleyball at Stockton 
+DESCRIPTION:Women's Volleyball at Stockton \n
+URL:https://ritathletics.com/calendar.aspx?game_id=15303&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15304-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261031T160000Z
+DTEND:20261031T180000Z
+LOCATION:Galloway\, NJ / The Sports Center
+SUMMARY:Women's Volleyball vs Albright
+DESCRIPTION:Women's Volleyball vs Albright\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15304&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15322-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261031T160000Z
+DTEND:20261031T190000Z
+LOCATION:Annandale-on-Hudson\, N.Y. / Montgomery Place
+SUMMARY:Women's Cross Country at Liberty League Championships - Hosted by Bard
+DESCRIPTION:Women's Cross Country at Liberty League Championships - Hosted by Bard\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15322&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15313-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261031T160000Z
+DTEND:20261031T190000Z
+LOCATION:Annandale-on-Hudson\, N.Y. / Montgomery Place
+SUMMARY:Men's Cross Country at Liberty League Championships - Hosted by Bard
+DESCRIPTION:Men's Cross Country at Liberty League Championships - Hosted by Bard\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15313&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15340-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261031T180000Z
+DTEND:20261031T200000Z
+LOCATION:Rochester\, N.Y., Doug May Field
+SUMMARY:Men's Soccer vs Skidmore - Senior Day
+DESCRIPTION:Men's Soccer vs Skidmore - Senior Day\nStreaming Video: https://ritathletics.com/showcase?Live=1942\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15340&amp;sport_id=13
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15275-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261031T180000Z
+DTEND:20261031T200000Z
+LOCATION:Saratoga Springs\, N.Y.
+SUMMARY:Women's Soccer at Skidmore
+DESCRIPTION:Women's Soccer at Skidmore\nStreaming Video: https://www.youtube.com/@skidmorecollegethoroughbre4509/streams\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15275&amp;sport_id=14
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15203-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261031T180000Z
+DTEND:20261031T210000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Penn State
+DESCRIPTION:Women's Hockey vs Penn State\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15203&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15234-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261031T200500Z
+DTEND:20261031T230500Z
+LOCATION:West Point\, N.Y. / Tait Rink
+SUMMARY:Men's Hockey at Army
+DESCRIPTION:Men's Hockey at Army\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15234&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15235-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261106
+DTEND;VALUE=DATE:20261107
+LOCATION:Waltham\, Mass. / Bentley Arena
+SUMMARY:Men's Hockey at Bentley
+DESCRIPTION:Men's Hockey at Bentley\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15235&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15344-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261106
+DTEND;VALUE=DATE:20261107
+LOCATION:Chicago\, Ill. / Myers-McLoraine Pool
+SUMMARY:Men's Swimming & Diving at D3 Shootout
+DESCRIPTION:Men's Swimming & Diving at D3 Shootout\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15344&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15357-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261106
+DTEND;VALUE=DATE:20261107
+LOCATION:Chicago\, Ill. / Myers-McLoraine Pool
+SUMMARY:Women's Swimming & Diving at D3 Shootout
+DESCRIPTION:Women's Swimming & Diving at D3 Shootout\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15357&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15204-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261107T000000Z
+DTEND:20261107T030000Z
+LOCATION:Moon Township\, PA/Clearview Arena
+SUMMARY:Women's Hockey at Robert Morris
+DESCRIPTION:Women's Hockey at Robert Morris\nStreaming Video: https://www.flohockey.tv/\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15204&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15236-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261107
+DTEND;VALUE=DATE:20261108
+LOCATION:Waltham\, Mass. / Bentley Arena
+SUMMARY:Men's Hockey at Bentley
+DESCRIPTION:Men's Hockey at Bentley\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15236&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15376-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261107T180000Z
+DTEND:20261107T200000Z
+LOCATION:Camden\, NJ / Athletic and Fitness Center
+SUMMARY:Women's Volleyball vs Albright
+DESCRIPTION:Women's Volleyball vs Albright\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15376&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15377-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261107T200000Z
+DTEND:20261107T220000Z
+LOCATION:Camden\, NJ / Athletic and Fitness Center
+SUMMARY:Women's Volleyball at Rutgers-Camden
+DESCRIPTION:Women's Volleyball at Rutgers-Camden\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15377&amp;sport_id=16
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15205-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261107T200000Z
+DTEND:20261107T230000Z
+LOCATION:Moon Township\, PA/Clearview Arena
+SUMMARY:Women's Hockey at Robert Morris
+DESCRIPTION:Women's Hockey at Robert Morris\nStreaming Video: https://www.flohockey.tv/\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15205&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15206-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261113T230000Z
+DTEND:20261114T020000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Lindenwood
+DESCRIPTION:Women's Hockey vs Lindenwood\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15206&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15323-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261114T160000Z
+DTEND:20261114T190000Z
+LOCATION:Fredonia\, N.Y. / Fredonia Campus Course
+SUMMARY:Women's Cross Country at  NCAA Division III Niagara Region Championships - Hosted by Fredonia
+DESCRIPTION:Women's Cross Country at  NCAA Division III Niagara Region Championships - Hosted by Fredonia\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15323&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15314-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261114T160000Z
+DTEND:20261114T190000Z
+LOCATION:Fredonia\, N.Y. / Fredonia Campus Course
+SUMMARY:Men's Cross Country at  NCAA Division III Niagara Region Championships - Hosted by Fredonia
+DESCRIPTION:Men's Cross Country at  NCAA Division III Niagara Region Championships - Hosted by Fredonia\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15314&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15207-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261114T200000Z
+DTEND:20261114T230000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Lindenwood
+DESCRIPTION:Women's Hockey vs Lindenwood\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15207&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15237-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261114T220500Z
+DTEND:20261115T010500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Canisius
+DESCRIPTION:Men's Hockey vs Canisius\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15237&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15345-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261119T210000Z
+DTEND:20261121T045959Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Men's Swimming & Diving vs Don Richards Invitational
+DESCRIPTION:Men's Swimming & Diving vs Don Richards Invitational\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15345&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15358-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261119T210000Z
+DTEND:20261121T045959Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Women's Swimming & Diving vs Don Richards Invitational
+DESCRIPTION:Women's Swimming & Diving vs Don Richards Invitational\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15358&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15208-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261120
+DTEND;VALUE=DATE:20261121
+LOCATION:Syracuse\, NY
+SUMMARY:Women's Hockey at Syracuse
+DESCRIPTION:Women's Hockey at Syracuse\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15208&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15315-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261121T160000Z
+DTEND:20261121T190000Z
+LOCATION:Northfield\, Minn. / Bill Huyck Championship Course
+SUMMARY:Men's Cross Country at  NCAA Division III National Championships - Hosted by Carleton
+DESCRIPTION:Men's Cross Country at  NCAA Division III National Championships - Hosted by Carleton\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15315&amp;sport_id=7
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15324-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261121T160000Z
+DTEND:20261121T190000Z
+LOCATION:Northfield\, Minn. / Bill Huyck Championship Course
+SUMMARY:Women's Cross Country at  NCAA Division III National Championships - Hosted by Carleton
+DESCRIPTION:Women's Cross Country at  NCAA Division III National Championships - Hosted by Carleton\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15324&amp;sport_id=8
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15209-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261121T200000Z
+DTEND:20261121T230000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Syracuse
+DESCRIPTION:Women's Hockey vs Syracuse\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15209&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15210-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261127
+DTEND;VALUE=DATE:20261128
+LOCATION:Erie\, PA
+SUMMARY:Women's Hockey at Mercyhurst
+DESCRIPTION:Women's Hockey at Mercyhurst\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15210&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15238-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261127
+DTEND;VALUE=DATE:20261128
+LOCATION:Lake Placid\, N.Y. / Herb Brooks Arena
+SUMMARY:Men's Hockey vs Clarkson
+DESCRIPTION:Men's Hockey vs Clarkson\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15238&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15239-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261128
+DTEND;VALUE=DATE:20261129
+LOCATION:Lake Placid\, N.Y. / Herb Brooks Arena
+SUMMARY:Men's Hockey vs St. Lawrence
+DESCRIPTION:Men's Hockey vs St. Lawrence\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15239&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15211-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261128
+DTEND;VALUE=DATE:20261129
+LOCATION:Erie\, PA
+SUMMARY:Women's Hockey at Mercyhurst
+DESCRIPTION:Women's Hockey at Mercyhurst\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15211&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15212-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261204
+DTEND;VALUE=DATE:20261205
+LOCATION:Newark\, DE
+SUMMARY:Women's Hockey at Delaware
+DESCRIPTION:Women's Hockey at Delaware\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15212&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15240-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261205T000500Z
+DTEND:20261205T030500Z
+LOCATION:Hamilton\, N.Y. / Class of 1965 Arena
+SUMMARY:Men's Hockey at Colgate
+DESCRIPTION:Men's Hockey at Colgate\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15240&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15213-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20261205
+DTEND;VALUE=DATE:20261206
+LOCATION:Newark\, DE
+SUMMARY:Women's Hockey at Delaware
+DESCRIPTION:Women's Hockey at Delaware\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15213&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15241-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261206T000500Z
+DTEND:20261206T030500Z
+LOCATION:Ithaca\, N.Y. / Lynah Rink
+SUMMARY:Men's Hockey at Cornell
+DESCRIPTION:Men's Hockey at Cornell\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15241&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15242-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261212T220500Z
+DTEND:20261213T010500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Niagara
+DESCRIPTION:Men's Hockey vs Niagara\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15242&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15243-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20261231T210500Z
+DTEND:20270101T000500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Guelph - Exhibition
+DESCRIPTION:Men's Hockey vs Guelph - Exhibition\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15243&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15214-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270101
+DTEND;VALUE=DATE:20270102
+LOCATION:Durham\, NH
+SUMMARY:Women's Hockey at New Hampshire
+DESCRIPTION:Women's Hockey at New Hampshire\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15214&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15215-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270102
+DTEND;VALUE=DATE:20270103
+LOCATION:Durham\, NH
+SUMMARY:Women's Hockey at New Hampshire
+DESCRIPTION:Women's Hockey at New Hampshire\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15215&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15244-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270103T000500Z
+DTEND:20270103T030500Z
+LOCATION:Durham\, N.H. / Whittemore Center
+SUMMARY:Men's Hockey at New Hampshire
+DESCRIPTION:Men's Hockey at New Hampshire\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15244&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15216-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270108T200000Z
+DTEND:20270108T230000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Robert Morris
+DESCRIPTION:Women's Hockey vs Robert Morris\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15216&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15245-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270109T000500Z
+DTEND:20270109T030500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Robert Morris
+DESCRIPTION:Men's Hockey vs Robert Morris\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15245&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15346-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270109T180000Z
+DTEND:20270109T210000Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Men's Swimming & Diving vs Hamilton
+DESCRIPTION:Men's Swimming & Diving vs Hamilton\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15346&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15359-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270109T180000Z
+DTEND:20270109T210000Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Women's Swimming & Diving vs Hamilton
+DESCRIPTION:Women's Swimming & Diving vs Hamilton\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15359&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15217-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270109T200000Z
+DTEND:20270109T230000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Robert Morris
+DESCRIPTION:Women's Hockey vs Robert Morris\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15217&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15246-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270110T000500Z
+DTEND:20270110T030500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Robert Morris
+DESCRIPTION:Men's Hockey vs Robert Morris\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15246&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15247-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270115
+DTEND;VALUE=DATE:20270116
+LOCATION:USAFA\, Colo. / Cadet Ice Arena
+SUMMARY:Men's Hockey at Air Force
+DESCRIPTION:Men's Hockey at Air Force\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15247&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15218-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270115
+DTEND;VALUE=DATE:20270116
+LOCATION:St. Charles\, MO
+SUMMARY:Women's Hockey at Lindenwood
+DESCRIPTION:Women's Hockey at Lindenwood\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15218&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15219-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270116
+DTEND;VALUE=DATE:20270117
+LOCATION:St. Charles\, MO
+SUMMARY:Women's Hockey at Lindenwood
+DESCRIPTION:Women's Hockey at Lindenwood\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15219&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15248-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270116
+DTEND;VALUE=DATE:20270117
+LOCATION:USAFA\, Colo. / Cadet Ice Arena
+SUMMARY:Men's Hockey at Air Force
+DESCRIPTION:Men's Hockey at Air Force\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15248&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15347-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270116T180000Z
+DTEND:20270116T210000Z
+LOCATION:Rochester\, N.Y. / Speegle-Wilbraham Aquatics Center
+SUMMARY:Men's Swimming & Diving at Rochester
+DESCRIPTION:Men's Swimming & Diving at Rochester\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15347&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15360-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270116T180000Z
+DTEND:20270116T210000Z
+LOCATION:Rochester\, N.Y. / Speegle-Wilbraham Aquatics Center
+SUMMARY:Women's Swimming & Diving at Rochester
+DESCRIPTION:Women's Swimming & Diving at Rochester\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15360&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15361-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270122T230000Z
+DTEND:20270123T045959Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Women's Swimming & Diving vs Geneseo
+DESCRIPTION:Women's Swimming & Diving vs Geneseo\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15361&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15348-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270122T230000Z
+DTEND:20270123T045959Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Men's Swimming & Diving vs Geneseo
+DESCRIPTION:Men's Swimming & Diving vs Geneseo\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15348&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15249-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270123T000500Z
+DTEND:20270123T030500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Holy Cross
+DESCRIPTION:Men's Hockey vs Holy Cross\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15249&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15250-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270123T220500Z
+DTEND:20270124T010500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Holy Cross
+DESCRIPTION:Men's Hockey vs Holy Cross\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15250&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15220-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270129T200000Z
+DTEND:20270129T230000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Syracuse
+DESCRIPTION:Women's Hockey vs Syracuse\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15220&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15251-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270130T000500Z
+DTEND:20270130T030500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Army
+DESCRIPTION:Men's Hockey vs Army\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15251&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15221-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270130
+DTEND;VALUE=DATE:20270131
+LOCATION:Syracuse\, NY
+SUMMARY:Women's Hockey at Syracuse
+DESCRIPTION:Women's Hockey at Syracuse\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15221&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15349-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270130T180000Z
+DTEND:20270130T210000Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Men's Swimming & Diving vs Hobart - Senior Day
+DESCRIPTION:Men's Swimming & Diving vs Hobart - Senior Day\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15349&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15362-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270130T180000Z
+DTEND:20270130T210000Z
+LOCATION:Rochester\, N.Y. / Judson Pool
+SUMMARY:Women's Swimming & Diving vs William Smith - Senior Day
+DESCRIPTION:Women's Swimming & Diving vs William Smith - Senior Day\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15362&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15252-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270130T220500Z
+DTEND:20270131T010500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Army
+DESCRIPTION:Men's Hockey vs Army\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15252&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15222-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270205T230000Z
+DTEND:20270206T020000Z
+LOCATION:University Park\, PA
+SUMMARY:Women's Hockey at Penn State
+DESCRIPTION:Women's Hockey at Penn State\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15222&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15253-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270206T000500Z
+DTEND:20270206T030500Z
+LOCATION:Fairfield\, Conn. / Martire Family Arena
+SUMMARY:Men's Hockey at Sacred Heart
+DESCRIPTION:Men's Hockey at Sacred Heart\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15253&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15350-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270206
+DTEND;VALUE=DATE:20270207
+LOCATION:Rochester\, N.Y., Judson Pool
+SUMMARY:Men's Swimming & Diving vs RIT Diving Invitational
+DESCRIPTION:Men's Swimming & Diving vs RIT Diving Invitational\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15350&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15363-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270206
+DTEND;VALUE=DATE:20270207
+LOCATION:Rochester\, N.Y., Judson Pool
+SUMMARY:Women's Swimming & Diving vs RIT Diving Invitational
+DESCRIPTION:Women's Swimming & Diving vs RIT Diving Invitational\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15363&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15223-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270206T190000Z
+DTEND:20270206T220000Z
+LOCATION:University Park\, PA
+SUMMARY:Women's Hockey at Penn State
+DESCRIPTION:Women's Hockey at Penn State\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15223&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15254-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270206T220500Z
+DTEND:20270207T010500Z
+LOCATION:Fairfield\, Conn. / Martire Family Arena
+SUMMARY:Men's Hockey at Sacred Heart
+DESCRIPTION:Men's Hockey at Sacred Heart\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15254&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15224-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270212T200000Z
+DTEND:20270212T230000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Mercyhurst
+DESCRIPTION:Women's Hockey vs Mercyhurst\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15224&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15255-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270213T000500Z
+DTEND:20270213T030500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Bentley
+DESCRIPTION:Men's Hockey vs Bentley\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15255&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15225-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270213T190000Z
+DTEND:20270213T220000Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Women's Hockey vs Mercyhurst
+DESCRIPTION:Women's Hockey vs Mercyhurst\nStreaming Video: https://www.flohockey.tv/leagues/12825719-atlantic-hockey-america-womens-hockey?nav_id=688\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15225&amp;sport_id=10
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15256-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270214T000500Z
+DTEND:20270214T030500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Bentley
+DESCRIPTION:Men's Hockey vs Bentley\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15256&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15364-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270217T150000Z
+DTEND:20270220T045959Z
+LOCATION:Ithaca\, N.Y. / Kelsey Partridge Bird Natatorium
+SUMMARY:Women's Swimming & Diving at Liberty League Championships
+DESCRIPTION:Women's Swimming & Diving at Liberty League Championships\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15364&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15351-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270217T150000Z
+DTEND:20270220T045959Z
+LOCATION:Ithaca\, N.Y. / Kelsey Partridge Bird Natatorium
+SUMMARY:Men's Swimming & Diving at Liberty League Championships
+DESCRIPTION:Men's Swimming & Diving at Liberty League Championships\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15351&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15257-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270220T000500Z
+DTEND:20270220T030500Z
+LOCATION:Moon Township\, Pa. / Clearview Arena
+SUMMARY:Men's Hockey at Robert Morris
+DESCRIPTION:Men's Hockey at Robert Morris\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15257&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15258-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270221T000500Z
+DTEND:20270221T030500Z
+LOCATION:Moon Township\, Pa. / Clearview Arena
+SUMMARY:Men's Hockey at Robert Morris
+DESCRIPTION:Men's Hockey at Robert Morris\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15258&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15259-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270225
+DTEND;VALUE=DATE:20270226
+LOCATION:Niagara University\, N.Y. / Dwyer Arena
+SUMMARY:Men's Hockey at Niagara
+DESCRIPTION:Men's Hockey at Niagara\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15259&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15365-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270226
+DTEND;VALUE=DATE:20270227
+LOCATION:TBD
+SUMMARY:Women's Swimming & Diving at NCAA Division III Diving Regionals
+DESCRIPTION:Women's Swimming & Diving at NCAA Division III Diving Regionals\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15365&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15352-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270226
+DTEND;VALUE=DATE:20270227
+LOCATION:TBD
+SUMMARY:Men's Swimming & Diving at NCAA Division III Diving Regionals
+DESCRIPTION:Men's Swimming & Diving at NCAA Division III Diving Regionals\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15352&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15260-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART:20270227T220500Z
+DTEND:20270228T010500Z
+LOCATION:Rochester\, N.Y., Gene Polisseni Center
+SUMMARY:Men's Hockey vs Canisius
+DESCRIPTION:Men's Hockey vs Canisius\nStreaming Video: https://www.flohockey.tv/leagues/12825708-atlantic-hockey-america-mens-hockey\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15260&amp;sport_id=9
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15366-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270317
+DTEND;VALUE=DATE:20270320
+LOCATION:Greensboro\, N.C. / Greensboro Aquatic Center
+SUMMARY:Women's Swimming & Diving at NCAA Division III National Championships
+DESCRIPTION:Women's Swimming & Diving at NCAA Division III National Championships\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15366&amp;sport_id=21
+PRIORITY:3
+END:VEVENT
+BEGIN:VEVENT
+UID:vcal_15353-ritathletics.com
+DTSTAMP:20260830T061913Z
+DTSTART;VALUE=DATE:20270317
+DTEND;VALUE=DATE:20270320
+LOCATION:Greensboro\, N.C. / Greensboro Aquatic Center
+SUMMARY:Men's Swimming & Diving at NCAA Division III National Championships
+DESCRIPTION:Men's Swimming & Diving at NCAA Division III National Championships\n
+URL:https://ritathletics.com/calendar.aspx?game_id=15353&amp;sport_id=20
+PRIORITY:3
+END:VEVENT
+END:VCALENDAR

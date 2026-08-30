@@ -24,6 +24,9 @@ import 'dart:async';
 
 import 'backend.dart';
 import 'campus_time.dart';
+import 'sources/athletics.dart';
+import 'sources/campusgroups.dart';
+import 'sources/drupal_events.dart';
 import 'sources/tigercenter.dart';
 import 'static_config.dart';
 import 'store.dart';
@@ -67,6 +70,21 @@ class LocalBackend implements Backend {
       name: 'tigercenter_dining',
       cadence: const Duration(minutes: 60),
       scrape: scrapeDining,
+    ),
+    campusGroupsSource: SourceSpec(
+      name: campusGroupsSource,
+      cadence: const Duration(minutes: 180),
+      scrape: scrapeCampusGroups,
+    ),
+    drupalSource: SourceSpec(
+      name: drupalSource,
+      cadence: const Duration(minutes: 180),
+      scrape: scrapeDrupal,
+    ),
+    athleticsSource: SourceSpec(
+      name: athleticsSource,
+      cadence: const Duration(minutes: 180),
+      scrape: scrapeAthletics,
     ),
   };
 
@@ -161,6 +179,10 @@ class LocalBackend implements Backend {
         return _menuCategory(visitingChef);
       case '/dining/specials':
         return _menuCategory('Special');
+      case '/events':
+        return _events(query);
+      case '/events/organizers':
+        return _organizers();
     }
 
     throw UpstreamError('no local source serves $path');
@@ -189,6 +211,115 @@ class LocalBackend implements Backend {
         ? const <Map<String, dynamic>>[]
         : menuItemsWithCategory(snapshot, category);
     return _envelope('tigercenter_dining', data, fetchedAt);
+  }
+
+  /// Every event from all three feeds, with the freshness of the merged view.
+  ///
+  /// Either feed being cold makes the merged view incomplete, so staleness is
+  /// the union and last_updated is the oldest of the two, matching the backend.
+  Future<(List<Map<String, dynamic>>, bool, DateTime?)> _allEvents() async {
+    final events = <Map<String, dynamic>>[];
+    var stale = false;
+    final stamps = <DateTime>[];
+
+    for (final name in [campusGroupsSource, drupalSource, athleticsSource]) {
+      final (snapshot, fetchedAt) = await _snapshot(name);
+      for (final e in snapshot?['events'] as List<dynamic>? ?? const []) {
+        events.add(e as Map<String, dynamic>);
+      }
+      // Athletics is a bonus feed; the merged view is not called incomplete
+      // just because fixtures are cold, which is what the backend did.
+      if (name != athleticsSource && _isStale(name, fetchedAt)) stale = true;
+      if (fetchedAt != null && name != athleticsSource) stamps.add(fetchedAt);
+    }
+
+    stamps.sort();
+    return (events, stale, stamps.isEmpty ? null : stamps.first);
+  }
+
+  Future<Map<String, dynamic>> _events(Map<String, String>? query) async {
+    final (all, stale, updated) = await _allEvents();
+
+    final days = int.tryParse(query?['days'] ?? '') ?? 14;
+    final limit = int.tryParse(query?['limit'] ?? '') ?? 500;
+    final begins = DateTime.tryParse(query?['start'] ?? '')?.toUtc() ??
+        CampusTime.nowUtc();
+    final ends = begins.add(Duration(days: days));
+
+    final sources = _list(query?['source']);
+    final organizers = _list(query?['organizer']);
+    final muted = _list(query?['mute']);
+
+    final matched = <Map<String, dynamic>>[];
+    for (final event in all) {
+      // Compared as instants, not as text. The three feeds store different
+      // UTC offsets, so the backend's string comparison put an event with a
+      // "-04:00" stamp in the wrong place relative to a "Z" one.
+      final startsAt = DateTime.tryParse(event['starts_at'] as String? ?? '');
+      if (startsAt == null) continue;
+      final at = startsAt.toUtc();
+      if (at.isBefore(begins) || !at.isBefore(ends)) continue;
+
+      final source = event['source'] as String?;
+      if (sources != null && !sources.contains(source)) continue;
+
+      final key = event['organizer_key'] as String?;
+      if (organizers != null && (key == null || !organizers.contains(key))) {
+        continue;
+      }
+      if (muted != null && key != null && muted.contains(key)) continue;
+
+      matched.add(event);
+    }
+
+    matched.sort((a, b) => DateTime.parse(a['starts_at'] as String)
+        .toUtc()
+        .compareTo(DateTime.parse(b['starts_at'] as String).toUtc()));
+
+    return {
+      'data': matched.take(limit).toList(),
+      'stale': stale,
+      'last_updated':
+          updated == null ? null : CampusTime.format(updated.toUtc()),
+    };
+  }
+
+  /// Facets for grouping, collapsing, or muting a noisy organizer.
+  Future<Map<String, dynamic>> _organizers() async {
+    final (all, stale, _) = await _allEvents();
+
+    final counts = <String, Map<String, dynamic>>{};
+    for (final event in all) {
+      if (event['organizer'] == null) continue;
+      final key = '${event['organizer_key']}\u0000${event['organizer']}'
+          '\u0000${event['source']}';
+      final row = counts.putIfAbsent(
+        key,
+        () => {
+          'organizer_key': event['organizer_key'],
+          'organizer': event['organizer'],
+          'source': event['source'],
+          'event_count': 0,
+        },
+      );
+      row['event_count'] = (row['event_count'] as int) + 1;
+    }
+
+    final data = counts.values.toList()
+      ..sort((a, b) =>
+          (b['event_count'] as int).compareTo(a['event_count'] as int));
+
+    return {'data': data, 'stale': stale, 'last_updated': null};
+  }
+
+  /// FastAPI took a repeated query parameter; the client sends one comma
+  /// separated value, so both spellings are accepted.
+  static List<String>? _list(String? raw) {
+    if (raw == null || raw.isEmpty) return null;
+    final parts = [
+      for (final p in raw.split(',')) if (p.trim().isNotEmpty) p.trim(),
+    ];
+    return parts.isEmpty ? null : parts;
   }
 
   @override
