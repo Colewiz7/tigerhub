@@ -115,7 +115,19 @@ class OccupancyChart extends StatelessWidget {
 ///
 /// Two near identical colours cannot carry this, so it is stated rather than
 /// encoded.
-String busynessCaption(List<OccupancyHour> hourly, int nowHour) {
+String busynessCaption(
+  List<OccupancyHour> hourly,
+  int nowHour, {
+  bool isOpen = true,
+}) {
+  // A "right now" comparison means nothing somewhere that is shut, and
+  // maps.rit.edu keeps reporting a count after close: Gracie's read 29 people
+  // while its own status said Closed Today. Without this the sheet said
+  // "Quieter than usual for this time" under a HOW BUSY heading, which reads
+  // as an invitation to a place you cannot get into.
+  if (!isOpen) {
+    return 'Closed now. The line is today so far against a typical day.';
+  }
   final now = hourly.where((h) => h.hour == nowHour).firstOrNull;
   if (now == null || now.average == 0) return '';
   final delta = now.today - now.average;

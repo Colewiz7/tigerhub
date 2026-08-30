@@ -535,18 +535,20 @@ class _KindStrip extends StatelessWidget {
       itemBuilder: (context, index) {
         final entry = entries[index];
         final scheme = Theme.of(context).colorScheme;
+        final palette = mapPinPalette(entry.key, scheme);
         return SizedBox(
-          width: 210,
+          width: 236,
           child: Material(
             color: scheme.surfaceContainerHigh,
             borderRadius: Shapes.inner,
             clipBehavior: Clip.antiAlias,
             child: InkWell(
               onTap: () => onSelect(entry.key),
+              canRequestFocus: true,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
-                  vertical: 10,
+                  vertical: 8,
                 ),
                 child: Row(
                   children: [
@@ -554,14 +556,14 @@ class _KindStrip extends StatelessWidget {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: scheme.primaryContainer,
+                        color: palette.$1,
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
                       child: Icon(
                         mapPlaceIcon(entry.key),
                         size: 20,
-                        color: scheme.onPrimaryContainer,
+                        color: palette.$2,
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -572,9 +574,10 @@ class _KindStrip extends StatelessWidget {
                         children: [
                           Text(
                             entry.value.name,
-                            maxLines: 1,
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleSmall,
+                            style: Theme.of(context).textTheme.titleSmall
+                                ?.copyWith(height: 1.05),
                           ),
                           const SizedBox(height: 3),
                           Text(
@@ -584,11 +587,6 @@ class _KindStrip extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 20,
-                      color: scheme.onSurfaceVariant,
                     ),
                   ],
                 ),
@@ -1042,15 +1040,15 @@ Color _categoryColor(MapFamily family, Brightness brightness) {
           ..color = scheme.outline.withValues(alpha: 0.55),
       );
     default:
-      // The fill stays neutral and quiet. The edge already carries the shape,
-      // measured at 4.08 light and 5.50 dark against the field, so it is the
-      // right place to also carry what kind of building it is.
+      final category = _categoryColor(family, scheme.brightness);
       return (
-        fill: Paint()..color = scheme.surfaceContainerHighest,
+        // A restrained tint makes zones readable as areas, rather than asking
+        // the reader to trace dozens of differently coloured outlines.
+        fill: Paint()..color = category.withValues(alpha: 0.16),
         edge: Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = 1.3
-          ..color = _categoryColor(family, scheme.brightness),
+          ..color = category,
       );
   }
 }
@@ -1192,7 +1190,12 @@ class CampusMapPainter extends CustomPainter {
       final fill = familyPaints[family]!.fill;
       final edge = familyPaints[family]!.edge;
       if (fill != null) canvas.drawPath(path, fill);
-      if (edge != null) canvas.drawPath(path, edge);
+      if (edge != null) {
+        // Keep outlines cartographic as the viewer zooms instead of turning
+        // them into thick neon borders.
+        edge.strokeWidth /= zoom;
+        canvas.drawPath(path, edge);
+      }
     }
 
     // Ground first, then the paths crossing it, then what you walk into.
@@ -1432,6 +1435,11 @@ class CampusMapPainter extends CustomPainter {
   ) {
     final ordered = [...candidates]..sort((a, b) => b.area.compareTo(a.area));
     final taken = <Rect>[];
+    final maxLabels = zoom < 1.15
+        ? 14
+        : zoom < 1.8
+        ? 30
+        : 64;
 
     for (final candidate in ordered) {
       final painter = candidate.painter;
@@ -1446,6 +1454,9 @@ class CampusMapPainter extends CustomPainter {
       final insideFits =
           width + 6 / zoom <= bounds.width &&
           height + 4 / zoom <= bounds.height;
+      // At campus overview, label only genuine landmarks. Smaller buildings
+      // become named progressively as zoom creates room for them.
+      if (zoom < 1.15 && !insideFits) continue;
       final center = insideFits
           ? bounds.center
           : Offset(bounds.center.dx, bounds.bottom + height / 2 + 3 / zoom);
@@ -1458,6 +1469,7 @@ class CampusMapPainter extends CustomPainter {
       if (taken.any(rect.overlaps)) continue;
 
       taken.add(rect);
+      if (taken.length > maxLabels) break;
       canvas.save();
       canvas.translate(center.dx, center.dy);
       // Constant on screen, so zooming in shrinks the label against the

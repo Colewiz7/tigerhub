@@ -160,7 +160,7 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                 OccupancyChart(hourly: hourly, nowHour: nowHour),
                 const SizedBox(height: 8),
                 Text(
-                  busynessCaption(hourly, nowHour),
+                  busynessCaption(hourly, nowHour, isOpen: open),
                   style: text.bodyMedium?.copyWith(color: scheme.onSurface),
                 ),
                 const SizedBox(height: 2),

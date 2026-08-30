@@ -29,7 +29,6 @@ import 'package:tigerhub/widgets/more_row.dart';
 import 'package:tigerhub/screens/campus_screen.dart' show currentSeason;
 import 'package:tigerhub/widgets/occupancy_chart.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart';
-import 'package:tigerhub/widgets/occupancy_chip.dart';
 
 /// Stands in for a scrape. `ApiClient`'s caching and state machine are
 /// transport independent, so these tests inject a [Backend] rather than a
@@ -109,49 +108,56 @@ void main() {
     });
   });
 
-  group('occupancy chip', () {
-    testWidgets('renders nothing when there is no sensor', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(home: Scaffold(body: OccupancyChip(occupancy: null))),
-      );
-      expect(find.byType(SizedBox), findsOneWidget);
-      expect(find.textContaining('%'), findsNothing);
-      expect(find.textContaining('no data'), findsNothing);
-    });
-
-    testWidgets('renders a percentage when a sensor exists', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: OccupancyChip(
-              occupancy: Occupancy(count: 75, maxOcc: 150, percentFull: 50),
-            ),
-          ),
-        ),
-      );
-      expect(find.text('50%'), findsOneWidget);
-    });
-  });
-
   group('occupancy honesty', () {
-    testWidgets('over capacity says busy, not a precise percentage', (
-      tester,
-    ) async {
+    // These used to drive OccupancyChip, a widget nothing shipped: the dining
+    // row has always drawn its own pill. Testing the unused copy meant the
+    // rules read as covered while the code people actually see was unguarded.
+    // They now drive DiningRow, which is the thing on screen.
+    Future<void> pumpRow(WidgetTester tester, Occupancy? occupancy) async {
       await tester.pumpWidget(
-        const MaterialApp(
+        MaterialApp(
+          theme: AppTheme.from(
+            ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+          ),
           home: Scaffold(
-            body: OccupancyChip(
-              occupancy: Occupancy(
-                count: 46,
-                maxOcc: 38,
-                percentFull: 100,
-                overCapacity: true,
+            body: DiningRow(
+              location: DiningLocation(
+                id: 1,
+                name: 'Gracie\'s',
+                isOpen: true,
+                occupancy: occupancy,
               ),
             ),
           ),
         ),
       );
-      expect(find.text('busy'), findsOneWidget);
+    }
+
+    testWidgets('renders nothing when there is no sensor', (tester) async {
+      // 19 of the 24 locations have none. No placeholder, no "no data".
+      await pumpRow(tester, null);
+      expect(find.textContaining('%'), findsNothing);
+      expect(find.textContaining('no data'), findsNothing);
+    });
+
+    testWidgets('renders a percentage when a sensor exists', (tester) async {
+      await pumpRow(tester, const Occupancy(count: 75, maxOcc: 150, percentFull: 50));
+      expect(find.text('50%'), findsOneWidget);
+    });
+
+    testWidgets('over capacity says busy, not a precise percentage', (
+      tester,
+    ) async {
+      await pumpRow(
+        tester,
+        const Occupancy(
+          count: 46,
+          maxOcc: 38,
+          percentFull: 100,
+          overCapacity: true,
+        ),
+      );
+      expect(find.text('BUSY'), findsOneWidget);
       expect(
         find.textContaining('%'),
         findsNothing,
@@ -162,17 +168,33 @@ void main() {
     testWidgets('a count with no denominator shows the count, not a ratio', (
       tester,
     ) async {
+      await pumpRow(tester, const Occupancy(count: 235, percentFull: null));
+      expect(find.text('235 here'), findsOneWidget);
+      expect(find.textContaining('%'), findsNothing);
+    });
+
+    testWidgets('a closed location shows no occupancy at all', (tester) async {
+      // maps.rit.edu keeps reporting after close: Gracie's read 29 while its
+      // own status said Closed Today. A pill there reads as an invitation.
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: OccupancyChip(
-              occupancy: Occupancy(count: 235, percentFull: null),
+        MaterialApp(
+          theme: AppTheme.from(
+            ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+          ),
+          home: const Scaffold(
+            body: DiningRow(
+              location: DiningLocation(
+                id: 1,
+                name: 'Gracie\'s',
+                isOpen: false,
+                occupancy: Occupancy(count: 29, maxOcc: 136, percentFull: 21),
+              ),
             ),
           ),
         ),
       );
-      expect(find.text('235 here'), findsOneWidget);
-      expect(find.textContaining('%'), findsNothing);
+      expect(find.text('21%'), findsNothing);
+      expect(find.textContaining('here'), findsNothing);
     });
   });
 
@@ -1273,6 +1295,16 @@ void _pinningAndChart() {
     );
 
     test('a missing hour or a zero baseline yields no claim', () {
+      // A closed location keeps reporting a count upstream: Gracie's read 29
+      // people while maps.rit.edu itself said Closed Today. Comparing that to
+      // a typical hour and calling it "quieter than usual" invites someone to
+      // a place they cannot get into.
+      final closed = busynessCaption(series(3, 10), 12, isOpen: false);
+      expect(closed, contains('Closed'));
+      expect(closed, isNot(contains('Quieter')));
+      expect(busynessCaption(series(3, 10), 12), contains('Quieter'),
+          reason: 'an open location still gets the comparison');
+
       expect(busynessCaption(series(10, 0), 12), isEmpty);
       expect(busynessCaption(const [], 12), isEmpty);
     });

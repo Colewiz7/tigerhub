@@ -1,13 +1,9 @@
-/// Illustrated empty states.
+/// Themed empty states.
 ///
 /// Empty is the normal state here, not an edge case. Visiting chefs is empty
 /// most days, an event list empties as soon as organizers are muted, and at
 /// night every dining category is closed. Before this they were all a single
 /// line of grey text in an otherwise blank card.
-///
-/// Art from Codex, spec in `assets/generated/SPEC.md`: 200x140 canvas, shown at
-/// 112x78 in a card and up to full size in a panel, 20px between illustration
-/// and copy.
 ///
 /// **Offline and source-down are status states, not loaders.** The spec is
 /// explicit and it matches CLAUDE.md 3.1: cached content stays at full opacity
@@ -16,26 +12,25 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
-/// The states Codex drew, paired with the copy from the spec.
+/// Each state uses a familiar symbol inside the same restrained circular badge
+/// language as the rest of the app. Empty states used to render cartoon tiger
+/// scenes, which made ordinary "nothing today" results feel like novelty art.
 enum EmptyKind {
-  noEvents('no-events', 'Nothing scheduled today'),
-  allClosed('all-closed', 'Everything is closed right now'),
-  noVisitingChefs('no-visiting-chefs', 'No visiting chefs today'),
-  notFound('not-found', 'No matches'),
-  offline('offline', 'Showing saved data'),
-  sourceDown('source-down', 'This source is unavailable');
+  noEvents(Icons.event_busy_rounded, 'Nothing scheduled today'),
+  allClosed(Icons.nightlight_round, 'Everything is closed right now'),
+  noVisitingChefs(Icons.room_service_rounded, 'No visiting chefs today'),
+  notFound(Icons.search_off_rounded, 'No matches'),
+  offline(Icons.cloud_off_rounded, 'Showing saved data'),
+  sourceDown(Icons.sync_problem_rounded, 'This source is unavailable');
 
-  const EmptyKind(this.asset, this.title);
+  const EmptyKind(this.icon, this.title);
 
-  final String asset;
+  final IconData icon;
 
   /// The default line. Callers may override it where they can say something
   /// more specific, but the wording should stay this plain.
   final String title;
-
-  String get path => 'assets/generated/empty-states/$asset.svg';
 }
 
 class EmptyState extends StatelessWidget {
@@ -58,8 +53,7 @@ class EmptyState extends StatelessWidget {
 
   final Widget? action;
 
-  /// Cards are tight on space, so the illustration is shown at 112x78 there
-  /// and at full size in a panel that has room for it.
+  /// Cards use a smaller mark than full panels.
   final bool compact;
 
   @override
@@ -67,25 +61,30 @@ class EmptyState extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
 
-    final width = compact ? 112.0 : 200.0;
-    final height = compact ? 78.0 : 140.0;
+    final markSize = compact ? 58.0 : 76.0;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Semantics comes from the label below, so the art is hidden from
-          // screen readers rather than announced twice.
           ExcludeSemantics(
-            child: SvgPicture.asset(
-              kind.path,
-              width: width,
-              height: height,
-              fit: BoxFit.contain,
+            child: Container(
+              width: markSize,
+              height: markSize,
+              decoration: BoxDecoration(
+                color: scheme.primaryContainer,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                kind.icon,
+                size: compact ? 29 : 38,
+                color: scheme.onPrimaryContainer,
+              ),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           Text(
             title ?? kind.title,
             textAlign: TextAlign.center,
@@ -93,16 +92,9 @@ class EmptyState extends StatelessWidget {
           ),
           if (detail != null) ...[
             const SizedBox(height: 6),
-            Text(
-              detail!,
-              textAlign: TextAlign.center,
-              style: text.bodySmall,
-            ),
+            Text(detail!, textAlign: TextAlign.center, style: text.bodySmall),
           ],
-          if (action != null) ...[
-            const SizedBox(height: 8),
-            action!,
-          ],
+          if (action != null) ...[const SizedBox(height: 8), action!],
         ],
       ),
     );
