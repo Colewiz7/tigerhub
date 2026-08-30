@@ -17,6 +17,7 @@ import '../services/api.dart';
 import '../services/preferences.dart';
 import '../theme/tokens.dart';
 import '../widgets/card_shell.dart';
+import '../widgets/glyph.dart';
 import '../widgets/copyable_address.dart';
 import '../widgets/freshness.dart';
 
@@ -91,6 +92,7 @@ class _HousingCardState extends State<HousingCard> {
     final areas = widget.areas.value?.data ?? const <HousingArea>[];
 
     return CardShell(
+      glyph: GlyphKind.housing,
       title: 'Mailing Address',
       state: widget.areas.state,
       fetchedAt: widget.areas.fetchedAt,

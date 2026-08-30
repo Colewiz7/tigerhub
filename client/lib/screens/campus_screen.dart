@@ -19,6 +19,7 @@ import '../theme/tokens.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 import '../widgets/places_sheet.dart';
+import '../widgets/glyph.dart';
 import '../widgets/section_nav.dart';
 import '../widgets/week_grid.dart';
 
@@ -75,6 +76,7 @@ class _CampusScreenState extends State<CampusScreen> {
           title: 'Mail',
           subtitle: 'Your address, and both post offices',
           icon: Icons.local_post_office_rounded,
+          glyph: GlyphKind.housing,
           builder: (context) => _MailSection(
             api: widget.api,
             areas: widget.areas,
@@ -86,6 +88,7 @@ class _CampusScreenState extends State<CampusScreen> {
           title: 'Find on campus',
           subtitle: 'Fountains, restrooms, blue lights, bus stops',
           icon: Icons.travel_explore_rounded,
+          glyph: GlyphKind.buildings,
           builder: (context) => _FindSection(api: widget.api, kinds: _kinds),
         ),
         SectionSpec(
@@ -98,6 +101,7 @@ class _CampusScreenState extends State<CampusScreen> {
         SectionSpec(
           id: 'shed',
           title: 'SHED makerspace',
+          glyph: GlyphKind.makerspace,
           subtitle: 'Live equipment availability',
           icon: Icons.construction_rounded,
           builder: (context) => _ShedSection(shed: _shed, rooms: _rooms),
@@ -125,6 +129,7 @@ class _MailSection extends StatelessWidget {
           HousingCard(areas: areas, api: api),
           const SizedBox(height: 22),
           _Heading(
+            glyph: GlyphKind.postOffice,
             title: 'Post offices',
             subtitle: 'Mail is collected at the counter after an email notice. '
                 'There are no mailboxes.',
@@ -224,6 +229,7 @@ class _ShedSection extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
         children: [
           _Heading(
+            glyph: GlyphKind.makerspace,
             title: 'SHED makerspace',
             subtitle: 'Equipment availability is live. Hours are hand '
                 'maintained, because the upstream hours feed is broken.',
@@ -243,12 +249,17 @@ class _Heading extends StatelessWidget {
     required this.subtitle,
     required this.state,
     this.fetchedAt,
+    this.glyph,
   });
 
   final String title;
   final String subtitle;
   final DataState state;
   final DateTime? fetchedAt;
+
+  /// Section identity, which is what the custom glyphs are for. Sections the
+  /// spec does not cover simply leave this null and show no glyph.
+  final GlyphKind? glyph;
 
   @override
   Widget build(BuildContext context) {
@@ -258,7 +269,15 @@ class _Heading extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: text.titleLarge),
+          Row(
+            children: [
+              if (glyph != null) ...[
+                Glyph(glyph!, size: 22),
+                const SizedBox(width: 9),
+              ],
+              Flexible(child: Text(title, style: text.titleLarge)),
+            ],
+          ),
           const SizedBox(height: 3),
           Text(subtitle, style: text.bodySmall),
           FreshnessLine(state: state, fetchedAt: fetchedAt),

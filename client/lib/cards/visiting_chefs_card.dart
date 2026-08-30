@@ -11,6 +11,7 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
+import '../widgets/glyph.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 
@@ -31,6 +32,8 @@ class VisitingChefsCard extends StatelessWidget {
     final all = result.value?.data ?? const <MenuItem>[];
 
     return CardShell(
+      // The toque is this section's identity, per the adoption spec.
+      glyph: GlyphKind.visitingChef,
       title: 'Visiting Chefs',
       state: result.state,
       fetchedAt: result.fetchedAt,
