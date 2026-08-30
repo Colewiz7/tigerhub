@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import '../widgets/empty_state.dart';
 import '../cards/housing_card.dart';
 import '../models/api_models.dart';
+import '../data/campus_time.dart';
+import '../services/todays_hours.dart';
 import '../services/api.dart';
 import '../theme/semantic.dart';
 import '../theme/tokens.dart';
@@ -374,6 +376,85 @@ String currentSeason(DateTime now) {
   return isSummer ? 'summer' : 'fall';
 }
 
+/// One line per service: what it is doing right now.
+///
+/// The full week stays underneath. This exists because reading a per service,
+/// per weekday, per season table to work out whether to walk over is the wrong
+/// amount of effort for the question.
+class _TodayLine extends StatelessWidget {
+  const _TodayLine({required this.today});
+
+  final TodaysHours today;
+
+  @override
+  Widget build(BuildContext context) {
+    if (today.state == ServiceState.unknown) return const SizedBox.shrink();
+
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final semantic = Semantic.of(context);
+
+    // Status is always stated in words. Colour never carries it alone.
+    final (label, detail) = switch (today.state) {
+      ServiceState.open => (
+          'OPEN',
+          'until ${_clockAt(today.closesAt!)}',
+        ),
+      // Between spans is not the same as finished, and saying "closed" alone
+      // would send someone away minutes before it reopens.
+      ServiceState.closedUntilLater => (
+          'CLOSED',
+          'opens ${_clockAt(today.opensAt!)}',
+        ),
+      ServiceState.closedForDay => (
+          'CLOSED',
+          today.spans.isEmpty ? 'not open today' : 'for the day',
+        ),
+      ServiceState.unknown => ('', ''),
+    };
+
+    final accent =
+        today.isOpen ? semantic.open : scheme.onSurfaceVariant;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: accent),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _serviceLabel(today.service),
+              style: text.bodyMedium?.copyWith(color: scheme.onSurface),
+            ),
+          ),
+          Text(
+            '$label \u00b7 $detail',
+            style: text.bodySmall?.copyWith(
+              color: today.isOpen ? accent : scheme.onSurfaceVariant,
+              fontVariations: Weights.medium,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// An instant as `4:30 PM`. Distinct from `_time`, which formats the config's
+/// `"16:30"` strings; this one takes a resolved moment.
+String _clockAt(DateTime instant) {
+  final fields = CampusTime.fieldsOf(instant);
+  final hour = fields.hour % 12 == 0 ? 12 : fields.hour % 12;
+  final suffix = fields.hour < 12 ? 'AM' : 'PM';
+  if (fields.minute == 0) return '$hour $suffix';
+  return '$hour:${fields.minute.toString().padLeft(2, '0')} $suffix';
+}
+
 class _PostOfficeBlock extends StatelessWidget {
   const _PostOfficeBlock({required this.office});
 
@@ -437,7 +518,20 @@ class _PostOfficeBlock extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
+
+            // The answer to "can I go now", before the week's table. The table
+            // is for planning; this is for standing outside deciding.
+            for (final service in servicesIn(rules))
+              _TodayLine(
+                today: todaysHours(
+                  service: service,
+                  rules: rules,
+                  now: CampusTime.nowUtc(),
+                ),
+              ),
+
+            const SizedBox(height: 16),
             for (final service in services.entries) ...[
               _ServiceHours(service: service.key, rules: service.value),
               const SizedBox(height: 14),
