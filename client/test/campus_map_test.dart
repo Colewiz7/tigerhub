@@ -239,10 +239,11 @@ void main() {
 
     test('a changed feature list rebuilds it', () {
       final a = CampusMapProjection(const [west, east], const Size(900, 500));
-      final b = CampusMapProjection(
-        const [west, east, remote],
-        const Size(900, 500),
-      );
+      final b = CampusMapProjection(const [
+        west,
+        east,
+        remote,
+      ], const Size(900, 500));
       expect(identical(a, b), isFalse);
     });
 
@@ -290,15 +291,22 @@ void main() {
     await tester.pumpWidget(app());
 
     expect(find.text('All places'), findsOneWidget);
-    await tester.tap(find.byTooltip('Filter map places'));
-    await tester.pumpAndSettle();
     expect(find.text('Water fountains'), findsOneWidget);
     expect(find.text('Defibrillators'), findsOneWidget);
-    expect(find.byTooltip('Fit campus'), findsOneWidget);
+    expect(find.text('West fountain'), findsNothing);
+    expect(find.text('East AED'), findsNothing);
+
+    await tester.tap(find.text('Water fountains'));
+    await tester.pumpAndSettle();
     expect(find.text('West fountain'), findsOneWidget);
-    expect(find.text('East AED'), findsOneWidget);
+    expect(find.text('East AED'), findsNothing);
     expect(find.byIcon(Icons.water_drop_rounded), findsWidgets);
-    expect(find.byIcon(Icons.health_and_safety_rounded), findsWidgets);
+
+    await tester.tap(find.byTooltip('Filter map places'));
+    await tester.pumpAndSettle();
+    expect(find.text('Water fountains'), findsWidgets);
+    expect(find.text('Defibrillators'), findsOneWidget);
+    expect(find.byTooltip('Fit campus'), findsOneWidget);
     expect(find.byType(CustomPaint), findsWidgets);
   });
 
@@ -307,15 +315,18 @@ void main() {
     // and an olive one is grass.
     await tester.pumpWidget(app());
 
-    expect(find.text('Building'), findsOneWidget);
-    expect(find.text('Parking'), findsOneWidget);
-    expect(find.text('Green space'), findsOneWidget);
+    // CLAUDE.md 4: colour is never the only carrier. The building categories
+    // are told apart by hue, so every family the map paints has to be named
+    // where the reader can see it, and the legend is that place.
+    for (final family in MapFamily.values) {
+      expect(find.text(family.label), findsOneWidget, reason: family.name);
+    }
   });
 
   test('each family is painted differently from the others', () {
     // The legend is only truthful if the three treatments actually differ.
     final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFF76902));
-    final built = mapFamilyPaints(MapFamily.built, scheme);
+    final built = mapFamilyPaints(MapFamily.residential, scheme);
     final parking = mapFamilyPaints(MapFamily.parking, scheme);
     final open = mapFamilyPaints(MapFamily.open, scheme);
 
@@ -361,6 +372,8 @@ void main() {
 
   testWidgets('selecting the list shows useful place details', (tester) async {
     await tester.pumpWidget(app());
+    await tester.tap(find.text('Defibrillators'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('East AED'));
     await tester.pump();
 

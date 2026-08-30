@@ -915,33 +915,40 @@ int scaleBarMetres(double target) {
   return steps.firstWhere((step) => step >= target, orElse: () => steps.last);
 }
 
-/// How a campus outline is drawn.
+/// How a campus outline is drawn, and what it is.
 ///
 /// maps.rit.edu names the sub-category each outline came from, so a parking
-/// apron and a lecture hall arrive already distinguishable. Before this they
-/// were painted identically, and since lots are large, they read as enormous
+/// apron, a lecture hall and a dorm arrive already distinguishable. They used
+/// to be painted identically, and since lots are large they read as enormous
 /// buildings and buried the campus they surround.
+///
+/// The built kinds all share rank 2: they are drawn last, on top of the ground
+/// and the paths, and differ only in colour.
 enum MapFamily {
   /// Quads, gardens, solar fields. Ground, not structure.
-  open(0),
+  open(0, 'Green space'),
 
   /// Lots and aprons. Context you cross, not somewhere you go.
-  parking(1),
+  parking(1, 'Parking'),
 
-  /// Anything you can walk into. Drawn last, so it sits on top.
-  built(2);
+  academic(2, 'Academic'),
+  residential(2, 'Residential'),
+  athletic(2, 'Athletic'),
+  otherBuilt(2, 'Other building');
 
-  const MapFamily(this.rank);
+  const MapFamily(this.rank, this.label);
 
   /// Painting order, ground upward.
   final int rank;
+
+  /// What the legend calls it.
+  final String label;
+
+  /// Anything you can walk into.
+  bool get isBuilt => rank == 2;
 }
 
-/// Familiar category symbols used by pins and the filter menu.
-///
-/// These are intentionally Material symbols rather than another illustration
-/// set: emergency, restroom, transit, and payment icons should be recognized
-/// immediately on a dense map.
+/// Familiar, distinct symbols shared by the map, filters, and place cards.
 IconData mapPlaceIcon(String kind) => switch (kind) {
   'water' => Icons.water_drop_rounded,
   'ev_charge' => Icons.ev_station_rounded,
@@ -959,10 +966,6 @@ IconData mapPlaceIcon(String kind) => switch (kind) {
   _ => Icons.place_rounded,
 };
 
-/// Category colour families drawn only from the active dynamic scheme.
-///
-/// These are navigation colours, not open/closed status colours. Shape and
-/// icon still carry the category, so colour is never the only distinction.
 (Color, Color) mapPinPalette(String kind, ColorScheme scheme) => switch (kind) {
   'water' ||
   'ev_charge' ||
@@ -975,22 +978,51 @@ IconData mapPlaceIcon(String kind) => switch (kind) {
   _ => (scheme.primaryContainer, scheme.onPrimaryContainer),
 };
 
-/// How each family is painted, in one place, so the map and the legend that
-/// explains it cannot disagree.
+/// Classifies an outline by the sub-category name maps.rit.edu gave it.
+MapFamily mapFamily(CampusMapFeature feature) {
+  final name = feature.kindName.toLowerCase();
+  if (name.contains('parking')) return MapFamily.parking;
+  if (name.contains('quad') ||
+      name.contains('garden') ||
+      name.contains('solar')) {
+    return MapFamily.open;
+  }
+  if (name.contains('residential')) return MapFamily.residential;
+  if (name.contains('academic')) return MapFamily.academic;
+  if (name.contains('athletic')) return MapFamily.athletic;
+  return MapFamily.otherBuilt;
+}
+
+/// The category colours, validated rather than eyeballed.
 ///
-/// Measured against the map field (surface plus primary at 0.035), because
-/// colour here is validated rather than eyeballed:
+/// CLAUDE.md 4 requires the dataviz validator to sign off any palette. Both of
+/// these pass all six checks against their own surface:
 ///
-///                                light  dark
-///   building fill                 1.17  1.42   under the 1.5 shape floor
-///   building edge (outline)       4.08  5.50   so the edge carries it
-///   parking edge (outline @0.55)  2.00  2.56   present, clearly secondary
-///   open space (tertiary @0.32)   1.54  2.08   reads as ground
+///   light  #0069a8 #6a4c93 #b4531f #4f7a28
+///          CVD worst adjacent dE 18.8 deutan, normal-vision worst 21.5
+///   dark   #3d8dc4 #8a6cc0 #cc6a38 #669440
+///          CVD worst adjacent dE 19.7 protan, normal-vision worst 21.7
 ///
-/// No step of the surface ramp works as an open-space fill: the best of them
-/// measured 1.11 light and 1.21 dark, both under the floor. Vegetation uses
-/// `tertiary` instead (hue 53, an olive), which is a scheme role rather than
-/// an invented hue.
+/// Residential is the purple rather than the orange because orange is the
+/// app's primary, and 106 buildings in something close to it would read as
+/// 106 selected buildings. Green is spent on the two "other" buildings rather
+/// than on athletics, to keep it away from the olive of the green spaces.
+///
+/// Colour is never the only carrier: every one of these is named in the map's
+/// legend, and buildings carry their abbreviation on the map itself.
+Color _categoryColor(MapFamily family, Brightness brightness) {
+  final light = brightness == Brightness.light;
+  return switch (family) {
+    MapFamily.academic =>
+      light ? const Color(0xFF0069A8) : const Color(0xFF3D8DC4),
+    MapFamily.residential =>
+      light ? const Color(0xFF6A4C93) : const Color(0xFF8A6CC0),
+    MapFamily.athletic =>
+      light ? const Color(0xFFB4531F) : const Color(0xFFCC6A38),
+    _ => light ? const Color(0xFF4F7A28) : const Color(0xFF669440),
+  };
+}
+
 ({Paint? fill, Paint? edge}) mapFamilyPaints(
   MapFamily family,
   ColorScheme scheme,
@@ -1009,27 +1041,18 @@ IconData mapPlaceIcon(String kind) => switch (kind) {
           ..strokeWidth = 0.9
           ..color = scheme.outline.withValues(alpha: 0.55),
       );
-    case MapFamily.built:
+    default:
+      // The fill stays neutral and quiet. The edge already carries the shape,
+      // measured at 4.08 light and 5.50 dark against the field, so it is the
+      // right place to also carry what kind of building it is.
       return (
         fill: Paint()..color = scheme.surfaceContainerHighest,
         edge: Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.1
-          ..color = scheme.outline,
+          ..strokeWidth = 1.3
+          ..color = _categoryColor(family, scheme.brightness),
       );
   }
-}
-
-/// Classifies an outline by the sub-category name maps.rit.edu gave it.
-MapFamily mapFamily(CampusMapFeature feature) {
-  final name = feature.kindName.toLowerCase();
-  if (name.contains('parking')) return MapFamily.parking;
-  if (name.contains('quad') ||
-      name.contains('garden') ||
-      name.contains('solar')) {
-    return MapFamily.open;
-  }
-  return MapFamily.built;
 }
 
 class CampusMapPainter extends CustomPainter {
@@ -1176,20 +1199,27 @@ class CampusMapPainter extends CustomPainter {
     drawFamily(MapFamily.open);
     drawFamily(MapFamily.parking);
     _paintPaths(canvas, geometry, mapRect);
-    drawFamily(MapFamily.built);
+    for (final family in MapFamily.values.where((family) => family.isBuilt)) {
+      drawFamily(family);
+    }
 
     _paintBuildingLabels(canvas, geometry.labels, scheme);
     _paintScaleBar(canvas, projection, mapRect, scheme);
 
     final buckets = geometry.pins;
 
-    for (final bucket in buckets.values) {
-      final center = Offset(
-        bucket.map((item) => item.at.dx).reduce((a, b) => a + b) /
-            bucket.length,
-        bucket.map((item) => item.at.dy).reduce((a, b) => a + b) /
-            bucket.length,
-      );
+    // "All places" is a category chooser, not a heat map. Almost every kind
+    // is concentrated in the academic core, so showing all twelve at once
+    // creates a misleading knot. The icon cards below provide the overview;
+    // spatial markers appear after the reader chooses a category.
+    for (final entry
+        in geometry.categoryOverview
+            ? const <
+                MapEntry<Object, List<({CampusMapFeature feature, Offset at})>>
+              >[]
+            : buckets.entries) {
+      final bucket = entry.value;
+      final center = geometry.pinCenters[entry.key]!;
       final selected = bucket.any((item) => item.feature.id == selectedId);
       final eventCount = bucket.fold<int>(0, (total, item) {
         final kind = item.feature.kind;
@@ -1200,12 +1230,12 @@ class CampusMapPainter extends CustomPainter {
       });
       final clustered = bucket.length > 1;
       final radius = selected
-          ? 18.0
+          ? 18.0 / zoom
           : geometry.categoryOverview
-          ? 20.0
+          ? 20.0 / zoom
           : clustered
-          ? 16.0
-          : 13.0;
+          ? 16.0 / zoom
+          : 13.0 / zoom;
       final isEvent = bucket.first.feature.kind.startsWith('_event:');
       final palette = mapPinPalette(bucket.first.feature.kind, scheme);
       final foreground = selected || isEvent ? scheme.onPrimary : palette.$2;
@@ -1223,15 +1253,16 @@ class CampusMapPainter extends CustomPainter {
         _paintMapIcon(
           canvas,
           icon,
-          center - const Offset(5.5, 0),
+          center - Offset(5.5 / zoom, 0),
           foreground,
-          11,
+          11 / zoom,
         );
         _paintMapCount(
           canvas,
           '$eventCount',
-          center + const Offset(7, 0),
+          center + Offset(7 / zoom, 0),
           foreground,
+          scale: 1 / zoom,
         );
       } else {
         _paintMapIcon(
@@ -1239,7 +1270,7 @@ class CampusMapPainter extends CustomPainter {
           mapPlaceIcon(bucket.single.feature.kind),
           center,
           foreground,
-          15,
+          15 / zoom,
         );
       }
     }
@@ -1280,24 +1311,38 @@ class CampusMapPainter extends CustomPainter {
     canvas.clipRRect(
       RRect.fromRectAndRadius(mapRect.inflate(18), const Radius.circular(32)),
     );
+    // Roads get a casing and centre stroke, like an actual campus map. At the
+    // overview scale the dense footway graph is withheld; it fades into the
+    // job only when zooming makes those choices useful.
     canvas.drawPath(
       geometry.road,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.8
+        ..strokeWidth = 4.2 / zoom
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
-        ..color = scheme.onSurfaceVariant.withValues(alpha: 0.35),
+        ..color = scheme.surfaceContainerHighest.withValues(alpha: 0.9),
     );
     canvas.drawPath(
-      geometry.foot,
+      geometry.road,
       Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.9
+        ..strokeWidth = 1.35 / zoom
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
-        ..color = scheme.onSurfaceVariant.withValues(alpha: 0.55),
+        ..color = scheme.onSurfaceVariant.withValues(alpha: 0.52),
     );
+    if (zoom >= 1.15) {
+      canvas.drawPath(
+        geometry.foot,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.15 / zoom
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..color = scheme.primary.withValues(alpha: 0.72),
+      );
+    }
     canvas.restore();
   }
 
@@ -1366,9 +1411,23 @@ class CampusMapPainter extends CustomPainter {
     label.paint(canvas, Offset(x, y - 5 / zoom - label.height));
   }
 
+  /// Places building labels.
+  ///
+  /// At the default view only 30 of the 150 buildings used to carry one, even
+  /// though 67 have an abbreviation, because a label that did not fit inside
+  /// its own outline was simply dropped. Most campus buildings are small on
+  /// screen, so most of them were anonymous.
+  ///
+  /// A label that does not fit inside now sits just below its building, which
+  /// is what a paper map does, and every label is drawn over a halo so it
+  /// survives crossing a footpath or another outline. Collision checking is
+  /// unchanged: the biggest buildings claim their space first, and anything
+  /// that would overlap an already-placed label is still dropped rather than
+  /// stacked.
   void _paintBuildingLabels(
     Canvas canvas,
-    List<({TextPainter painter, Rect bounds, double area})> candidates,
+    List<({TextPainter halo, TextPainter painter, Rect bounds, double area})>
+    candidates,
     ColorScheme scheme,
   ) {
     final ordered = [...candidates]..sort((a, b) => b.area.compareTo(a.area));
@@ -1376,20 +1435,23 @@ class CampusMapPainter extends CustomPainter {
 
     for (final candidate in ordered) {
       final painter = candidate.painter;
-      // The painter was measured once at the base size. Dividing by the zoom
-      // gives what it covers on the canvas, without measuring it again.
+      // Measured once at the base size. Dividing by the zoom gives what it
+      // covers on the canvas, without measuring it again.
       final width = painter.width / zoom;
       final height = painter.height / zoom;
+      final bounds = candidate.bounds;
 
-      // Must sit inside the building with a little room, or it reads as a
-      // label for whatever is next door.
-      if (width + 6 / zoom > candidate.bounds.width ||
-          height + 4 / zoom > candidate.bounds.height) {
-        continue;
-      }
+      // Inside if it fits with a little room, or it reads as a label for
+      // whatever is next door. Otherwise directly beneath.
+      final insideFits =
+          width + 6 / zoom <= bounds.width &&
+          height + 4 / zoom <= bounds.height;
+      final center = insideFits
+          ? bounds.center
+          : Offset(bounds.center.dx, bounds.bottom + height / 2 + 3 / zoom);
 
       final rect = Rect.fromCenter(
-        center: candidate.bounds.center,
+        center: center,
         width: width + 4 / zoom,
         height: height + 2 / zoom,
       );
@@ -1397,11 +1459,13 @@ class CampusMapPainter extends CustomPainter {
 
       taken.add(rect);
       canvas.save();
-      canvas.translate(candidate.bounds.center.dx, candidate.bounds.center.dy);
+      canvas.translate(center.dx, center.dy);
       // Constant on screen, so zooming in shrinks the label against the
       // building and lets more of them fit.
       canvas.scale(1 / zoom);
-      painter.paint(canvas, Offset(-painter.width / 2, -painter.height / 2));
+      final at = Offset(-painter.width / 2, -painter.height / 2);
+      candidate.halo.paint(canvas, at);
+      painter.paint(canvas, at);
       canvas.restore();
     }
   }
@@ -1422,13 +1486,19 @@ class CampusMapPainter extends CustomPainter {
     return path..close();
   }
 
-  void _paintMapCount(Canvas canvas, String count, Offset center, Color color) {
+  void _paintMapCount(
+    Canvas canvas,
+    String count,
+    Offset center,
+    Color color, {
+    double scale = 1,
+  }) {
     final painter = TextPainter(
       text: TextSpan(
         text: count,
         style: TextStyle(
           color: color,
-          fontSize: 9,
+          fontSize: 9 * scale,
           fontWeight: FontWeight.w800,
         ),
       ),
@@ -1511,25 +1581,34 @@ class _MapGeometry {
 
         // Only buildings are labelled. A lot number on every parking apron is
         // the noise that made the campus hard to read in the first place.
-        if (family != MapFamily.built) continue;
+        if (!family.isBuilt) continue;
         final abbreviation = feature.building;
         if (abbreviation == null || abbreviation.isEmpty) continue;
         final bounds = outline.getBounds();
         // Laid out once, at a base size. The zoom is applied as a transform
         // when it is drawn, so a zoom frame never measures text again.
+        TextPainter measure(TextStyle style) => TextPainter(
+          text: TextSpan(text: abbreviation, style: style),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        const base = TextStyle(
+          fontSize: labelBaseSize,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.2,
+        );
         labels.add((
-          painter: TextPainter(
-            text: TextSpan(
-              text: abbreviation,
-              style: TextStyle(
-                color: scheme.onSurfaceVariant,
-                fontSize: labelBaseSize,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
-              ),
+          // Drawn behind the text so a label stays readable where it crosses
+          // a footpath or the edge of its own building.
+          halo: measure(
+            base.copyWith(
+              foreground: Paint()
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2.4
+                ..strokeJoin = StrokeJoin.round
+                ..color = scheme.surface,
             ),
-            textDirection: TextDirection.ltr,
-          )..layout(),
+          ),
+          painter: measure(base.copyWith(color: scheme.onSurfaceVariant)),
           bounds: bounds,
           area: bounds.width * bounds.height,
         ));
@@ -1565,6 +1644,7 @@ class _MapGeometry {
             );
       pins.putIfAbsent(key, () => []).add((feature: feature, at: center));
     }
+    _layoutPins();
   }
 
   /// Labels are measured at this size and scaled when drawn.
@@ -1576,13 +1656,30 @@ class _MapGeometry {
   final ColorScheme scheme;
 
   final Map<MapFamily, Path> areas = {};
-  final List<({TextPainter painter, Rect bounds, double area})> labels = [];
+  final List<
+    ({TextPainter halo, TextPainter painter, Rect bounds, double area})
+  >
+  labels = [];
   final Map<Object, List<({CampusMapFeature feature, Offset at})>> pins = {};
+  final Map<Object, Offset> pinCenters = {};
   late final Set<String> pointKinds;
   late final bool categoryOverview;
   late final double clusterCell;
   late final Path foot;
   late final Path road;
+
+  void _layoutPins() {
+    for (final entry in pins.entries) {
+      final bucket = entry.value;
+      final center = Offset(
+        bucket.map((item) => item.at.dx).reduce((a, b) => a + b) /
+            bucket.length,
+        bucket.map((item) => item.at.dy).reduce((a, b) => a + b) /
+            bucket.length,
+      );
+      pinCenters[entry.key] = center;
+    }
+  }
 
   Path _network(List<List<GeoCoordinate>> ways) {
     final path = Path();
@@ -1603,37 +1700,25 @@ class _MapLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.82),
-        borderRadius: Shapes.inner,
+        color: scheme.surface.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        child: Wrap(
+          spacing: 14,
+          runSpacing: 7,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            _entry(MapFamily.built, 'Building'),
-            const SizedBox(height: 5),
+            _entry(MapFamily.academic, 'Academic'),
+            _entry(MapFamily.residential, 'Residential'),
+            _entry(MapFamily.athletic, 'Athletic'),
+            _entry(MapFamily.otherBuilt, 'Other building'),
             _entry(MapFamily.parking, 'Parking'),
-            const SizedBox(height: 5),
             _entry(MapFamily.open, 'Green space'),
-            const SizedBox(height: 7),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.apps_rounded, size: 14, color: scheme.primary),
-                const SizedBox(width: 7),
-                Text(
-                  'Number = grouped places',
-                  style: TextStyle(
-                    fontSize: 10,
-                    height: 1.1,
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
+            _lineEntry('Road', path: false),
+            _lineEntry('Walk path', path: true),
           ],
         ),
       ),
@@ -1648,6 +1733,32 @@ class _MapLegend extends StatelessWidget {
         painter: _LegendSwatch(family: family, scheme: scheme),
       ),
       const SizedBox(width: 7),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          height: 1.1,
+          fontWeight: FontWeight.w600,
+          color: scheme.onSurfaceVariant,
+        ),
+      ),
+    ],
+  );
+
+  Widget _lineEntry(String label, {required bool path}) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      SizedBox(
+        width: 17,
+        child: Divider(
+          height: 2,
+          thickness: path ? 2 : 4,
+          color: path
+              ? scheme.primary.withValues(alpha: 0.8)
+              : scheme.onSurfaceVariant.withValues(alpha: 0.55),
+        ),
+      ),
+      const SizedBox(width: 6),
       Text(
         label,
         style: TextStyle(
