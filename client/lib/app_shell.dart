@@ -18,6 +18,7 @@ import 'screens/dining_screen.dart';
 import 'screens/events_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'services/cache.dart';
+import 'services/subscriptions.dart';
 import 'services/preferences.dart';
 import 'services/api.dart';
 import 'widgets/wordmark.dart';
@@ -99,6 +100,7 @@ class _AppShellState extends State<AppShell> {
   @override
   void dispose() {
     _ticker?.cancel();
+    _subscriptions.dispose();
     Preferences.instance.removeListener(_onPreferences);
     super.dispose();
   }
@@ -127,19 +129,28 @@ class _AppShellState extends State<AppShell> {
     await ResponseCache.instance.writeOrder('cards_hidden', hidden);
   }
 
+  final _subscriptions = Subscriptions();
+
   Future<void> _refresh() async {
-    widget.api.dining().listen((r) {
-      if (mounted) setState(() => _dining = r);
-    });
-    widget.api.events().listen((r) {
-      if (mounted) setState(() => _events = r);
-    });
-    widget.api.visitingChefs().listen((r) {
-      if (mounted) setState(() => _chefs = r);
-    });
-    widget.api.housingAreas().listen((r) {
-      if (mounted) setState(() => _areas = r);
-    });
+    // Replace the previous tick's subscriptions rather than stacking on them.
+    // Without this the ticker added four every two minutes, and stale ones
+    // kept delivering, so an older result could land after a newer one and
+    // overwrite it.
+    _subscriptions.cancelAll();
+
+    _subscriptions
+      ..add(widget.api.dining().listen((r) {
+        if (mounted) setState(() => _dining = r);
+      }))
+      ..add(widget.api.events().listen((r) {
+        if (mounted) setState(() => _events = r);
+      }))
+      ..add(widget.api.visitingChefs().listen((r) {
+        if (mounted) setState(() => _chefs = r);
+      }))
+      ..add(widget.api.housingAreas().listen((r) {
+        if (mounted) setState(() => _areas = r);
+      }));
   }
 
   void _go(int index, {bool animate = true}) => setState(() {

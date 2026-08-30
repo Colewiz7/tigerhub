@@ -23,6 +23,7 @@ import '../widgets/glyph.dart';
 import '../widgets/campus_map.dart';
 import '../widgets/section_nav.dart';
 import '../widgets/week_grid.dart';
+import '../services/subscriptions.dart';
 
 class CampusScreen extends StatefulWidget {
   const CampusScreen({
@@ -66,27 +67,37 @@ class _CampusScreenState extends State<CampusScreen> {
     state: DataState.priming,
   );
 
+  /// Held so they can be cancelled. Dangling subscriptions let a previous
+  /// visit's results land after the current ones and overwrite them.
+  final _subscriptions = Subscriptions();
+
   @override
   void initState() {
     super.initState();
-    widget.api.postOffices().listen((r) {
+    _subscriptions.add(widget.api.postOffices().listen((r) {
       if (mounted) setState(() => _offices = r);
-    });
-    widget.api.makerspaceHours().listen((r) {
+    }));
+    _subscriptions.add(widget.api.makerspaceHours().listen((r) {
       if (mounted) setState(() => _shed = r);
-    });
-    widget.api.makerspaceRooms().listen((r) {
+    }));
+    _subscriptions.add(widget.api.makerspaceRooms().listen((r) {
       if (mounted) setState(() => _rooms = r);
-    });
-    widget.api.recreation().listen((r) {
+    }));
+    _subscriptions.add(widget.api.recreation().listen((r) {
       if (mounted) setState(() => _rec = r);
-    });
-    widget.api.placeKinds().listen((r) {
+    }));
+    _subscriptions.add(widget.api.placeKinds().listen((r) {
       if (mounted) setState(() => _kinds = r);
-    });
-    widget.api.campusMap().listen((r) {
+    }));
+    _subscriptions.add(widget.api.campusMap().listen((r) {
       if (mounted) setState(() => _map = r);
-    });
+    }));
+  }
+
+  @override
+  void dispose() {
+    _subscriptions.dispose();
+    super.dispose();
   }
 
   @override
