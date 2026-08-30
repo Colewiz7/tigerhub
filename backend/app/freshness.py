@@ -23,6 +23,7 @@ EXPECTED_INTERVAL_MINUTES = {
     "campusgroups": settings.INTERVAL_EVENTS_MINUTES,
     "drupal": settings.INTERVAL_EVENTS_MINUTES,
     "athletics": settings.INTERVAL_EVENTS_MINUTES,
+    "campus_places": settings.INTERVAL_PLACES_MINUTES,
     "makerspace_equipment": settings.INTERVAL_MAKERSPACE_MINUTES,
     "maps_occupancy": settings.INTERVAL_OCCUPANCY_MINUTES,
     "recreation_hours": settings.INTERVAL_RECREATION_MINUTES,

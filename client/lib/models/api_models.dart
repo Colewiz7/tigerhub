@@ -415,6 +415,65 @@ class OccupancyHistory {
       );
 }
 
+class CampusPlace {
+  const CampusPlace({
+    required this.id,
+    required this.kind,
+    required this.kindName,
+    required this.name,
+    this.building,
+    this.floor,
+    this.room,
+    this.note,
+  });
+
+  final int id;
+  final String kind;
+  final String kindName;
+  final String name;
+  final String? building;
+  final String? floor;
+  final String? room;
+
+  /// The most useful field: "Corner of hallway, next to bathrooms".
+  final String? note;
+
+  factory CampusPlace.fromJson(Map<String, dynamic> json) => CampusPlace(
+        id: json['id'] as int? ?? 0,
+        kind: json['kind'] as String? ?? '',
+        kindName: json['kind_name'] as String? ?? '',
+        name: json['name'] as String? ?? '',
+        building: json['building'] as String?,
+        floor: json['floor'] as String?,
+        room: json['room'] as String?,
+        note: json['note'] as String?,
+      );
+
+  /// "GOL 1st floor, room 1749"
+  String get where {
+    final bits = [
+      ?building,
+      ?floor,
+      if (room != null) 'room $room',
+    ];
+    return bits.join('  ');
+  }
+}
+
+class PlaceKind {
+  const PlaceKind({required this.kind, required this.kindName, required this.count});
+
+  final String kind;
+  final String kindName;
+  final int count;
+
+  factory PlaceKind.fromJson(Map<String, dynamic> json) => PlaceKind(
+        kind: json['kind'] as String? ?? '',
+        kindName: json['kind_name'] as String? ?? '',
+        count: json['count'] as int? ?? 0,
+      );
+}
+
 class RecreationSpan {
   const RecreationSpan({required this.opensAt, required this.closesAt});
 

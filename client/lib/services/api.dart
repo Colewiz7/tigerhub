@@ -157,6 +157,16 @@ class ApiClient {
   Stream<Result<OccupancyHistory>> occupancyHistory(int locationId) =>
       watch('/dining/$locationId/occupancy', OccupancyHistory.fromJson);
 
+  Stream<Result<Collection<PlaceKind>>> placeKinds() => watch(
+        '/campus/places',
+        (j) => Collection.fromJson(j, PlaceKind.fromJson),
+      );
+
+  Stream<Result<Collection<CampusPlace>>> places(String kind) => watch(
+        '/campus/places/$kind',
+        (j) => Collection.fromJson(j, CampusPlace.fromJson),
+      );
+
   Stream<Result<Collection<RecreationFacility>>> recreation() => watch(
         '/recreation/hours',
         (j) => Collection.fromJson(j, RecreationFacility.fromJson),

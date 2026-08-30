@@ -122,6 +122,25 @@ class RoomSummary(BaseModel):
     in_use: int
 
 
+class CampusPlace(BaseModel):
+    id: int
+    kind: str
+    kind_name: str
+    name: str
+    building: str | None = None
+    building_no: str | None = None
+    floor: str | None = None
+    room: str | None = None
+    note: str | None = None
+    mdo_id: int | None = None
+
+
+class PlaceKind(BaseModel):
+    kind: str
+    kind_name: str
+    count: int
+
+
 class RecreationSpan(BaseModel):
     opens_at: str
     closes_at: str
