@@ -57,29 +57,71 @@ class Semantic extends ThemeExtension<Semantic> {
   factory Semantic.from(ColorScheme scheme) {
     final dark = scheme.brightness == Brightness.dark;
 
-    Color tone(Color seed, {required double lightness}) {
+    Color tone(
+      Color seed, {
+      required double lightness,
+      required double chromaScale,
+    }) {
       final harmonized = _harmonize(seed, scheme.primary);
       final hct = Hct.fromInt(harmonized.toARGB32());
       hct.tone = lightness;
+      hct.chroma *= chromaScale;
       return Color(hct.toInt());
     }
 
-    // Foreground tones sit high in dark mode and low in light mode so text
-    // stays legible either way.
-    final fg = dark ? 78.0 : 40.0;
-    final container = dark ? 26.0 : 90.0;
-    final onContainer = dark ? 90.0 : 20.0;
+    // Pull all three status families toward the row surface and shed more than
+    // half their chroma. They remain legible state cues, while the primary
+    // keeps the strongest color contrast on the screen.
+    final surfaceTone =
+        Hct.fromInt(scheme.surfaceContainerHigh.toARGB32()).tone;
+    final fg = dark ? surfaceTone + 42.0 : surfaceTone - 42.0;
+    final container = dark ? surfaceTone + 5.0 : surfaceTone - 5.0;
+    final onContainer = dark ? surfaceTone + 58.0 : surfaceTone - 58.0;
+    const foregroundChroma = 0.45;
+    const containerChroma = 0.22;
 
     return Semantic(
-      open: tone(_greenSeed, lightness: fg),
-      onOpen: tone(_greenSeed, lightness: onContainer),
-      openContainer: tone(_greenSeed, lightness: container),
+      open: tone(
+        _greenSeed,
+        lightness: fg,
+        chromaScale: foregroundChroma,
+      ),
+      onOpen: tone(
+        _greenSeed,
+        lightness: onContainer,
+        chromaScale: foregroundChroma,
+      ),
+      openContainer: tone(
+        _greenSeed,
+        lightness: container,
+        chromaScale: containerChroma,
+      ),
       // Closed is muted rather than alarming. Nothing is wrong, it is just shut.
-      closed: tone(_redSeed, lightness: dark ? 58.0 : 52.0),
-      closedContainer: tone(_redSeed, lightness: dark ? 20.0 : 93.0),
-      busy: tone(_amberSeed, lightness: fg),
-      onBusy: tone(_amberSeed, lightness: onContainer),
-      busyContainer: tone(_amberSeed, lightness: container),
+      closed: tone(
+        _redSeed,
+        lightness: fg,
+        chromaScale: foregroundChroma,
+      ),
+      closedContainer: tone(
+        _redSeed,
+        lightness: container,
+        chromaScale: containerChroma,
+      ),
+      busy: tone(
+        _amberSeed,
+        lightness: fg,
+        chromaScale: foregroundChroma,
+      ),
+      onBusy: tone(
+        _amberSeed,
+        lightness: onContainer,
+        chromaScale: foregroundChroma,
+      ),
+      busyContainer: tone(
+        _amberSeed,
+        lightness: container,
+        chromaScale: containerChroma,
+      ),
     );
   }
 

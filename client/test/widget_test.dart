@@ -21,6 +21,7 @@ import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
 import 'package:tigerhub/widgets/more_row.dart';
+import 'package:tigerhub/screens/campus_screen.dart' show currentSeason;
 import 'package:tigerhub/widgets/scalloped_badge.dart';
 import 'package:tigerhub/widgets/occupancy_chip.dart';
 
@@ -384,6 +385,7 @@ void main() {
   _screenshotReview();
   _visualStructure();
   _statusAndGrouping();
+  _quickWins();
 
   test('age formatting', () {
     final now = DateTime.now();
@@ -950,6 +952,53 @@ void _statusAndGrouping() {
       ]);
       // The one with a sensor leads its group.
       expect(groups.single.value.first.name, 'A market');
+    });
+  });
+}
+
+/// Quick wins from the friend review.
+void _quickWins() {
+  group('post office hours show only the current season', () {
+    test('fall term for the academic year', () {
+      expect(currentSeason(DateTime(2026, 9, 15)), 'fall');
+      expect(currentSeason(DateTime(2026, 12, 1)), 'fall');
+      expect(currentSeason(DateTime(2027, 3, 4)), 'fall');
+      // Fall hours begin Aug 22 per RIT's own page.
+      expect(currentSeason(DateTime(2026, 8, 22)), 'fall');
+    });
+
+    test('summer for the summer months', () {
+      expect(currentSeason(DateTime(2026, 6, 15)), 'summer');
+      expect(currentSeason(DateTime(2026, 7, 1)), 'summer');
+      expect(currentSeason(DateTime(2026, 8, 21)), 'summer');
+    });
+  });
+
+  group('semantic open is brighter than the other states', () {
+    double lum(Color c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+
+    test('open outranks closed and busy in a dark scheme', () {
+      final s = Semantic.from(_fallbackScheme());
+      expect(lum(s.open), greaterThan(lum(s.closed)),
+          reason: 'open is the state people scan for');
+    });
+  });
+
+  group('the hero number is not hairline thin', () {
+    testWidgets('badge value uses a heavier weight than the display scale',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.from(_fallbackScheme()),
+        home: const Scaffold(
+          body: ScallopedBadge(value: '13', label: 'OPEN NOW'),
+        ),
+      ));
+      final value = tester.widget<Text>(find.text('13'));
+      final weight = value.style!.fontVariations!
+          .firstWhere((v) => v.axis == 'wght')
+          .value;
+      // The display scale is 300. At badge size that read as washed out.
+      expect(weight, greaterThan(300));
     });
   });
 }

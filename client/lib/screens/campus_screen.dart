@@ -164,6 +164,17 @@ String _serviceLabel(String service) => switch (service) {
       _ => 'Hours',
     };
 
+/// Which season's hours are in force.
+///
+/// RIT publishes fall and summer separately. Showing both at once is noise:
+/// nobody standing outside the post office in September cares what July looked
+/// like. Fall term runs roughly late August to mid May.
+String currentSeason(DateTime now) {
+  final month = now.month;
+  final isSummer = month == 6 || month == 7 || (month == 8 && now.day < 22);
+  return isSummer ? 'summer' : 'fall';
+}
+
 class _PostOfficeBlock extends StatelessWidget {
   const _PostOfficeBlock({required this.office});
 
@@ -173,19 +184,22 @@ class _PostOfficeBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final season = currentSeason(DateTime.now());
 
-    // Fall hours are the ones in force during term. Summer is shown after.
-    final seasons = <String, List<HoursRule>>{};
-    for (final rule in office.hours) {
-      seasons.putIfAbsent(rule.season, () => []).add(rule);
+    // Only what is in force. Fall back to everything if a season is missing,
+    // so a config gap shows something rather than an empty card.
+    var rules = office.hours.where((r) => r.season == season).toList();
+    if (rules.isEmpty) rules = office.hours;
+
+    final services = <String, List<HoursRule>>{};
+    for (final rule in rules) {
+      services.putIfAbsent(rule.service, () => []).add(rule);
     }
-    final ordered = seasons.entries.toList()
-      ..sort((a, b) => a.key == 'fall' ? -1 : 1);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerLow,
           borderRadius: Shapes.card,
@@ -212,44 +226,21 @@ class _PostOfficeBlock extends StatelessWidget {
                     children: [
                       Text(office.name, style: text.titleMedium),
                       const SizedBox(height: 2),
-                      Text(
-                        '${office.street}  ${office.side} side',
-                        style: text.bodySmall,
-                      ),
+                      Text('${office.street}  ${office.side} side',
+                          style: text.bodySmall),
                     ],
                   ),
                 ),
               ],
             ),
-            if (office.locationNote != null) ...[
-              const SizedBox(height: 10),
-              Text(office.locationNote!, style: text.bodySmall),
+            const SizedBox(height: 16),
+            for (final service in services.entries) ...[
+              _ServiceHours(service: service.key, rules: service.value),
+              const SizedBox(height: 12),
             ],
-            const SizedBox(height: 14),
-            for (final season in ordered) ...[
-              Text(season.key.toUpperCase(), style: text.labelSmall),
-              const SizedBox(height: 6),
-              for (final rule in season.value)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 132,
-                        child: Text(_serviceLabel(rule.service),
-                            style: text.bodySmall),
-                      ),
-                      Expanded(
-                        child: Text(
-                          '${_dayLabel(rule.days)}  ${_time(rule.opensAt)} to ${_time(rule.closesAt)}',
-                          style: text.bodyMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              const SizedBox(height: 10),
+            if (office.locationNote != null) ...[
+              Text(office.locationNote!, style: text.bodySmall),
+              const SizedBox(height: 12),
             ],
             if (office.email != null || office.phone != null)
               Wrap(
@@ -264,6 +255,61 @@ class _PostOfficeBlock extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One service, with its times set large and centred.
+///
+/// The times are the thing people came for, so they get the space rather than
+/// being one column of a cramped table.
+class _ServiceHours extends StatelessWidget {
+  const _ServiceHours({required this.service, required this.rules});
+
+  final String service;
+  final List<HoursRule> rules;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: Shapes.inner,
+      ),
+      child: Column(
+        children: [
+          Text(_serviceLabel(service).toUpperCase(), style: text.labelSmall),
+          const SizedBox(height: 10),
+          for (final rule in rules)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Column(
+                children: [
+                  Text(
+                    '${_time(rule.opensAt)} to ${_time(rule.closesAt)}',
+                    textAlign: TextAlign.center,
+                    style: text.displayMedium?.copyWith(
+                      fontSize: 27,
+                      fontVariations: Weights.medium,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _dayLabel(rule.days),
+                    textAlign: TextAlign.center,
+                    style: text.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
