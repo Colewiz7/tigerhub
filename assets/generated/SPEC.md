@@ -21,7 +21,9 @@ placeholder. No Flutter wiring or data-layer files are changed.
 Use the wide mark when at least 230 logical pixels are available, compact at
 184, and monochrome in high-contrast contexts. The SVG expects Space Grotesk,
 then Rubik, then a sans-serif fallback. Convert text to paths before packaging
-if exact cross-platform metrics are required.
+if exact cross-platform metrics are required. The three markings run
+horizontally with uneven waves and lengths. Do not rotate them or repeat them
+as a uniform pattern.
 
 ## Glyphs
 
@@ -33,3 +35,13 @@ The sprite contains symbols addressed by the filenames' base names.
 Choose the aspect ratio matching the card crop and select the light or dark
 file from the active theme. The left half is deliberately quiet for overlaid
 location text.
+
+## Round-two mockups
+
+- Post-office hours: `mockups/post-office-hours-{light,dark}.svg`, with the
+  implementation rules in `docs/post-office-hours-spec.md`.
+- Modular dashboard: `mockups/modular-dashboard-{light,dark}.svg`, with the
+  instance, scope, size and packing model in
+  `docs/modular-dashboard-spec.md`.
+- Mockup colours illustrate existing theme roles. They are not new palette
+  tokens.

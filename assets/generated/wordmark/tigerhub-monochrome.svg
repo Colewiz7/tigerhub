@@ -1,3 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 60" role="img" aria-label="TigerHub">
-<text x="4" y="50" fill="currentColor" font-family="Space Grotesk, Rubik, sans-serif" font-size="50" font-weight="700">TigerHub</text>
+  <defs>
+    <mask id="striped-tiger"><text x="4" y="50" fill="white" font-family="Space Grotesk, Rubik, sans-serif" font-size="50" font-weight="700">Tiger</text><g fill="black">
+    <path d="M7 15 C24 10 38 17 54 14 C69 11 82 9 96 13 C86 16 74 19 60 18 C41 21 26 15 8 20Z"/>
+    <path d="M30 28 C48 23 67 31 84 27 C99 23 112 25 123 30 C110 31 99 34 85 33 C66 37 49 29 31 34Z"/>
+    <path d="M8 41 C24 36 39 44 53 40 C62 38 70 38 78 42 C69 45 60 47 51 46 C35 49 23 42 9 47Z"/></g></mask>
+  </defs>
+  <rect x="4" y="7" width="120" height="45" fill="currentColor" mask="url(#striped-tiger)"/>
+  <text x="126" y="50" fill="currentColor" font-family="Space Grotesk, Rubik, sans-serif" font-size="50" font-weight="700">Hub</text>
 </svg>

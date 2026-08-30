@@ -66,21 +66,16 @@ been, so what is left is real.
   than three and a widow.
 - **Map tab.** The map existed but was buried as a section inside Campus.
 
-### Still open, for Codex (visual)
+### Codex visual handoff completed
 
-**The tiger stripes on the wordmark are wrong.** They read as vertical bars.
-Cole wants **horizontal wavy lines**, like actual tiger markings. The geometry
-lives in `assets/generated/wordmark/*.svg`; `scripts/flatten-wordmark.py`
-converts the text to outlines afterwards, so only the stripe paths need
-redrawing.
+**Wordmark stripes.** Redrawn as horizontal wavy markings in the source and
+flattened production SVGs.
 
-**Post office hours look plain and boring.** Better than the cramped original,
-but flat. This is the Campus tab's most-looked-at block after the address.
+**Post office hours.** Light and dark mockups plus the service-module rules are
+in `docs/post-office-hours-spec.md`.
 
-**The Customize dashboard needs a lot of work; the page is not really modular.**
-Currently it is only reorder plus show/hide of four fixed cards. What "modular"
-should mean here is a design question: card sizes, more card types, per card
-options.
+**Customize dashboard.** Light and dark mockups plus the instance, scope, size
+and packing model are in `docs/modular-dashboard-spec.md`.
 
 ### Still open, for Claude (behaviour)
 

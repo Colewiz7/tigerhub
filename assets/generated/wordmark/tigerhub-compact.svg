@@ -3,10 +3,10 @@
     <clipPath id="tiger-word" clipPathUnits="userSpaceOnUse"><text x="4" y="40" font-family="Space Grotesk, Rubik, sans-serif" font-size="40" font-weight="700">Tiger</text></clipPath>
   </defs>
   <text x="4" y="40" fill="#F76902" font-family="Space Grotesk, Rubik, sans-serif" font-size="40" font-weight="700">Tiger</text>
-  <g clip-path="url(#tiger-word)" fill="#512B20">
-    <path d="M38 -4 C45 11 46 27 39 42 L51 44 C58 25 55 7 49 -5Z"/>
-    <path d="M92 -4 C99 12 99 25 92 39 L104 43 C112 24 109 7 103 -5Z"/>
-    <path d="M145 -4 C151 10 151 22 145 35 L157 38 C164 21 161 5 156 -5Z"/>
+  <g clip-path="url(#tiger-word)" fill="#512B20" transform="scale(0.8)">
+    <path d="M7 15 C24 10 38 17 54 14 C69 11 82 9 96 13 C86 16 74 19 60 18 C41 21 26 15 8 20Z"/>
+    <path d="M30 28 C48 23 67 31 84 27 C99 23 112 25 123 30 C110 31 99 34 85 33 C66 37 49 29 31 34Z"/>
+    <path d="M8 41 C24 36 39 44 53 40 C62 38 70 38 78 42 C69 45 60 47 51 46 C35 49 23 42 9 47Z"/>
   </g>
   <text x="102" y="40" fill="currentColor" font-family="Space Grotesk, Rubik, sans-serif" font-size="40" font-weight="700">Hub</text>
 </svg>
