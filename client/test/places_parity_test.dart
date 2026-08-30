@@ -21,7 +21,8 @@ void main() {
   test('campus places decode identically to the backend', () {
     final actual = <String, List<Map<String, dynamic>>>{};
     for (final id in [35, 19]) {
-      final raw = File('test/fixtures/maps_category_$id.data').readAsStringSync();
+      final raw = File('test/fixtures/maps_category_$id.data')
+          .readAsStringSync();
       parseCampusPlaces(raw).forEach((subId, places) {
         actual[placeKinds[subId]!.$1] = places
           ..sort((a, b) => (a['id'] as int).compareTo(b['id'] as int));
@@ -32,11 +33,15 @@ void main() {
       File('test/golden/campus_places_parse.json').readAsStringSync(),
     ) as Map<String, dynamic>);
 
-    expect(actual.keys.toSet(), expected.keys.toSet(),
-        reason: 'a whole kind went missing or appeared');
+    expect(
+      actual.keys.toSet(),
+      expected.keys.toSet(),
+      reason: 'a whole kind went missing or appeared',
+    );
 
     for (final kind in expected.keys) {
-      final want = (expected[kind] as List<dynamic>).cast<Map<String, dynamic>>();
+      final want = (expected[kind] as List<dynamic>)
+          .cast<Map<String, dynamic>>();
       final got = actual[kind]!;
       expect(got.length, want.length, reason: '$kind place count differs');
 
@@ -52,13 +57,44 @@ void main() {
     }
   });
 
+  test(
+    'map geometry is projected separately from parity-tested place rows',
+    () {
+      final raw = File('test/fixtures/maps_category_35.data')
+          .readAsStringSync();
+      final places = parseCampusPlaces(raw);
+      final features = parseCampusMapFeatures(raw);
+
+      expect(features, isNotEmpty);
+      expect(
+        features.every(
+          (feature) => feature['geometry'] is Map<String, dynamic>,
+        ),
+        isTrue,
+      );
+      expect(
+        features.any(
+          (feature) =>
+              (feature['geometry'] as Map<String, dynamic>)['type'] == 'Point',
+        ),
+        isTrue,
+      );
+      expect(
+        places.values
+            .expand((rows) => rows)
+            .every((row) => !row.containsKey('geometry')),
+        isTrue,
+        reason: 'the established place contract must remain unchanged',
+      );
+    },
+  );
+
   group('turbo stream', () {
     test('resolves values through the index table', () {
       // Index 0 is the root. {"_1": 2} means "key at index 1, value at index 2".
-      expect(
-        decodeTurboStream('[{"_1":2},"name","Gracie\'s"]'),
-        {'name': "Gracie's"},
-      );
+      expect(decodeTurboStream('[{"_1":2},"name","Gracie\'s"]'), {
+        'name': "Gracie's",
+      });
     });
 
     test('reads the negative sentinels', () {
@@ -69,16 +105,22 @@ void main() {
 
     test('survives a cycle instead of blowing the stack', () {
       // Index 0 is an object whose "self" key points back at index 0.
-      final decoded = decodeTurboStream('[{"_1":0},"self"]')!
-          as Map<String, dynamic>;
+      final decoded =
+          decodeTurboStream('[{"_1":0},"self"]')! as Map<String, dynamic>;
       expect(decoded.containsKey('self'), isTrue);
-      expect(identical(decoded['self'], decoded), isTrue,
-          reason: 'the cycle should resolve to the same object, not recurse');
+      expect(
+        identical(decoded['self'], decoded),
+        isTrue,
+        reason: 'the cycle should resolve to the same object, not recurse',
+      );
     });
 
     test('rejects something that is not turbo-stream', () {
       expect(() => decodeTurboStream(''), throwsA(isA<TurboStreamError>()));
-      expect(() => decodeTurboStream('not json'), throwsA(isA<TurboStreamError>()));
+      expect(
+        () => decodeTurboStream('not json'),
+        throwsA(isA<TurboStreamError>()),
+      );
       expect(() => decodeTurboStream('{}'), throwsA(isA<TurboStreamError>()));
     });
 

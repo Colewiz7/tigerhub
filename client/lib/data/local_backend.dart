@@ -93,7 +93,7 @@ const int staleGraceMultiplier = 3;
 
 class LocalBackend implements Backend {
   LocalBackend({Upstream? upstream, this._store})
-      : _http = upstream ?? Upstream();
+    : _http = upstream ?? Upstream();
 
   final Upstream _http;
 
@@ -185,13 +185,15 @@ class LocalBackend implements Backend {
     final future = () async {
       try {
         final previous = await _cachedRead(name);
-        final payload = await spec.scrape(ScrapeContext(
-          http: _http,
-          previous: previous?.$1,
-          save: persist,
-          snapshotOf: (other) async => (await _cachedRead(other))?.$1,
-          config: StaticConfig.instance,
-        ));
+        final payload = await spec.scrape(
+          ScrapeContext(
+            http: _http,
+            previous: previous?.$1,
+            save: persist,
+            snapshotOf: (other) async => (await _cachedRead(other))?.$1,
+            config: StaticConfig.instance,
+          ),
+        );
         await persist(payload);
       } catch (_) {
         // Deliberately swallowed. The read path falls back to the stored
@@ -250,19 +252,19 @@ class LocalBackend implements Backend {
     String source,
     List<dynamic> data,
     DateTime? fetchedAt,
-  ) =>
-      {
-        'data': data,
-        'stale': _isStale(source, fetchedAt),
-        'last_updated':
-            fetchedAt == null ? null : CampusTime.format(fetchedAt.toUtc()),
-      };
+  ) => {
+    'data': data,
+    'stale': _isStale(source, fetchedAt),
+    'last_updated': fetchedAt == null
+        ? null
+        : CampusTime.format(fetchedAt.toUtc()),
+  };
 
   @override
   Future<Map<String, dynamic>> fetch(
-    String path,
-    [Map<String, String>? query]
-  ) async {
+    String path, [
+    Map<String, String>? query,
+  ]) async {
     await StaticConfig.load();
 
     switch (path) {
@@ -287,6 +289,8 @@ class LocalBackend implements Backend {
         return _recreation();
       case '/campus/places':
         return _placeKinds();
+      case '/campus/map':
+        return _campusMap();
       case '/post-offices':
         return _postOffices();
       case '/housing/areas':
@@ -302,8 +306,8 @@ class LocalBackend implements Backend {
     final occupancy = RegExp(r'^/dining/(\d+)/occupancy$').firstMatch(path);
     if (occupancy != null) return _occupancy(int.parse(occupancy.group(1)!));
 
-    final address =
-        RegExp(r'^/housing/areas/([A-Za-z0-9_-]+)/address$').firstMatch(path);
+    final address = RegExp(r'^/housing/areas/([A-Za-z0-9_-]+)/address$')
+        .firstMatch(path);
     if (address != null) return _address(address.group(1)!, query);
 
     throw UpstreamError('no local source serves $path');
@@ -332,7 +336,10 @@ class LocalBackend implements Backend {
     ]..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
 
     final data = query?['open_now'] == 'true'
-        ? [for (final l in locations) if (l['is_open'] == true) l]
+        ? [
+            for (final l in locations)
+              if (l['is_open'] == true) l,
+          ]
         : locations;
 
     return _envelope('tigercenter_dining', data, fetchedAt);
@@ -375,7 +382,8 @@ class LocalBackend implements Backend {
 
     final days = int.tryParse(query?['days'] ?? '') ?? 14;
     final limit = int.tryParse(query?['limit'] ?? '') ?? 500;
-    final begins = DateTime.tryParse(query?['start'] ?? '')?.toUtc() ??
+    final begins =
+        DateTime.tryParse(query?['start'] ?? '')?.toUtc() ??
         CampusTime.nowUtc();
     final ends = begins.add(Duration(days: days));
 
@@ -415,15 +423,19 @@ class LocalBackend implements Backend {
       matched.add(event);
     }
 
-    matched.sort((a, b) => DateTime.parse(a['starts_at'] as String)
-        .toUtc()
-        .compareTo(DateTime.parse(b['starts_at'] as String).toUtc()));
+    matched.sort(
+      (a, b) =>
+          DateTime.parse(a['starts_at'] as String)
+              .toUtc()
+              .compareTo(DateTime.parse(b['starts_at'] as String).toUtc()),
+    );
 
     return {
       'data': matched.take(limit).toList(),
       'stale': stale,
-      'last_updated':
-          updated == null ? null : CampusTime.format(updated.toUtc()),
+      'last_updated': updated == null
+          ? null
+          : CampusTime.format(updated.toUtc()),
     };
   }
 
@@ -435,7 +447,8 @@ class LocalBackend implements Backend {
     final counts = <String, Map<String, dynamic>>{};
     for (final event in mergeDuplicateEvents(all)) {
       if (event['organizer'] == null) continue;
-      final key = '${event['organizer_key']}\u0000${event['organizer']}'
+      final key =
+          '${event['organizer_key']}\u0000${event['organizer']}'
           '\u0000${event['source']}';
       final row = counts.putIfAbsent(
         key,
@@ -450,8 +463,9 @@ class LocalBackend implements Backend {
     }
 
     final data = counts.values.toList()
-      ..sort((a, b) =>
-          (b['event_count'] as int).compareTo(a['event_count'] as int));
+      ..sort(
+        (a, b) => (b['event_count'] as int).compareTo(a['event_count'] as int),
+      );
 
     return {'data': data, 'stale': stale, 'last_updated': null};
   }
@@ -461,7 +475,8 @@ class LocalBackend implements Backend {
   static List<String>? _list(String? raw) {
     if (raw == null || raw.isEmpty) return null;
     final parts = [
-      for (final p in raw.split(',')) if (p.trim().isNotEmpty) p.trim(),
+      for (final p in raw.split(','))
+        if (p.trim().isNotEmpty) p.trim(),
     ];
     return parts.isEmpty ? null : parts;
   }
@@ -489,8 +504,8 @@ class LocalBackend implements Backend {
   /// This endpoint returned a bare list rather than an envelope, so it is
   /// wrapped as items to match what watchList expects.
   Future<Map<String, dynamic>> _shedHours() async => {
-        'items': StaticConfig.instance.shedSpaces,
-      };
+    'items': StaticConfig.instance.shedSpaces,
+  };
 
   // --- recreation ---
 
@@ -512,16 +527,38 @@ class LocalBackend implements Backend {
 
   Future<Map<String, dynamic>> _places(String kind) async {
     final (snapshot, fetchedAt) = await _snapshot(campusPlacesSource);
-    return _envelope(campusPlacesSource, placesOfKind(snapshot, kind), fetchedAt);
+    return _envelope(
+      campusPlacesSource,
+      placesOfKind(snapshot, kind),
+      fetchedAt,
+    );
+  }
+
+  Future<Map<String, dynamic>> _campusMap() async {
+    var (snapshot, fetchedAt) = await _snapshot(campusPlacesSource);
+    // Snapshots written before the map shipped contain the place lists but no
+    // geometry. They can keep serving every existing screen, but the first map
+    // visit needs one migration refresh even when that old snapshot is fresh.
+    if (snapshot != null && !snapshot.containsKey('map_features')) {
+      await _refreshIfDue(campusPlacesSource, force: true);
+      final refreshed = await _cachedRead(campusPlacesSource);
+      snapshot = refreshed?.$1;
+      fetchedAt = refreshed?.$2;
+    }
+    return _envelope(
+      campusPlacesSource,
+      campusMapFeatures(snapshot),
+      fetchedAt,
+    );
   }
 
   // --- static config ---
 
   Future<Map<String, dynamic>> _postOffices() async => {
-        'data': StaticConfig.instance.postOffices,
-        'stale': false,
-        'last_updated': null,
-      };
+    'data': StaticConfig.instance.postOffices,
+    'stale': false,
+    'last_updated': null,
+  };
 
   /// Mail zones, including the two locations that bypass campus post offices.
   Future<Map<String, dynamic>> _housingAreas() async {
@@ -602,7 +639,9 @@ class LocalBackend implements Backend {
       final loc = raw as Map<String, dynamic>;
       if (loc['id'] == locationId) mdoId = loc['mdo_id'] as int?;
     }
-    if (mdoId == null) throw UpstreamError('no mdo_id for location $locationId');
+    if (mdoId == null) {
+      throw UpstreamError('no mdo_id for location $locationId');
+    }
 
     // The polling source already holds a recent reading for every location
     // that has a sensor, so the detail sheet reuses it rather than issuing its
@@ -615,8 +654,9 @@ class LocalBackend implements Backend {
       return {
         ...reading,
         'stale': _isStale(occupancySource, fetchedAt),
-        'last_updated':
-            fetchedAt == null ? null : CampusTime.format(fetchedAt.toUtc()),
+        'last_updated': fetchedAt == null
+            ? null
+            : CampusTime.format(fetchedAt.toUtc()),
       };
     }
 
@@ -643,7 +683,8 @@ class LocalBackend implements Backend {
     // A snapshot for another date is useless no matter how recent it is, which
     // is what happens to anyone opening the app just after midnight.
     final wrongDay = stored != null && stored.body['service_date'] != today;
-    final due = stored == null ||
+    final due =
+        stored == null ||
         wrongDay ||
         age == null ||
         DateTime.now().difference(age) > fdMenuCadence;

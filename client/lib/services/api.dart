@@ -54,8 +54,8 @@ class Result<T> {
 
 class ApiClient {
   ApiClient({Backend? backend, ResponseCache? cache})
-      : _backend = backend ?? defaultBackend(),
-        _cache = cache ?? ResponseCache.instance;
+    : _backend = backend ?? defaultBackend(),
+      _cache = cache ?? ResponseCache.instance;
 
   /// The local backend, unless a base URL was supplied at build time to compare
   /// against a running server.
@@ -158,14 +158,14 @@ class ApiClient {
   }
 
   Stream<Result<Collection<MenuItem>>> visitingChefs() => watch(
-        '/dining/visiting-chefs',
-        (j) => Collection.fromJson(j, MenuItem.fromJson),
-      );
+    '/dining/visiting-chefs',
+    (j) => Collection.fromJson(j, MenuItem.fromJson),
+  );
 
   Stream<Result<Collection<PostOffice>>> postOffices() => watch(
-        '/post-offices',
-        (j) => Collection.fromJson(j, PostOffice.fromJson),
-      );
+    '/post-offices',
+    (j) => Collection.fromJson(j, PostOffice.fromJson),
+  );
 
   /// Today's menu for one location. Only 12 of 24 publish one, so an empty
   /// dish list is a normal answer.
@@ -178,36 +178,39 @@ class ApiClient {
       watch('/dining/$locationId/occupancy', OccupancyHistory.fromJson);
 
   Stream<Result<Collection<PlaceKind>>> placeKinds() => watch(
-        '/campus/places',
-        (j) => Collection.fromJson(j, PlaceKind.fromJson),
-      );
+    '/campus/places',
+    (j) => Collection.fromJson(j, PlaceKind.fromJson),
+  );
 
   Stream<Result<Collection<CampusPlace>>> places(String kind) => watch(
-        '/campus/places/$kind',
-        (j) => Collection.fromJson(j, CampusPlace.fromJson),
-      );
+    '/campus/places/$kind',
+    (j) => Collection.fromJson(j, CampusPlace.fromJson),
+  );
+
+  Stream<Result<Collection<CampusMapFeature>>> campusMap() => watch(
+    '/campus/map',
+    (j) => Collection.fromJson(j, CampusMapFeature.fromJson),
+  );
 
   Stream<Result<Collection<RecreationFacility>>> recreation() => watch(
-        '/recreation/hours',
-        (j) => Collection.fromJson(j, RecreationFacility.fromJson),
-      );
+    '/recreation/hours',
+    (j) => Collection.fromJson(j, RecreationFacility.fromJson),
+  );
 
   Stream<Result<Collection<RoomSummary>>> makerspaceRooms() => watch(
-        '/makerspace/rooms',
-        (j) => Collection.fromJson(j, RoomSummary.fromJson),
-      );
+    '/makerspace/rooms',
+    (j) => Collection.fromJson(j, RoomSummary.fromJson),
+  );
 
   /// Makerspace hours come from static config, so this endpoint returns a bare
   /// list rather than the usual envelope.
-  Stream<Result<List<MakerSpaceHours>>> makerspaceHours() => watchList(
-        '/makerspace/hours',
-        MakerSpaceHours.fromJson,
-      );
+  Stream<Result<List<MakerSpaceHours>>> makerspaceHours() =>
+      watchList('/makerspace/hours', MakerSpaceHours.fromJson);
 
   Stream<Result<Collection<HousingArea>>> housingAreas() => watch(
-        '/housing/areas',
-        (j) => Collection.fromJson(j, HousingArea.fromJson),
-      );
+    '/housing/areas',
+    (j) => Collection.fromJson(j, HousingArea.fromJson),
+  );
 
   /// Same cache and staleness behaviour as watch(), for endpoints that return
   /// a bare JSON array instead of the {data, stale} envelope.
@@ -218,9 +221,9 @@ class ApiClient {
     T Function(Map<String, dynamic>) parse,
   ) async* {
     List<T> decode(Map<String, dynamic> body) => [
-          for (final item in (body['items'] as List<dynamic>? ?? const []))
-            parse(item as Map<String, dynamic>),
-        ];
+      for (final item in (body['items'] as List<dynamic>? ?? const []))
+        parse(item as Map<String, dynamic>),
+    ];
 
     final cached = await _cache.read(path);
     if (cached != null) {
@@ -250,17 +253,24 @@ class ApiClient {
           error: error,
         );
       } else {
-        yield Result<List<T>>(value: null, state: DataState.priming, error: error);
+        yield Result<List<T>>(
+          value: null,
+          state: DataState.priming,
+          error: error,
+        );
       }
     }
   }
 
-  Stream<Result<MailingAddress>> address(String areaId, String name, String? unit) =>
-      watch(
-        '/housing/areas/$areaId/address',
-        MailingAddress.fromJson,
-        query: {'name': name, if (unit != null && unit.isNotEmpty) 'unit': unit},
-      );
+  Stream<Result<MailingAddress>> address(
+    String areaId,
+    String name,
+    String? unit,
+  ) => watch(
+    '/housing/areas/$areaId/address',
+    MailingAddress.fromJson,
+    query: {'name': name, if (unit != null && unit.isNotEmpty) 'unit': unit},
+  );
 
   void dispose() => _backend.close();
 }

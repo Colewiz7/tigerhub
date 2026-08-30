@@ -20,6 +20,7 @@ import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 import '../widgets/places_sheet.dart';
 import '../widgets/glyph.dart';
+import '../widgets/campus_map.dart';
 import '../widgets/section_nav.dart';
 import '../widgets/week_grid.dart';
 
@@ -34,16 +35,30 @@ class CampusScreen extends StatefulWidget {
 }
 
 class _CampusScreenState extends State<CampusScreen> {
-  Result<Collection<PostOffice>> _offices =
-      const Result(value: null, state: DataState.priming);
-  Result<List<MakerSpaceHours>> _shed =
-      const Result(value: null, state: DataState.priming);
-  Result<Collection<RoomSummary>> _rooms =
-      const Result(value: null, state: DataState.priming);
-  Result<Collection<RecreationFacility>> _rec =
-      const Result(value: null, state: DataState.priming);
-  Result<Collection<PlaceKind>> _kinds =
-      const Result(value: null, state: DataState.priming);
+  Result<Collection<PostOffice>> _offices = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  Result<List<MakerSpaceHours>> _shed = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  Result<Collection<RoomSummary>> _rooms = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  Result<Collection<RecreationFacility>> _rec = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  Result<Collection<PlaceKind>> _kinds = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  Result<Collection<CampusMapFeature>> _map = const Result(
+    value: null,
+    state: DataState.priming,
+  );
 
   @override
   void initState() {
@@ -62,6 +77,9 @@ class _CampusScreenState extends State<CampusScreen> {
     });
     widget.api.placeKinds().listen((r) {
       if (mounted) setState(() => _kinds = r);
+    });
+    widget.api.campusMap().listen((r) {
+      if (mounted) setState(() => _map = r);
     });
   }
 
@@ -90,6 +108,13 @@ class _CampusScreenState extends State<CampusScreen> {
           icon: Icons.travel_explore_rounded,
           glyph: GlyphKind.buildings,
           builder: (context) => _FindSection(api: widget.api, kinds: _kinds),
+        ),
+        SectionSpec(
+          id: 'map',
+          title: 'Campus map',
+          subtitle: 'Offline places from the RIT map',
+          icon: Icons.map_rounded,
+          builder: (context) => CampusMapView(result: _map),
         ),
         SectionSpec(
           id: 'rec',
@@ -124,25 +149,26 @@ class _MailSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
-        children: [
-          HousingCard(areas: areas, api: api),
-          const SizedBox(height: 22),
-          _Heading(
-            glyph: GlyphKind.postOffice,
-            title: 'Post offices',
-            subtitle: 'Mail is collected at the counter after an email notice. '
-                'There are no mailboxes.',
-            state: offices.state,
-            fetchedAt: offices.fetchedAt,
-          ),
-          if (offices.isPriming)
-            const PrimingPlaceholder(label: 'Loading post offices')
-          else
-            for (final office in offices.value?.data ?? const <PostOffice>[])
-              _PostOfficeBlock(office: office),
-        ],
-      );
+    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    children: [
+      HousingCard(areas: areas, api: api),
+      const SizedBox(height: 22),
+      _Heading(
+        glyph: GlyphKind.postOffice,
+        title: 'Post offices',
+        subtitle:
+            'Mail is collected at the counter after an email notice. '
+            'There are no mailboxes.',
+        state: offices.state,
+        fetchedAt: offices.fetchedAt,
+      ),
+      if (offices.isPriming)
+        const PrimingPlaceholder(label: 'Loading post offices')
+      else
+        for (final office in offices.value?.data ?? const <PostOffice>[])
+          _PostOfficeBlock(office: office),
+    ],
+  );
 }
 
 class _FindSection extends StatelessWidget {
@@ -153,43 +179,44 @@ class _FindSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
-        children: [
-          _Heading(
-            title: 'Find on campus',
-            subtitle: 'From the campus map, with the building, floor and a note '
-                'on where exactly to look.',
-            state: kinds.state,
-            fetchedAt: kinds.fetchedAt,
-          ),
-          if (kinds.isPriming)
-            const PrimingPlaceholder(label: 'Loading places')
-          else
-            for (final kind in kinds.value?.data ?? const <PlaceKind>[])
-              StatusRow(
-                icon: iconForPlaceKind(kind.kind),
+    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    children: [
+      _Heading(
+        title: 'Find on campus',
+        subtitle:
+            'From the campus map, with the building, floor and a note '
+            'on where exactly to look.',
+        state: kinds.state,
+        fetchedAt: kinds.fetchedAt,
+      ),
+      if (kinds.isPriming)
+        const PrimingPlaceholder(label: 'Loading places')
+      else
+        for (final kind in kinds.value?.data ?? const <PlaceKind>[])
+          StatusRow(
+            icon: iconForPlaceKind(kind.kind),
+            title: kind.kindName,
+            subtitle: '${kind.count} on campus',
+            onTap: () => showModalBottomSheet<void>(
+              context: context,
+              showDragHandle: true,
+              isScrollControlled: true,
+              constraints: const BoxConstraints(maxWidth: 720),
+              builder: (context) => PlacesSheet(
+                api: api,
+                kind: kind.kind,
                 title: kind.kindName,
-                subtitle: '${kind.count} on campus',
-                onTap: () => showModalBottomSheet<void>(
-                  context: context,
-                  showDragHandle: true,
-                  isScrollControlled: true,
-                  constraints: const BoxConstraints(maxWidth: 720),
-                  builder: (context) => PlacesSheet(
-                    api: api,
-                    kind: kind.kind,
-                    title: kind.kindName,
-                    icon: iconForPlaceKind(kind.kind),
-                  ),
-                ),
-                trailing: Icon(
-                  Icons.chevron_right_rounded,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                icon: iconForPlaceKind(kind.kind),
               ),
-        ],
-      );
+            ),
+            trailing: Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+    ],
+  );
 }
 
 class _RecreationSection extends StatelessWidget {
@@ -199,23 +226,24 @@ class _RecreationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
-        children: [
-          _Heading(
-            title: 'Gym and pool',
-            subtitle: 'Today first. A facility can run several sessions in a '
-                'day, so each one is listed separately.',
-            state: result.state,
-            fetchedAt: result.fetchedAt,
-          ),
-          if (result.isPriming)
-            const PrimingPlaceholder(label: 'Loading facility hours')
-          else
-            for (final facility
-                in result.value?.data ?? const <RecreationFacility>[])
-              _RecreationRow(facility: facility),
-        ],
-      );
+    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    children: [
+      _Heading(
+        title: 'Gym and pool',
+        subtitle:
+            'Today first. A facility can run several sessions in a '
+            'day, so each one is listed separately.',
+        state: result.state,
+        fetchedAt: result.fetchedAt,
+      ),
+      if (result.isPriming)
+        const PrimingPlaceholder(label: 'Loading facility hours')
+      else
+        for (final facility
+            in result.value?.data ?? const <RecreationFacility>[])
+          _RecreationRow(facility: facility),
+    ],
+  );
 }
 
 class _ShedSection extends StatelessWidget {
@@ -226,21 +254,22 @@ class _ShedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
-        padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
-        children: [
-          _Heading(
-            glyph: GlyphKind.makerspace,
-            title: 'SHED makerspace',
-            subtitle: 'Equipment availability is live. Hours are hand '
-                'maintained, because the upstream hours feed is broken.',
-            state: rooms.state,
-            fetchedAt: rooms.fetchedAt,
-          ),
-          for (final space in shed.value ?? const <MakerSpaceHours>[])
-            _ShedHoursBlock(space: space),
-          _EquipmentBlock(result: rooms),
-        ],
-      );
+    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    children: [
+      _Heading(
+        glyph: GlyphKind.makerspace,
+        title: 'SHED makerspace',
+        subtitle:
+            'Equipment availability is live. Hours are hand '
+            'maintained, because the upstream hours feed is broken.',
+        state: rooms.state,
+        fetchedAt: rooms.fetchedAt,
+      ),
+      for (final space in shed.value ?? const <MakerSpaceHours>[])
+        _ShedHoursBlock(space: space),
+      _EquipmentBlock(result: rooms),
+    ],
+  );
 }
 
 class _Heading extends StatelessWidget {
@@ -301,13 +330,15 @@ const _weekOrder = [
 String _dayLabel(List<String> days) {
   if (days.isEmpty) return '';
   final indices = days.map(_weekOrder.indexOf).toList()..sort();
-  final short = [for (final i in indices) _weekOrder[i].substring(0, 3).toLowerCase()];
+  final short = [
+    for (final i in indices) _weekOrder[i].substring(0, 3).toLowerCase(),
+  ];
   final capitalised = [
-    for (final s in short) '${s[0].toUpperCase()}${s.substring(1)}'
+    for (final s in short) '${s[0].toUpperCase()}${s.substring(1)}',
   ];
   // Contiguous runs collapse to a range.
-  final contiguous = indices.length > 1 &&
-      indices.last - indices.first == indices.length - 1;
+  final contiguous =
+      indices.length > 1 && indices.last - indices.first == indices.length - 1;
   if (contiguous) return '${capitalised.first} to ${capitalised.last}';
   return capitalised.join(', ');
 }
@@ -325,10 +356,10 @@ String _time(String hhmm) {
 }
 
 String _serviceLabel(String service) => switch (service) {
-      'package_pickup' => 'Package pickup',
-      'shipping_window' => 'Shipping window',
-      _ => 'Hours',
-    };
+  'package_pickup' => 'Package pickup',
+  'shipping_window' => 'Shipping window',
+  _ => 'Hours',
+};
 
 /// Which season's hours are in force.
 ///
@@ -382,8 +413,11 @@ class _PostOfficeBlock extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.32),
                   ),
-                  child: Icon(Icons.local_post_office_rounded,
-                      size: 21, color: scheme.primary),
+                  child: Icon(
+                    Icons.local_post_office_rounded,
+                    size: 21,
+                    color: scheme.primary,
+                  ),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -392,8 +426,10 @@ class _PostOfficeBlock extends StatelessWidget {
                     children: [
                       Text(office.name, style: text.titleMedium),
                       const SizedBox(height: 2),
-                      Text('${office.street}  ${office.side} side',
-                          style: text.bodySmall),
+                      Text(
+                        '${office.street}  ${office.side} side',
+                        style: text.bodySmall,
+                      ),
                     ],
                   ),
                 ),
@@ -414,9 +450,15 @@ class _PostOfficeBlock extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   if (office.phone != null)
-                    _ContactChip(icon: Icons.call_rounded, label: office.phone!),
+                    _ContactChip(
+                      icon: Icons.call_rounded,
+                      label: office.phone!,
+                    ),
                   if (office.email != null)
-                    _ContactChip(icon: Icons.mail_rounded, label: office.email!),
+                    _ContactChip(
+                      icon: Icons.mail_rounded,
+                      label: office.email!,
+                    ),
                 ],
               ),
           ],
@@ -558,7 +600,9 @@ class _RecreationRow extends StatelessWidget {
     if (n.contains('aquatic') || n.contains('pool')) return Icons.pool_rounded;
     if (n.contains('climb')) return Icons.terrain_rounded;
     if (n.contains('tennis')) return Icons.sports_tennis_rounded;
-    if (n.contains('turf') || n.contains('field')) return Icons.sports_soccer_rounded;
+    if (n.contains('turf') || n.contains('field')) {
+      return Icons.sports_soccer_rounded;
+    }
     if (n.contains('track')) return Icons.directions_run_rounded;
     if (n.contains('office')) return Icons.badge_rounded;
     return Icons.fitness_center_rounded;
@@ -567,8 +611,8 @@ class _RecreationRow extends StatelessWidget {
   String _spansOf(RecreationDay day) => day.closed || day.spans.isEmpty
       ? (day.note ?? 'Closed')
       : day.spans
-          .map((s) => '${_time(s.opensAt)} to ${_time(s.closesAt)}')
-          .join(',  ');
+            .map((s) => '${_time(s.opensAt)} to ${_time(s.closesAt)}')
+            .join(',  ');
 
   @override
   Widget build(BuildContext context) {
@@ -585,10 +629,10 @@ class _RecreationRow extends StatelessWidget {
       onTap: facility.days.length < 2
           ? null
           : () => showModalBottomSheet<void>(
-                context: context,
-                showDragHandle: true,
-                builder: (context) => _WeekSheet(facility: facility),
-              ),
+              context: context,
+              showDragHandle: true,
+              builder: (context) => _WeekSheet(facility: facility),
+            ),
       trailing: facility.days.length < 2
           ? null
           : Icon(
@@ -608,7 +652,13 @@ class _WeekSheet extends StatelessWidget {
   final RecreationFacility facility;
 
   static const _dayNames = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday',
   ];
 
   static int _minutes(String hhmm) {
@@ -642,8 +692,12 @@ class _WeekSheet extends StatelessWidget {
     // Fit the window to the data rather than assuming a range.
     final starts = rows.expand((r) => r.spans).map((s) => s.startMinutes);
     final ends = rows.expand((r) => r.spans).map((s) => s.endMinutes);
-    final from = starts.isEmpty ? 6 : (starts.reduce((a, b) => a < b ? a : b) ~/ 60);
-    final to = ends.isEmpty ? 24 : ((ends.reduce((a, b) => a > b ? a : b) + 59) ~/ 60);
+    final from = starts.isEmpty
+        ? 6
+        : (starts.reduce((a, b) => a < b ? a : b) ~/ 60);
+    final to = ends.isEmpty
+        ? 24
+        : ((ends.reduce((a, b) => a > b ? a : b) + 59) ~/ 60);
 
     return SafeArea(
       child: Padding(
@@ -679,9 +733,12 @@ class _ShedHoursBlock extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
-    final rules = [...space.hours]..sort((a, b) =>
-        _weekOrder.indexOf(a.days.isEmpty ? '' : a.days.first)
-            .compareTo(_weekOrder.indexOf(b.days.isEmpty ? '' : b.days.first)));
+    final rules = [...space.hours]
+      ..sort(
+        (a, b) => _weekOrder
+            .indexOf(a.days.isEmpty ? '' : a.days.first)
+            .compareTo(_weekOrder.indexOf(b.days.isEmpty ? '' : b.days.first)),
+      );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -703,8 +760,11 @@ class _ShedHoursBlock extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.32),
                   ),
-                  child: Icon(Icons.construction_rounded,
-                      size: 21, color: scheme.primary),
+                  child: Icon(
+                    Icons.construction_rounded,
+                    size: 21,
+                    color: scheme.primary,
+                  ),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -787,15 +847,17 @@ class _EquipmentBlock extends StatelessWidget {
           StatusRow(
             icon: _iconForRoom(room.room),
             title: room.room,
-            subtitle: '${room.machines} machine${room.machines == 1 ? '' : 's'}',
+            subtitle:
+                '${room.machines} machine${room.machines == 1 ? '' : 's'}',
             accent: room.available > 0 ? semantic.open : semantic.closed,
-            emphasis:
-                room.available > 0 ? RowEmphasis.normal : RowEmphasis.dimmed,
+            emphasis: room.available > 0
+                ? RowEmphasis.normal
+                : RowEmphasis.dimmed,
             trailing: Text(
               room.available > 0 ? '${room.available} free' : 'none free',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: room.available > 0 ? semantic.open : semantic.closed,
-                  ),
+                color: room.available > 0 ? semantic.open : semantic.closed,
+              ),
             ),
           ),
       ],

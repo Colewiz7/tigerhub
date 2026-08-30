@@ -27,8 +27,13 @@ class Wordmark extends StatelessWidget {
         final wide = constraints.maxWidth >= _wideFrom;
         return SvgPicture.asset(
           wide
-              ? 'assets/generated/wordmark/tigerhub-wide.svg'
-              : 'assets/generated/wordmark/tigerhub-compact.svg',
+              // The "-flat" variants have their text converted to outlines.
+              // flutter_svg does not apply a clipPath whose content is a
+              // <text> element, so with the originals the three stripes drew
+              // as free-floating bars above the letters instead of cutting
+              // through them. See scripts/flatten-wordmark.py.
+              ? 'assets/generated/wordmark/tigerhub-wide-flat.svg'
+              : 'assets/generated/wordmark/tigerhub-compact-flat.svg',
           height: wide ? 40 : 34,
           // "Hub" is painted with fill="currentColor" so it can follow the
           // theme. flutter_svg defaults currentColor to black, and the

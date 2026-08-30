@@ -107,17 +107,85 @@ Map<int, List<Map<String, dynamic>>> parseCampusPlaces(String raw) {
   return out;
 }
 
+/// Decode the GeoJSON that [parseCampusPlaces] deliberately leaves out.
+///
+/// This is a separate projection so adding a map cannot change the
+/// parity-tested place contract used by the existing lists and sheets.
+List<Map<String, dynamic>> parseCampusMapFeatures(String raw) {
+  Object? decoded;
+  try {
+    decoded = decodeTurboStream(raw);
+  } on TurboStreamError {
+    return [];
+  }
+
+  final out = <Map<String, dynamic>>[];
+  final seen = <String>{};
+
+  for (final group in findAll(decoded, 'subLocations')) {
+    if (group is! List) continue;
+    for (final sub in group) {
+      if (sub is! Map<String, dynamic>) continue;
+      final menu = sub['menu'];
+      final subId = menu is Map<String, dynamic> ? menu['id'] : null;
+      if (subId is! int || !placeKinds.containsKey(subId)) continue;
+
+      final (kind, kindName) = placeKinds[subId]!;
+      for (final location in sub['locations'] as List<dynamic>? ?? const []) {
+        if (location is! Map<String, dynamic>) continue;
+        final props = location['properties'];
+        final geometry = location['geometry'];
+        if (props is! Map<String, dynamic> ||
+            geometry is! Map<String, dynamic>) {
+          continue;
+        }
+
+        final id = props['id'];
+        final name = props['name'];
+        final type = geometry['type'];
+        final coordinates = geometry['coordinates'];
+        if (id is! int ||
+            name is! String ||
+            type is! String ||
+            coordinates is! List) {
+          continue;
+        }
+        if (!const {'Point', 'Polygon', 'MultiPolygon'}.contains(type)) {
+          continue;
+        }
+        if (!seen.add('$subId:$id')) continue;
+
+        out.add({
+          'id': id,
+          'kind': kind,
+          'kind_name': kindName,
+          'name': name.trim(),
+          'building': _trimmed(props['abbreviation']),
+          'floor': _trimmed(props['floorLevel']),
+          'room': _trimmed(props['roomNumber']),
+          'note': _trimmed(props['descShort']),
+          'geometry': {'type': type, 'coordinates': coordinates},
+        });
+      }
+    }
+  }
+  return out;
+}
+
 Future<Map<String, dynamic>> scrapeCampusPlaces(Upstream http) async {
   final byKind = <String, List<Map<String, dynamic>>>{};
+  final mapFeatures = <Map<String, dynamic>>[];
   final failures = <int>[];
 
   // Sequential on purpose. Six categories at roughly 250 KB each is small, but
   // firing them in parallel at someone else's map server is rude.
   for (final parent in placeParents) {
     try {
-      final groups = parseCampusPlaces(
-        await http.getText(campusPlacesUrl.replaceFirst('{id}', '$parent')),
+      final raw = await http.getText(
+        campusPlacesUrl.replaceFirst('{id}', '$parent'),
       );
+      final groups = parseCampusPlaces(raw);
+      mapFeatures.addAll(parseCampusMapFeatures(raw));
       groups.forEach((subId, places) {
         if (places.isEmpty) return;
         byKind[placeKinds[subId]!.$1] = places;
@@ -130,7 +198,7 @@ Future<Map<String, dynamic>> scrapeCampusPlaces(Upstream http) async {
   if (byKind.isEmpty) {
     throw UpstreamError('no campus places parsed, failed parents: $failures');
   }
-  return {'kinds': byKind};
+  return {'kinds': byKind, 'map_features': mapFeatures};
 }
 
 // --- projections -------------------------------------------------------
@@ -145,11 +213,7 @@ List<Map<String, dynamic>> placeKindSummary(Map<String, dynamic>? snapshot) {
     if (places == null || places.isEmpty) continue;
     // kind_name, not name: PlaceKind.fromJson reads that key, and a mismatch
     // renders the sheet with blank labels rather than failing.
-    out.add({
-      'kind': entry.$1,
-      'kind_name': entry.$2,
-      'count': places.length,
-    });
+    out.add({'kind': entry.$1, 'kind_name': entry.$2, 'count': places.length});
   }
   return out;
 }
@@ -164,8 +228,25 @@ List<Map<String, dynamic>> placesOfKind(
       p as Map<String, dynamic>,
   ];
   places.sort((a, b) {
-    final byBuilding = '${a['building'] ?? ''}'.compareTo('${b['building'] ?? ''}');
-    return byBuilding != 0 ? byBuilding : '${a['name']}'.compareTo('${b['name']}');
+    final byBuilding = '${a['building'] ?? ''}'.compareTo(
+      '${b['building'] ?? ''}',
+    );
+    return byBuilding != 0
+        ? byBuilding
+        : '${a['name']}'.compareTo('${b['name']}');
   });
   return places;
+}
+
+List<Map<String, dynamic>> campusMapFeatures(Map<String, dynamic>? snapshot) {
+  final features = <Map<String, dynamic>>[
+    for (final feature
+        in snapshot?['map_features'] as List<dynamic>? ?? const [])
+      feature as Map<String, dynamic>,
+  ];
+  features.sort((a, b) {
+    final byKind = '${a['kind']}'.compareTo('${b['kind']}');
+    return byKind != 0 ? byKind : '${a['name']}'.compareTo('${b['name']}');
+  });
+  return features;
 }
