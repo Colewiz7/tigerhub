@@ -30,8 +30,9 @@ void main() {
   void compare(
     List<Map<String, dynamic>> actual,
     List<Map<String, dynamic>> expected,
-    String label,
-  ) {
+    String label, {
+    Set<String> except = const {},
+  }) {
     actual.sort((a, b) {
       final byUid = (a['uid'] as String).compareTo(b['uid'] as String);
       return byUid != 0
@@ -44,6 +45,7 @@ void main() {
 
     for (var i = 0; i < expected.length; i++) {
       for (final key in expected[i].keys) {
+        if (except.contains(key)) continue;
         final want = expected[i][key];
         final got = actual[i][key];
 
@@ -88,15 +90,59 @@ void main() {
     );
   });
 
-  test('drupal parses identically to the backend', () {
-    compare(
-      parseDrupal(
+  List<Map<String, dynamic>> drupalActual() => parseDrupal(
         jsonDecode(File('test/fixtures/drupal_events.json').readAsStringSync())
             as List<dynamic>,
-      ),
+      );
+
+  test('drupal parses identically to the backend, except for the time fix', () {
+    // The three time fields are deliberately excluded: the backend got them
+    // wrong and this port does not reproduce the bug. See the test below for
+    // what it does instead. Everything else must still match exactly.
+    compare(
+      drupalActual(),
       golden('drupal_parse'),
       'drupal',
+      except: {'starts_at', 'ends_at', 'all_day'},
     );
+  });
+
+  group('drupal times', () {
+    test('reads the 12 hour clock Drupal actually publishes', () {
+      expect(parseClockOf('3:00 PM'), (15, 0, 0));
+      expect(parseClockOf('12:00 AM'), (0, 0, 0));
+      expect(parseClockOf('12:00 PM'), (12, 0, 0));
+      expect(parseClockOf('11:33 AM'), (11, 33, 0));
+      // The 24 hour forms the backend did handle still work.
+      expect(parseClockOf('15:00'), (15, 0, 0));
+      expect(parseClockOf('15:00:30'), (15, 0, 30));
+      expect(parseClockOf('nonsense'), isNull);
+    });
+
+    test('stops marking timed events as all day', () {
+      // The bug: 456 of 460 official RIT events carried a stated start time
+      // that was discarded, so the Events tab showed everything from RIT as
+      // ALL DAY. Only 4 records genuinely have no time.
+      final parsed = drupalActual();
+      final timed = parsed.where((e) => e['all_day'] == false).length;
+
+      expect(parsed.length, 460);
+      expect(timed, 456, reason: 'these are the events the backend lost');
+      expect(
+        golden('drupal_parse').where((e) => e['all_day'] == false).length,
+        0,
+        reason: 'the backend marked every single one all day',
+      );
+    });
+
+    test('places an afternoon event in the afternoon', () {
+      final parsed = drupalActual();
+      final afternoon = parsed.firstWhere(
+        (e) => (e['starts_at'] as String).contains('T15:00:00'),
+      );
+      expect(afternoon['all_day'], isFalse);
+      expect(afternoon['starts_at'], contains('T15:00:00'));
+    });
   });
 
   group('ical parsing', () {
