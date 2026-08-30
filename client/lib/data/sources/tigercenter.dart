@@ -141,16 +141,21 @@ Map<String, dynamic> buildDiningLocation(
 
 /// Visiting chefs and specials both come free from this payload, so no scrape
 /// of rit.edu/dining/menus is needed (CLAUDE.md 7.2).
+///
+/// A null [category] returns everything published for the day, which is what
+/// specials are: the server filtered visiting chefs by category and left
+/// specials unfiltered. Filtering specials on a "Special" category would return
+/// nothing, because no such category is published.
 List<Map<String, dynamic>> menuItemsWithCategory(
   Map<String, dynamic> snapshot,
-  String category,
+  String? category,
 ) {
   final out = <Map<String, dynamic>>[];
   for (final raw in snapshot['locations'] as List<dynamic>? ?? const []) {
     final location = raw as Map<String, dynamic>;
     for (final item in location['menus'] as List<dynamic>? ?? const []) {
       if (item is! Map<String, dynamic>) continue;
-      if (item['category'] != category) continue;
+      if (category != null && item['category'] != category) continue;
       out.add({
         'id': item['id'],
         'location_id': location['id'],
