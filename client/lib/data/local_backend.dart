@@ -612,38 +612,63 @@ class LocalBackend implements Backend {
 
   /// A location's menu for today, fetched on demand rather than rotated.
   ///
-  /// See the cadence note in `sources/fd_menus.dart`: a month of menus for one
-  /// location is about 7 MB, and pulling all twelve on a device would spend
-  /// 84 MB of someone's data on locations they never open.
+  /// See the payload note in `sources/fd_menus.dart`: this asks for one day
+  /// rather than a month, which is about 1 MB instead of 26 MB per meal period.
+  ///
+  /// A stored menu paints immediately and the refresh runs behind it, the same
+  /// as every other read. Blocking here would freeze the detail sheet on a
+  /// network round trip every time a row is tapped.
   Future<Map<String, dynamic>> _menu(int locationId) async {
     final config = StaticConfig.instance;
     final key = 'fd_menus_$locationId';
     final store = await _openStore();
+    final today = CampusTime.formatDate(CampusTime.nowUtc());
 
-    var stored = await store.read(key);
+    final stored = await store.read(key);
     final age = await store.fetchedAt(key);
 
-    final due = age == null || DateTime.now().difference(age) > fdMenuCadence;
-    if (due) {
-      try {
-        final fetched = await fetchFdMenus(_http, config, locationId);
-        if (fetched != null) {
-          await store.write(key, fetched);
-          stored = await store.read(key);
+    // A snapshot for another date is useless no matter how recent it is, which
+    // is what happens to anyone opening the app just after midnight.
+    final wrongDay = stored != null && stored.body['service_date'] != today;
+    final due = stored == null ||
+        wrongDay ||
+        age == null ||
+        DateTime.now().difference(age) > fdMenuCadence;
+
+    Future<void> refresh() async {
+      if (_inFlight.containsKey(key)) return _inFlight[key];
+      final future = () async {
+        try {
+          final fetched = await fetchFdMenus(_http, config, locationId);
+          if (fetched != null) await store.write(key, fetched);
+        } catch (_) {
+          // Falls back to whatever is stored, or to an empty menu.
+        } finally {
+          _inFlight.remove(key);
         }
-      } catch (_) {
-        // Falls back to whatever is stored, or to an empty menu.
+      }();
+      _inFlight[key] = future;
+      return future;
+    }
+
+    var body = stored?.body;
+
+    if (due) {
+      if (body == null || wrongDay) {
+        // Nothing usable to show, so this one has to be waited on.
+        await refresh();
+        body = (await store.read(key))?.body;
+      } else {
+        unawaited(refresh());
       }
     }
 
-    final today = CampusTime.formatDate(CampusTime.nowUtc());
     return {
       'service_date': today,
       'location_id': locationId,
-      'dishes': dishesOn(stored?.body, today),
-      'stale': stored == null,
-      'last_updated':
-          age == null ? null : CampusTime.format(age.toUtc()),
+      'dishes': dishesOn(body, today),
+      'stale': body == null || body['service_date'] != today,
+      'last_updated': age == null ? null : CampusTime.format(age.toUtc()),
     };
   }
 
