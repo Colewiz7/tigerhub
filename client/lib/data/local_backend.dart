@@ -539,7 +539,14 @@ class LocalBackend implements Backend {
     // Snapshots written before the map shipped contain the place lists but no
     // geometry. They can keep serving every existing screen, but the first map
     // visit needs one migration refresh even when that old snapshot is fresh.
-    if (snapshot != null && !snapshot.containsKey('map_features')) {
+    final mapFeatures = snapshot?['map_features'] as List<dynamic>?;
+    final hasBackdrop =
+        mapFeatures?.any(
+          (feature) =>
+              feature is Map<String, dynamic> && feature['kind'] == '_campus',
+        ) ??
+        false;
+    if (snapshot != null && !hasBackdrop) {
       await _refreshIfDue(campusPlacesSource, force: true);
       final refreshed = await _cachedRead(campusPlacesSource);
       snapshot = refreshed?.$1;

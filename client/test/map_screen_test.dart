@@ -20,7 +20,10 @@ import 'package:tigerhub/theme/app_theme.dart';
 
 class _MapBackend implements Backend {
   @override
-  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async {
+  Future<Map<String, dynamic>> fetch(
+    String path, [
+    Map<String, String>? q,
+  ]) async {
     if (path == '/campus/map') {
       return {
         'data': parseCampusMapFeatures(
@@ -50,16 +53,20 @@ void main() {
     tester.view.physicalSize = const Size(1200, 900);
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.from(
-        ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.from(
+          ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+        ),
+        home: Scaffold(
+          body: MapScreen(api: ApiClient(backend: _MapBackend())),
+        ),
       ),
-      home: Scaffold(body: MapScreen(api: ApiClient(backend: _MapBackend()))),
-    ));
+    );
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('Fit campus'), findsOneWidget);
-    expect(find.text('Water fountains'), findsWidgets);
+    expect(find.byTooltip('Filter map places'), findsOneWidget);
     expect(find.byType(CustomPaint), findsWidgets);
     expect(tester.takeException(), isNull);
   });
@@ -67,12 +74,18 @@ void main() {
   testWidgets('survives being disposed mid load', (tester) async {
     // The tab can be left before the map's own subscription delivers, and a
     // dangling one would then call setState on a dead screen.
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(body: MapScreen(api: ApiClient(backend: _MapBackend()))),
-    ));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MapScreen(api: ApiClient(backend: _MapBackend())),
+        ),
+      ),
+    );
     await tester.pump();
 
-    await tester.pumpWidget(const MaterialApp(home: Scaffold(body: SizedBox())));
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: SizedBox())),
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);

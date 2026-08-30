@@ -532,10 +532,7 @@ class _PostOfficeBlock extends StatelessWidget {
               ),
 
             const SizedBox(height: 16),
-            for (final service in services.entries) ...[
-              _ServiceHours(service: service.key, rules: service.value),
-              const SizedBox(height: 14),
-            ],
+            _ServiceModules(services: services, season: season),
             if (office.locationNote != null) ...[
               Text(office.locationNote!, style: text.bodySmall),
               const SizedBox(height: 12),
@@ -583,78 +580,301 @@ List<(String, List<HoursRule>)> groupRulesByDay(List<HoursRule> rules) {
   return out;
 }
 
-/// One service, with its times set large and centred.
+/// The service modules, side by side when there is room for them.
 ///
-/// The times are the thing people came for, so they get the space rather than
-/// being one column of a cramped table.
+/// The spec asks for two across at 840px and above, and each module needs at
+/// least 340px of content to keep its large centred times on one line. Below
+/// that they stack, because a cramped module is worse than a tall column.
+class _ServiceModules extends StatelessWidget {
+  const _ServiceModules({required this.services, required this.season});
+
+  final Map<String, List<HoursRule>> services;
+  final String season;
+
+  static const double _twoUpFrom = 840;
+  static const double _minModuleWidth = 340;
+  static const double _gap = 14;
+
+  @override
+  Widget build(BuildContext context) {
+    final entries = services.entries.toList();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final twoUp = width >= _twoUpFrom &&
+            (width - _gap) / 2 >= _minModuleWidth &&
+            entries.length > 1;
+
+        if (!twoUp) {
+          return Column(
+            children: [
+              for (final entry in entries) ...[
+                _ServiceHours(
+                  service: entry.key,
+                  rules: entry.value,
+                  season: season,
+                ),
+                const SizedBox(height: _gap),
+              ],
+            ],
+          );
+        }
+
+        // Reading order continues into the next row, so a third service does
+        // not jump the queue to fill a hole.
+        final rows = <Widget>[];
+        for (var i = 0; i < entries.length; i += 2) {
+          final left = entries[i];
+          final right = i + 1 < entries.length ? entries[i + 1] : null;
+          rows.add(
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _ServiceHours(
+                      service: left.key,
+                      rules: left.value,
+                      season: season,
+                    ),
+                  ),
+                  const SizedBox(width: _gap),
+                  Expanded(
+                    child: right == null
+                        ? const SizedBox.shrink()
+                        : _ServiceHours(
+                            service: right.key,
+                            rules: right.value,
+                            season: season,
+                          ),
+                  ),
+                ],
+              ),
+            ),
+          );
+          rows.add(const SizedBox(height: _gap));
+        }
+        return Column(children: rows);
+      },
+    );
+  }
+}
+
+/// One service, as a self contained module.
+///
+/// Per `docs/post-office-hours-spec.md`. Package pickup and the shipping window
+/// are never combined: they can run different seasons, days and hours, and
+/// merging them would invent a schedule neither of them has.
+///
+/// The times are what people came for, so they stay large and centred. What the
+/// module adds is a frame around them without turning them back into a table:
+/// a quiet surface, a narrow route marker down the left, and the season stated
+/// rather than assumed.
 class _ServiceHours extends StatelessWidget {
-  const _ServiceHours({required this.service, required this.rules});
+  const _ServiceHours({
+    required this.service,
+    required this.rules,
+    required this.season,
+  });
 
   final String service;
+  final List<HoursRule> rules;
+
+  /// Which season these hours belong to. Stated because RIT publishes fall and
+  /// summer separately and the difference is easy to be caught out by.
+  final String season;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final grouped = groupRulesByDay(rules);
+
+    // One group per service, read as: service, season, days, then spans.
+    return Semantics(
+      container: true,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHigh,
+          borderRadius: Shapes.inner,
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // The route marker. Decoration, so it carries no meaning that is
+              // not also in the text.
+              ExcludeSemantics(
+                child: Container(width: 4, color: scheme.primary),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ServiceHeading(service: service, season: season),
+                      const SizedBox(height: 14),
+                      for (var i = 0; i < grouped.length; i++) ...[
+                        if (i > 0) ...[
+                          const SizedBox(height: 14),
+                          Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: scheme.outlineVariant.withValues(alpha: 0.35),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                        _DaySpans(
+                          label: grouped[i].$1,
+                          rules: grouped[i].$2,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Service name, with the season pushed to the opposite edge.
+class _ServiceHeading extends StatelessWidget {
+  const _ServiceHeading({required this.service, required this.season});
+
+  final String service;
+  final String season;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+
+    final name = Text(_serviceLabel(service), style: text.titleMedium);
+    final label = Text(
+      season.toUpperCase(),
+      style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+    );
+
+    // At a large text scale the two stop fitting on one line, so the season
+    // drops underneath rather than being squeezed.
+    //
+    // Decided from the text scale alone rather than from a LayoutBuilder: this
+    // sits inside an IntrinsicHeight, which cannot measure a LayoutBuilder and
+    // throws rather than degrading.
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    if (scale > 1.3) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [name, const SizedBox(height: 2), label],
+      );
+    }
+    return Row(children: [Expanded(child: name), label]);
+  }
+}
+
+/// One day caption, and every span that day holds.
+class _DaySpans extends StatelessWidget {
+  const _DaySpans({required this.label, required this.rules});
+
+  final String label;
   final List<HoursRule> rules;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final grouped = groupRulesByDay(rules);
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHigh,
-        borderRadius: Shapes.inner,
-      ),
-      child: Column(
-        children: [
-          Text(_serviceLabel(service).toUpperCase(), style: text.labelSmall),
-          const SizedBox(height: 16),
-          for (var i = 0; i < grouped.length; i++) ...[
-            if (i > 0) ...[
-              const SizedBox(height: 16),
-              // A rule per line ran together. A hairline separates them so
-              // "weekdays" and "Saturday" read as two facts, not one block.
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: scheme.outlineVariant.withValues(alpha: 0.35),
-              ),
-              const SizedBox(height: 16),
-            ],
-            Column(
-              children: [
-                // The day comes first and small, so the eye lands on the time.
-                Text(
-                  grouped[i].$1.toUpperCase(),
-                  textAlign: TextAlign.center,
-                  style: text.labelSmall,
-                ),
-                const SizedBox(height: 6),
-                // A split shift is several spans on the same days. They share
-                // one heading, because repeating "MON TO FRI" above each half
-                // reads as two different rules rather than one lunch break.
-                for (var j = 0; j < grouped[i].$2.length; j++) ...[
-                  if (j > 0) const SizedBox(height: 4),
-                  Text(
-                    '${_time(grouped[i].$2[j].opensAt)} to '
-                    '${_time(grouped[i].$2[j].closesAt)}',
-                    textAlign: TextAlign.center,
-                    style: text.displayMedium?.copyWith(
-                      fontSize: 29,
-                      height: 1.15,
-                      fontVariations: Weights.medium,
-                      color: scheme.onSurface,
-                    ),
-                  ),
-                ],
-              ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          label.toUpperCase(),
+          textAlign: TextAlign.center,
+          style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+        ),
+        const SizedBox(height: 8),
+        for (var i = 0; i < rules.length; i++) ...[
+          // A split shift stacks under one caption. No plus sign: it reads as
+          // arithmetic, or as both spans running at once.
+          if (i > 0) const _WavyBreak(),
+          Text(
+            '${_time(rules[i].opensAt)} to ${_time(rules[i].closesAt)}',
+            textAlign: TextAlign.center,
+            style: text.displayMedium?.copyWith(
+              fontSize: 34,
+              height: 1.15,
+              fontVariations: Weights.medium,
+              color: scheme.onSurface,
             ),
-          ],
+          ),
         ],
-      ),
+      ],
     );
   }
+}
+
+/// The marker between two spans of one day. Decoration only: the caption above
+/// already says which day, and each span states its own times.
+class _WavyBreak extends StatelessWidget {
+  const _WavyBreak();
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: SizedBox(
+            height: 7,
+            child: CustomPaint(
+              painter: _WavyPainter(
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.55),
+              ),
+              size: const Size(double.infinity, 7),
+            ),
+          ),
+        ),
+      );
+}
+
+class _WavyPainter extends CustomPainter {
+  const _WavyPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.6
+      ..strokeCap = StrokeCap.round;
+
+    // A short wave in the middle, rather than a rule the full width, so it
+    // separates the spans without looking like another divider.
+    const period = 13.0;
+    final width = size.width.clamp(0.0, 96.0);
+    final left = (size.width - width) / 2;
+    final middle = size.height / 2;
+
+    final path = Path()..moveTo(left, middle);
+    for (var x = 0.0; x < width; x += period) {
+      path.relativeQuadraticBezierTo(period / 4, -middle, period / 2, 0);
+      path.relativeQuadraticBezierTo(period / 4, middle, period / 2, 0);
+    }
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(_WavyPainter old) => old.color != color;
 }
 
 class _ContactChip extends StatelessWidget {

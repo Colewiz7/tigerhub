@@ -209,6 +209,28 @@ void main() {
     }
   });
 
+  testWidgets('each service states its season', (tester) async {
+    // RIT publishes fall and summer separately, and the difference is easy to
+    // be caught out by, so the module says which one it is showing.
+    await pumpCampus(tester);
+
+    final labels = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data ?? '')
+        .toSet();
+
+    expect(labels.any((d) => d == 'FALL' || d == 'SUMMER'), isTrue,
+        reason: 'the hours shown belong to a season that is never named');
+  });
+
+  testWidgets('pickup and shipping are never merged', (tester) async {
+    // They can run different seasons, days and hours. Combining them would
+    // invent a schedule neither of them has.
+    await pumpCampus(tester);
+    expect(find.text('Package pickup'), findsWidgets);
+    expect(find.text('Shipping window'), findsWidgets);
+  });
+
   testWidgets('a split shift is captioned once, not twice', (tester) async {
     await pumpCampus(tester);
 
