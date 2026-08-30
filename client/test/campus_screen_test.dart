@@ -182,6 +182,33 @@ void main() {
     expect(find.textContaining('6000 Reynolds Drive'), findsWidgets);
   });
 
+  testWidgets('each post office service says what it is doing now',
+      (tester) async {
+    // The week's table is for planning. This line is for standing outside
+    // deciding whether to walk over.
+    await pumpCampus(tester);
+
+    final labels = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((t) => t.data ?? '')
+        .toList();
+
+    final statusLines = labels
+        .where((d) => d.startsWith('OPEN \u00b7 ') || d.startsWith('CLOSED \u00b7 '))
+        .toList();
+
+    expect(statusLines, isNotEmpty,
+        reason: 'no service reported its state for today');
+
+    // Two offices, each running package pickup and a shipping window.
+    expect(statusLines.length, greaterThanOrEqualTo(2));
+
+    // Status is stated in words, never by the dot alone.
+    for (final line in statusLines) {
+      expect(line, anyOf(startsWith('OPEN'), startsWith('CLOSED')));
+    }
+  });
+
   testWidgets('a split shift is captioned once, not twice', (tester) async {
     await pumpCampus(tester);
 
