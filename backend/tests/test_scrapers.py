@@ -163,3 +163,82 @@ def test_campusgroups_real_feed_has_no_placeholder_locations():
             continue
         assert "sign in" not in location.lower()
         assert "," not in location, f"postal address leaked through: {location}"
+
+
+def test_recreation_parses_every_facility_and_all_seven_days():
+    from datetime import date
+
+    from app.scrapers import recreation
+
+    rows = recreation.parse(
+        fixture_text("recreation_facility_hours.html"), today=date(2026, 8, 29)
+    )
+    facilities = {row["facility"] for row in rows}
+    assert "Judson/Hale Aquatics Center" in facilities
+    assert "Wiedman Fitness Center" in facilities
+    assert len(facilities) >= 5
+
+    # The page publishes a rolling seven days. The header row runs into the
+    # first data row in this markup, which used to swallow today entirely.
+    slc = [r for r in rows if r["facility"].startswith("Hale-Andrews Student")]
+    assert len({r["service_date"] for r in slc}) == 7
+    assert any(r["service_date"] == "2026-08-29" for r in slc), "today was dropped"
+
+
+def test_recreation_splits_a_multi_session_day():
+    """The pool runs a morning, lunch and evening block. Collapsing those into
+    one range would say the pool is open when it is not."""
+    from datetime import date
+
+    from app.scrapers import recreation
+
+    rows = recreation.parse(
+        fixture_text("recreation_facility_hours.html"), today=date(2026, 8, 29)
+    )
+    monday = [
+        r
+        for r in rows
+        if "Aquatics" in r["facility"] and r["service_date"] == "2026-08-31"
+    ]
+    assert len(monday) == 3
+    assert [(r["opens_at"], r["closes_at"]) for r in monday] == [
+        ("06:45", "08:45"),
+        ("12:00", "13:45"),
+        ("19:00", "22:00"),
+    ]
+
+
+def test_recreation_records_closed_days():
+    from datetime import date
+
+    from app.scrapers import recreation
+
+    rows = recreation.parse(
+        fixture_text("recreation_facility_hours.html"), today=date(2026, 8, 29)
+    )
+    closed = [r for r in rows if r["closed"]]
+    assert closed, "the SLC Main Office is closed at weekends"
+    assert all(r["opens_at"] is None for r in closed)
+
+
+def test_recreation_time_parsing():
+    from app.scrapers.recreation import parse_time
+
+    assert parse_time("10am") == "10:00"
+    assert parse_time("6:45am") == "06:45"
+    assert parse_time("12pm") == "12:00"
+    assert parse_time("11pm") == "23:00"
+    assert parse_time("12am") == "00:00"
+    assert parse_time("noon") == "12:00"
+    assert parse_time("nonsense") is None
+
+
+def test_recreation_hours_cell_parsing():
+    from app.scrapers.recreation import parse_hours_cell
+
+    assert parse_hours_cell("CLOSED") == []
+    assert parse_hours_cell("") == []
+    assert parse_hours_cell("10am - 11pm") == [
+        {"opens_at": "10:00", "closes_at": "23:00"}
+    ]
+    assert len(parse_hours_cell("6:45am - 8:45am, 12pm - 1:45pm, 7pm - 10pm")) == 3

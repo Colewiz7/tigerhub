@@ -31,6 +31,10 @@ INTERVAL_DINING_MINUTES = int(os.getenv("RIT_TIMES_INTERVAL_DINING", "60"))
 INTERVAL_EVENTS_MINUTES = int(os.getenv("RIT_TIMES_INTERVAL_EVENTS", "180"))
 INTERVAL_MAKERSPACE_MINUTES = int(os.getenv("RIT_TIMES_INTERVAL_MAKERSPACE", "15"))
 INTERVAL_OCCUPANCY_MINUTES = int(os.getenv("RIT_TIMES_INTERVAL_OCCUPANCY", "5"))
+# Recreation hours are a weekly schedule that changes rarely, so this is slow
+# on purpose. It is an HTML scrape, and hammering a page is worse manners than
+# hitting an API.
+INTERVAL_RECREATION_MINUTES = int(os.getenv("RIT_TIMES_INTERVAL_RECREATION", "360"))
 
 # Static config entries older than this are reported as stale by /health/sources.
 CONFIG_STALE_AFTER_DAYS = int(os.getenv("RIT_TIMES_CONFIG_STALE_DAYS", "120"))

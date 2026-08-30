@@ -1,6 +1,6 @@
 """Response models. These are the contract the Flutter client codes against."""
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Generic, TypeVar
 
 from pydantic import BaseModel
@@ -106,6 +106,24 @@ class RoomSummary(BaseModel):
     machines: int
     available: int
     in_use: int
+
+
+class RecreationSpan(BaseModel):
+    opens_at: str
+    closes_at: str
+
+
+class RecreationDay(BaseModel):
+    service_date: date
+    closed: bool
+    note: str | None = None
+    # Several sessions in one day is normal for the pool.
+    spans: list[RecreationSpan] = []
+
+
+class RecreationFacility(BaseModel):
+    name: str
+    days: list[RecreationDay] = []
 
 
 class HoursRule(BaseModel):

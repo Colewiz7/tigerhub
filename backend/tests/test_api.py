@@ -86,7 +86,7 @@ def test_health_sources_reports_a_broken_parser(client, monkeypatch):
 
 def test_health_sources_healthy_after_success(client):
     for source in ["tigercenter_dining", "campusgroups", "drupal",
-                   "makerspace_equipment", "maps_occupancy"]:
+                   "makerspace_equipment", "maps_occupancy", "recreation_hours"]:
         health.record_success(source, 1)
     response = client.get("/health/sources")
     assert response.status_code == 200

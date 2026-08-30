@@ -11,7 +11,11 @@ def test_migrations_are_idempotent(temp_db):
     # temp_db already migrated once, so a second run must be a no-op.
     assert db.migrate() == []
     rows = db.connection().execute("SELECT version FROM schema_version").fetchall()
-    assert [r["version"] for r in rows] == ["001_initial", "002_occupancy_probe"]
+    assert [r["version"] for r in rows] == [
+        "001_initial",
+        "002_occupancy_probe",
+        "003_recreation",
+    ]
 
 
 def test_dining_round_trip(temp_db):

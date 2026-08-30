@@ -10,7 +10,14 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from app import settings
-from app.scrapers import campusgroups, drupal_events, makerspace, maps_occupancy, tigercenter
+from app.scrapers import (
+    campusgroups,
+    drupal_events,
+    makerspace,
+    maps_occupancy,
+    recreation,
+    tigercenter,
+)
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +29,7 @@ JOBS = [
     ("drupal_events", drupal_events.run, settings.INTERVAL_EVENTS_MINUTES, 40),
     ("makerspace", makerspace.run, settings.INTERVAL_MAKERSPACE_MINUTES, 60),
     ("occupancy", maps_occupancy.run, settings.INTERVAL_OCCUPANCY_MINUTES, 80),
+    ("recreation", recreation.run, settings.INTERVAL_RECREATION_MINUTES, 100),
 ]
 
 

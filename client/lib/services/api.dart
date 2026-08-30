@@ -147,6 +147,11 @@ class ApiClient {
         (j) => Collection.fromJson(j, PostOffice.fromJson),
       );
 
+  Stream<Result<Collection<RecreationFacility>>> recreation() => watch(
+        '/recreation/hours',
+        (j) => Collection.fromJson(j, RecreationFacility.fromJson),
+      );
+
   Stream<Result<Collection<RoomSummary>>> makerspaceRooms() => watch(
         '/makerspace/rooms',
         (j) => Collection.fromJson(j, RoomSummary.fromJson),

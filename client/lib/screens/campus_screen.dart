@@ -36,6 +36,8 @@ class _CampusScreenState extends State<CampusScreen> {
       const Result(value: null, state: DataState.priming);
   Result<Collection<RoomSummary>> _rooms =
       const Result(value: null, state: DataState.priming);
+  Result<Collection<RecreationFacility>> _rec =
+      const Result(value: null, state: DataState.priming);
 
   @override
   void initState() {
@@ -48,6 +50,9 @@ class _CampusScreenState extends State<CampusScreen> {
     });
     widget.api.makerspaceRooms().listen((r) {
       if (mounted) setState(() => _rooms = r);
+    });
+    widget.api.recreation().listen((r) {
+      if (mounted) setState(() => _rec = r);
     });
   }
 
@@ -71,6 +76,22 @@ class _CampusScreenState extends State<CampusScreen> {
           for (final office in _offices.value?.data ?? const <PostOffice>[])
             _PostOfficeBlock(office: office),
           if (_offices.isPriming) const PrimingPlaceholder(label: 'Loading post offices'),
+
+          const SizedBox(height: 22),
+
+          _Heading(
+            title: 'Gym and pool',
+            subtitle: 'Today first. A facility can run several sessions in a '
+                'day, so each one is listed separately.',
+            state: _rec.state,
+            fetchedAt: _rec.fetchedAt,
+          ),
+          if (_rec.isPriming)
+            const PrimingPlaceholder(label: 'Loading facility hours')
+          else
+            for (final facility
+                in _rec.value?.data ?? const <RecreationFacility>[])
+              _RecreationRow(facility: facility),
 
           const SizedBox(height: 22),
 
@@ -336,6 +357,132 @@ class _ContactChip extends StatelessWidget {
             Icon(icon, size: 14, color: scheme.onSurfaceVariant),
             const SizedBox(width: 7),
             Text(label, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// One facility, today's sessions inline, the rest of the week on tap.
+class _RecreationRow extends StatelessWidget {
+  const _RecreationRow({required this.facility});
+
+  final RecreationFacility facility;
+
+  static IconData _icon(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('aquatic') || n.contains('pool')) return Icons.pool_rounded;
+    if (n.contains('climb')) return Icons.terrain_rounded;
+    if (n.contains('tennis')) return Icons.sports_tennis_rounded;
+    if (n.contains('turf') || n.contains('field')) return Icons.sports_soccer_rounded;
+    if (n.contains('track')) return Icons.directions_run_rounded;
+    if (n.contains('office')) return Icons.badge_rounded;
+    return Icons.fitness_center_rounded;
+  }
+
+  String _spansOf(RecreationDay day) => day.closed || day.spans.isEmpty
+      ? (day.note ?? 'Closed')
+      : day.spans
+          .map((s) => '${_time(s.opensAt)} to ${_time(s.closesAt)}')
+          .join(',  ');
+
+  @override
+  Widget build(BuildContext context) {
+    final semantic = Semantic.of(context);
+    final today = facility.days.isEmpty ? null : facility.days.first;
+    final open = today != null && !today.closed && today.spans.isNotEmpty;
+
+    return StatusRow(
+      icon: _icon(facility.name),
+      title: facility.name,
+      subtitle: today == null ? 'No hours published' : _spansOf(today),
+      accent: open ? semantic.open : semantic.closed,
+      emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
+      onTap: facility.days.length < 2
+          ? null
+          : () => showModalBottomSheet<void>(
+                context: context,
+                showDragHandle: true,
+                builder: (context) => _WeekSheet(facility: facility),
+              ),
+      trailing: facility.days.length < 2
+          ? null
+          : Icon(
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+    );
+  }
+}
+
+/// The whole published week for one facility.
+class _WeekSheet extends StatelessWidget {
+  const _WeekSheet({required this.facility});
+
+  final RecreationFacility facility;
+
+  static const _dayNames = [
+    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final semantic = Semantic.of(context);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(facility.name, style: text.titleLarge?.copyWith(fontSize: 22)),
+            const SizedBox(height: 14),
+            for (var i = 0; i < facility.days.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 118,
+                      child: Text(
+                        i == 0
+                            ? 'Today'
+                            : _dayNames[facility.days[i].serviceDate.weekday - 1],
+                        style: text.bodySmall,
+                      ),
+                    ),
+                    Expanded(
+                      child: facility.days[i].closed ||
+                              facility.days[i].spans.isEmpty
+                          ? Text(
+                              facility.days[i].note ?? 'Closed',
+                              style: text.bodyMedium
+                                  ?.copyWith(color: semantic.closed),
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                for (final span in facility.days[i].spans)
+                                  Text(
+                                    '${_time(span.opensAt)} to ${_time(span.closesAt)}',
+                                    style: text.bodyMedium,
+                                  ),
+                              ],
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 6),
+            Text(
+              'From RIT Recreation and Wellness.',
+              style: text.bodySmall,
+            ),
           ],
         ),
       ),

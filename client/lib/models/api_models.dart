@@ -275,6 +275,60 @@ class PostOffice {
       );
 }
 
+class RecreationSpan {
+  const RecreationSpan({required this.opensAt, required this.closesAt});
+
+  final String opensAt;
+  final String closesAt;
+
+  factory RecreationSpan.fromJson(Map<String, dynamic> json) => RecreationSpan(
+        opensAt: json['opens_at'] as String? ?? '',
+        closesAt: json['closes_at'] as String? ?? '',
+      );
+}
+
+class RecreationDay {
+  const RecreationDay({
+    required this.serviceDate,
+    required this.closed,
+    required this.spans,
+    this.note,
+  });
+
+  final DateTime serviceDate;
+  final bool closed;
+
+  /// Several sessions in one day is normal. The pool runs a morning lap swim,
+  /// a lunch block and an evening block.
+  final List<RecreationSpan> spans;
+  final String? note;
+
+  factory RecreationDay.fromJson(Map<String, dynamic> json) => RecreationDay(
+        serviceDate:
+            DateTime.tryParse(json['service_date'] as String? ?? '') ?? DateTime.now(),
+        closed: json['closed'] as bool? ?? false,
+        note: json['note'] as String?,
+        spans: (json['spans'] as List<dynamic>? ?? const [])
+            .map((e) => RecreationSpan.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
+class RecreationFacility {
+  const RecreationFacility({required this.name, required this.days});
+
+  final String name;
+  final List<RecreationDay> days;
+
+  factory RecreationFacility.fromJson(Map<String, dynamic> json) =>
+      RecreationFacility(
+        name: json['name'] as String? ?? '',
+        days: (json['days'] as List<dynamic>? ?? const [])
+            .map((e) => RecreationDay.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+}
+
 class MakerSpaceHours {
   const MakerSpaceHours({
     required this.id,
