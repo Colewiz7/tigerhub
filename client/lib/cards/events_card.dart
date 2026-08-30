@@ -10,6 +10,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/bounded_list.dart';
@@ -67,7 +68,7 @@ class EventsCard extends StatelessWidget {
       dragHandle: dragHandle,
       child: switch ((result.isPriming, events.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading events'),
-        (_, true) => const EmptyNote(text: 'No upcoming events cached yet.'),
+        (_, true) => const EmptyState(kind: EmptyKind.noEvents),
         _ => _Grouped(events: events, onShowAll: onShowAll),
       },
     );

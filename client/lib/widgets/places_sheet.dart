@@ -8,6 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../theme/tokens.dart';
@@ -95,7 +96,7 @@ class _PlacesSheetState extends State<PlacesSheet> {
             if (_result?.isPriming ?? true)
               const PrimingPlaceholder(label: 'Loading')
             else if (matches.isEmpty)
-              const EmptyNote(text: 'Nothing matches that.')
+              const EmptyState(kind: EmptyKind.notFound, compact: false)
             else
               Flexible(
                 child: ListView.builder(

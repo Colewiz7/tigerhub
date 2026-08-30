@@ -49,6 +49,13 @@ class Preferences extends ChangeNotifier {
   static const _dietKey = 'diet_filters';
   static const _avoidKey = 'avoid_allergens';
 
+  // Where you live. Promoted out of the housing card's own state because it is
+  // not really a card setting: it is the one fact the app knows about you, and
+  // first run asks for it once so nothing has to ask again.
+  static const _homeAreaKey = 'housing_area';
+  static const _homeUnitKey = 'housing_unit';
+  static const _setupSeenKey = 'setup_seen';
+
   Set<String> _muted = {};
   Set<String> _pinned = {};
   Set<String> _diet = {};
@@ -57,6 +64,10 @@ class Preferences extends ChangeNotifier {
   List<String> _boost = defaultBoostKeywords;
   bool _keywordRulesEnabled = true;
   bool _loaded = false;
+
+  String? _homeArea;
+  String _homeUnit = '';
+  bool _setupSeen = false;
 
   bool get loaded => _loaded;
   Set<String> get mutedOrganizers => _muted;
@@ -91,7 +102,61 @@ class Preferences extends ChangeNotifier {
     final flags = await cache.readOrder(_keywordsEnabledKey);
     _keywordRulesEnabled = flags.isEmpty || flags.first == 'true';
 
+    // These keys are the ones the housing card already wrote, so anyone who
+    // picked an area before this existed keeps their choice.
+    final area = await cache.readOrder(_homeAreaKey);
+    _homeArea = area.isEmpty ? null : area.first;
+    final unit = await cache.readOrder(_homeUnitKey);
+    _homeUnit = unit.isEmpty ? '' : unit.first;
+
+    final seen = await cache.readOrder(_setupSeenKey);
+    _setupSeen = seen.isNotEmpty;
+
     _loaded = true;
+    notifyListeners();
+  }
+
+  /// The housing area id you live in, or null if it has never been set.
+  String? get homeArea => _homeArea;
+
+  /// Your building and room, the second line of the address. May be blank:
+  /// the address then shows the area's documented format as a placeholder
+  /// rather than inventing one.
+  String get homeUnit => _homeUnit;
+
+  /// Whether first run setup has been answered or dismissed. Asking once is
+  /// the point; asking again every launch would be worse than not asking.
+  bool get setupSeen => _setupSeen;
+
+  Future<void> setHome({String? area, String? unit}) async {
+    final cache = ResponseCache.instance;
+    if (area != null) {
+      _homeArea = area;
+      await cache.writeOrder(_homeAreaKey, [area]);
+    }
+    if (unit != null) {
+      _homeUnit = unit;
+      await cache.writeOrder(_homeUnitKey, [unit]);
+    }
+    notifyListeners();
+  }
+
+  Future<void> markSetupSeen() async {
+    if (_setupSeen) return;
+    _setupSeen = true;
+    await ResponseCache.instance.writeOrder(_setupSeenKey, ['true']);
+    notifyListeners();
+  }
+
+  /// Forget where you live, and ask again next launch.
+  Future<void> clearHome() async {
+    final cache = ResponseCache.instance;
+    _homeArea = null;
+    _homeUnit = '';
+    _setupSeen = false;
+    await cache.writeOrder(_homeAreaKey, const []);
+    await cache.writeOrder(_homeUnitKey, const []);
+    await cache.writeOrder(_setupSeenKey, const []);
     notifyListeners();
   }
 

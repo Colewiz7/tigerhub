@@ -10,6 +10,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../widgets/empty_state.dart';
 import '../cards/housing_card.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
@@ -744,7 +745,11 @@ class _EquipmentBlock extends StatelessWidget {
     final rooms = [...(result.value?.data ?? const <RoomSummary>[])]
       ..sort((a, b) => b.available.compareTo(a.available));
     if (rooms.isEmpty) {
-      return const EmptyNote(text: 'No equipment cached yet.');
+      return const EmptyState(
+        kind: EmptyKind.sourceDown,
+        title: 'Equipment availability is unavailable',
+        compact: false,
+      );
     }
 
     final semantic = Semantic.of(context);

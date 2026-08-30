@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/bounded_list.dart';
@@ -36,7 +37,7 @@ class VisitingChefsCard extends StatelessWidget {
       dragHandle: dragHandle,
       child: switch ((result.isPriming, all.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading today'),
-        (_, true) => const EmptyNote(text: 'No visiting chefs on campus today.'),
+        (_, true) => const EmptyState(kind: EmptyKind.noVisitingChefs),
         _ => BoundedList(
             itemCount: all.length,
             itemHeight: StatusRow.height,

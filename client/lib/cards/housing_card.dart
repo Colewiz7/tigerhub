@@ -11,9 +11,10 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
-import '../services/cache.dart';
+import '../services/preferences.dart';
 import '../theme/tokens.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/copyable_address.dart';
@@ -40,9 +41,6 @@ class _HousingCardState extends State<HousingCard> {
   final _unit = TextEditingController();
   Result<MailingAddress>? _address;
 
-  static const _areaKey = 'housing_area';
-  static const _unitKey = 'housing_unit';
-
   @override
   void initState() {
     super.initState();
@@ -52,21 +50,25 @@ class _HousingCardState extends State<HousingCard> {
   /// Default to whatever was picked last. Re-choosing your own dorm every time
   /// is the kind of small friction that makes a lookup not worth opening.
   Future<void> _restore() async {
-    final cache = ResponseCache.instance;
-    final area = await cache.readOrder(_areaKey);
-    final unit = await cache.readOrder(_unitKey);
-    if (!mounted || area.isEmpty) return;
+    final prefs = Preferences.instance;
+    if (!prefs.loaded) await prefs.load();
+    final area = prefs.homeArea;
+    if (!mounted || area == null) return;
     setState(() {
-      _areaId = area.first;
-      if (unit.isNotEmpty) _unit.text = unit.first;
+      _areaId = area;
+      if (prefs.homeUnit.isNotEmpty) _unit.text = prefs.homeUnit;
     });
     _load();
   }
 
+  /// Writes through Preferences rather than straight to the cache, so first
+  /// run setup and this card cannot drift apart. They are the same setting: it
+  /// is where you live, not a property of one card.
   Future<void> _remember() async {
-    final cache = ResponseCache.instance;
-    await cache.writeOrder(_areaKey, [?_areaId]);
-    await cache.writeOrder(_unitKey, [if (_unit.text.trim().isNotEmpty) _unit.text.trim()]);
+    await Preferences.instance.setHome(
+      area: _areaId,
+      unit: _unit.text.trim(),
+    );
   }
 
   @override
@@ -95,7 +97,10 @@ class _HousingCardState extends State<HousingCard> {
       dragHandle: widget.dragHandle,
       child: switch ((widget.areas.isPriming, areas.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading housing areas'),
-        (_, true) => const EmptyNote(text: 'No housing areas cached yet.'),
+        (_, true) => const EmptyState(
+            kind: EmptyKind.sourceDown,
+            title: 'Housing areas are unavailable',
+          ),
         // Never an empty card: it is either the picker or the answer.
         (_, _) when _address?.value == null => _AreaChips(
             areas: areas,

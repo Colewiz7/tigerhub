@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 
 import 'config.dart';
 import 'home_screen.dart';
+import 'screens/setup_screen.dart';
 import 'models/api_models.dart';
 import 'screens/campus_screen.dart';
 import 'screens/dining_screen.dart';
@@ -82,6 +83,9 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+    // Listened to, not just loaded: `loaded` and `setupSeen` both decide
+    // whether the setup screen shows, and both flip asynchronously.
+    Preferences.instance.addListener(_onPreferences);
     Preferences.instance.load();
     _restoreCards();
     _refresh();
@@ -91,7 +95,12 @@ class _AppShellState extends State<AppShell> {
   @override
   void dispose() {
     _ticker?.cancel();
+    Preferences.instance.removeListener(_onPreferences);
     super.dispose();
+  }
+
+  void _onPreferences() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _restoreCards() async {
@@ -131,9 +140,26 @@ class _AppShellState extends State<AppShell> {
 
   void _go(int index) => setState(() => _index = index);
 
+  /// First run only, and only once the areas are in hand.
+  ///
+  /// It is never shown before the data arrives, because a setup screen with no
+  /// choices on it is worse than a moment's wait, and the areas come from
+  /// bundled config so that wait is not a network round trip.
+  bool get _needsSetup =>
+      Preferences.instance.loaded &&
+      !Preferences.instance.setupSeen &&
+      (_areas.value?.data.isNotEmpty ?? false);
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+
+    if (_needsSetup) {
+      return SetupScreen(
+        areas: _areas.value!.data,
+        onDone: () => setState(() {}),
+      );
+    }
 
     return Scaffold(
       backgroundColor: scheme.surfaceContainerLowest,

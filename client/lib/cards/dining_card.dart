@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../theme/semantic.dart';
@@ -124,7 +125,7 @@ class DiningCard extends StatelessWidget {
           : ScallopedBadge(value: '$openNow', label: 'OPEN NOW', size: 88),
       child: switch ((result.isPriming, locations.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
-        (_, true) => const EmptyNote(text: 'No dining locations cached yet.'),
+        (_, true) => const EmptyState(kind: EmptyKind.sourceDown, title: 'Dining is unavailable'),
         _ => _List(locations: locations, onShowAll: onShowAll),
       },
     );
