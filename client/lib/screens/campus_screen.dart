@@ -25,10 +25,16 @@ import '../widgets/section_nav.dart';
 import '../widgets/week_grid.dart';
 
 class CampusScreen extends StatefulWidget {
-  const CampusScreen({super.key, required this.api, required this.areas});
+  const CampusScreen({
+    super.key,
+    required this.api,
+    required this.areas,
+    this.events = const Result(value: null, state: DataState.priming),
+  });
 
   final ApiClient api;
   final Result<Collection<HousingArea>> areas;
+  final Result<Collection<CampusEvent>> events;
 
   @override
   State<CampusScreen> createState() => _CampusScreenState();
@@ -114,7 +120,8 @@ class _CampusScreenState extends State<CampusScreen> {
           title: 'Campus map',
           subtitle: 'Offline places from the RIT map',
           icon: Icons.map_rounded,
-          builder: (context) => CampusMapView(result: _map),
+          builder: (context) =>
+              CampusMapView(result: _map, events: widget.events),
         ),
         SectionSpec(
           id: 'rec',

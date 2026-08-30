@@ -11,13 +11,15 @@ import 'package:flutter/material.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../theme/tokens.dart';
+import 'campus_event_mapper.dart';
 import 'empty_state.dart';
 import 'freshness.dart';
 
 class CampusMapView extends StatefulWidget {
-  const CampusMapView({super.key, required this.result});
+  const CampusMapView({super.key, required this.result, this.events});
 
   final Result<Collection<CampusMapFeature>> result;
+  final Result<Collection<CampusEvent>>? events;
 
   @override
   State<CampusMapView> createState() => _CampusMapViewState();
@@ -27,6 +29,7 @@ class _CampusMapViewState extends State<CampusMapView> {
   final _transform = TransformationController();
   String? _kind;
   int? _selectedId;
+  bool _showEvents = false;
 
   @override
   void dispose() {
@@ -55,13 +58,37 @@ class _CampusMapViewState extends State<CampusMapView> {
       for (final feature in all)
         if (_kind == null || feature.kind == _kind) feature,
     ];
+    final eventMap = mapCampusEvents(
+      widget.events?.value?.data ?? const <CampusEvent>[],
+      all,
+    );
+    final eventFeatures = [
+      for (final group in eventMap.groups) group.mapFeature,
+    ];
+    final mapFeatures = _showEvents ? eventFeatures : visible;
     final selected = visible.where((f) => f.id == _selectedId).firstOrNull;
+    final selectedEvent = eventMap.groups
+        .where((group) => group.id == _selectedId)
+        .firstOrNull;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(value: false, label: Text('Places')),
+            ButtonSegment(value: true, label: Text('Events')),
+          ],
+          selected: {_showEvents},
+          onSelectionChanged: (selection) => setState(() {
+            _showEvents = selection.single;
+            _selectedId = null;
+            _transform.value = Matrix4.identity();
+          }),
+        ),
+        const SizedBox(height: 8),
         _MapToolbar(
-          kinds: kinds,
+          kinds: _showEvents ? const {} : kinds,
           selectedKind: _kind,
           onKindChanged: (kind) => setState(() {
             _kind = kind;
@@ -86,8 +113,9 @@ class _CampusMapViewState extends State<CampusMapView> {
                     behavior: HitTestBehavior.opaque,
                     onTapUp: (details) {
                       final projection = CampusMapProjection(
-                        visible,
+                        mapFeatures,
                         Size(constraints.maxWidth, constraints.maxHeight),
+                        boundsFeatures: all,
                       );
                       final hit = projection.nearest(details.localPosition);
                       if (hit != null) setState(() => _selectedId = hit.id);
@@ -95,7 +123,8 @@ class _CampusMapViewState extends State<CampusMapView> {
                     child: CustomPaint(
                       size: Size(constraints.maxWidth, constraints.maxHeight),
                       painter: CampusMapPainter(
-                        features: visible,
+                        features: mapFeatures,
+                        boundsFeatures: all,
                         selectedId: _selectedId,
                         scheme: Theme.of(context).colorScheme,
                       ),
@@ -108,8 +137,19 @@ class _CampusMapViewState extends State<CampusMapView> {
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: selected == null ? 92 : 126,
-          child: selected == null
+          height: selected == null && selectedEvent == null ? 92 : 146,
+          child: _showEvents
+              ? selectedEvent == null
+                    ? _EventStrip(
+                        result: eventMap,
+                        onSelect: (group) =>
+                            setState(() => _selectedId = group.id),
+                      )
+                    : _SelectedEventGroup(
+                        group: selectedEvent,
+                        onClose: () => setState(() => _selectedId = null),
+                      )
+              : selected == null
               ? _PlaceStrip(
                   features: visible,
                   selectedId: _selectedId,
@@ -124,6 +164,130 @@ class _CampusMapViewState extends State<CampusMapView> {
       ],
     );
   }
+}
+
+class _EventStrip extends StatelessWidget {
+  const _EventStrip({required this.result, required this.onSelect});
+
+  final CampusEventMapResult result;
+  final ValueChanged<MappedEventGroup> onSelect;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        '${result.mapped} mapped · ${result.unmapped} without a location',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+      const SizedBox(height: 6),
+      Expanded(
+        child: result.groups.isEmpty
+            ? Center(
+                child: Text(
+                  'No events could be placed today',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              )
+            : ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: result.groups.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final group = result.groups[index];
+                  return SizedBox(
+                    width: 230,
+                    child: Material(
+                      color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                      borderRadius: Shapes.inner,
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => onSelect(group),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                group.events.length == 1
+                                    ? group.events.single.title
+                                    : '${group.events.length} events',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                group.building,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+      ),
+    ],
+  );
+}
+
+class _SelectedEventGroup extends StatelessWidget {
+  const _SelectedEventGroup({required this.group, required this.onClose});
+
+  final MappedEventGroup group;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Theme.of(context).colorScheme.surfaceContainerHigh,
+    borderRadius: Shapes.inner,
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: ListView.separated(
+              itemCount: group.events.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 6),
+              itemBuilder: (context, index) {
+                final event = group.events[index];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    Text(
+                      '${group.building} · ${formatClock(event.startsAt)}'
+                      '${event.organizer == null ? '' : ' · ${event.organizer}'}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          IconButton(
+            tooltip: 'Close event details',
+            onPressed: onClose,
+            icon: const Icon(Icons.close_rounded),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _MapToolbar extends StatelessWidget {
@@ -147,18 +311,20 @@ class _MapToolbar extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              ChoiceChip(
-                label: const Text('All'),
-                selected: selectedKind == null,
-                onSelected: (_) => onKindChanged(null),
-              ),
-              for (final entry in kinds.entries) ...[
-                const SizedBox(width: 7),
+              if (kinds.isNotEmpty) ...[
                 ChoiceChip(
-                  label: Text(entry.value),
-                  selected: selectedKind == entry.key,
-                  onSelected: (_) => onKindChanged(entry.key),
+                  label: const Text('All'),
+                  selected: selectedKind == null,
+                  onSelected: (_) => onKindChanged(null),
                 ),
+                for (final entry in kinds.entries) ...[
+                  const SizedBox(width: 7),
+                  ChoiceChip(
+                    label: Text(entry.value),
+                    selected: selectedKind == entry.key,
+                    onSelected: (_) => onKindChanged(entry.key),
+                  ),
+                ],
               ],
             ],
           ),
@@ -283,8 +449,14 @@ class _SelectedPlace extends StatelessWidget {
 }
 
 class CampusMapProjection {
-  CampusMapProjection(this.features, this.size) {
-    final points = features.expand((f) => f.coordinates.expand((ring) => ring));
+  CampusMapProjection(
+    this.features,
+    this.size, {
+    List<CampusMapFeature>? boundsFeatures,
+  }) {
+    final points = (boundsFeatures ?? features).expand(
+      (f) => f.coordinates.expand((ring) => ring),
+    );
     if (points.isEmpty) return;
     minLongitude = points.map((p) => p.longitude).reduce(math.min);
     maxLongitude = points.map((p) => p.longitude).reduce(math.max);
@@ -331,17 +503,23 @@ class CampusMapProjection {
 class CampusMapPainter extends CustomPainter {
   CampusMapPainter({
     required this.features,
+    this.boundsFeatures,
     required this.selectedId,
     required this.scheme,
   });
 
   final List<CampusMapFeature> features;
+  final List<CampusMapFeature>? boundsFeatures;
   final int? selectedId;
   final ColorScheme scheme;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final projection = CampusMapProjection(features, size);
+    final projection = CampusMapProjection(
+      features,
+      size,
+      boundsFeatures: boundsFeatures,
+    );
     final polygonFill = Paint()..color = scheme.surfaceContainerHigh;
     final polygonEdge = Paint()
       ..style = PaintingStyle.stroke
@@ -372,16 +550,37 @@ class CampusMapPainter extends CustomPainter {
       final center = projection.project(anchor);
       final selected = feature.id == selectedId;
       final radius = selected ? 13.0 : 9.0;
+      final eventCount = feature.kind.startsWith('_event:')
+          ? int.tryParse(feature.kind.substring(7))
+          : null;
       canvas.drawPath(
         _scallop(center, radius),
-        Paint()..color = selected ? scheme.primary : scheme.tertiaryContainer,
-      );
-      canvas.drawCircle(
-        center,
-        selected ? 3 : 2,
         Paint()
-          ..color = selected ? scheme.onPrimary : scheme.onTertiaryContainer,
+          ..color = selected || eventCount != null
+              ? scheme.primary
+              : scheme.tertiaryContainer,
       );
+      if (eventCount != null) {
+        final label = TextPainter(
+          text: TextSpan(
+            text: '$eventCount',
+            style: TextStyle(
+              color: scheme.onPrimary,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          textDirection: TextDirection.ltr,
+        )..layout();
+        label.paint(canvas, center - Offset(label.width / 2, label.height / 2));
+      } else {
+        canvas.drawCircle(
+          center,
+          selected ? 3 : 2,
+          Paint()
+            ..color = selected ? scheme.onPrimary : scheme.onTertiaryContainer,
+        );
+      }
     }
   }
 
@@ -404,6 +603,7 @@ class CampusMapPainter extends CustomPainter {
   @override
   bool shouldRepaint(CampusMapPainter oldDelegate) =>
       oldDelegate.features != features ||
+      oldDelegate.boundsFeatures != boundsFeatures ||
       oldDelegate.selectedId != selectedId ||
       oldDelegate.scheme != scheme;
 }

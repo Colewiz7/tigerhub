@@ -31,28 +31,33 @@ const east = CampusMapFeature(
   note: 'Near the main entrance',
 );
 
-Widget app({bool priming = false}) => MaterialApp(
-  theme: AppTheme.from(
-    ColorScheme.fromSeed(
-      seedColor: const Color(0xFFF76902),
-      brightness: Brightness.dark,
-    ),
-  ),
-  home: Scaffold(
-    body: SizedBox(
-      width: 800,
-      height: 600,
-      child: CampusMapView(
-        result: Result(
-          value: priming
-              ? null
-              : const Collection(data: [west, east], stale: false),
-          state: priming ? DataState.priming : DataState.ok,
+Widget app({bool priming = false, List<CampusEvent> events = const []}) =>
+    MaterialApp(
+      theme: AppTheme.from(
+        ColorScheme.fromSeed(
+          seedColor: const Color(0xFFF76902),
+          brightness: Brightness.dark,
         ),
       ),
-    ),
-  ),
-);
+      home: Scaffold(
+        body: SizedBox(
+          width: 800,
+          height: 600,
+          child: CampusMapView(
+            result: Result(
+              value: priming
+                  ? null
+                  : const Collection(data: [west, east], stale: false),
+              state: priming ? DataState.priming : DataState.ok,
+            ),
+            events: Result(
+              value: Collection(data: events, stale: false),
+              state: DataState.ok,
+            ),
+          ),
+        ),
+      ),
+    );
 
 void main() {
   test('projection keeps longitude on X and north toward the top', () {
@@ -97,5 +102,37 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.bySemanticsLabel('Loading campus map'), findsOneWidget);
+  });
+
+  testWidgets('events mode reports mapped and unmapped events', (tester) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day, 10);
+    await tester.pumpWidget(
+      app(
+        events: [
+          CampusEvent(
+            uid: 'mapped',
+            source: 'test',
+            title: 'SHED workshop',
+            startsAt: today,
+            location: 'SHED 1300',
+          ),
+          CampusEvent(
+            uid: 'unmapped',
+            source: 'test',
+            title: 'Mystery event',
+            startsAt: today,
+            location: 'Unknown Hall',
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Events'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('1 mapped · 1 without a location'), findsOneWidget);
+    expect(find.text('SHED workshop'), findsOneWidget);
+    expect(find.text('Mystery event'), findsNothing);
   });
 }
