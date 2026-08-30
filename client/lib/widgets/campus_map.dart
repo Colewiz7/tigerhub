@@ -203,18 +203,25 @@ class _CampusMapViewState extends State<CampusMapView> {
                                 setState(() => _selectedId = hit.id);
                               }
                             },
-                            child: CustomPaint(
-                              size: Size(
-                                constraints.maxWidth,
-                                constraints.maxHeight,
-                              ),
-                              painter: CampusMapPainter(
-                                features: mapFeatures,
-                                boundsFeatures: all,
-                                selectedId: _selectedId,
-                                scheme: Theme.of(context).colorScheme,
-                                onSelect: (feature) =>
-                                    setState(() => _selectedId = feature.id),
+                            // Repaints as the viewer scales, which is what
+                            // lets labels and the scale bar hold a constant
+                            // on-screen size instead of growing with the map.
+                            child: ValueListenableBuilder<Matrix4>(
+                              valueListenable: _transform,
+                              builder: (context, matrix, _) => CustomPaint(
+                                size: Size(
+                                  constraints.maxWidth,
+                                  constraints.maxHeight,
+                                ),
+                                painter: CampusMapPainter(
+                                  features: mapFeatures,
+                                  boundsFeatures: all,
+                                  selectedId: _selectedId,
+                                  scheme: Theme.of(context).colorScheme,
+                                  zoom: matrix.getMaxScaleOnAxis(),
+                                  onSelect: (feature) =>
+                                      setState(() => _selectedId = feature.id),
+                                ),
                               ),
                             ),
                           ),
@@ -703,6 +710,14 @@ class CampusMapProjection {
   }
 }
 
+/// The round distance a scale bar should span, given what would fit.
+///
+/// Kept as a separate function so the choice can be tested without a canvas.
+int scaleBarMetres(double target) {
+  const steps = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
+  return steps.firstWhere((step) => step >= target, orElse: () => steps.last);
+}
+
 /// How a campus outline is drawn.
 ///
 /// maps.rit.edu names the sub-category each outline came from, so a parking
@@ -811,6 +826,7 @@ class CampusMapPainter extends CustomPainter {
     required this.selectedId,
     required this.scheme,
     this.onSelect,
+    this.zoom = 1,
   });
 
   final List<CampusMapFeature> features;
@@ -818,6 +834,14 @@ class CampusMapPainter extends CustomPainter {
   final int? selectedId;
   final ColorScheme scheme;
   final ValueChanged<CampusMapFeature>? onSelect;
+
+  /// The InteractiveViewer's current scale.
+  ///
+  /// The canvas is painted in unzoomed coordinates and the viewer scales the
+  /// result, so without this everything grows together and zooming in reveals
+  /// nothing new. Text and rules divide by it to hold a constant on-screen
+  /// size, which also means more building labels fit as you zoom in.
+  final double zoom;
 
   @override
   SemanticsBuilderCallback get semanticsBuilder => _buildSemantics;
@@ -956,6 +980,15 @@ class CampusMapPainter extends CustomPainter {
     _paintBuildingLabels(canvas, labelCandidates, scheme);
     _paintScaleBar(canvas, projection, mapRect, scheme);
 
+    final pointKinds = {
+      for (final feature in features)
+        if (feature.geometryType == 'Point') feature.kind,
+    };
+    // "All places" is an overview, not twelve full pin layers stacked on one
+    // another. A selected category gets finer clusters; the mixed overview
+    // groups much more aggressively and uses the apps symbol to say that the
+    // count contains different kinds of place.
+    final clusterCell = pointKinds.length > 1 ? 110.0 : 46.0;
     final buckets =
         <(int, int), List<({CampusMapFeature feature, Offset at})>>{};
     for (final feature in features.where((f) => f.geometryType == 'Point')) {
@@ -963,11 +996,10 @@ class CampusMapPainter extends CustomPainter {
       if (anchor == null) continue;
       final center = projection.project(anchor);
       if (!mapRect.inflate(12).contains(center)) continue;
-      // At the full-campus scale, tiny buckets produce dozens of anonymous
-      // numbered badges. A larger cell groups nearby amenities into a useful
-      // "there are several things here" marker; zooming the canvas then
-      // separates them spatially.
-      final key = ((center.dx / 46).floor(), (center.dy / 46).floor());
+      final key = (
+        (center.dx / clusterCell).floor(),
+        (center.dy / clusterCell).floor(),
+      );
       buckets.putIfAbsent(key, () => []).add((feature: feature, at: center));
     }
 
@@ -1062,27 +1094,24 @@ class CampusMapPainter extends CustomPainter {
     // carries the same scale, which is what makes one bar meaningful.
     final metresPerPixel = latitudeSpan * 111320 / mapRect.height;
 
-    // A round distance landing near a fifth of the map width.
-    const steps = [50, 100, 200, 250, 500, 1000];
-    final target = mapRect.width * 0.2 * metresPerPixel;
-    final metres = steps.firstWhere(
-      (step) => step >= target,
-      orElse: () => steps.last,
-    );
+    // Held at a fifth of the *screen*, so zooming in measures a shorter
+    // distance more precisely instead of running the bar off the edge.
+    final metres = scaleBarMetres(mapRect.width * 0.2 / zoom * metresPerPixel);
     final length = metres / metresPerPixel;
     if (length > mapRect.width * 0.5) return;
 
-    final y = mapRect.bottom - 13;
-    final x = mapRect.left + 13;
+    final tick = 3 / zoom;
+    final y = mapRect.bottom - 13 / zoom;
+    final x = mapRect.left + 13 / zoom;
     final paint = Paint()
       ..color = scheme.onSurfaceVariant.withValues(alpha: 0.75)
-      ..strokeWidth = 1.4
+      ..strokeWidth = 1.4 / zoom
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(Offset(x, y), Offset(x + length, y), paint);
-    canvas.drawLine(Offset(x, y - 3), Offset(x, y + 3), paint);
+    canvas.drawLine(Offset(x, y - tick), Offset(x, y + tick), paint);
     canvas.drawLine(
-      Offset(x + length, y - 3),
-      Offset(x + length, y + 3),
+      Offset(x + length, y - tick),
+      Offset(x + length, y + tick),
       paint,
     );
 
@@ -1091,14 +1120,14 @@ class CampusMapPainter extends CustomPainter {
         text: metres >= 1000 ? '${metres ~/ 1000} km' : '$metres m',
         style: TextStyle(
           color: scheme.onSurfaceVariant,
-          fontSize: 9,
+          fontSize: 9 / zoom,
           fontWeight: FontWeight.w600,
-          letterSpacing: 0.2,
+          letterSpacing: 0.2 / zoom,
         ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    label.paint(canvas, Offset(x, y - 5 - label.height));
+    label.paint(canvas, Offset(x, y - 5 / zoom - label.height));
   }
 
   void _paintBuildingLabels(
@@ -1115,9 +1144,13 @@ class CampusMapPainter extends CustomPainter {
           text: candidate.text,
           style: TextStyle(
             color: scheme.onSurfaceVariant,
-            fontSize: 9,
+            // Constant on screen, so zooming in shrinks the label against the
+            // building and lets more of them fit. At a fixed size the same
+            // handful of labels just grew with everything else, and zooming
+            // revealed nothing.
+            fontSize: 9 / zoom,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
+            letterSpacing: 0.2 / zoom,
           ),
         ),
         textDirection: TextDirection.ltr,
@@ -1125,15 +1158,15 @@ class CampusMapPainter extends CustomPainter {
 
       // Must sit inside the building with a little room, or it reads as a
       // label for whatever is next door.
-      if (painter.width + 6 > candidate.bounds.width ||
-          painter.height + 4 > candidate.bounds.height) {
+      if (painter.width + 6 / zoom > candidate.bounds.width ||
+          painter.height + 4 / zoom > candidate.bounds.height) {
         continue;
       }
 
       final rect = Rect.fromCenter(
         center: candidate.bounds.center,
-        width: painter.width + 4,
-        height: painter.height + 2,
+        width: painter.width + 4 / zoom,
+        height: painter.height + 2 / zoom,
       );
       if (taken.any(rect.overlaps)) continue;
 
@@ -1209,7 +1242,8 @@ class CampusMapPainter extends CustomPainter {
       oldDelegate.features != features ||
       oldDelegate.boundsFeatures != boundsFeatures ||
       oldDelegate.selectedId != selectedId ||
-      oldDelegate.scheme != scheme;
+      oldDelegate.scheme != scheme ||
+      oldDelegate.zoom != zoom;
 
   @override
   bool shouldRebuildSemantics(CampusMapPainter oldDelegate) =>
