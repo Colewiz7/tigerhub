@@ -37,6 +37,39 @@ import 'static_config.dart';
 import 'store.dart';
 import 'upstream.dart';
 
+/// What a scrape is handed.
+///
+/// Most sources need only [http]. Occupancy needs the rest: it has to know
+/// which locations exist (from the dining snapshot) and which of them were
+/// found to have a sensor last time (from its own [previous] snapshot), so it
+/// polls five locations rather than twenty four.
+class ScrapeContext {
+  const ScrapeContext({
+    required this.http,
+    required this.previous,
+    required this.save,
+    required this.snapshotOf,
+    required this.config,
+  });
+
+  final Upstream http;
+
+  /// This source's last stored snapshot, if any.
+  final Map<String, dynamic>? previous;
+
+  /// Persist progress mid scrape.
+  ///
+  /// A scrape that only saves at the end loses everything if the app closes
+  /// first. Occupancy discovery is the case that needs it: it walks locations
+  /// one at a time and would otherwise restart from nothing on every launch.
+  final Future<void> Function(Map<String, dynamic>) save;
+
+  /// Another source's last stored snapshot, without triggering its refresh.
+  final Future<Map<String, dynamic>?> Function(String) snapshotOf;
+
+  final StaticConfig config;
+}
+
 /// One scraped upstream, with the cadence it is polled at.
 ///
 /// The intervals are the backend's, unchanged: dining hourly, events every few
@@ -50,7 +83,7 @@ class SourceSpec {
 
   final String name;
   final Duration cadence;
-  final Future<Map<String, dynamic>> Function(Upstream) scrape;
+  final Future<Map<String, dynamic>> Function(ScrapeContext) scrape;
 }
 
 /// How long past its cadence a source's data counts as stale, mirroring
@@ -70,42 +103,55 @@ class LocalBackend implements Backend {
   /// In flight refreshes, so two screens opening at once scrape once.
   final Map<String, Future<void>> _inFlight = {};
 
+  /// Decoded snapshots, kept in memory.
+  ///
+  /// The stored payloads total about 2 MB, and events alone is nearly a
+  /// megabyte of JSON. Re-reading and re-decoding that on every read would be
+  /// visible as jank, and the periodic refresh makes reads frequent, so a
+  /// decoded copy is held and replaced only when a scrape writes.
+  final Map<String, (Map<String, dynamic>, DateTime)> _memory = {};
+
   static final Map<String, SourceSpec> sources = {
     'tigercenter_dining': SourceSpec(
       name: 'tigercenter_dining',
       cadence: const Duration(minutes: 60),
-      scrape: scrapeDining,
+      scrape: (ctx) => scrapeDining(ctx.http),
     ),
     campusGroupsSource: SourceSpec(
       name: campusGroupsSource,
       cadence: const Duration(minutes: 180),
-      scrape: scrapeCampusGroups,
+      scrape: (ctx) => scrapeCampusGroups(ctx.http),
     ),
     drupalSource: SourceSpec(
       name: drupalSource,
       cadence: const Duration(minutes: 180),
-      scrape: scrapeDrupal,
+      scrape: (ctx) => scrapeDrupal(ctx.http),
     ),
     athleticsSource: SourceSpec(
       name: athleticsSource,
       cadence: const Duration(minutes: 180),
-      scrape: scrapeAthletics,
+      scrape: (ctx) => scrapeAthletics(ctx.http),
     ),
     makerspaceSource: SourceSpec(
       name: makerspaceSource,
       cadence: const Duration(minutes: 15),
-      scrape: scrapeMakerspace,
+      scrape: (ctx) => scrapeMakerspace(ctx.http),
     ),
     campusPlacesSource: SourceSpec(
       name: campusPlacesSource,
       // Physical infrastructure. It changes rarely, so twice a day.
       cadence: const Duration(minutes: 720),
-      scrape: scrapeCampusPlaces,
+      scrape: (ctx) => scrapeCampusPlaces(ctx.http),
     ),
     recreationSource: SourceSpec(
       name: recreationSource,
       cadence: const Duration(minutes: 360),
-      scrape: scrapeRecreation,
+      scrape: (ctx) => scrapeRecreation(ctx.http),
+    ),
+    occupancySource: SourceSpec(
+      name: occupancySource,
+      cadence: const Duration(minutes: 5),
+      scrape: scrapeOccupancy,
     ),
   };
 
@@ -120,9 +166,9 @@ class LocalBackend implements Backend {
 
     final store = await _openStore();
     if (!force) {
-      final age = await store.fetchedAt(name);
-      if (age != null &&
-          DateTime.now().difference(age) < spec.cadence) {
+      final held = _memory[name];
+      final age = held?.$2 ?? await store.fetchedAt(name);
+      if (age != null && DateTime.now().difference(age) < spec.cadence) {
         return;
       }
     }
@@ -130,10 +176,22 @@ class LocalBackend implements Backend {
     final running = _inFlight[name];
     if (running != null) return running;
 
+    Future<void> persist(Map<String, dynamic> payload) async {
+      await store.write(name, payload);
+      _memory[name] = (payload, DateTime.now());
+    }
+
     final future = () async {
       try {
-        final payload = await spec.scrape(_http);
-        await store.write(name, payload);
+        final previous = await _cachedRead(name);
+        final payload = await spec.scrape(ScrapeContext(
+          http: _http,
+          previous: previous?.$1,
+          save: persist,
+          snapshotOf: (other) async => (await _cachedRead(other))?.$1,
+          config: StaticConfig.instance,
+        ));
+        await persist(payload);
       } catch (_) {
         // Deliberately swallowed. The read path falls back to the stored
         // snapshot and reports staleness; a scrape failure must never surface
@@ -147,22 +205,35 @@ class LocalBackend implements Backend {
     return future;
   }
 
+  /// A snapshot from memory, falling back to disk once.
+  Future<(Map<String, dynamic>, DateTime)?> _cachedRead(String name) async {
+    final held = _memory[name];
+    if (held != null) return held;
+
+    final store = await _openStore();
+    final stored = await store.read(name);
+    if (stored == null) return null;
+
+    final entry = (stored.body, stored.fetchedAt);
+    _memory[name] = entry;
+    return entry;
+  }
+
   /// The snapshot for [name], refreshing first only if nothing is stored yet.
   ///
   /// With a snapshot in hand the refresh is fired and not awaited, so the UI
   /// paints from cache immediately and updates when the scrape lands.
   Future<(Map<String, dynamic>?, DateTime?)> _snapshot(String name) async {
-    final store = await _openStore();
-    var stored = await store.read(name);
+    var stored = await _cachedRead(name);
 
     if (stored == null) {
       await _refreshIfDue(name, force: true);
-      stored = await store.read(name);
+      stored = await _cachedRead(name);
     } else {
       unawaited(_refreshIfDue(name));
     }
 
-    return (stored?.body, stored?.fetchedAt);
+    return (stored?.$1, stored?.$2);
   }
 
   /// Is this source's data missing or overdue? Mirrors `freshness.is_stale`.
@@ -241,9 +312,21 @@ class LocalBackend implements Backend {
     final now = CampusTime.nowUtc();
     final config = StaticConfig.instance;
 
+    // Occupancy is joined on mdo_id, the way the server joined its two tables.
+    // Without this the pill never renders, "busiest first" cannot sort, and the
+    // history sheet never opens, which is most of what the feature is.
+    final (occupancy, _) = await _snapshot(occupancySource);
+    final readings =
+        occupancy?['readings'] as Map<String, dynamic>? ?? const {};
+
     final locations = <Map<String, dynamic>>[
       for (final loc in snapshot?['locations'] as List<dynamic>? ?? const [])
-        buildDiningLocation(loc as Map<String, dynamic>, now, config, null),
+        buildDiningLocation(
+          loc as Map<String, dynamic>,
+          now,
+          config,
+          readings['${loc['mdo_id']}'] as Map<String, dynamic>?,
+        ),
     ]..sort((a, b) => (a['name'] as String).compareTo(b['name'] as String));
 
     final data = query?['open_now'] == 'true'
@@ -508,30 +591,23 @@ class LocalBackend implements Backend {
     }
     if (mdoId == null) throw UpstreamError('no mdo_id for location $locationId');
 
-    final key = '/dining/$locationId/occupancy';
-    final store = await _openStore();
-    final stored = await store.read(key);
-    final age = await store.fetchedAt(key);
+    // The polling source already holds a recent reading for every location
+    // that has a sensor, so the detail sheet reuses it rather than issuing its
+    // own 226 KB request every time a row is tapped.
+    final (occupancy, fetchedAt) = await _snapshot(occupancySource);
+    final reading =
+        (occupancy?['readings'] as Map<String, dynamic>?)?['$mdoId'];
 
-    if (stored != null &&
-        age != null &&
-        DateTime.now().difference(age) < const Duration(minutes: 5)) {
-      return stored.body;
+    if (reading is Map<String, dynamic>) {
+      return {
+        ...reading,
+        'stale': _isStale(occupancySource, fetchedAt),
+        'last_updated':
+            fetchedAt == null ? null : CampusTime.format(fetchedAt.toUtc()),
+      };
     }
 
-    final reading = await fetchOccupancy(_http, mdoId);
-    if (reading == null) {
-      if (stored != null) return stored.body;
-      throw UpstreamError('no occupancy reading for this location');
-    }
-
-    final body = {
-      ...reading,
-      'stale': false,
-      'last_updated': CampusTime.format(CampusTime.nowUtc()),
-    };
-    await store.write(key, body);
-    return body;
+    throw UpstreamError('no occupancy reading for this location');
   }
 
   /// A location's menu for today, fetched on demand rather than rotated.

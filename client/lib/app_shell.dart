@@ -5,6 +5,8 @@
 /// decorative.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -55,12 +57,33 @@ class _AppShellState extends State<AppShell> {
   Result<Collection<HousingArea>> _areas =
       const Result(value: null, state: DataState.priming);
 
+  Timer? _ticker;
+
+  /// How often to ask for a refresh while the window is open.
+  ///
+  /// Deliberately shorter than any source's cadence. Asking is nearly free:
+  /// `LocalBackend` serves the read from memory and only actually scrapes a
+  /// source whose snapshot has aged past its own interval, so this ticks at two
+  /// minutes and occupancy still refreshes every five while events still
+  /// refresh every three hours.
+  ///
+  /// Without it, an app left open all day shows the data it had at launch.
+  /// Live occupancy in particular is not live if nothing asks again.
+  static const Duration _tick = Duration(minutes: 2);
+
   @override
   void initState() {
     super.initState();
     Preferences.instance.load();
     _restoreCards();
     _refresh();
+    _ticker = Timer.periodic(_tick, (_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
   }
 
   Future<void> _restoreCards() async {
