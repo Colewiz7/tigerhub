@@ -1,5 +1,7 @@
 #include "my_application.h"
 
+#include <glib-unix.h>
+
 #include <flutter_linux/flutter_linux.h>
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
@@ -52,6 +54,110 @@ static void first_frame_cb(MyApplication* self, FlView* view) {
 }
 
 // Implements GApplication::activate.
+
+// Remember the window size across launches.
+//
+// The app opened at 1280x720 every single time, whatever you had resized it
+// to, which is one of the clearest tells that something is a build directory
+// rather than an installed app.
+//
+// Size and maximised state only, deliberately no position: this runs under
+// Wayland, where a client cannot place its own window, and asking would either
+// be ignored or fight the compositor.
+//
+// Stored as a two line key file in the XDG config dir, written on close. If it
+// is missing or unreadable the defaults apply, so a first run and a corrupt
+// file behave the same way.
+// The window whose size we persist. Single window app, so a static is enough,
+// and the signal handlers below have no other way to reach it.
+static GtkWindow* g_tracked_window = nullptr;
+
+// The last size the window had while it was not maximised.
+//
+// gtk_window_get_size on a maximised window reports the screen, so storing
+// that and restoring it later would leave an unmaximised window filling the
+// display. Tracking it as it changes is the only way to know the size to come
+// back to.
+static gint g_restore_width = 0;
+static gint g_restore_height = 0;
+
+static gchar* window_state_path() {
+  return g_build_filename(g_get_user_config_dir(), "dev.colewiz.tigerhub",
+                          "window.ini", nullptr);
+}
+
+static void restore_window_state(GtkWindow* window) {
+  gint width = 1280;
+  gint height = 720;
+  gboolean maximized = FALSE;
+
+  g_autofree gchar* path = window_state_path();
+  g_autoptr(GKeyFile) state = g_key_file_new();
+  if (g_key_file_load_from_file(state, path, G_KEY_FILE_NONE, nullptr)) {
+    g_autoptr(GError) error = nullptr;
+    gint stored_width = g_key_file_get_integer(state, "window", "width", &error);
+    if (error == nullptr && stored_width > 400) width = stored_width;
+    g_clear_error(&error);
+    gint stored_height = g_key_file_get_integer(state, "window", "height", &error);
+    if (error == nullptr && stored_height > 300) height = stored_height;
+    g_clear_error(&error);
+    maximized = g_key_file_get_boolean(state, "window", "maximized", nullptr);
+  }
+
+  gtk_window_set_default_size(window, width, height);
+  if (maximized) gtk_window_maximize(window);
+}
+
+static void write_window_state(GtkWindow* window) {
+  if (window == nullptr) return;
+  g_autoptr(GKeyFile) state = g_key_file_new();
+
+  gboolean maximized = gtk_window_is_maximized(window);
+  g_key_file_set_boolean(state, "window", "maximized", maximized);
+
+  if (g_restore_width > 400 && g_restore_height > 300) {
+    g_key_file_set_integer(state, "window", "width", g_restore_width);
+    g_key_file_set_integer(state, "window", "height", g_restore_height);
+  }
+
+  g_autofree gchar* path = window_state_path();
+  g_autofree gchar* dir = g_path_get_dirname(path);
+  g_mkdir_with_parents(dir, 0755);
+  g_key_file_save_to_file(state, path, nullptr);
+}
+
+static gboolean on_window_configured(GtkWidget* widget, GdkEvent* event,
+                                     gpointer user_data) {
+  GtkWindow* window = GTK_WINDOW(widget);
+  if (!gtk_window_is_maximized(window)) {
+    gtk_window_get_size(window, &g_restore_width, &g_restore_height);
+  }
+  return FALSE;
+}
+
+static gboolean on_window_deleted(GtkWidget* widget, GdkEvent* event,
+                                  gpointer user_data) {
+  write_window_state(GTK_WINDOW(widget));
+  // Never swallow the close.
+  return FALSE;
+}
+
+// delete-event only fires when the window is closed the normal way. A logout,
+// a session restart, or anything that sends SIGTERM would otherwise lose the
+// size, and a terminated app losing your layout is exactly the kind of thing
+// that makes something feel unfinished. Saving here also means the app exits
+// cleanly rather than being cut down mid frame.
+static gboolean on_terminate(gpointer user_data) {
+  write_window_state(g_tracked_window);
+  GApplication* application = G_APPLICATION(user_data);
+  if (g_tracked_window != nullptr) {
+    gtk_widget_destroy(GTK_WIDGET(g_tracked_window));
+    g_tracked_window = nullptr;
+  }
+  g_application_quit(application);
+  return G_SOURCE_REMOVE;
+}
+
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
   GtkWindow* window =
@@ -106,7 +212,14 @@ static void my_application_activate(GApplication* application) {
   }
 
   set_window_icon(window);
-  gtk_window_set_default_size(window, 1280, 720);
+  restore_window_state(window);
+  g_tracked_window = window;
+  g_signal_connect(window, "delete-event", G_CALLBACK(on_window_deleted),
+                   nullptr);
+  g_signal_connect(window, "configure-event",
+                   G_CALLBACK(on_window_configured), nullptr);
+  g_unix_signal_add(SIGTERM, on_terminate, application);
+  g_unix_signal_add(SIGINT, on_terminate, application);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(
