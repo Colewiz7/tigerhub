@@ -388,6 +388,7 @@ void main() {
   _statusAndGrouping();
   _quickWins();
   _pinningAndChart();
+  _shippedPalette();
 
   test('age formatting', () {
     final now = DateTime.now();
@@ -483,8 +484,8 @@ void _dynamicColour() {
       }
     });
 
-    test('forcing the seed yields a usable palette with no scheme file', () async {
-      final controller = SchemeController(forceSeed: true);
+    test('the built-in palette is the default, with no scheme file needed', () async {
+      final controller = SchemeController();
       await controller.load();
       expect(controller.state.origin, SchemeOrigin.seed);
       expect(controller.state.isDynamic, isFalse);
@@ -494,8 +495,8 @@ void _dynamicColour() {
       controller.dispose();
     });
 
-    test('the seed toggle flips back and forth', () async {
-      final controller = SchemeController(forceSeed: true);
+    test('the wallpaper opt in flips back and forth', () async {
+      final controller = SchemeController();
       await controller.load();
       expect(controller.forcedToSeed, isTrue);
       await controller.setForceSeed(false);
@@ -504,7 +505,7 @@ void _dynamicColour() {
     });
 
     testWidgets('palette icon tooltip identifies source and action', (tester) async {
-      final controller = SchemeController(forceSeed: true);
+      final controller = SchemeController();
       await controller.load();
       final api = ApiClient(
         client: MockClient((_) async => throw http.ClientException('offline')),
@@ -1079,6 +1080,77 @@ void _pinningAndChart() {
       expect(tester.takeException(), isNull);
       // One series, so the caption names it and there is no legend box.
       expect(find.byType(Tooltip), findsNWidgets(24));
+    });
+  });
+}
+
+/// The palette ships with the app rather than being taken from a wallpaper,
+/// so its accessibility is a fixed property that can be locked down.
+void _shippedPalette() {
+  double lum(Color c) =>
+      0.2126 * c.r * 255 + 0.7152 * c.g * 255 + 0.0722 * c.b * 255;
+
+  group('built-in palette', () {
+    test('is the default, wallpaper following is opt in', () async {
+      final controller = SchemeController();
+      await controller.load();
+      expect(controller.state.origin, SchemeOrigin.seed);
+      expect(controller.state.isDynamic, isFalse,
+          reason: 'this ships to many desktops, it cannot assume a wallpaper');
+      controller.dispose();
+    });
+
+    test('exists in both modes, generated from one seed', () {
+      final dark = SchemeController.builtIn(Brightness.dark);
+      final light = SchemeController.builtIn(Brightness.light);
+      expect(dark.brightness, Brightness.dark);
+      expect(light.brightness, Brightness.light);
+      expect(dark.primary, isNot(light.primary));
+    });
+
+    test('surfaces are separable in both modes', () {
+      for (final brightness in [Brightness.dark, Brightness.light]) {
+        final s = SchemeController.builtIn(brightness);
+        final levels = [
+          s.surfaceContainerLowest,
+          s.surfaceContainerLow,
+          s.surfaceContainer,
+          s.surfaceContainerHigh,
+          s.surfaceContainerHighest,
+        ];
+        for (var i = 1; i < levels.length; i++) {
+          expect((lum(levels[i]) - lum(levels[i - 1])).abs(), greaterThan(3),
+              reason: 'step $i in $brightness is invisible');
+        }
+      }
+    });
+  });
+
+  group('status colours are separable, in both modes', () {
+    // These values were picked by running the palette validator, not by eye.
+    // Red against green is the fundamental colourblindness case, so they are
+    // separated by lightness as well as hue.
+    test('open, closed and busy differ in lightness, not only in hue', () {
+      for (final brightness in [Brightness.dark, Brightness.light]) {
+        final sem = Semantic.from(SchemeController.builtIn(brightness));
+        final tones = [lum(sem.open), lum(sem.closed), lum(sem.busy)];
+        for (var i = 0; i < tones.length; i++) {
+          for (var j = i + 1; j < tones.length; j++) {
+            expect((tones[i] - tones[j]).abs(), greaterThan(20),
+                reason: 'a colourblind reader has only lightness to go on '
+                    'in $brightness');
+          }
+        }
+      }
+    });
+
+    test('the old full harmonize collapsed red onto amber, and is gone', () {
+      final sem = Semantic.from(SchemeController.builtIn(Brightness.dark));
+      // The shipped harmonize put these dE 4.8 apart in normal vision. A crude
+      // proxy: they must no longer be near identical.
+      final closedLum = lum(sem.closed);
+      final busyLum = lum(sem.busy);
+      expect((closedLum - busyLum).abs(), greaterThan(40));
     });
   });
 }

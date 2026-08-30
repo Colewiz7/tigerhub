@@ -49,40 +49,44 @@ class _AppearanceSectionState extends State<AppearanceSection> {
               Text('Theme source', style: text.titleLarge?.copyWith(fontSize: 21)),
               const SizedBox(height: 4),
               Text(
-                'The palette is generated from your wallpaper by Caelestia. '
-                'Pin the built-in palette if a wallpaper ever produces '
-                'something unreadable.',
+                "The app's own palette is the default. It is designed for "
+                'readability and validated for colour vision deficiency, and it '
+                'is the same everywhere the app runs.',
                 style: text.bodySmall,
               ),
             ],
           ),
         ),
         StatusRow(
-          icon: Icons.wallpaper_rounded,
-          title: 'Follow the wallpaper',
-          subtitle: state.isDynamic
-              ? (state.detail ?? 'reading the generated scheme')
-              : 'not currently in use',
-          emphasis: state.isDynamic ? RowEmphasis.normal : RowEmphasis.dimmed,
-          onTap: () => widget.scheme.setForceSeed(false),
-          trailing: state.isDynamic
-              ? Icon(Icons.check_circle_rounded, color: scheme.primary)
-              : null,
-        ),
-        StatusRow(
-          icon: Icons.lock_outline_rounded,
-          title: 'Pin the built-in palette',
-          subtitle: 'RIT orange, known good, ignores the wallpaper',
+          icon: Icons.palette_rounded,
+          title: 'Built-in palette',
+          subtitle: 'RIT orange, light and dark, follows your system setting',
           emphasis: state.isDynamic ? RowEmphasis.dimmed : RowEmphasis.normal,
           onTap: () => widget.scheme.setForceSeed(true),
           trailing: state.isDynamic
               ? null
               : Icon(Icons.check_circle_rounded, color: scheme.primary),
         ),
+        StatusRow(
+          icon: Icons.wallpaper_rounded,
+          title: 'Follow my wallpaper',
+          subtitle: state.isDynamic
+              ? (state.detail ?? 'reading the generated scheme')
+              : 'Linux desktop only, needs a generated scheme file',
+          emphasis: state.isDynamic ? RowEmphasis.normal : RowEmphasis.dimmed,
+          onTap: () => widget.scheme.setForceSeed(false),
+          trailing: state.isDynamic
+              ? Icon(Icons.check_circle_rounded, color: scheme.primary)
+              : null,
+        ),
         const SizedBox(height: 18),
         Text(
-          'The same switch is available from the palette button in the app bar. '
-          'A build can also pin it with --dart-define=FORCE_SEED=true.',
+          'Following the wallpaper is off by default. A generated scheme is '
+          'whatever a photo happened to contain, so it is not a design, and it '
+          'can produce colours that are unreadable or that clash with the '
+          'status colours. Turn it on if you like it on your own machine.\n\n'
+          'The same switch is on the palette button in the app bar. A build can '
+          'pin the built-in palette outright with --dart-define=FORCE_SEED=true.',
           style: text.bodySmall,
         ),
       ],

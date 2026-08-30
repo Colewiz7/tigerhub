@@ -43,85 +43,64 @@ class Semantic extends ThemeExtension<Semantic> {
   final Color onBusy;
   final Color busyContainer;
 
-  /// Reference hues before harmonizing. Chosen for recognisability, not for
-  /// looking good next to any particular wallpaper, which is what harmonize
-  /// then takes care of.
+  /// Reference hues before nudging. Chosen for recognisability.
   static const Color _greenSeed = Color(0xFF2E7D32);
   static const Color _redSeed = Color(0xFFC62828);
   static const Color _amberSeed = Color(0xFFF9A825);
 
-  static Color _harmonize(Color design, Color towards) =>
-      Color(Blend.harmonize(design.toARGB32(), towards.toARGB32()));
+  /// A gentle nudge toward the palette, not a full harmonize.
+  ///
+  /// `Blend.harmonize` rotated red and amber so far toward the orange primary
+  /// that they collapsed onto each other: the shipped palette measured only
+  /// dE 1.0 apart in deuteranopia and dE 4.8 in normal vision, so the colour
+  /// carried no information at all. A 10 percent hue rotation keeps the tie to
+  /// the palette without destroying the separation.
+  static const double _nudge = 0.10;
+
+  /// Tones, picked by running the palette validator rather than by eye.
+  ///
+  /// Red against green is the fundamental colourblindness case and no choice of
+  /// hue fixes it, so these are separated by LIGHTNESS as well. The spread is
+  /// what makes them distinguishable, which is why they deliberately sit
+  /// outside a uniform lightness band.
+  ///
+  /// Validated all-pairs against each mode's own surface:
+  ///   dark  #8bd376 #ee463d #ffddb7  CVD dE 9.4 protan, normal dE 18.0, contrast >= 3:1
+  ///   light #63a64d #930009 #996100  CVD dE 11.6 deutan, normal dE 17.0, contrast >= 3:1
+  ///
+  /// The dark amber is deliberately pale. Deepening it for more chroma drops
+  /// its separation from green to dE 2.0 in protanopia, so paleness is the
+  /// price of it being distinguishable at all.
+  static const _darkTones = (open: 78.0, closed: 55.0, busy: 90.0);
+  static const _lightTones = (open: 62.0, closed: 30.0, busy: 46.0);
+
+  static Color _shift(Color design, Color towards, double tone) {
+    final rotated = Blend.hctHue(design.toARGB32(), towards.toARGB32(), _nudge);
+    final hct = Hct.fromInt(rotated);
+    hct.tone = tone;
+    return Color(hct.toInt());
+  }
 
   /// Build from whatever scheme is currently in force.
   factory Semantic.from(ColorScheme scheme) {
     final dark = scheme.brightness == Brightness.dark;
+    final tones = dark ? _darkTones : _lightTones;
+    final primary = scheme.primary;
 
-    Color tone(
-      Color seed, {
-      required double lightness,
-      required double chromaScale,
-    }) {
-      final harmonized = _harmonize(seed, scheme.primary);
-      final hct = Hct.fromInt(harmonized.toARGB32());
-      hct.tone = lightness;
-      hct.chroma *= chromaScale;
-      return Color(hct.toInt());
-    }
+    Color at(Color seed, double tone) => _shift(seed, primary, tone);
 
-    // Pull all three status families toward the row surface and shed more than
-    // half their chroma. They remain legible state cues, while the primary
-    // keeps the strongest color contrast on the screen.
-    final surfaceTone =
-        Hct.fromInt(scheme.surfaceContainerHigh.toARGB32()).tone;
-    final fg = dark ? surfaceTone + 42.0 : surfaceTone - 42.0;
-    final container = dark ? surfaceTone + 5.0 : surfaceTone - 5.0;
-    final onContainer = dark ? surfaceTone + 58.0 : surfaceTone - 58.0;
-    const foregroundChroma = 0.45;
-    const containerChroma = 0.22;
+    final container = dark ? 26.0 : 90.0;
+    final onContainer = dark ? 90.0 : 20.0;
 
     return Semantic(
-      open: tone(
-        _greenSeed,
-        lightness: fg,
-        chromaScale: foregroundChroma,
-      ),
-      onOpen: tone(
-        _greenSeed,
-        lightness: onContainer,
-        chromaScale: foregroundChroma,
-      ),
-      openContainer: tone(
-        _greenSeed,
-        lightness: container,
-        chromaScale: containerChroma,
-      ),
-      // Closed is muted rather than alarming. Nothing is wrong, it is just shut.
-      closed: tone(
-        _redSeed,
-        lightness: fg,
-        chromaScale: foregroundChroma,
-      ),
-      closedContainer: tone(
-        _redSeed,
-        lightness: container,
-        chromaScale: containerChroma,
-      ),
-      busy: tone(
-        _amberSeed,
-        lightness: fg,
-        chromaScale: foregroundChroma,
-      ),
-      onBusy: tone(
-        _amberSeed,
-        lightness: onContainer,
-        chromaScale: foregroundChroma,
-      ),
-      busyContainer: tone(
-        _amberSeed,
-        lightness: container,
-        chromaScale: containerChroma,
-      ),
+      open: at(_greenSeed, tones.open),
+      onOpen: at(_greenSeed, onContainer),
+      openContainer: at(_greenSeed, container),
+      closed: at(_redSeed, tones.closed),
+      closedContainer: at(_redSeed, container),
+      busy: at(_amberSeed, tones.busy),
+      onBusy: at(_amberSeed, onContainer),
+      busyContainer: at(_amberSeed, container),
     );
   }
 

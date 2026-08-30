@@ -1,23 +1,23 @@
-/// Dynamic colour.
+/// Palette source.
 ///
-/// The app follows the wallpaper by reading the Material scheme that Caelestia
-/// generates, rather than by hardcoding something warm and hoping it matches.
+/// **The built-in palette is the default.** This ships to people on many
+/// different desktops, so the app cannot assume a wallpaper-derived scheme
+/// exists, is readable, or is anything the user chose. A palette generated from
+/// someone else's wallpaper is not a design, it is a guess.
 ///
-///   Linux : read the generated scheme file, watch it, rebuild live
-///   Web   : fixed seed fallback, there is no wallpaper to follow
+/// Following the wallpaper is therefore opt in, off unless asked for, and Linux
+/// only. It reads the Material scheme Caelestia generates, watches it, and
+/// rebuilds live. It is genuinely nice on a machine that has one.
 ///
-/// A known-good fallback is always one flag away, so an unusual wallpaper can
-/// never leave the app unreadable with no way back:
-///
-///   flutter run --dart-define=FORCE_SEED=true
-///
-/// or the toggle in the app bar.
+/// A build can pin the built-in palette outright with
+/// `--dart-define=FORCE_SEED=true`, which also disables the opt in.
 library;
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../services/cache.dart';
 import 'scheme_source.dart';
 
 /// Where the palette currently comes from. Surfaced in the UI so the answer is
@@ -47,16 +47,21 @@ class SchemeState {
 }
 
 class SchemeController extends ChangeNotifier {
-  SchemeController({bool forceSeed = false}) : _forced = forceSeed {
-    _state = _seedState('not loaded yet');
+  SchemeController({bool? followWallpaper})
+      : _forced = !(followWallpaper ?? false) {
+    _state = _seedState('built-in palette');
   }
+
+  static const _followKey = 'follow_wallpaper';
 
   /// Compile time override, so a broken scheme can be bypassed without a code
   /// change: --dart-define=FORCE_SEED=true
   static const bool forceSeedFromEnvironment =
       bool.fromEnvironment('FORCE_SEED');
 
-  /// The known-good fallback. RIT orange, which is warm by construction.
+  /// The app's own colour. RIT orange, seeded through Material's tonal system
+  /// so both light and dark are generated from one hue and stay consistent
+  /// wherever the app runs.
   static const Color fallbackSeed = Color(0xFFF76902);
 
   bool _forced;
@@ -66,10 +71,20 @@ class SchemeController extends ChangeNotifier {
   SchemeState get state => _state;
   bool get forcedToSeed => _forced;
 
-  /// Pin the known-good palette, or go back to following the wallpaper.
+  /// Pin the built-in palette, or opt in to following the wallpaper.
   Future<void> setForceSeed(bool value) async {
     if (_forced == value) return;
     _forced = value;
+    await ResponseCache.instance
+        .writeOrder(_followKey, [value ? 'false' : 'true']);
+    await load();
+  }
+
+  /// Restore the opt in, then load. Defaults to the built-in palette when
+  /// nothing has been chosen.
+  Future<void> restore() async {
+    final stored = await ResponseCache.instance.readOrder(_followKey);
+    _forced = stored.isEmpty || stored.first != 'true';
     await load();
   }
 
@@ -111,11 +126,12 @@ class SchemeController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The built-in palette, in whichever mode is asked for.
+  static ColorScheme builtIn(Brightness brightness) =>
+      ColorScheme.fromSeed(seedColor: fallbackSeed, brightness: brightness);
+
   static SchemeState _seedState(String detail) => SchemeState(
-        scheme: ColorScheme.fromSeed(
-          seedColor: fallbackSeed,
-          brightness: Brightness.dark,
-        ),
+        scheme: builtIn(Brightness.dark),
         origin: SchemeOrigin.seed,
         detail: detail,
       );
