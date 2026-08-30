@@ -56,12 +56,21 @@ class _CampusMapViewState extends State<CampusMapView> {
   }
 
   void _zoomBy(double factor) {
-    final current = _transform.value.getMaxScaleOnAxis();
+    final matrix = _transform.value;
+    final current = matrix.getMaxScaleOnAxis();
     final target = (current * factor).clamp(1.0, 5.0);
     final applied = target / current;
     if (applied == 1) return;
-    _transform.value = _transform.value.clone()
-      ..scaleByDouble(applied, applied, 1, 1);
+    final focus = _viewportSize.isEmpty
+        ? Offset.zero
+        : _viewportSize.center(Offset.zero);
+    final translatedX = focus.dx - applied * (focus.dx - matrix.entry(0, 3));
+    final translatedY = focus.dy - applied * (focus.dy - matrix.entry(1, 3));
+    _transform.value = Matrix4.identity()
+      ..setEntry(0, 0, target)
+      ..setEntry(1, 1, target)
+      ..setEntry(0, 3, translatedX)
+      ..setEntry(1, 3, translatedY);
   }
 
   KeyEventResult _handleMapKey(FocusNode node, KeyEvent event) {
@@ -167,9 +176,14 @@ class _CampusMapViewState extends State<CampusMapView> {
         .where((group) => group.id == _selectedId)
         .firstOrNull;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyF, control: true): () =>
+            _searchPlaces(all, backdrop),
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
         LayoutBuilder(
           builder: (context, constraints) {
             final mode = SegmentedButton<bool>(
@@ -306,6 +320,11 @@ class _CampusMapViewState extends State<CampusMapView> {
                           scheme: Theme.of(context).colorScheme,
                         ),
                       ),
+                      const Positioned(
+                        right: 12,
+                        top: 12,
+                        child: _NorthIndicator(),
+                      ),
                       Positioned(
                         right: 12,
                         bottom: 12,
@@ -365,7 +384,49 @@ class _CampusMapViewState extends State<CampusMapView> {
                   onClose: () => setState(() => _selectedId = null),
                 ),
         ),
-      ],
+        ],
+      ),
+    );
+  }
+}
+
+class _NorthIndicator extends StatelessWidget {
+  const _NorthIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      label: 'Map is oriented north up',
+      child: ExcludeSemantics(
+        child: Material(
+          color: scheme.surface.withValues(alpha: 0.92),
+          shape: const CircleBorder(),
+          child: SizedBox.square(
+            dimension: 46,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  Icons.navigation_rounded,
+                  size: 25,
+                  color: scheme.primary,
+                ),
+                Positioned(
+                  bottom: 3,
+                  child: Text(
+                    'N',
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1185,6 +1246,11 @@ IconData mapPlaceIcon(String kind) => switch (kind) {
   'lactation' => Icons.child_care_rounded,
   'vending' => Icons.local_drink_rounded,
   'convenience' => Icons.storefront_rounded,
+  'food_share' => Icons.volunteer_activism_rounded,
+  'bottle_return' => Icons.recycling_rounded,
+  'support_services' => Icons.support_agent_rounded,
+  'higi_kiosk' => Icons.monitor_heart_rounded,
+  'gym' => Icons.fitness_center_rounded,
   _ when kind.startsWith('_event:') => Icons.event_rounded,
   _ => Icons.place_rounded,
 };
@@ -1419,6 +1485,9 @@ class CampusMapPainter extends CustomPainter {
         // Keep outlines cartographic as the viewer zooms instead of turning
         // them into thick neon borders.
         edge.strokeWidth /= zoom;
+        if (family == MapFamily.parking && zoom < 1.15) {
+          edge.color = edge.color.withValues(alpha: 0.28);
+        }
         canvas.drawPath(path, edge);
       }
     }
@@ -1576,7 +1645,9 @@ class CampusMapPainter extends CustomPainter {
         ..strokeWidth = 4.2 / zoom
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
-        ..color = scheme.surfaceContainerHighest.withValues(alpha: 0.9),
+        ..color = scheme.surfaceContainerHighest.withValues(
+          alpha: zoom < 1.15 ? 0.68 : 0.9,
+        ),
     );
     canvas.drawPath(
       geometry.road,
@@ -1585,7 +1656,9 @@ class CampusMapPainter extends CustomPainter {
         ..strokeWidth = 1.35 / zoom
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round
-        ..color = scheme.onSurfaceVariant.withValues(alpha: 0.52),
+        ..color = scheme.onSurfaceVariant.withValues(
+          alpha: zoom < 1.15 ? 0.32 : 0.52,
+        ),
     );
     if (zoom >= 1.15) {
       canvas.drawPath(
