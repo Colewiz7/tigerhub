@@ -23,8 +23,6 @@ import 'services/api.dart';
 import 'services/dashboard.dart';
 import 'theme/tokens.dart';
 
-const List<String> _defaultOrder = ['dining', 'events', 'chefs', 'housing'];
-
 /// The icon each module type shows in the card library and the hidden chips.
 /// The name comes from `moduleLabels` beside the type itself, so the library
 /// and the renderer cannot drift apart.
@@ -126,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _scrollController = ScrollController();
   final _gridKey = GlobalKey();
 
-  List<String> _order = _defaultOrder;
+  List<String> _order = [for (final card in defaultDashboard) card.id];
 
   /// Cards the user has removed. They stay available to re-add.
   List<String> _hidden = const [];
@@ -134,6 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Edit mode reveals the remove buttons and the add row.
   bool _editing = false;
   String? _selectedId;
+  String _announcement = '';
   Result<Collection<RecreationFacility>> _recreation = const Result(
     value: null,
     state: DataState.priming,
@@ -216,17 +215,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _removeCard(String id) {
+    final removed = _instance(id);
     setState(() {
       _order = _order.where((c) => c != id).toList();
       _hidden = [..._hidden, id];
+      if (_selectedId == id) _selectedId = null;
+      _announcement = '${moduleLabels[removed?.type] ?? 'Card'} removed';
     });
     _persist();
   }
 
   void _addCard(String id) {
+    final added = _instance(id);
     setState(() {
       _hidden = _hidden.where((c) => c != id).toList();
       _order = [..._order, id];
+      _announcement = '${moduleLabels[added?.type] ?? 'Card'} added';
     });
     _persist();
   }
@@ -240,22 +244,32 @@ class _HomeScreenState extends State<HomeScreen> {
     final card = CardInstance(
       id: '$base-$index',
       type: type,
-      size: (supportedSizes[type] ?? const [CardSize.standard]).first,
+      // The calendar's value is the seven-day shape, which needs the two
+      // column footprint. Other modules start at their least expensive size.
+      size: defaultSizeFor(type),
     );
     setState(() {
       _instances = [..._instances, card];
       _order = [..._order, card.id];
       _selectedId = card.id;
+      _announcement = '${moduleLabels[type]} added, position ${_order.length}';
     });
     await _persist();
   }
 
   Future<void> _updateCard(CardInstance updated) async {
+    final previous = _instance(updated.id);
     setState(() {
       _instances = [
         for (final card in _instances)
           if (card.id == updated.id) updated else card,
       ];
+      if (previous?.size != updated.size) {
+        _announcement =
+            '${moduleLabels[updated.type]} resized to ${updated.size.id}';
+      } else if (previous?.scope != updated.scope) {
+        _announcement = '${moduleLabels[updated.type]} scope updated';
+      }
     });
     await _persist();
   }
@@ -269,6 +283,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final moved = next.removeAt(from);
       next.insert(to, moved);
       _order = next;
+      _announcement =
+          '${moduleLabels[_instance(id)?.type] ?? 'Card'} moved to position ${to + 1}';
     });
     _persist();
   }
@@ -347,7 +363,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         ModuleType.visitingChefs => VisitingChefsCard(
           result: widget.chefs,
-          compact: card.size == CardSize.compact,
           dragHandle: _DragHandle(visible: showDragHandle),
           onShowAll: () => widget.onGoToTab(1),
         ),
@@ -403,40 +418,56 @@ class _HomeScreenState extends State<HomeScreen> {
             .toDouble();
 
         final children = [
-          for (final id in _order)
-            SizedBox(
-              key: ValueKey(id),
-              width:
-                  (constraints.maxWidth - 16) /
-                  columns *
-                  ((_instance(id)?.size.columns ?? 1).clamp(1, columns)),
-              height:
-                  (_instance(id)?.size == CardSize.compact
-                      ? cardHeight * .58
-                      : cardHeight) +
-                  _cardGutter * 2,
-              child: Padding(
-                padding: const EdgeInsets.all(_cardGutter),
-                child: _HoverCard(
-                  builder: (hovered) => Stack(
-                    children: [
-                      _cardFor(id, hovered || _editing),
-                      if (_editing)
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: Row(
-                            children: [
-                              _InspectButton(
-                                selected: _selectedId == id,
-                                onTap: () => setState(() => _selectedId = id),
-                              ),
-                              const SizedBox(width: 6),
-                              _RemoveButton(onTap: () => _removeCard(id)),
-                            ],
+          for (var index = 0; index < _order.length; index++)
+            Semantics(
+              key: ValueKey(_order[index]),
+              container: true,
+              sortKey: OrdinalSortKey(index.toDouble()),
+              label: dashboardCardSemanticsLabel(
+                _instance(_order[index]),
+                index + 1,
+                _order.length,
+              ),
+              child: SizedBox(
+                width:
+                    (constraints.maxWidth - 16) /
+                    columns *
+                    ((_instance(_order[index])?.size.columns ?? 1).clamp(
+                      1,
+                      columns,
+                    )),
+                height:
+                    (_instance(_order[index])?.size == CardSize.compact
+                        ? cardHeight * .58
+                        : cardHeight) +
+                    _cardGutter * 2,
+                child: Padding(
+                  padding: const EdgeInsets.all(_cardGutter),
+                  child: _HoverCard(
+                    builder: (hovered) => Stack(
+                      children: [
+                        _cardFor(_order[index], hovered || _editing),
+                        if (_editing)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Row(
+                              children: [
+                                _InspectButton(
+                                  selected: _selectedId == _order[index],
+                                  onTap: () => setState(
+                                    () => _selectedId = _order[index],
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                _RemoveButton(
+                                  onTap: () => _removeCard(_order[index]),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -459,7 +490,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     enableScrollingWhileDragging: false,
                     longPressDelay: const Duration(milliseconds: 180),
                     onReorder: (reorderedListFunction) {
-                      setState(() => _order = reorderedListFunction(_order));
+                      setState(() {
+                        _order = reorderedListFunction(_order);
+                        _announcement = 'Dashboard order updated';
+                      });
                       _persist();
                     },
                     builder: (wrapped) =>
@@ -473,7 +507,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   editing: _editing,
                   hidden: _hidden,
                   cards: {for (final c in _instances) c.id: c},
-                  onToggle: () => setState(() => _editing = !_editing),
+                  onToggle: () => setState(() {
+                    _editing = !_editing;
+                    _announcement = _editing
+                        ? 'Customize mode on. Select a card to edit it.'
+                        : 'Customize mode off';
+                    if (!_editing) _selectedId = null;
+                  }),
                   onAdd: _addCard,
                   onAddModule: _addModule,
                   selected: _selectedId == null
@@ -484,6 +524,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   facilities: _facilities,
                   onUpdate: _updateCard,
                   onMove: (delta) => _moveCard(_selectedId!, delta),
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: Semantics(
+                  liveRegion: true,
+                  label: _announcement,
+                  child: const SizedBox.shrink(),
                 ),
               ),
               const SliverToBoxAdapter(child: _Colophon()),
