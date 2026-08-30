@@ -10,13 +10,13 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../services/cache.dart';
 import '../theme/tokens.dart';
 import '../widgets/card_shell.dart';
+import '../widgets/copyable_address.dart';
 import '../widgets/freshness.dart';
 
 class HousingCard extends StatefulWidget {
@@ -249,7 +249,6 @@ class _AddressBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
     return Column(
@@ -257,49 +256,12 @@ class _AddressBlock extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // The hero: nested one surface level lighter than the card.
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: scheme.surfaceContainerHigh,
-            borderRadius: Shapes.inner,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final line in address.lines)
-                Text(line, style: text.bodyMedium?.copyWith(height: 1.55)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Material(
-              elevation: 0,
-              color: scheme.surfaceContainerHigh,
-              shape: Shapes.pill,
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => Clipboard.setData(
-                  ClipboardData(text: address.lines.join('\n')),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.copy_rounded, size: 14, color: scheme.onSurfaceVariant),
-                      const SizedBox(width: 6),
-                      Text('Copy', style: text.bodySmall),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const Spacer(),
-            if (!address.verified) const _CautionPill(),
-          ],
+        //
+        // Every line copies on its own, because web order forms want street,
+        // city, state and ZIP in separate fields.
+        CopyableAddress(
+          lines: address.lines,
+          trailing: address.verified ? null : const _CautionPill(),
         ),
         if (!address.unitSupplied)
           Padding(
