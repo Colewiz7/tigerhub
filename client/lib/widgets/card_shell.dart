@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import '../services/api.dart';
 import '../theme/tokens.dart';
 import 'freshness.dart';
+import 'glyph.dart';
 
 class CardShell extends StatelessWidget {
   const CardShell({
@@ -20,9 +21,15 @@ class CardShell extends StatelessWidget {
     this.fetchedAt,
     this.hero,
     this.dragHandle,
+    this.glyph,
   });
 
   final String title;
+
+  /// Section identity, per `docs/glyph-adoption-spec.md`. Only cards the spec
+  /// names carry one; the rest show the title alone rather than reaching for
+  /// a Material icon that means nothing.
+  final GlyphKind? glyph;
   final Widget child;
   final DataState state;
   final DateTime? fetchedAt;
@@ -59,7 +66,17 @@ class CardShell extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(title, style: text.titleLarge),
+                      Row(
+                        children: [
+                          if (glyph != null) ...[
+                            Glyph(glyph!, size: 22),
+                            const SizedBox(width: 9),
+                          ],
+                          Flexible(
+                            child: Text(title, style: text.titleLarge),
+                          ),
+                        ],
+                      ),
                       FreshnessLine(state: state, fetchedAt: fetchedAt),
                     ],
                   ),

@@ -94,9 +94,9 @@ class PrimingPlaceholder extends StatelessWidget {
           child: Column(
             children: [
               _SkeletonRow(tint: tint, primaryFraction: 0.70),
-              const SizedBox(height: StatusRowGap.value),
+              const SizedBox(height: 8),
               _SkeletonRow(tint: tint, primaryFraction: 0.52),
-              const SizedBox(height: StatusRowGap.value),
+              const SizedBox(height: 8),
               _SkeletonRow(tint: tint, primaryFraction: 0.38),
             ],
           ),
@@ -104,12 +104,6 @@ class PrimingPlaceholder extends StatelessWidget {
       ),
     );
   }
-}
-
-class StatusRowGap {
-  const StatusRowGap._();
-
-  static const double value = 8;
 }
 
 class _SkeletonRow extends StatelessWidget {

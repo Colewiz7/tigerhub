@@ -15,6 +15,7 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
+import '../widgets/glyph.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 import 'event_row.dart';
@@ -62,6 +63,7 @@ class EventsCard extends StatelessWidget {
     final events = result.value?.data ?? const <CampusEvent>[];
 
     return CardShell(
+      glyph: GlyphKind.events,
       title: 'Events',
       state: result.state,
       fetchedAt: result.fetchedAt,

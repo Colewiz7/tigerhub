@@ -13,6 +13,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import 'glyph.dart';
 import 'status_row.dart';
 
 class SectionSpec {
@@ -22,12 +23,22 @@ class SectionSpec {
     required this.subtitle,
     required this.icon,
     required this.builder,
+    this.glyph,
   });
 
   final String id;
   final String title;
   final String subtitle;
+
+  /// The Material fallback, used when [glyph] is null. Sections keep one:
+  /// `docs/glyph-adoption-spec.md` deliberately does not cover every section,
+  /// and "Gym and pool" has no custom glyph.
   final IconData icon;
+
+  /// The custom section glyph, where one exists. Section identity is exactly
+  /// what these are for.
+  final GlyphKind? glyph;
+
   final WidgetBuilder builder;
 }
 
@@ -174,7 +185,9 @@ class SectionNavRow extends StatelessWidget {
                   height: StatusRow.badgeSize,
                   decoration:
                       BoxDecoration(shape: BoxShape.circle, color: badge),
-                  child: Icon(spec.icon, size: 21, color: iconColor),
+                  child: spec.glyph == null
+                      ? Icon(spec.icon, size: 21, color: iconColor)
+                      : Glyph(spec.glyph!, size: 21, color: iconColor),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
