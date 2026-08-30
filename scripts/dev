@@ -88,6 +88,29 @@ cmd_reset() {
 # capture can never contain Cole's browser, terminal, or lock screen. That also
 # removes any dependence on workspace switching, which matters because
 # `hyprctl dispatch` is broken on this Hyprland build (see CLAUDE.md 2.1).
+# Refuse unless the TigerHub window is the focused one.
+#
+# grim captures the screen at a set of coordinates, not a window's own buffer,
+# so anything drawn over the app is what lands in the file. Cropping to the
+# window rules out grabbing the wrong region and nothing else. This has already
+# captured a lock screen once and a notification panel full of messages once.
+#
+# Compositor overlays are layer-shell surfaces: they never appear in
+# `hyprctl clients`, and the ones here are full screen and permanently mapped,
+# so their geometry cannot tell you whether they are currently drawn. Requiring
+# focus is the check that actually works, because a drawer or a lock screen
+# takes focus away from the app.
+#
+# The cost is that captures are no longer automatic. That is the right trade.
+require_focus() {
+  local active
+  active="$(hyprctl activewindow -j 2>/dev/null \
+    | python3 -c 'import json,sys; print((json.load(sys.stdin) or {}).get("class",""))' 2>/dev/null)"
+  [ "$active" = "dev.colewiz.tigerhub" ] && return 0
+  warn "focus is on: ${active:-nothing}"
+  die "click the TigerHub window first. Captures are refused when it is not focused, because grim would record whatever is on top of it."
+}
+
 cmd_shot() {
   command -v hyprctl >/dev/null || die "hyprctl not found, this is Hyprland only"
   command -v grim >/dev/null || die "grim not found"
@@ -110,9 +133,11 @@ cmd_shot() {
     sleep 6
   fi
 
+  require_focus
+
   local geo
   geo="$(hyprctl clients -j | python3 "$ROOT/scripts/_geometry.py")" \
-    || die "could not read the window geometry"
+    || die "not safe to capture, see above"
 
   grim -g "$geo" "$out" || die "grim failed"
   ok "wrote $out ($geo)"
@@ -134,7 +159,6 @@ cmd_shot_tabs() {
   command -v wtype >/dev/null || die "wtype not found, needed to switch tabs"
   command -v grim >/dev/null || die "grim not found"
   [ -x "$BIN" ] || die "no release build. Run: scripts/dev build"
-  backend_healthy || warn "backend is down, screenshots will show cached or empty data"
 
   local dir="$ROOT/response/screenshots"
   mkdir -p "$dir"
@@ -150,15 +174,20 @@ cmd_shot_tabs() {
     sleep 8
   fi
 
+  # wtype sends keystrokes to whatever holds focus, not to a chosen window, so
+  # an unfocused app means typing "1234" into someone's terminal or chat.
+  require_focus
+
   local geo
   geo="$(hyprctl clients -j | python3 "$ROOT/scripts/_geometry.py")" \
-    || die "could not read the window geometry"
+    || die "not safe to capture, see above"
 
-  local pair key name
+  local pair key name failed=0
   for pair in "1:01-today" "2:02-dining" "3:03-events" "4:04-campus"; do
     key="${pair%%:*}"; name="${pair##*:}"
     wtype "$key"; sleep 2
-    grim -g "$geo" "$dir/$name.png" && ok "$name.png"
+    grim -g "$geo" "$dir/$name.png" || { warn "grim failed for $name"; failed=1; continue; }
+    ok "$name.png"
   done
 
   # Leave it on the first tab rather than wherever the loop finished.
@@ -168,8 +197,11 @@ cmd_shot_tabs() {
     pkill -x tigerhub 2>/dev/null
     ok "closed the app"
   fi
+
+  [ "$failed" = "0" ] || die "some captures were discarded, see above"
   say "written to response/screenshots/"
 }
+
 
 cmd_help() {
   cat <<'HELP'
@@ -188,8 +220,12 @@ start, nothing to wait for, and no port.
   scripts/dev build        build the linux release
   scripts/dev install      add a desktop entry and icons for launchers
   scripts/dev test         flutter analyze plus flutter test
-  scripts/dev shot [file]  screenshot the app window only, cropped
-  scripts/dev shot-tabs    capture every tab into response/screenshots/
+  scripts/dev shot [file]  screenshot the app window, if it is focused
+  scripts/dev shot-tabs    capture every tab, if the app is focused
+
+Both refuse unless the TigerHub window has focus. grim records the screen at
+a set of coordinates, so anything drawn over the app lands in the file, and
+compositor overlays cannot be detected any other way.
 
 Environment:
   FLUTTER=~/flutter/bin/flutter
