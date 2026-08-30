@@ -37,6 +37,7 @@ const Map<int, (String, String)> placeKinds = {
   123: ('bus_stop', 'Bus stops'),
   119: ('bike_rack', 'Bike racks'),
   232: ('reload', 'Tiger Spend reload stations'),
+  199: ('time_clock', 'Workday time clocks'),
 };
 
 /// One request per parent category returns every sub it contains, so a handful
@@ -60,7 +61,10 @@ const Map<int, (String, String)> placeKinds = {
 ///
 /// Their point features are ignored, because those kinds are not in
 /// [placeKinds]; only the geometry comes through.
-const List<int> placeParents = [3, 11, 47, 35, 19, 27, 23, 15, 7];
+/// 39 is Employees, which is where the Workday time clocks live. It is the
+/// only parent here fetched purely for a student-facing kind rather than for
+/// outlines or a cluster of kinds, and it carries 63 clocks.
+const List<int> placeParents = [3, 11, 47, 35, 19, 27, 23, 15, 7, 39];
 
 String? _trimmed(Object? value) {
   if (value == null) return null;
