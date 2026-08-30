@@ -10,6 +10,7 @@ import 'package:flutter_reorderable_grid_view/widgets/widgets.dart';
 
 import 'cards/dining_card.dart';
 import 'cards/dashboard_event_cards.dart';
+import 'cards/calendar_card.dart';
 import 'cards/events_card.dart';
 import 'cards/housing_card.dart';
 import 'cards/visiting_chefs_card.dart';
@@ -293,9 +294,10 @@ class _HomeScreenState extends State<HomeScreen> {
           dragHandle: _DragHandle(visible: showDragHandle),
           onShowAll: () => widget.onGoToTab(2),
         ),
-        ModuleType.calendar => EventCalendarCard(
+        ModuleType.calendar => CalendarCard(
           result: widget.events,
           organizerKey: card.scope,
+          compact: card.size == CardSize.compact,
           dragHandle: _DragHandle(visible: showDragHandle),
           onShowAll: () => widget.onGoToTab(2),
         ),
