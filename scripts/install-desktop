@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Install a desktop entry and icons for the built app, into the user's own
+# directories. No root, nothing outside $HOME.
+#
+# The app already sets its own window icon at runtime, so this is only for
+# launchers, docks and alt-tab in environments that look the icon up by name.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BUNDLE="$ROOT/client/build/linux/x64/release/bundle"
+BIN="$BUNDLE/tigerhub"
+ID="dev.colewiz.tigerhub"
+
+APPS="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+ICONS="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor"
+
+if [ "${1:-}" = "--uninstall" ]; then
+  rm -f "$APPS/$ID.desktop"
+  for size in 48 64 96 128 192 256 512; do
+    rm -f "$ICONS/${size}x${size}/apps/$ID.png"
+  done
+  echo "removed $ID.desktop and its icons"
+  exit 0
+fi
+
+[ -x "$BIN" ] || { echo "no release build. Run: scripts/dev build" >&2; exit 1; }
+
+mkdir -p "$APPS"
+sed -e "s|^Exec=.*|Exec=$BIN|" -e "s|^Icon=.*|Icon=$ID|" \
+  "$ROOT/client/linux/packaging/$ID.desktop" > "$APPS/$ID.desktop"
+
+for size in 48 64 96 128 192 256 512; do
+  src="$ROOT/assets/icons/app-icon-$size.png"
+  [ -f "$src" ] || continue
+  mkdir -p "$ICONS/${size}x${size}/apps"
+  cp "$src" "$ICONS/${size}x${size}/apps/$ID.png"
+done
+
+command -v update-desktop-database >/dev/null && update-desktop-database "$APPS" || true
+command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -qtf "${ICONS%/hicolor}/hicolor" 2>/dev/null || true
+
+echo "installed $ID.desktop and icons under $HOME/.local/share"
+echo "remove with: scripts/install-desktop --uninstall"

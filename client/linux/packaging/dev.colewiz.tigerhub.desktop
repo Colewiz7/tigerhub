@@ -1,0 +1,19 @@
+[Desktop Entry]
+Type=Application
+Name=TigerHub
+GenericName=Campus information
+Comment=RIT dining hours, events, makerspace availability and mail
+Categories=Utility;
+Terminal=false
+StartupNotify=true
+
+# StartupWMClass must match the window class exactly, or the launcher shows a
+# second entry instead of highlighting the running window. The class comes from
+# --org dev.colewiz at project creation and is dev.colewiz.tigerhub, not
+# tigerhub.
+StartupWMClass=dev.colewiz.tigerhub
+
+# Both are rewritten by scripts/install-desktop with real paths, since a
+# desktop entry cannot hold a relative path.
+Exec=tigerhub
+Icon=dev.colewiz.tigerhub
