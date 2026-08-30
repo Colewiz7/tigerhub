@@ -7,6 +7,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
 import '../models/api_models.dart';
@@ -212,6 +213,8 @@ class _CampusMapViewState extends State<CampusMapView> {
                                 boundsFeatures: all,
                                 selectedId: _selectedId,
                                 scheme: Theme.of(context).colorScheme,
+                                onSelect: (feature) =>
+                                    setState(() => _selectedId = feature.id),
                               ),
                             ),
                           ),
@@ -405,6 +408,9 @@ class _MapToolbar extends StatelessWidget {
     final selectedLabel = selectedKind == null
         ? 'All places'
         : kinds[selectedKind] ?? 'All places';
+    final selectedIcon = selectedKind == null
+        ? Icons.apps_rounded
+        : mapPlaceIcon(selectedKind!);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -414,9 +420,25 @@ class _MapToolbar extends StatelessWidget {
             tooltip: 'Filter map places',
             onSelected: (value) => onKindChanged(value.isEmpty ? null : value),
             itemBuilder: (context) => [
-              const PopupMenuItem(value: '', child: Text('All places')),
+              const PopupMenuItem(
+                value: '',
+                child: ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.apps_rounded),
+                  title: Text('All places'),
+                ),
+              ),
               for (final entry in kinds.entries)
-                PopupMenuItem(value: entry.key, child: Text(entry.value)),
+                PopupMenuItem(
+                  value: entry.key,
+                  child: ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(mapPlaceIcon(entry.key)),
+                    title: Text(entry.value),
+                  ),
+                ),
             ],
             child: Material(
               color: scheme.surfaceContainerHigh,
@@ -429,7 +451,7 @@ class _MapToolbar extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.tune_rounded, size: 19),
+                    Icon(selectedIcon, size: 19),
                     const SizedBox(width: 8),
                     Text(selectedLabel),
                     const SizedBox(width: 4),
@@ -578,11 +600,48 @@ class CampusMapProjection {
           (anchor.latitude - medianLatitude).abs() <= 0.012;
     });
     final points = core.expand((f) => f.coordinates.expand((ring) => ring));
-    if (points.isEmpty) return;
-    minLongitude = points.map((p) => p.longitude).reduce(math.min);
-    maxLongitude = points.map((p) => p.longitude).reduce(math.max);
-    minLatitude = points.map((p) => p.latitude).reduce(math.min);
-    maxLatitude = points.map((p) => p.latitude).reduce(math.max);
+    if (points.isNotEmpty) {
+      minLongitude = points.map((p) => p.longitude).reduce(math.min);
+      maxLongitude = points.map((p) => p.longitude).reduce(math.max);
+      minLatitude = points.map((p) => p.latitude).reduce(math.min);
+      maxLatitude = points.map((p) => p.latitude).reduce(math.max);
+    }
+    _matchViewportAspect();
+  }
+
+  /// Grows the visible bounds to the shape of the window.
+  ///
+  /// A wide window shows more ground. It never shows the same ground stretched
+  /// wider, which is what this used to do: it forced a 2.35:1 minimum aspect,
+  /// and since the campus in view is 2342m by 2085m (1.12:1) that stretched
+  /// longitude by 2.09x and left latitude alone, so every building came out
+  /// over twice as wide as it really is.
+  ///
+  /// Simply fitting the campus instead is honest but wasteful: a 1.12:1 map in
+  /// the 1.86:1 panel of a 970px window uses 60% of it and strands 357px of
+  /// dead width. Growing the bounds fills the panel and keeps the scale on
+  /// both axes identical, which is also what lets the scale bar mean anything.
+  void _matchViewportAspect() {
+    final availableWidth = math.max(size.width - padding * 2, 1);
+    final availableHeight = math.max(size.height - padding * 2, 1);
+    final target = availableWidth / availableHeight;
+
+    final cosine = math.cos(((minLatitude + maxLatitude) / 2) * math.pi / 180);
+    final latitudeSpan = math.max(maxLatitude - minLatitude, 0.000001);
+    final geographicWidth = math.max(
+      (maxLongitude - minLongitude) * cosine,
+      0.000001,
+    );
+
+    if (geographicWidth / latitudeSpan < target) {
+      final grow = (latitudeSpan * target - geographicWidth) / cosine / 2;
+      minLongitude -= grow;
+      maxLongitude += grow;
+    } else {
+      final grow = (geographicWidth / target - latitudeSpan) / 2;
+      minLatitude -= grow;
+      maxLatitude += grow;
+    }
   }
 
   final List<CampusMapFeature> features;
@@ -603,28 +662,13 @@ class CampusMapProjection {
         : (values[middle - 1] + values[middle]) / 2;
   }
 
+  /// The whole padded panel.
+  ///
+  /// The bounds were grown to this shape in the constructor, so filling it is
+  /// isotropic by construction rather than by a second scaling rule here.
   Rect get mapRect {
-    final longitudeSpan = math.max(maxLongitude - minLongitude, 0.000001);
-    final latitudeSpan = math.max(maxLatitude - minLatitude, 0.000001);
-    final latitudeRadians = ((minLatitude + maxLatitude) / 2) * math.pi / 180;
-    final geographicWidth = longitudeSpan * math.cos(latitudeRadians);
-    final availableWidth = math.max(size.width - padding * 2, 1);
-    final availableHeight = math.max(size.height - padding * 2, 1);
-    final scale = math.min(
-      availableWidth / geographicWidth,
-      availableHeight / latitudeSpan,
-    );
-    final naturalWidth = geographicWidth * scale;
-    final height = latitudeSpan * scale;
-    // Isotropic, deliberately. This previously forced a minimum 2.35:1 aspect
-    // to fill a wide window, but the campus that fits in the bounds is
-    // 2342m by 2085m, which is 1.12:1, so the rule stretched longitude by
-    // 2.09x while leaving latitude alone. Every building came out over twice
-    // as wide as it is, angles between them were wrong, and the tall forced
-    // box left dead bands above and below on a normal window. A map whose
-    // shapes do not match the shapes you are standing in cannot be used to
-    // recognise anything. Spare width stays as margin.
-    final width = naturalWidth;
+    final width = math.max(size.width - padding * 2, 1).toDouble();
+    final height = math.max(size.height - padding * 2, 1).toDouble();
     return Rect.fromLTWH(
       (size.width - width) / 2,
       (size.height - height) / 2,
@@ -680,6 +724,28 @@ enum MapFamily {
   /// Painting order, ground upward.
   final int rank;
 }
+
+/// Familiar category symbols used by pins and the filter menu.
+///
+/// These are intentionally Material symbols rather than another illustration
+/// set: emergency, restroom, transit, and payment icons should be recognized
+/// immediately on a dense map.
+IconData mapPlaceIcon(String kind) => switch (kind) {
+  'water' => Icons.water_drop_rounded,
+  'ev_charge' => Icons.ev_station_rounded,
+  'blue_light' => Icons.emergency_share_rounded,
+  'aed' => Icons.health_and_safety_rounded,
+  'restroom_all_gender' => Icons.wc_rounded,
+  'restroom_accessible' => Icons.accessible_rounded,
+  'atm' => Icons.local_atm_rounded,
+  'changing_table' => Icons.baby_changing_station_rounded,
+  'entrance_accessible' => Icons.accessible_forward_rounded,
+  'bus_stop' => Icons.directions_bus_rounded,
+  'bike_rack' => Icons.pedal_bike_rounded,
+  'reload' => Icons.add_card_rounded,
+  _ when kind.startsWith('_event:') => Icons.event_rounded,
+  _ => Icons.place_rounded,
+};
 
 /// How each family is painted, in one place, so the map and the legend that
 /// explains it cannot disagree.
@@ -744,12 +810,46 @@ class CampusMapPainter extends CustomPainter {
     this.boundsFeatures,
     required this.selectedId,
     required this.scheme,
+    this.onSelect,
   });
 
   final List<CampusMapFeature> features;
   final List<CampusMapFeature>? boundsFeatures;
   final int? selectedId;
   final ColorScheme scheme;
+  final ValueChanged<CampusMapFeature>? onSelect;
+
+  @override
+  SemanticsBuilderCallback get semanticsBuilder => _buildSemantics;
+
+  List<CustomPainterSemantics> _buildSemantics(Size size) {
+    final projection = CampusMapProjection(
+      features,
+      size,
+      boundsFeatures: boundsFeatures,
+    );
+    return [
+      for (final feature in features)
+        if (feature.geometryType == 'Point' && feature.anchor != null)
+          CustomPainterSemantics(
+            key: ValueKey(feature.id),
+            rect: Rect.fromCircle(
+              center: projection.project(feature.anchor!),
+              radius: 22,
+            ),
+            properties: SemanticsProperties(
+              label: [
+                feature.kindName,
+                feature.name,
+                ?feature.building,
+              ].join(', '),
+              textDirection: TextDirection.ltr,
+              button: true,
+              onTap: onSelect == null ? null : () => onSelect!(feature),
+            ),
+          ),
+    ];
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -863,7 +963,11 @@ class CampusMapPainter extends CustomPainter {
       if (anchor == null) continue;
       final center = projection.project(anchor);
       if (!mapRect.inflate(12).contains(center)) continue;
-      final key = ((center.dx / 30).floor(), (center.dy / 30).floor());
+      // At the full-campus scale, tiny buckets produce dozens of anonymous
+      // numbered badges. A larger cell groups nearby amenities into a useful
+      // "there are several things here" marker; zooming the canvas then
+      // separates them spatially.
+      final key = ((center.dx / 46).floor(), (center.dy / 46).floor());
       buckets.putIfAbsent(key, () => []).add((feature: feature, at: center));
     }
 
@@ -884,38 +988,48 @@ class CampusMapPainter extends CustomPainter {
       });
       final clustered = bucket.length > 1;
       final radius = selected
-          ? 15.0
+          ? 18.0
           : clustered
-          ? 12.0
-          : 8.0;
+          ? 16.0
+          : 13.0;
+      final isEvent = bucket.first.feature.kind.startsWith('_event:');
+      final foreground = selected || isEvent
+          ? scheme.onPrimary
+          : scheme.onPrimaryContainer;
       canvas.drawPath(
         _scallop(center, radius),
         Paint()
-          ..color = selected || bucket.first.feature.kind.startsWith('_event:')
+          ..color = selected || isEvent
               ? scheme.primary
               : scheme.primaryContainer,
       );
-      if (clustered || bucket.first.feature.kind.startsWith('_event:')) {
-        final label = TextPainter(
-          text: TextSpan(
-            text: '$eventCount',
-            style: TextStyle(
-              color: selected || bucket.first.feature.kind.startsWith('_event:')
-                  ? scheme.onPrimary
-                  : scheme.onPrimaryContainer,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        label.paint(canvas, center - Offset(label.width / 2, label.height / 2));
+      if (clustered || isEvent) {
+        final kinds = {for (final item in bucket) item.feature.kind};
+        final icon = isEvent
+            ? Icons.event_rounded
+            : kinds.length == 1
+            ? mapPlaceIcon(bucket.first.feature.kind)
+            : Icons.apps_rounded;
+        _paintMapIcon(
+          canvas,
+          icon,
+          center - const Offset(5.5, 0),
+          foreground,
+          11,
+        );
+        _paintMapCount(
+          canvas,
+          '$eventCount',
+          center + const Offset(7, 0),
+          foreground,
+        );
       } else {
-        canvas.drawCircle(
+        _paintMapIcon(
+          canvas,
+          mapPlaceIcon(bucket.single.feature.kind),
           center,
-          selected ? 3 : 2,
-          Paint()
-            ..color = selected ? scheme.onPrimary : scheme.onPrimaryContainer,
+          foreground,
+          15,
         );
       }
     }
@@ -1047,12 +1161,61 @@ class CampusMapPainter extends CustomPainter {
     return path..close();
   }
 
+  void _paintMapCount(Canvas canvas, String count, Offset center, Color color) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: count,
+        style: TextStyle(
+          color: color,
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.paint(
+      canvas,
+      center - Offset(painter.width / 2, painter.height / 2),
+    );
+  }
+
+  void _paintMapIcon(
+    Canvas canvas,
+    IconData icon,
+    Offset center,
+    Color color,
+    double size,
+  ) {
+    final painter = TextPainter(
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          color: color,
+          fontSize: size,
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.paint(
+      canvas,
+      center - Offset(painter.width / 2, painter.height / 2),
+    );
+  }
+
   @override
   bool shouldRepaint(CampusMapPainter oldDelegate) =>
       oldDelegate.features != features ||
       oldDelegate.boundsFeatures != boundsFeatures ||
       oldDelegate.selectedId != selectedId ||
       oldDelegate.scheme != scheme;
+
+  @override
+  bool shouldRebuildSemantics(CampusMapPainter oldDelegate) =>
+      oldDelegate.features != features ||
+      oldDelegate.boundsFeatures != boundsFeatures ||
+      oldDelegate.selectedId != selectedId;
 }
 
 /// Names the three outline families.
@@ -1084,6 +1247,23 @@ class _MapLegend extends StatelessWidget {
             _entry(MapFamily.parking, 'Parking'),
             const SizedBox(height: 5),
             _entry(MapFamily.open, 'Green space'),
+            const SizedBox(height: 7),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.apps_rounded, size: 14, color: scheme.primary),
+                const SizedBox(width: 7),
+                Text(
+                  'Number = grouped places',
+                  style: TextStyle(
+                    fontSize: 10,
+                    height: 1.1,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
