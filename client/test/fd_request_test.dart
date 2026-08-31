@@ -1,6 +1,6 @@
 /// What the app asks FD MealPlanner for.
 ///
-/// This is a scraping-ethics guard as much as a correctness one. the project rules 6
+/// This is a scraping-ethics guard as much as a correctness one. the project notes 6
 /// says cache aggressively and never scrape more than needed, and this request
 /// has already gone wrong twice in ways that cost RIT's vendor real bandwidth
 /// and cost the user a working menu:

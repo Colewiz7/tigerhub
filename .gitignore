@@ -34,3 +34,5 @@ response/
 # Build outputs and fetched build tools
 dist/
 .tools/
+
+# local scratch, not the repo docs

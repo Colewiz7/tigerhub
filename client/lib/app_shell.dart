@@ -355,7 +355,7 @@ class _TabStackState extends State<_TabStack> {
   Timer? _settle;
 
   /// Covers the content while the incoming tab comes up. Without it you watch
-  /// a tab assemble, which Cole described as looking weird. The Map tab is the
+  /// a tab assemble, which looks broken. The Map tab is the
   /// honest case: it lays out a canvas and builds its geometry from cold.
   bool _veiled = false;
   Timer? _unveil;

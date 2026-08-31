@@ -1,7 +1,7 @@
 /// A small iCalendar reader, enough for the two feeds RIT publishes.
 ///
 /// The backend used Python's `icalendar`. This is hand written rather than a
-/// new dependency because the job turned out to be genuinely small: the project rules
+/// new dependency because the job turned out to be genuinely small: the project notes
 /// 7.3 records that the CampusGroups feed contains **zero RRULEs**, recurrences
 /// arriving pre expanded, so there is no recurrence engine to write. What is
 /// left is line unfolding, parameter parsing, and text unescaping.

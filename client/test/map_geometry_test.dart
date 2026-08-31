@@ -1,7 +1,7 @@
 /// The map needs geometry, not just pins.
 ///
-/// Cole's words: "it's just a bunch of dots placed around rather than a map".
-/// He was right, and the cause was which categories were fetched. The place
+/// It was a bunch of dots placed around rather than a map, and the cause
+/// was which categories were fetched. The place
 /// categories carry the pins; the shape of campus lives in categories that were
 /// never requested, so the backdrop had twenty buildings in it, all of them
 /// incidental LEED ones from Sustainability.

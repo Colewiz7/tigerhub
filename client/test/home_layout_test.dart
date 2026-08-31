@@ -2,8 +2,8 @@
 ///
 /// Width alone spread the cards into one wide row with a band of dead space
 /// underneath, and with four cards and three columns it stranded the fourth
-/// alone while there was room beside it. Cole's words: "it spread out
-/// horizontally when there's space below".
+/// alone while there was room beside it. It spread out horizontally when
+/// there was space below.
 library;
 
 import 'package:flutter_test/flutter_test.dart';

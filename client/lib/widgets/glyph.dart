@@ -1,6 +1,6 @@
 /// The custom section glyphs.
 ///
-/// the designer's set, adopted per the glyph-adoption spec. The important half
+/// Adopted per the glyph-adoption spec. The important half
 /// of that decision is where they are **not** used: not the tab bar, not
 /// actions like copy or close, and not venue or event rows. They carry section
 /// identity, and swapping every Material icon for them would change the style

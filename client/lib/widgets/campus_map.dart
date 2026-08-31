@@ -1323,7 +1323,7 @@ MapFamily mapFamily(CampusMapFeature feature) {
 
 /// The category colours, validated rather than eyeballed.
 ///
-/// the project rules 4 requires the dataviz validator to sign off any palette. Both of
+/// the project notes 4 requires the dataviz validator to sign off any palette. Both of
 /// these pass all six checks against their own surface:
 ///
 ///   light  #0069a8 #6a4c93 #b4531f #4f7a28

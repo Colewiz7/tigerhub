@@ -1,6 +1,6 @@
 /// Switching tabs, including out of Customize.
 ///
-/// Cole reported the app glitching when leaving Customize for another page,
+/// The app glitched when leaving Customize for another page,
 /// and general trouble switching pages. The subscription leak explains part of
 /// it, but a leak does not throw, so this drives the actual interaction and
 /// fails on any framework exception rather than trusting that it is fine.
@@ -130,7 +130,7 @@ void main() {
 
   testWidgets('a tab switch is covered while the new tab comes up',
       (tester) async {
-    // Cole: switching pages "looks weird". The incoming tab assembles in view,
+    // Switching pages looked wrong. The incoming tab assembles in view,
     // and the Map tab genuinely does work on first open. The veil covers that,
     // then gets out of the way on its own.
     final scheme = await pumpShell(tester);
