@@ -141,7 +141,10 @@ void main() {
     });
 
     testWidgets('renders a percentage when a sensor exists', (tester) async {
-      await pumpRow(tester, const Occupancy(count: 75, maxOcc: 150, percentFull: 50));
+      await pumpRow(
+        tester,
+        const Occupancy(count: 75, maxOcc: 150, percentFull: 50),
+      );
       expect(find.text('50%'), findsOneWidget);
     });
 
@@ -452,6 +455,18 @@ void main() {
       );
       await tester.tap(find.text('+7 locations'));
       expect(tapped, 1);
+    });
+
+    testWidgets('a noninteractive more row does not show a dead chevron', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(body: MoreRow(hidden: 3, noun: 'events')),
+        ),
+      );
+      expect(find.text('+3 events'), findsOneWidget);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
     });
   });
 
@@ -1302,8 +1317,11 @@ void _pinningAndChart() {
       final closed = busynessCaption(series(3, 10), 12, isOpen: false);
       expect(closed, contains('Closed'));
       expect(closed, isNot(contains('Quieter')));
-      expect(busynessCaption(series(3, 10), 12), contains('Quieter'),
-          reason: 'an open location still gets the comparison');
+      expect(
+        busynessCaption(series(3, 10), 12),
+        contains('Quieter'),
+        reason: 'an open location still gets the comparison',
+      );
 
       expect(busynessCaption(series(10, 0), 12), isEmpty);
       expect(busynessCaption(const [], 12), isEmpty);

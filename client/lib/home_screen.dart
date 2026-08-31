@@ -17,6 +17,7 @@ import 'cards/calendar_card.dart';
 import 'cards/events_card.dart';
 import 'cards/housing_card.dart';
 import 'cards/visiting_chefs_card.dart';
+import 'cards/academic_dates_card.dart';
 import 'config.dart';
 import 'models/api_models.dart';
 import 'services/api.dart';
@@ -35,6 +36,7 @@ const Map<ModuleType, IconData> moduleIcons = {
   ModuleType.mailingAddress: Icons.markunread_mailbox_rounded,
   ModuleType.facilityHours: Icons.fitness_center_rounded,
   ModuleType.campusMap: Icons.map_rounded,
+  ModuleType.academicDates: Icons.event_available_rounded,
 };
 
 /// Card height. Cards grow to use spare vertical room, but stop before they
@@ -382,6 +384,10 @@ class _HomeScreenState extends State<HomeScreen> {
           events: widget.events,
           dragHandle: _DragHandle(visible: showDragHandle),
         ),
+        ModuleType.academicDates => AcademicDatesCard(
+          dragHandle: _DragHandle(visible: showDragHandle),
+          onShowAll: () => widget.onGoToTab(4),
+        ),
       };
 
   /// Columns grow with width, so a wide window is not four cards huddled in
@@ -585,6 +591,7 @@ class _EditBar extends StatelessWidget {
     ModuleType.mailingAddress,
     ModuleType.facilityHours,
     ModuleType.campusMap,
+    ModuleType.academicDates,
   ];
 
   Future<void> _showLibrary(BuildContext context) async {
@@ -615,6 +622,7 @@ class _EditBar extends StatelessWidget {
                   ModuleType.calendar => 'Browse the next seven days',
                   ModuleType.facilityHours => 'See today’s recreation hours',
                   ModuleType.campusMap => 'Keep campus wayfinding on Today',
+                  ModuleType.academicDates => 'Keep the next deadline visible',
                   _ => 'Add another ${moduleLabels[type]!.toLowerCase()} card',
                 }),
                 trailing: const Icon(Icons.add_rounded),
@@ -920,19 +928,26 @@ class _RemoveButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Material(
-      elevation: 0,
-      color: scheme.errorContainer,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(7),
-          child: Icon(
-            Icons.close_rounded,
-            size: 18,
-            color: scheme.onErrorContainer,
+    return Tooltip(
+      message: 'Remove card from Today',
+      child: Semantics(
+        button: true,
+        label: 'Remove card from Today',
+        child: Material(
+          elevation: 0,
+          color: scheme.errorContainer,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(7),
+              child: Icon(
+                Icons.close_rounded,
+                size: 18,
+                color: scheme.onErrorContainer,
+              ),
+            ),
           ),
         ),
       ),
@@ -949,18 +964,30 @@ class _InspectButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Material(
-      elevation: 0,
-      color: selected
-          ? scheme.primaryContainer
-          : scheme.surfaceContainerHighest,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(7),
-          child: Icon(Icons.tune_rounded, size: 18, color: scheme.onSurface),
+    return Tooltip(
+      message: selected ? 'Close card options' : 'Customize card',
+      child: Semantics(
+        button: true,
+        toggled: selected,
+        label: selected ? 'Close card options' : 'Customize card',
+        child: Material(
+          elevation: 0,
+          color: selected
+              ? scheme.primaryContainer
+              : scheme.surfaceContainerHighest,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(7),
+              child: Icon(
+                Icons.tune_rounded,
+                size: 18,
+                color: scheme.onSurface,
+              ),
+            ),
+          ),
         ),
       ),
     );

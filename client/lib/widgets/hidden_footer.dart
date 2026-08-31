@@ -34,34 +34,42 @@ class HiddenFooter extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4, bottom: 10),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Material(
-          elevation: 0,
-          color: scheme.surfaceContainerHigh,
-          shape: Shapes.pill,
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onToggle,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    expanded
-                        ? Icons.visibility_off_rounded
-                        : Icons.visibility_rounded,
-                    size: 16,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    expanded ? 'Hide $count again' : '$count $noun',
-                    style: text.bodySmall?.copyWith(
-                      color: scheme.onSurface,
-                      fontVariations: Weights.medium,
+        child: Semantics(
+          button: true,
+          expanded: expanded,
+          label: expanded ? 'Hide $count $noun' : 'Show $count $noun',
+          child: Material(
+            elevation: 0,
+            color: scheme.surfaceContainerHigh,
+            shape: Shapes.pill,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onToggle,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      expanded
+                          ? Icons.visibility_off_rounded
+                          : Icons.visibility_rounded,
+                      size: 16,
+                      color: scheme.onSurfaceVariant,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      expanded ? 'Hide $count again' : '$count $noun',
+                      style: text.bodySmall?.copyWith(
+                        color: scheme.onSurface,
+                        fontVariations: Weights.medium,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

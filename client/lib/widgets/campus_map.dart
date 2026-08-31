@@ -184,206 +184,213 @@ class _CampusMapViewState extends State<CampusMapView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final mode = SegmentedButton<bool>(
-              segments: const [
-                ButtonSegment(
-                  value: false,
-                  icon: Icon(Icons.place_rounded),
-                  label: Text('Places'),
-                ),
-                ButtonSegment(
-                  value: true,
-                  icon: Icon(Icons.event_rounded),
-                  label: Text('Events'),
-                ),
-              ],
-              selected: {_showEvents},
-              onSelectionChanged: (selection) => setState(() {
-                _showEvents = selection.single;
-                _selectedId = null;
-                _transform.value = Matrix4.identity();
-              }),
-            );
-            final toolbar = _MapToolbar(
-              kinds: _showEvents ? const {} : kinds,
-              selectedKind: _kind,
-              onKindChanged: (kind) => setState(() {
-                _kind = kind;
-                _selectedId = null;
-                _transform.value = Matrix4.identity();
-              }),
-              onFit: () => _transform.value = Matrix4.identity(),
-              onSearch: () => _searchPlaces(all, backdrop),
-            );
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final mode = SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(
+                    value: false,
+                    icon: Icon(Icons.place_rounded),
+                    label: Text('Places'),
+                  ),
+                  ButtonSegment(
+                    value: true,
+                    icon: Icon(Icons.event_rounded),
+                    label: Text('Events'),
+                  ),
+                ],
+                selected: {_showEvents},
+                onSelectionChanged: (selection) => setState(() {
+                  _showEvents = selection.single;
+                  _selectedId = null;
+                  _transform.value = Matrix4.identity();
+                }),
+              );
+              final toolbar = _MapToolbar(
+                kinds: _showEvents ? const {} : kinds,
+                selectedKind: _kind,
+                onKindChanged: (kind) => setState(() {
+                  _kind = kind;
+                  _selectedId = null;
+                  _transform.value = Matrix4.identity();
+                }),
+                onFit: () => _transform.value = Matrix4.identity(),
+                onSearch: () => _searchPlaces(all, backdrop),
+              );
 
-            if (constraints.maxWidth < 620) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+              if (constraints.maxWidth < 620) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    mode,
+                    const SizedBox(height: 8),
+                    Align(alignment: Alignment.centerRight, child: toolbar),
+                  ],
+                );
+              }
+              return Row(
                 children: [
-                  mode,
-                  const SizedBox(height: 8),
-                  Align(alignment: Alignment.centerRight, child: toolbar),
+                  SizedBox(width: 320, child: mode),
+                  const Spacer(),
+                  toolbar,
                 ],
               );
-            }
-            return Row(
-              children: [
-                SizedBox(width: 320, child: mode),
-                const Spacer(),
-                toolbar,
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 10),
-        Expanded(
-          child: ClipRRect(
-            borderRadius: Shapes.card,
-            child: ColoredBox(
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  _viewportSize = constraints.biggest;
-                  return Stack(
-                    children: [
-                      Positioned.fill(
-                        child: Focus(
-                          focusNode: _mapFocus,
-                          onKeyEvent: _handleMapKey,
-                          child: InteractiveViewer(
-                            transformationController: _transform,
-                            minScale: 1,
-                            maxScale: 5,
-                            boundaryMargin: const EdgeInsets.all(80),
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onDoubleTap: () => _zoomBy(1.5),
-                              onTapUp: (details) {
-                                _mapFocus.requestFocus();
-                                final projection = CampusMapProjection(
-                                  mapFeatures,
-                                  Size(
-                                    constraints.maxWidth,
-                                    constraints.maxHeight,
-                                  ),
-                                  boundsFeatures: all,
-                                );
-                                final hit = projection.nearest(
-                                  details.localPosition,
-                                );
-                                if (hit != null) {
-                                  setState(() => _selectedId = hit.id);
-                                }
-                              },
-                              // Repaints as the viewer scales, which is what
-                              // lets labels and the scale bar hold a constant
-                              // on-screen size instead of growing with the map.
-                              child: ValueListenableBuilder<Matrix4>(
-                                valueListenable: _transform,
-                                // Its own layer, so a pan is the compositor
-                                // moving a finished raster rather than Skia
-                                // redrawing 191 outlines and the whole walking
-                                // network for every frame of the gesture.
-                                builder: (context, matrix, _) =>
-                                    RepaintBoundary(
-                                      child: CustomPaint(
-                                        size: Size(
-                                          constraints.maxWidth,
-                                          constraints.maxHeight,
-                                        ),
-                                        painter: CampusMapPainter(
-                                          features: mapFeatures,
-                                          boundsFeatures: all,
-                                          selectedId: _selectedId,
-                                          scheme: Theme.of(context).colorScheme,
-                                          zoom: matrix.getMaxScaleOnAxis(),
-                                          paths: _paths,
-                                          onSelect: (feature) => setState(
-                                            () => _selectedId = feature.id,
+            },
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: Shapes.card,
+              child: ColoredBox(
+                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    _viewportSize = constraints.biggest;
+                    return Stack(
+                      children: [
+                        Positioned.fill(
+                          child: Semantics(
+                            container: true,
+                            label:
+                                'Interactive campus map. Use plus and minus to '
+                                'zoom, or Control F to search.',
+                            child: Focus(
+                              focusNode: _mapFocus,
+                              onKeyEvent: _handleMapKey,
+                              child: InteractiveViewer(
+                                transformationController: _transform,
+                                minScale: 1,
+                                maxScale: 5,
+                                boundaryMargin: const EdgeInsets.all(80),
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onDoubleTap: () => _zoomBy(1.5),
+                                  onTapUp: (details) {
+                                    _mapFocus.requestFocus();
+                                    final projection = CampusMapProjection(
+                                      mapFeatures,
+                                      Size(
+                                        constraints.maxWidth,
+                                        constraints.maxHeight,
+                                      ),
+                                      boundsFeatures: all,
+                                    );
+                                    final hit = projection.nearest(
+                                      details.localPosition,
+                                    );
+                                    if (hit != null) {
+                                      setState(() => _selectedId = hit.id);
+                                    }
+                                  },
+                                  // Repaints as the viewer scales, which is what
+                                  // lets labels and the scale bar hold a constant
+                                  // on-screen size instead of growing with the map.
+                                  child: ValueListenableBuilder<Matrix4>(
+                                    valueListenable: _transform,
+                                    // Its own layer, so a pan is the compositor
+                                    // moving a finished raster rather than Skia
+                                    // redrawing 191 outlines and the whole walking
+                                    // network for every frame of the gesture.
+                                    builder: (context, matrix, _) =>
+                                        RepaintBoundary(
+                                          child: CustomPaint(
+                                            size: Size(
+                                              constraints.maxWidth,
+                                              constraints.maxHeight,
+                                            ),
+                                            painter: CampusMapPainter(
+                                              features: mapFeatures,
+                                              boundsFeatures: all,
+                                              selectedId: _selectedId,
+                                              scheme: Theme.of(context)
+                                                  .colorScheme,
+                                              zoom: matrix.getMaxScaleOnAxis(),
+                                              paths: _paths,
+                                              onSelect: (feature) => setState(
+                                                () => _selectedId = feature.id,
+                                              ),
+                                            ),
                                           ),
                                         ),
-                                      ),
-                                    ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                      // Fixed, and outside the InteractiveViewer, so it does not
-                      // zoom the way the scale bar deliberately does.
-                      Positioned(
-                        left: 12,
-                        top: 12,
-                        child: _MapLegend(
-                          scheme: Theme.of(context).colorScheme,
-                        ),
-                      ),
-                      const Positioned(
-                        right: 12,
-                        top: 12,
-                        child: _NorthIndicator(),
-                      ),
-                      Positioned(
-                        right: 12,
-                        bottom: 12,
-                        child: ValueListenableBuilder<Matrix4>(
-                          valueListenable: _transform,
-                          builder: (context, matrix, _) => _MapZoomControls(
-                            zoom: matrix.getMaxScaleOnAxis(),
-                            onZoomIn: () => _zoomBy(1.5),
-                            onZoomOut: () => _zoomBy(1 / 1.5),
+                        // Fixed, and outside the InteractiveViewer, so it does not
+                        // zoom the way the scale bar deliberately does.
+                        Positioned(
+                          left: 12,
+                          top: 12,
+                          child: _MapLegend(
+                            scheme: Theme.of(context).colorScheme,
                           ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        const Positioned(
+                          right: 12,
+                          top: 12,
+                          child: _NorthIndicator(),
+                        ),
+                        Positioned(
+                          right: 12,
+                          bottom: 12,
+                          child: ValueListenableBuilder<Matrix4>(
+                            valueListenable: _transform,
+                            builder: (context, matrix, _) => _MapZoomControls(
+                              zoom: matrix.getMaxScaleOnAxis(),
+                              onZoomIn: () => _zoomBy(1.5),
+                              onZoomOut: () => _zoomBy(1 / 1.5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height:
-              selected == null &&
-                  selectedBuilding == null &&
-                  selectedEvent == null
-              ? 92
-              : 146,
-          child: _showEvents
-              ? selectedEvent == null
-                    ? _EventStrip(
-                        result: eventMap,
-                        onSelect: (group) =>
-                            setState(() => _selectedId = group.id),
-                      )
-                    : _SelectedEventGroup(
-                        group: selectedEvent,
-                        onClose: () => setState(() => _selectedId = null),
-                      )
-              : selected == null && selectedBuilding == null
-              ? _kind == null
-                    ? _KindStrip(
-                        features: visible,
-                        onSelect: (kind) => setState(() {
-                          _kind = kind;
-                          _selectedId = null;
-                          _transform.value = Matrix4.identity();
-                        }),
-                      )
-                    : _PlaceStrip(
-                        features: visible,
-                        selectedId: _selectedId,
-                        onSelect: (feature) =>
-                            setState(() => _selectedId = feature.id),
-                      )
-              : _SelectedPlace(
-                  feature: selected ?? selectedBuilding!,
-                  onClose: () => setState(() => _selectedId = null),
-                ),
-        ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height:
+                selected == null &&
+                    selectedBuilding == null &&
+                    selectedEvent == null
+                ? 92
+                : 146,
+            child: _showEvents
+                ? selectedEvent == null
+                      ? _EventStrip(
+                          result: eventMap,
+                          onSelect: (group) =>
+                              setState(() => _selectedId = group.id),
+                        )
+                      : _SelectedEventGroup(
+                          group: selectedEvent,
+                          onClose: () => setState(() => _selectedId = null),
+                        )
+                : selected == null && selectedBuilding == null
+                ? _kind == null
+                      ? _KindStrip(
+                          features: visible,
+                          onSelect: (kind) => setState(() {
+                            _kind = kind;
+                            _selectedId = null;
+                            _transform.value = Matrix4.identity();
+                          }),
+                        )
+                      : _PlaceStrip(
+                          features: visible,
+                          selectedId: _selectedId,
+                          onSelect: (feature) =>
+                              setState(() => _selectedId = feature.id),
+                        )
+                : _SelectedPlace(
+                    feature: selected ?? selectedBuilding!,
+                    onClose: () => setState(() => _selectedId = null),
+                  ),
+          ),
         ],
       ),
     );
@@ -399,30 +406,33 @@ class _NorthIndicator extends StatelessWidget {
     return Semantics(
       label: 'Map is oriented north up',
       child: ExcludeSemantics(
-        child: Material(
-          color: scheme.surface.withValues(alpha: 0.92),
-          shape: const CircleBorder(),
-          child: SizedBox.square(
-            dimension: 46,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Icon(
-                  Icons.navigation_rounded,
-                  size: 25,
-                  color: scheme.primary,
-                ),
-                Positioned(
-                  bottom: 3,
-                  child: Text(
-                    'N',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: scheme.onSurface,
+        child: Tooltip(
+          message: 'North up',
+          child: Material(
+            color: scheme.surface.withValues(alpha: 0.92),
+            shape: const CircleBorder(),
+            child: SizedBox.square(
+              dimension: 46,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Icon(
+                    Icons.navigation_rounded,
+                    size: 25,
+                    color: scheme.primary,
+                  ),
+                  Positioned(
+                    bottom: 3,
+                    child: Text(
+                      'N',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: scheme.onSurface,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -481,7 +491,7 @@ class _MapZoomControls extends StatelessWidget {
               SizedBox(
                 width: 38,
                 child: Text(
-                  '${zoom.round()}×',
+                  '${zoom.toStringAsFixed(1).replaceFirst('.0', '')}×',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.labelMedium,
                 ),
@@ -631,20 +641,30 @@ class _MapSearchDelegate extends SearchDelegate<CampusMapFeature?> {
 
   List<CampusMapFeature> get _matches {
     final needle = query.trim().toLowerCase();
-    if (needle.isEmpty) return features.take(20).toList();
-    return features
-        .where((feature) {
-          final haystack = [
-            feature.name,
-            feature.kindName,
-            feature.building ?? '',
-            feature.room ?? '',
-            feature.note ?? '',
-          ].join(' ').toLowerCase();
-          return haystack.contains(needle);
-        })
-        .take(30)
-        .toList();
+    final matches = features.where((feature) {
+      final haystack = [
+        feature.name,
+        feature.kindName,
+        feature.building ?? '',
+        feature.room ?? '',
+        feature.note ?? '',
+      ].join(' ').toLowerCase();
+      return haystack.contains(needle);
+    }).toList();
+    int score(CampusMapFeature feature) {
+      if (needle.isEmpty) return 3;
+      final name = feature.name.toLowerCase();
+      final building = (feature.building ?? '').toLowerCase();
+      if (name == needle || building == needle) return 0;
+      if (name.startsWith(needle) || building.startsWith(needle)) return 1;
+      return 2;
+    }
+
+    matches.sort((a, b) {
+      final ranked = score(a).compareTo(score(b));
+      return ranked != 0 ? ranked : a.name.compareTo(b.name);
+    });
+    return matches.take(30).toList();
   }
 
   @override
@@ -680,11 +700,22 @@ class _MapSearchDelegate extends SearchDelegate<CampusMapFeature?> {
       itemBuilder: (context, index) {
         final feature = matches[index];
         final location = feature.where;
+        final isBuilding = feature.kind == '_campus';
+        final palette = mapPinPalette(
+          feature.kind,
+          Theme.of(context).colorScheme,
+        );
         return ListTile(
-          leading: CircleAvatar(child: Icon(mapPlaceIcon(feature.kind))),
+          leading: CircleAvatar(
+            backgroundColor: palette.$1,
+            foregroundColor: palette.$2,
+            child: Icon(mapPlaceIcon(feature.kind)),
+          ),
           title: Text(feature.name),
           subtitle: Text(
-            location.isEmpty
+            isBuilding
+                ? '${feature.kindName} · ${feature.building}'
+                : location.isEmpty
                 ? feature.kindName
                 : '${feature.kindName} · $location',
           ),
@@ -724,7 +755,7 @@ class _MapToolbar extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton.filledTonal(
-          tooltip: 'Search campus places',
+          tooltip: 'Search campus places (Ctrl+F)',
           onPressed: onSearch,
           icon: const Icon(Icons.search_rounded),
         ),
@@ -743,7 +774,9 @@ class _MapToolbar extends StatelessWidget {
                   title: Text('All places'),
                 ),
               ),
-              for (final entry in kinds.entries)
+              for (final entry
+                  in kinds.entries.toList()
+                    ..sort((a, b) => a.value.compareTo(b.value)))
                 PopupMenuItem(
                   value: entry.key,
                   child: ListTile(
@@ -895,7 +928,7 @@ class _PlaceStrip extends StatelessWidget {
     itemBuilder: (context, index) {
       final feature = features[index];
       return SizedBox(
-        width: 210,
+        width: 236,
         child: Material(
           color: Theme.of(context).colorScheme.surfaceContainerHigh,
           borderRadius: Shapes.inner,
@@ -915,7 +948,7 @@ class _PlaceStrip extends StatelessWidget {
                       children: [
                         Text(
                           feature.name,
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.titleSmall,
                         ),
@@ -965,6 +998,12 @@ class _SelectedPlace extends StatelessWidget {
                 Text(
                   feature.name,
                   style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  feature.kindName,
+                  style: Theme.of(context).textTheme.labelMedium
+                      ?.copyWith(color: Theme.of(context).colorScheme.primary),
                 ),
                 if (feature.where.isNotEmpty) ...[
                   const SizedBox(height: 3),

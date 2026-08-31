@@ -14,9 +14,7 @@ void main() {
           RecreationDay(
             serviceDate: DateTime(2026, 8, 30),
             closed: false,
-            spans: const [
-              RecreationSpan(opensAt: '08:00', closesAt: '20:00'),
-            ],
+            spans: const [RecreationSpan(opensAt: '08:00', closesAt: '20:00')],
           ),
         ],
       ),

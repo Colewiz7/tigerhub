@@ -179,6 +179,7 @@ class CampusEvent {
     required this.title,
     required this.startsAt,
     this.endsAt,
+    this.description,
     this.location,
     this.organizer,
     this.organizerKey,
@@ -195,6 +196,7 @@ class CampusEvent {
   /// Used to decide whether an event has already finished, so past and future
   /// can be told apart visually.
   final DateTime? endsAt;
+  final String? description;
 
   final String? location;
   final String? organizer;
@@ -209,6 +211,7 @@ class CampusEvent {
     title: json['title'] as String? ?? '',
     startsAt: _date(json['starts_at']) ?? DateTime.now(),
     endsAt: _date(json['ends_at']),
+    description: json['description'] as String?,
     location: json['location'] as String?,
     organizer: json['organizer'] as String?,
     organizerKey: json['organizer_key'] as String?,

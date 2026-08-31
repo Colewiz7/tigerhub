@@ -14,6 +14,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
@@ -24,6 +25,7 @@ import 'package:tigerhub/data/static_config.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/campus_screen.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 
 /// Serves the same envelopes LocalBackend does, from captured fixtures, with no
@@ -121,6 +123,7 @@ void main() {
         home: Scaffold(
           body: CampusScreen(
             api: ApiClient(backend: _FixtureBackend(config)),
+            now: DateTime(2026, 8, 30),
             areas: Result(
               value: Collection(
                 data: config.housingAreas.map(HousingArea.fromJson).toList(),
@@ -166,6 +169,60 @@ void main() {
     );
   });
 
+  testWidgets('academic dates surfaces the next official deadline', (
+    tester,
+  ) async {
+    await pumpCampus(tester);
+
+    await tester.tap(find.text('Academic dates'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Add/drop ends'), findsOneWidget);
+    expect(find.textContaining('Last day of the fall'), findsOneWidget);
+  });
+
+  testWidgets('safety contacts copy the exact official number', (tester) async {
+    String? copied;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied =
+                (call.arguments as Map<dynamic, dynamic>)['text'] as String?;
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
+
+    await pumpCampus(tester);
+
+    await tester.tap(find.text('Safety'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Emergency call'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(copied, '585-475-3333');
+  });
+
+  testWidgets('shuttles uses the saved home and today’s schedule', (
+    tester,
+  ) async {
+    await Preferences.instance.setHome(area: 'global-village');
+    await pumpCampus(tester);
+
+    await tester.tap(find.text('Shuttles'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Today from Global Village'), findsOneWidget);
+    // August 30, 2026 is Sunday, so weekday Campus Connection routes must not
+    // be mixed into the useful answer for today.
+    expect(find.textContaining('13 · Campus & Inn'), findsOneWidget);
+    expect(find.textContaining('3 · Campus Connection'), findsNothing);
+  });
+
   testWidgets('the map is no longer buried inside Campus', (tester) async {
     // It moved to its own tab, so Campus must not carry a second copy: two
     // screens subscribing to the same feed for the same pixels is waste, and
@@ -182,8 +239,9 @@ void main() {
     expect(find.textContaining('6000 Reynolds Drive'), findsWidgets);
   });
 
-  testWidgets('each post office service says what it is doing now',
-      (tester) async {
+  testWidgets('each post office service says what it is doing now', (
+    tester,
+  ) async {
     // The week's table is for planning. This line is for standing outside
     // deciding whether to walk over.
     await pumpCampus(tester);
@@ -194,11 +252,16 @@ void main() {
         .toList();
 
     final statusLines = labels
-        .where((d) => d.startsWith('OPEN \u00b7 ') || d.startsWith('CLOSED \u00b7 '))
+        .where(
+          (d) => d.startsWith('OPEN \u00b7 ') || d.startsWith('CLOSED \u00b7 '),
+        )
         .toList();
 
-    expect(statusLines, isNotEmpty,
-        reason: 'no service reported its state for today');
+    expect(
+      statusLines,
+      isNotEmpty,
+      reason: 'no service reported its state for today',
+    );
 
     // Two offices, each running package pickup and a shipping window.
     expect(statusLines.length, greaterThanOrEqualTo(2));
@@ -219,8 +282,11 @@ void main() {
         .map((t) => t.data ?? '')
         .toSet();
 
-    expect(labels.any((d) => d == 'FALL' || d == 'SUMMER'), isTrue,
-        reason: 'the hours shown belong to a season that is never named');
+    expect(
+      labels.any((d) => d == 'FALL' || d == 'SUMMER'),
+      isTrue,
+      reason: 'the hours shown belong to a season that is never named',
+    );
   });
 
   testWidgets('pickup and shipping are never merged', (tester) async {

@@ -29,19 +29,18 @@ void main() {
 
   group('migration from the old four string ids', () {
     test('keeps the order the user chose', () {
-      final cards = migrateLegacy(
-        ['housing', 'chefs', 'dining', 'events'],
-        const [],
-      );
-      expect(
-        cards.map((c) => c.type),
-        [
-          ModuleType.mailingAddress,
-          ModuleType.visitingChefs,
-          ModuleType.diningStatus,
-          ModuleType.generalEvents,
-        ],
-      );
+      final cards = migrateLegacy([
+        'housing',
+        'chefs',
+        'dining',
+        'events',
+      ], const []);
+      expect(cards.map((c) => c.type), [
+        ModuleType.mailingAddress,
+        ModuleType.visitingChefs,
+        ModuleType.diningStatus,
+        ModuleType.generalEvents,
+      ]);
     });
 
     test('keeps what was hidden hidden', () {
@@ -49,11 +48,13 @@ void main() {
         ['dining', 'events', 'chefs', 'housing'],
         ['chefs'],
       );
-      final chefs =
-          cards.firstWhere((c) => c.type == ModuleType.visitingChefs);
+      final chefs = cards.firstWhere((c) => c.type == ModuleType.visitingChefs);
       expect(chefs.hidden, isTrue);
-      expect(cards.where((c) => c.hidden).length, 1,
-          reason: 'hiding one card hid others too');
+      expect(
+        cards.where((c) => c.hidden).length,
+        1,
+        reason: 'hiding one card hid others too',
+      );
     });
 
     test('a partial saved list still yields a whole dashboard', () {
@@ -61,8 +62,11 @@ void main() {
       // cannot offer it back.
       final cards = migrateLegacy(['events'], const []);
       expect(cards.length, 4);
-      expect(cards.first.type, ModuleType.generalEvents,
-          reason: 'their explicit order should still lead');
+      expect(
+        cards.first.type,
+        ModuleType.generalEvents,
+        reason: 'their explicit order should still lead',
+      );
     });
 
     test('an unknown id is dropped rather than guessed at', () {
@@ -77,15 +81,22 @@ void main() {
     });
 
     test('every instance gets a distinct id', () {
-      final cards = migrateLegacy(
-        ['dining', 'events', 'chefs', 'housing'],
-        const [],
-      );
+      final cards = migrateLegacy([
+        'dining',
+        'events',
+        'chefs',
+        'housing',
+      ], const []);
       expect(cards.map((c) => c.id).toSet().length, cards.length);
     });
   });
 
   group('sizes', () {
+    test('a new calendar starts wide', () {
+      expect(defaultSizeFor(ModuleType.calendar), CardSize.wide);
+      expect(defaultSizeFor(ModuleType.diningStatus), CardSize.compact);
+    });
+
     test('a module only offers sizes its content survives', () {
       // Mailing Address has nothing meaningful to say in one line, and the map
       // needs the width.
@@ -122,6 +133,22 @@ void main() {
     });
   });
 
+  test('card semantics state its order and footprint', () {
+    const card = CardInstance(
+      id: 'calendar-1',
+      type: ModuleType.calendar,
+      size: CardSize.wide,
+    );
+    expect(
+      dashboardCardSemanticsLabel(card, 2, 5),
+      'Calendar card, position 2 of 5, wide size',
+    );
+    expect(
+      dashboardCardSemanticsLabel(null, 1, 1),
+      'Dashboard card, position 1 of 1, unknown size',
+    );
+  });
+
   group('round trip', () {
     test('an instance survives being saved and loaded', () async {
       const cards = [
@@ -143,16 +170,27 @@ void main() {
       final loaded = await DashboardStore.load();
 
       expect(loaded.length, 2);
-      expect(loaded.first.scope, 'FOODSHARE',
-          reason: 'the scope is what makes two of one type different');
+      expect(
+        loaded.first.scope,
+        'FOODSHARE',
+        reason: 'the scope is what makes two of one type different',
+      );
       expect(loaded.first.size, CardSize.wide);
       expect(loaded.last.hidden, isTrue);
     });
 
     test('two instances of one type stay distinct', () async {
       const cards = [
-        CardInstance(id: 'club-1', type: ModuleType.clubEvents, scope: 'RITBKC'),
-        CardInstance(id: 'club-2', type: ModuleType.clubEvents, scope: 'NEWMAN'),
+        CardInstance(
+          id: 'club-1',
+          type: ModuleType.clubEvents,
+          scope: 'RITBKC',
+        ),
+        CardInstance(
+          id: 'club-2',
+          type: ModuleType.clubEvents,
+          scope: 'NEWMAN',
+        ),
       ];
       await DashboardStore.save(cards);
       final loaded = await DashboardStore.load();
@@ -163,13 +201,19 @@ void main() {
 
     test('a first run with nothing saved gets the shipped four', () async {
       final loaded = await DashboardStore.load();
-      expect(loaded.map((c) => c.type),
-          defaultDashboard.map((c) => c.type).toList());
+      expect(
+        loaded.map((c) => c.type),
+        defaultDashboard.map((c) => c.type).toList(),
+      );
     });
 
     test('migrating writes the new format, so it only happens once', () async {
-      await ResponseCache.instance
-          .writeOrder('cards', ['events', 'dining', 'chefs', 'housing']);
+      await ResponseCache.instance.writeOrder('cards', [
+        'events',
+        'dining',
+        'chefs',
+        'housing',
+      ]);
 
       await DashboardStore.load();
 
@@ -185,8 +229,12 @@ void main() {
     });
 
     test('the old format is picked up when the new one is absent', () async {
-      await ResponseCache.instance
-          .writeOrder('cards', ['housing', 'dining', 'events', 'chefs']);
+      await ResponseCache.instance.writeOrder('cards', [
+        'housing',
+        'dining',
+        'events',
+        'chefs',
+      ]);
       await ResponseCache.instance.writeOrder('cards_hidden', ['events']);
 
       final loaded = await DashboardStore.load();
