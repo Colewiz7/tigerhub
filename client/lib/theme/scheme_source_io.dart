@@ -66,5 +66,12 @@ Stream<Map<String, dynamic>> watchScheme() async* {
   }
 }
 
+/// Whether following the wallpaper is possible on this platform at all.
+///
+/// The scheme file is written by a Linux desktop shell. Android has no such
+/// file, and no HOME to look under, so the feature can never do anything
+/// there and its settings row is hidden rather than shown broken.
+bool get schemeSourceIsAvailable => Platform.isLinux;
+
 String get schemeSourceDescription =>
     _locate()?.path ?? 'fixed seed (no scheme file found)';

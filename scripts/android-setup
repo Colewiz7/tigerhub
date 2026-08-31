@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# What is still needed before an APK can be built, and how to get it.
+#
+# The Android platform files are configured and committed. What is missing is
+# the toolchain, which is about 1.5 GB and installs system wide, so it is not
+# something this repo does on anyone's behalf.
+set -euo pipefail
+
+FLUTTER="${FLUTTER:-$HOME/flutter/bin/flutter}"
+ok=0
+
+echo "== what an APK needs =="
+
+if command -v java >/dev/null 2>&1; then
+  echo "  ok    JDK: $(java -version 2>&1 | head -1)"
+else
+  echo "  MISS  JDK 17 or newer.  sudo pacman -S jdk17-openjdk"
+  ok=1
+fi
+
+SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}}"
+if [ -d "$SDK/platform-tools" ]; then
+  echo "  ok    Android SDK at $SDK"
+else
+  echo "  MISS  Android SDK. Either install Android Studio, or:"
+  echo "          sudo pacman -S android-sdk android-sdk-platform-tools android-sdk-build-tools"
+  echo "        then export ANDROID_HOME=/opt/android-sdk (or wherever it landed)"
+  ok=1
+fi
+
+# `flutter config` with no args prints the flag list, not the current values,
+# so the state lives in its settings file rather than in that output.
+if grep -q '"enable-android": true' "${XDG_CONFIG_HOME:-$HOME/.config}/flutter/settings" 2>/dev/null; then
+  echo "  ok    flutter android support enabled"
+else
+  echo "  MISS  flutter config --enable-android"
+  ok=1
+fi
+
+echo
+if [ "$ok" -eq 0 ]; then
+  echo "Everything is present. Build with:"
+  echo "  cd client && $FLUTTER build apk --release"
+  echo
+  echo "Then accept licences once if asked:  $FLUTTER doctor --android-licenses"
+else
+  echo "Install the missing pieces above, then run this again."
+  echo "Nothing in the repo needs changing: android/ is already configured."
+fi
+exit 0
