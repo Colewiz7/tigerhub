@@ -48,7 +48,7 @@ class ScallopedBadge extends StatelessWidget {
         elevation: 0,
         color: background,
         shape: Shapes.badge,
-        // The badge is a fixed geometric shape, and CLAUDE.md 4 pins its
+        // The badge is a fixed geometric shape, and docs/notes.md 4 pins its
         // geometry precisely: seven points at innerRadiusRatio 0.93. Its
         // number is already the oversized one on the card. Letting the system
         // text size push that number past the shape's bounds does not make it

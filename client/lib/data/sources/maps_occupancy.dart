@@ -7,7 +7,7 @@
 /// `GET https://maps.rit.edu/details/<mdoId>.data` in Remix turbo-stream format.
 ///
 /// This uses the **targeted** extractor rather than the general decoder in
-/// `turbo_stream.dart`, matching the backend and CLAUDE.md section 8 decision 1.
+/// `turbo_stream.dart`, matching the backend and docs/notes.md section 8 decision 1.
 /// Only four fields plus a 24 hour series are needed out of one known object,
 /// and walking from the densityData key to its immediate values is all that
 /// takes. The general decoder exists for the campus map's category graph, which

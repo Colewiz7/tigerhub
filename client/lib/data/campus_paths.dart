@@ -6,7 +6,7 @@
 /// instead, extracted once by `scripts/fetch-osm-paths.py`.
 ///
 /// It ships as an asset instead of a live source because the walking network
-/// does not change, and because CLAUDE.md 3.1 requires the app to work with no
+/// does not change, and because docs/notes.md 3.1 requires the app to work with no
 /// network on a first launch. A path you can only see after a successful fetch
 /// is exactly the thing that fails while you are standing outside in the cold.
 ///

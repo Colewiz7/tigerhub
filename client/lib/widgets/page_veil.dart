@@ -1,9 +1,9 @@
 /// A short themed cover shown while a tab comes up.
 ///
-/// Cole: switching pages "looks weird", and wanted a loading screen that
-/// blocks out the background rather than the content assembling in view.
+/// Switching pages looked wrong: you watched the content assemble. This
+/// blocks out the background instead.
 ///
-/// A note on the tension, because it is real: CLAUDE.md 3.1 says paint from
+/// A note on the tension, because it is real: docs/notes.md 3.1 says paint from
 /// cache instantly and never show a cold-start spinner, and the motion spec's
 /// first acceptance check is that a warm cache shows no spinner at all. This
 /// deliberately adds a beat that the data does not need. It is kept short, and

@@ -1,6 +1,6 @@
 /// A real turbo-stream decoder.
 ///
-/// Ported from `backend/app/turbo_stream.py`, which itself revisited CLAUDE.md
+/// Ported from `backend/app/turbo_stream.py`, which itself revisited docs/notes.md
 /// section 8 decision 1. That decision said not to write a general decoder, and
 /// it was right for what it covered: occupancy needs four fields out of one
 /// known object, so a targeted extractor was less code. The campus map's

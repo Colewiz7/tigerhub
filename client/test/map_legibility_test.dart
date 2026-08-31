@@ -1,10 +1,10 @@
 /// The map has to read as a map in both themes.
 ///
-/// Cole: "it's currently hard to distinguish the map". It was, and the reason
+/// The map was hard to read at a glance, and the reason
 /// was measurable rather than aesthetic: every colour in play sat within a
 /// third of its neighbour, so buildings were faint wireframes on a field.
 ///
-/// CLAUDE.md 4 says colour is validated, never eyeballed. These are the numbers
+/// docs/notes.md 4 says colour is validated, never eyeballed. These are the numbers
 /// that validation produced, pinned so a later palette change cannot quietly
 /// undo it.
 library;

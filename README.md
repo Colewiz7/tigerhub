@@ -23,7 +23,8 @@ client/                  the app, and the only thing that ships
     turbo_stream.dart    the decoder for the campus map's payload format
   assets/config/         hand maintained JSON, each with a last_verified date
   test/golden/           pinned output, and captured upstream payloads
-assets/prompts/          asset generation prompts, placeholders until generated
+assets/generated/        the wordmark, glyphs and icon art, plus SPEC.md
+docs/notes.md            endpoints, recon findings, and the decisions
 docs/backlog.md          decided but not built
 docs/recon/              captured sample payloads from the recon phase
 ```
@@ -110,7 +111,7 @@ currently have. Linux builds and runs with no extra setup.
 | bundled JSON config | post office hours, SHED hours, mail zones | n/a |
 
 Full endpoint detail, response shapes, and the reasoning behind each choice are
-in [CLAUDE.md](CLAUDE.md).
+in [docs/notes.md](docs/notes.md).
 
 ## Scraping etiquette
 

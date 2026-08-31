@@ -1,7 +1,7 @@
 /// Workday time clocks, and the categories that were already being downloaded
 /// and thrown away.
 ///
-/// Cole asked for them on the map. They were reachable all along: CLAUDE.md
+/// I wanted them on the map. They were reachable all along: docs/notes.md
 /// 7.9.2 recorded that the map's category ids run into the hundreds and that
 /// kiosks were "partly reachable" but never enumerated, because pulling the
 /// category menu out needed a real turbo-stream decoder rather than the

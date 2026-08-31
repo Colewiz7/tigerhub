@@ -5,7 +5,7 @@ import '../config.dart';
 
 /// The masthead wordmark.
 ///
-/// Codex's art, not type set here. "Tiger" carries the orange with three
+/// Drawn art, not type set here. "Tiger" carries the orange with three
 /// tapered stripes cut through the letterforms, and "Hub" is the quiet half,
 /// which is the reverse of what this used to do.
 ///

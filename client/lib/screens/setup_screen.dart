@@ -10,7 +10,7 @@
 /// that never asked.
 ///
 /// It also does not wait on the network. The housing areas come from bundled
-/// config (CLAUDE.md 7.9: RIT's mail is zone based, so the areas are a fixed
+/// config (docs/notes.md 7.9: RIT's mail is zone based, so the areas are a fixed
 /// list, not a feed), which means first run works with no connection at all.
 library;
 

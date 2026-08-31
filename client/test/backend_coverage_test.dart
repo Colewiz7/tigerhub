@@ -119,7 +119,7 @@ void main() {
 
   test('a direct delivery area bypasses the campus post offices', () async {
     // RIT Inn and 175 Jefferson get mail at the property, and 1 Lomb Memorial
-    // Drive is explicitly not a student package address (CLAUDE.md 7.9).
+    // Drive is explicitly not a student package address (docs/notes.md 7.9).
     final address = await backend.fetch(
       '/housing/areas/rit-inn/address',
       {'name': 'Cole'},

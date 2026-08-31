@@ -20,7 +20,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // RIT's mail is zone based: line two is your building and room, and the
-  // street belongs to the post office (CLAUDE.md 7.9).
+  // street belongs to the post office (docs/notes.md 7.9).
   const lines = [
     'Cole Wisniewski',
     'Peterson 1234',

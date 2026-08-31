@@ -8,7 +8,7 @@ reasoning behind the implementation. New unfinished work belongs at the top.
 
 ## Event dedupe, now that the overlap is measurable  *(done)*
 
-Observed 2026-08-30. CLAUDE.md section 8 decision 2 deliberately shipped **no
+Observed 2026-08-30. docs/notes.md section 8 decision 2 deliberately shipped **no
 dedupe for MVP**, on the grounds that the real overlap should be observed before
 anyone writes fuzzy matching. Here it is.
 
@@ -47,7 +47,7 @@ Keep `source` on whatever survives; it is a first class column for a reason.
 
 ---
 
-## From Cole's review, 2026-08-30
+## From using the app, 2026-08-30
 
 Everything below came from actually using the app. Marked done where it has
 been, so what is left is real.
@@ -66,7 +66,7 @@ been, so what is left is real.
   than three and a widow.
 - **Map tab.** The map existed but was buried as a section inside Campus.
 
-### Codex visual handoff completed
+### Visual pass completed
 
 **Wordmark stripes.** Redrawn as horizontal wavy markings in the source and
 flattened production SVGs.
@@ -94,18 +94,18 @@ scoped to one organizer. *(done)*
 
 ## Motion and loading animations  *(done)*
 
-Requested 2026-08-30. Handed to Codex alongside the map work, so this is
+Requested 2026-08-30. Written up alongside the map work, so this is
 written as a briefing.
 
 Reference the **Caelestia** and **end-4 (illogical-impulse)** dotfiles for feel.
 Both are Quickshell/QML, so nothing ports as code, only as idiom: Material 3
 expressive easing, gentle spring overshoot, staggered reveals, surfaces that
-morph rather than cut. The app already follows their colour spirit (CLAUDE.md
+morph rather than cut. The app already follows their colour spirit (docs/notes.md
 4), and this is the same borrowing applied to motion.
 
 ### Read this before writing a single loading spinner
 
-**Most loading animations would be wrong in this app.** CLAUDE.md 3.1 is a hard
+**Most loading animations would be wrong in this app.** docs/notes.md 3.1 is a hard
 requirement: last known data paints instantly on launch, and a stale cache never
 shows a spinner or an error. There is exactly one state where a loading
 animation is correct, and it is named in the code:
@@ -160,7 +160,7 @@ nothing:
 
 - Anything that delays content already in hand. Cache paints now.
 - `stale` and `failing`. See above.
-- The status colours. CLAUDE.md 4: status always ships with a text label, never
+- The status colours. docs/notes.md 4: status always ships with a text label, never
   colour alone. Motion does not count as a label either, and a pulsing "open"
   chip is not an accessible substitute for the word.
 - Long or looping ambient motion on a screen someone glances at for four
@@ -171,10 +171,10 @@ nothing:
 - **Respect reduced motion.** `MediaQuery.disableAnimationsOf(context)` and
   `accessibleNavigation`. Every animation needs a still fallback that is not
   simply "nothing renders". This is usually forgotten and is not optional.
-- **Ask before adding a dependency** (CLAUDE.md). Flutter's built in implicit
+- **Ask before adding a dependency** (docs/notes.md). Flutter's built in implicit
   animations, `AnimatedSwitcher`, `Hero`, `TweenAnimationBuilder` and
   `AnimationController` cover everything above. `flutter_animate` is a
-  dependency and needs Cole's approval first.
+  dependency, so decide before reaching for it.
 - Curves already in use: `Curves.easeOutCubic` at 260 ms in
   `jump_list.dart`. Match that unless there is a reason not to.
 - Targets are Linux desktop and Android. Assume a compositor that may already
@@ -184,8 +184,9 @@ nothing:
 
 ## Campus map, with events placed on it  *(done)*
 
-Requested 2026-08-30. Likely handed to Codex/ChatGPT, so this is written as a
-briefing rather than a note to self.
+Requested 2026-08-30. Written as a
+briefing rather than a note to self, since the map is a big enough job to
+need one.
 
 **The good news: the data is already being downloaded and then thrown away.**
 
@@ -223,7 +224,7 @@ whole foundation for this feature.
   `event_id`. **RIT's own map already places events**, so look at what is in
   those before building an event placement scheme from scratch.
 - Every response embeds the whole category menu, so one request can enumerate
-  every category (CLAUDE.md 7.9.2). Known ids: 35 Sustainability, 259 Retail,
+  every category (docs/notes.md 7.9.2). Known ids: 35 Sustainability, 259 Retail,
   236 Study Area, 279 Lactation Rooms, 11 Parking. The six parents currently
   fetched are 35, 19, 27, 23, 15, 7.
 
@@ -245,18 +246,18 @@ than guessing, and say how many were left off.
 **Rendering: this is a real decision, do not just reach for Mapbox.**
 
 - A tile map (Mapbox, Google, OSM via `flutter_map`) needs a new dependency, and
-  Mapbox and Google need an API key. **Ask Cole before adding either**
-  (CLAUDE.md rule). A key also means the app stops working offline, which is a
-  hard requirement in CLAUDE.md 3.1.
+  Mapbox and Google need an API key. **Decide before adding either**
+  (docs/notes.md rule). A key also means the app stops working offline, which is a
+  hard requirement in docs/notes.md 3.1.
 - **Painting the GeoJSON directly on a `CustomPainter` needs no dependency, no
   key, and no network.** The building polygons are already in hand, the campus
   is small enough to fit one viewport, and it can be drawn in the app's own
   scheme colours. That is almost certainly the right answer here: it is the only
-  option that fits both the offline requirement and Cole's ask that it match the
+  option that fits both the offline requirement and the ask that it match the
   theme.
 
 A generic tile map will look like a generic tile map, and will fight the warm
-palette in CLAUDE.md section 4 no matter what is drawn on top of it.
+palette in docs/notes.md section 4 no matter what is drawn on top of it.
 
 ---
 
@@ -287,7 +288,7 @@ than as an animal, escalate to the painter.
 
 **Watch the contrast.** The stripes cut the effective lightness of the orange,
 so check the wordmark against both light and dark surfaces before shipping.
-CLAUDE.md section 4 says colour is validated, never eyeballed, and a striped
+docs/notes.md section 4 says colour is validated, never eyeballed, and a striped
 wordmark is exactly the kind of thing that looks fine on the dark theme and
 turns to mud on the light one.
 
@@ -322,6 +323,6 @@ single time. That is the annoying part, and it is what the copy buttons are for.
 
 **Note for whoever builds it.** The proximity half needs coordinates per housing
 area, which the current `housing_areas.json` does not carry, and the zone based
-mail model (CLAUDE.md 7.9) means an "address" is an office plus a line 2 format,
+mail model (docs/notes.md 7.9) means an "address" is an office plus a line 2 format,
 not a street address per hall. So the anchor is probably the residence area's
 own location, not the post office's. Check that before designing the sort.

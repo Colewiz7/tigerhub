@@ -1,6 +1,6 @@
 /// Merge the same event arriving from more than one feed.
 ///
-/// CLAUDE.md section 8 decision 2 shipped **no dedupe on purpose**, so the real
+/// docs/notes.md section 8 decision 2 shipped **no dedupe on purpose**, so the real
 /// overlap could be observed before anyone wrote fuzzy matching. It has now
 /// been observed, on device, 2026-08-30: **138 collisions across 1604 events**,
 /// and they are exact matches on a normalised title plus the exact start

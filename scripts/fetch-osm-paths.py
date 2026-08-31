@@ -9,7 +9,7 @@ OSM has the footpaths. This pulls them once and writes a small asset rather
 than adding a runtime upstream, because:
 
   - the walking network is static, so refetching per install buys nothing
-  - the app must work offline on a first launch (CLAUDE.md 3.1), and a bundled
+  - the app must work offline on a first launch (docs/notes.md 3.1), and a bundled
     asset is the only thing that satisfies that on day one
   - it keeps the count of live upstreams where it is
 

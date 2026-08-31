@@ -1,6 +1,6 @@
 /// A snapshot has to be invalidated by what it asked for, not only by its age.
 ///
-/// Cole added the Workday time clocks and then said "dont see the kiosks yet".
+/// I added the Workday time clocks and the kiosks still did not show up.
 /// Both halves of the app were correct: the category was registered and the
 /// scraper would have fetched it. The snapshot on disk was 20 minutes old
 /// against a 12 hour cadence, so nothing refetched, and the new places were
@@ -33,7 +33,7 @@ void main() {
 
   test('it is stable across reads', () {
     // It is compared against a string on disk, so an unstable one would
-    // refetch every launch and hammer maps.rit.edu. CLAUDE.md 6.
+    // refetch every launch and hammer maps.rit.edu. docs/notes.md 6.
     expect(campusPlacesFingerprint, campusPlacesFingerprint);
   });
 

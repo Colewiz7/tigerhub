@@ -4,9 +4,9 @@
 /// source's cadence: dining is hourly, campus places twice a day. So pulling
 /// almost always fetched nothing while showing a spinner that implied it had.
 /// A control that cannot do the thing it depicts is worse than no control, and
-/// this is the exact shape of the problem Cole hit waiting on the kiosks.
+/// this is the exact shape of the problem I hit waiting on the kiosks.
 ///
-/// The floor is the other half. CLAUDE.md 6 says scheduled scrapes only and
+/// The floor is the other half. docs/notes.md 6 says scheduled scrapes only and
 /// never per request, so a user-driven refetch has to be bounded or holding
 /// the gesture would hammer RIT.
 library;

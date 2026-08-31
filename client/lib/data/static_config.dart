@@ -1,6 +1,6 @@
 /// Hand maintained configuration, bundled with the app.
 ///
-/// These were validated by pydantic at backend boot (CLAUDE.md 8, decision 4).
+/// These were validated by pydantic at backend boot (docs/notes.md 8, decision 4).
 /// They now ship as Flutter assets and are validated on first load instead. All
 /// of them carry a `last_verified` date, and none of them is derivable from any
 /// feed, which is exactly why they are hand maintained:
@@ -161,7 +161,7 @@ class StaticConfig {
   /// Line 2 is the student's own building/room designator. When it is not
   /// supplied, the area's documented format is shown as a placeholder rather
   /// than being invented. RIT runs a zone based system with no per hall street
-  /// addresses (CLAUDE.md 7.9), so there is nothing to look up here.
+  /// addresses (docs/notes.md 7.9), so there is nothing to look up here.
   List<String>? addressFor(String areaId, String studentName, String? unit) {
     final delivered = direct(areaId);
     if (delivered != null) {

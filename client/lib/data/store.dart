@@ -1,6 +1,6 @@
 /// File backed JSON storage.
 ///
-/// Offline first is a hard requirement (CLAUDE.md 3.1), and going client side
+/// Offline first is a hard requirement (docs/notes.md 3.1), and going client side
 /// made the payloads the app holds considerably larger: events alone is about
 /// 232 KB, where the old comment in `services/cache.dart` still assumed 24 KB.
 /// That is past what shared_preferences should be asked to carry, since Android

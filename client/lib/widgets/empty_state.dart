@@ -6,7 +6,7 @@
 /// line of grey text in an otherwise blank card.
 ///
 /// **Offline and source-down are status states, not loaders.** The spec is
-/// explicit and it matches CLAUDE.md 3.1: cached content stays at full opacity
+/// explicit and it matches docs/notes.md 3.1: cached content stays at full opacity
 /// and one of these sits beside it. Neither ever replaces data the app already
 /// holds.
 library;

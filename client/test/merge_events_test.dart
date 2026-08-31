@@ -1,6 +1,6 @@
 /// Merging the same event arriving from more than one feed.
 ///
-/// CLAUDE.md section 8 decision 2 shipped no dedupe on purpose so the overlap
+/// docs/notes.md section 8 decision 2 shipped no dedupe on purpose so the overlap
 /// could be measured first. It was: 138 collisions across 1604 events, exact on
 /// a normalised title plus the start instant. These tests pin the behaviour
 /// that follows, including the part that is easy to get wrong, which is that

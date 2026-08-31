@@ -1,7 +1,7 @@
 /// The single outbound HTTP client.
 ///
 /// Every upstream call goes through here. This is the only place that sets the
-/// User-Agent, timeouts, and retry policy, so scraping etiquette (CLAUDE.md 6)
+/// User-Agent, timeouts, and retry policy, so scraping etiquette (docs/notes.md 6)
 /// is enforced by construction rather than by convention.
 ///
 /// Ported from `backend/app/http.py`. The app used to scrape from a server; now

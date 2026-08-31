@@ -18,7 +18,7 @@ import 'package:tigerhub/theme/app_theme.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  // The real zones, from CLAUDE.md 7.9. RIT Inn bypasses the campus post
+  // The real zones, from docs/notes.md 7.9. RIT Inn bypasses the campus post
   // offices entirely, which the screen has to say rather than ask for a room.
   final areas = [
     const HousingArea(

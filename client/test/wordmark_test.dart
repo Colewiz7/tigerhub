@@ -1,6 +1,6 @@
 /// The masthead wordmark.
 ///
-/// The interesting failure here is silent. Codex's SVG asks for
+/// The interesting failure here is silent. The wordmark SVG asks for
 /// `font-family="Space Grotesk"`, and the app used to register that face as
 /// `SpaceGrotesk` with no space. Those do not match, so the wordmark would
 /// still render, just in whatever the default sans happens to be, and look

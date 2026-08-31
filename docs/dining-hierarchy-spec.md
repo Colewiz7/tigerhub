@@ -1,6 +1,6 @@
 # Dining row hierarchy
 
-This is the visual decision for `docs/codex-sheet.md` Task 6. It does not
+This is the visual decision for the dining rows. It does not
 change semantic colours or ordering.
 
 ## Decision

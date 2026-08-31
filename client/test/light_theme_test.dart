@@ -7,7 +7,7 @@
 ///
 /// This is a breakage check, not a design review. It asserts the screens build
 /// and their content is there. Judging whether light mode *looks* right is
-/// Codex's half and needs eyes.
+/// a separate job and needs eyes.
 library;
 
 import 'package:flutter/material.dart';

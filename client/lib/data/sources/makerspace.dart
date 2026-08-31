@@ -8,7 +8,7 @@
 /// Equipment availability only. Their `makerspaces { hours }` query is
 /// deliberately not used: it returns `closed: true` on every row with an ISO
 /// timestamp where a weekday belongs, which is a bug in their data. SHED hours
-/// are hardcoded in `assets/config/shed_hours.json` instead (CLAUDE.md 8,
+/// are hardcoded in `assets/config/shed_hours.json` instead (docs/notes.md 8,
 /// decision 3).
 ///
 /// Introspection is disabled in production, so this query was built from their

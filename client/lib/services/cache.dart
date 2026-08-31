@@ -1,6 +1,6 @@
 /// Local response cache.
 ///
-/// Offline first is a hard requirement (CLAUDE.md 3.1), so every API response
+/// Offline first is a hard requirement (docs/notes.md 3.1), so every API response
 /// is persisted verbatim and replayed on the next launch. Payloads are small,
 /// the largest being dining at roughly 24 KB, so shared_preferences holding
 /// JSON strings is enough and avoids pulling in a database.
@@ -65,7 +65,7 @@ class ResponseCache {
   /// anything similar in future, because shared_preferences is read into
   /// memory whole at launch.
   ///
-  /// The window is deliberately long. Offline first (CLAUDE.md 3.1) means the
+  /// The window is deliberately long. Offline first (docs/notes.md 3.1) means the
   /// cache is the app when there is no network, so pruning aggressively would
   /// empty it for exactly the person who needs it. Growth is already fixed at
   /// the source by keeping the clock out of cache keys; this is only a net.

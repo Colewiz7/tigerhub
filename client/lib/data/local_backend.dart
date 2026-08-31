@@ -7,7 +7,7 @@
 /// a device than they did on one server, because there is now one of these per
 /// install rather than one in total:
 ///
-///  1. **Cadence.** CLAUDE.md 6 says scheduled scrapes only, never per request.
+///  1. **Cadence.** docs/notes.md 6 says scheduled scrapes only, never per request.
 ///     A source is refreshed only when its snapshot is older than its cadence,
 ///     so opening a tab five times does not scrape five times. Every read is
 ///     served from the stored snapshot either way.
@@ -16,7 +16,7 @@
 ///
 /// Reads never block on a scrape when a snapshot exists: the stored copy is
 /// returned immediately and the refresh runs behind it. That is what keeps the
-/// offline first requirement (CLAUDE.md 3.1) true now that "offline" also means
+/// offline first requirement (docs/notes.md 3.1) true now that "offline" also means
 /// "the upstream is slow".
 library;
 
@@ -74,7 +74,7 @@ class ScrapeContext {
 /// One scraped upstream, with the cadence it is polled at.
 ///
 /// The intervals are the backend's, unchanged: dining hourly, events every few
-/// hours, makerspace every fifteen minutes (CLAUDE.md 6).
+/// hours, makerspace every fifteen minutes (docs/notes.md 6).
 class SourceSpec {
   const SourceSpec({
     required this.name,
@@ -242,7 +242,7 @@ class LocalBackend implements Backend {
 
   /// The shortest gap between two user-driven refreshes of the same source.
   ///
-  /// CLAUDE.md 6 says scheduled scrapes only and never per request. A person
+  /// docs/notes.md 6 says scheduled scrapes only and never per request. A person
   /// deliberately pulling to refresh is not a request being served, but it
   /// still has to be bounded or holding the gesture would hammer RIT. A minute
   /// is long enough that mashing it costs nothing and short enough that the
@@ -548,7 +548,7 @@ class LocalBackend implements Backend {
 
   /// SHED hours are static config, not a scrape. Their own hours feed returns
   /// closed:true on every row with an ISO timestamp where a weekday belongs
-  /// (CLAUDE.md 8, decision 3).
+  /// (docs/notes.md 8, decision 3).
   ///
   /// This endpoint returned a bare list rather than an envelope, so it is
   /// wrapped as items to match what watchList expects.

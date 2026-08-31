@@ -1,7 +1,7 @@
 /// Parity for the targeted occupancy extractor.
 ///
 /// This deliberately does not use the general turbo-stream decoder, matching
-/// CLAUDE.md section 8 decision 1: only four fields plus a 24 hour series are
+/// docs/notes.md section 8 decision 1: only four fields plus a 24 hour series are
 /// needed out of one known object. Both extractors exist in the app now, so it
 /// is worth being explicit that this one is the narrow one, on purpose.
 ///

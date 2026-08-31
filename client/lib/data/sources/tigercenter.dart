@@ -140,7 +140,7 @@ Map<String, dynamic> buildDiningLocation(
 }
 
 /// Visiting chefs and specials both come free from this payload, so no scrape
-/// of rit.edu/dining/menus is needed (CLAUDE.md 7.2).
+/// of rit.edu/dining/menus is needed (docs/notes.md 7.2).
 ///
 /// A null [category] returns everything published for the day, which is what
 /// specials are: the server filtered visiting chefs by category and left

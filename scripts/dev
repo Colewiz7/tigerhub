@@ -87,7 +87,7 @@ cmd_reset() {
 # This crops to the window geometry rather than grabbing the whole screen, so a
 # capture can never contain Cole's browser, terminal, or lock screen. That also
 # removes any dependence on workspace switching, which matters because
-# `hyprctl dispatch` is broken on this Hyprland build (see CLAUDE.md 2.1).
+# `hyprctl dispatch` is broken on this Hyprland build (see docs/notes.md 2.1).
 # Refuse unless the TigerHub window is the focused one.
 #
 # grim captures the screen at a set of coordinates, not a window's own buffer,
@@ -153,7 +153,7 @@ cmd_shot() {
 # Capture every tab into response/screenshots/.
 #
 # Tabs are driven with wtype on the digit shortcuts, because hyprctl dispatch
-# cannot be used here (see CLAUDE.md 2.1). Each frame is cropped to the window,
+# cannot be used here (see docs/notes.md 2.1). Each frame is cropped to the window,
 # so a capture never contains anything but the app.
 cmd_shot_tabs() {
   command -v wtype >/dev/null || die "wtype not found, needed to switch tabs"

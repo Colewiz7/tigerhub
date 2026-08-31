@@ -59,7 +59,7 @@ void main() {
   });
 
   test('nothing claims to be halal or kosher', () {
-    // CLAUDE.md 7.7: FD does not tag either, so nothing may ever be labelled
+    // docs/notes.md 7.7: FD does not tag either, so nothing may ever be labelled
     // that way, and filtering on the pork tag as a proxy would be wrong.
     final raw = File('assets/config/fd_locations.json').readAsStringSync();
     expect(raw.toLowerCase(), isNot(contains('halal')));

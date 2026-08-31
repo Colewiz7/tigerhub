@@ -179,7 +179,7 @@ class _List extends StatelessWidget {
       noun: 'open',
       // Open rows sort first, so visible capacity is consumed by open
       // locations before closed ones. The footer and the hero badge then count
-      // the same population. (Kept from Codex commit 9b12ddb.)
+      // the same population.
       hiddenCountBuilder: (shown) => (openNow - shown).clamp(0, openNow),
       onShowAll: onShowAll,
       itemBuilder: (context, index) => DiningRow(location: sorted[index]),

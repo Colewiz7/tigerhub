@@ -1,6 +1,6 @@
-# Campus map design handoff
+# Campus map design
 
-This resolves the UI and interaction half of `docs/codex-sheet.md` Task 8. The
+This covers the UI and interaction half of the map. The
 map paints cached GeoJSON directly in TigerHub's theme. It does not use raster
 tiles, an API key, or a new package.
 
