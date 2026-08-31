@@ -1,0 +1,586 @@
+<title>Warm Signal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..700;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  /* ---- The tokens. This page is built out of them, so it is its own proof. ---- */
+  :root {
+    --primary: #8d4e2c;
+    --on-primary: #ffffff;
+    --primary-container: #ffdbcc;
+    --on-primary-container: #703717;
+    --secondary: #765749;
+    --tertiary: #655f31;
+    --surface: #fff8f6;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #fff1eb;
+    --surface-container: #fceae3;
+    --surface-container-high: #f6e5de;
+    --surface-container-highest: #f0dfd8;
+    --on-surface: #221a16;
+    --on-surface-variant: #52443d;
+    --outline: #85736c;
+    --outline-variant: #d7c2b9;
+
+    --ok: #589b44;
+    --ok-container: #adf592;
+    --warn: #996100;
+    --warn-container: #ffddb7;
+    --bad: #782f28;
+    --bad-container: #ffdad5;
+
+    --cat-1: #0069a8;
+    --cat-2: #6a4c93;
+    --cat-3: #b4531f;
+    --cat-4: #4f7a28;
+
+    --radius-card: 30px;
+    --radius-inner: 20px;
+    --radius-small: 14px;
+    --radius-pill: 999px;
+
+    --font: 'Rubik', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --primary: #ffb693;
+      --on-primary: #542104;
+      --primary-container: #703717;
+      --on-primary-container: #ffdbcc;
+      --secondary: #e6beac;
+      --tertiary: #d0c890;
+      --surface: #1a120e;
+      --surface-container-lowest: #140c09;
+      --surface-container-low: #221a16;
+      --surface-container: #271e1a;
+      --surface-container-high: #322824;
+      --surface-container-highest: #3d332e;
+      --on-surface: #f0dfd8;
+      --on-surface-variant: #d7c2b9;
+      --outline: #a08d85;
+      --outline-variant: #52443d;
+      --ok: #8bd376;
+      --ok-container: #054900;
+      --warn: #ffddb7;
+      --warn-container: #583600;
+      --bad: #c46a61;
+      --bad-container: #820008;
+      --cat-1: #3d8dc4;
+      --cat-2: #8a6cc0;
+      --cat-3: #cc6a38;
+      --cat-4: #669440;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --primary: #ffb693;
+    --on-primary: #542104;
+    --primary-container: #703717;
+    --on-primary-container: #ffdbcc;
+    --secondary: #e6beac;
+    --tertiary: #d0c890;
+    --surface: #1a120e;
+    --surface-container-lowest: #140c09;
+    --surface-container-low: #221a16;
+    --surface-container: #271e1a;
+    --surface-container-high: #322824;
+    --surface-container-highest: #3d332e;
+    --on-surface: #f0dfd8;
+    --on-surface-variant: #d7c2b9;
+    --outline: #a08d85;
+    --outline-variant: #52443d;
+    --ok: #8bd376;
+    --ok-container: #054900;
+    --warn: #ffddb7;
+    --warn-container: #583600;
+    --bad: #c46a61;
+    --bad-container: #820008;
+    --cat-1: #3d8dc4;
+    --cat-2: #8a6cc0;
+    --cat-3: #cc6a38;
+    --cat-4: #669440;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--on-surface);
+    font-family: var(--font);
+    font-weight: 400;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: clamp(32px, 6vw, 80px) clamp(20px, 5vw, 48px) 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 76px;
+  }
+
+  /* ---- masthead ---- */
+  .mast { display: flex; flex-direction: column; gap: 20px; }
+
+  .seed-line {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.04em; color: var(--on-surface-variant);
+  }
+  .seed-chip {
+    width: 22px; height: 22px; border-radius: var(--radius-pill);
+    background: #F76902; border: 1px solid var(--outline-variant);
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(38px, 7vw, 66px);
+    font-weight: 300;
+    letter-spacing: -0.025em;
+    line-height: 1.02;
+    text-wrap: balance;
+  }
+  h1 em { font-style: normal; color: var(--primary); }
+
+  .lede {
+    margin: 0; max-width: 64ch;
+    font-size: clamp(16px, 1.6vw, 18.5px);
+    color: var(--on-surface-variant);
+  }
+
+  /* ---- sections ---- */
+  section { display: flex; flex-direction: column; gap: 22px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.16em;
+    color: var(--primary);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: clamp(23px, 3vw, 31px);
+    font-weight: 400; letter-spacing: -0.015em;
+    line-height: 1.15; text-wrap: balance;
+  }
+
+  p { margin: 0; max-width: 68ch; color: var(--on-surface-variant); }
+  p strong { color: var(--on-surface); font-weight: 500; }
+  .prose { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ---- swatches ---- */
+  .swatches {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+    gap: 10px;
+  }
+  .sw {
+    border-radius: var(--radius-inner);
+    border: 1px solid var(--outline-variant);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .sw .fill { height: 62px; }
+  .sw .meta {
+    padding: 9px 12px 11px;
+    background: var(--surface-container-low);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .sw .name { font-size: 12.5px; font-weight: 500; }
+  .sw .hex {
+    font-family: var(--mono); font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    color: var(--on-surface-variant); text-transform: uppercase;
+  }
+
+  /* ---- camera demo ---- */
+  .cams { display: grid; grid-template-columns: repeat(auto-fit, minmax(258px, 1fr)); gap: 14px; }
+
+  .cam {
+    background: var(--surface-container-low);
+    border-radius: var(--radius-card);
+    padding: 22px 24px 20px;
+    display: flex; flex-direction: column; gap: 16px;
+    border: 1px solid var(--outline-variant);
+  }
+  .cam-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+  .cam-name { font-size: 17px; font-weight: 500; line-height: 1.25; }
+  .cam-where { font-size: 13px; color: var(--on-surface-variant); }
+
+  .hero-num {
+    font-size: 52px; font-weight: 300; line-height: 0.95;
+    letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+  }
+  .hero-label {
+    font-family: var(--mono); font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--on-surface-variant); margin-top: 6px;
+  }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 13px 5px 10px;
+    border-radius: var(--radius-pill);
+    font-size: 12px; font-weight: 500;
+    white-space: nowrap;
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: var(--radius-pill); background: currentColor; }
+  .pill.ok   { background: var(--ok-container);   color: var(--ok); }
+  .pill.warn { background: var(--warn-container); color: var(--warn); }
+  .pill.bad  { background: var(--bad-container);  color: var(--bad); }
+
+  /* ---- the "no badge when default" demo ---- */
+  .rows { display: flex; flex-direction: column; gap: 2px; border-radius: var(--radius-inner); overflow: hidden; }
+  .row {
+    display: flex; align-items: center; gap: 14px;
+    padding: 13px 18px;
+    background: var(--surface-container-low);
+  }
+  .row .nm { flex: 1; font-size: 14.5px; }
+  .row .sub { font-size: 12.5px; color: var(--on-surface-variant); }
+
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+  .compare > div { display: flex; flex-direction: column; gap: 10px; }
+  .compare h3 {
+    margin: 0; font-size: 13px; font-weight: 500;
+    color: var(--on-surface-variant);
+    font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.1em;
+  }
+
+  /* ---- shape + type ---- */
+  .shapes { display: flex; flex-wrap: wrap; gap: 14px; }
+  .shape {
+    width: 108px; height: 92px;
+    background: var(--surface-container-high);
+    border: 1px solid var(--outline-variant);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 10px;
+    font-family: var(--mono); font-size: 11px; color: var(--on-surface-variant);
+  }
+
+  .scale { display: flex; flex-direction: column; gap: 10px; }
+  .scale div { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .scale .tag {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--on-surface-variant);
+    min-width: 116px;
+  }
+
+  /* ---- rules list ---- */
+  ul.rules { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 16px; }
+  ul.rules li {
+    display: grid; grid-template-columns: 26px 1fr; gap: 14px;
+    max-width: 72ch; color: var(--on-surface-variant);
+  }
+  ul.rules .mark {
+    font-family: var(--mono); font-size: 11px; color: var(--primary);
+    padding-top: 4px; letter-spacing: 0.05em;
+  }
+  ul.rules b { color: var(--on-surface); font-weight: 500; }
+
+  /* ---- code ---- */
+  .code {
+    background: var(--surface-container-lowest);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-inner);
+    padding: 18px 20px;
+    overflow-x: auto;
+  }
+  .code pre {
+    margin: 0; font-family: var(--mono); font-size: 12.5px;
+    line-height: 1.75; color: var(--on-surface);
+  }
+  .code .c { color: var(--on-surface-variant); }
+  .code .v { color: var(--primary); }
+
+  hr {
+    border: none; height: 1px; background: var(--outline-variant);
+    margin: 0;
+  }
+
+  .foot {
+    font-size: 13px; color: var(--on-surface-variant);
+    display: flex; flex-direction: column; gap: 8px;
+    max-width: 68ch;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pill, .cam { transition: transform 180ms var(--ease); }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <div class="seed-line"><span class="seed-chip"></span> seed #F76902 &rarr; every value below</div>
+    <h1>One seed, then <em>roles</em>.</h1>
+    <p class="lede">
+      The design system behind TigerHub, pulled out so it can go somewhere else.
+      Every colour here was generated from a single brand hex by Material&nbsp;3's
+      algorithm, which is the whole trick: you never pick a second colour, so
+      nothing can clash. Examples are drawn as a camera monitor, because that is
+      what it is going into next.
+    </p>
+  </header>
+
+  <hr>
+
+  <section>
+    <div class="eyebrow">Palette</div>
+    <h2>Roles, never hexes</h2>
+    <div class="prose">
+      <p>
+        Never write a hex in a component. The reason a scheme holds together is
+        that every surface has a matching <strong>on-</strong> colour guaranteed
+        to be readable against it. Note that the seed itself,
+        <strong>#F76902</strong>, appears nowhere below. A seed is an input, not
+        a swatch.
+      </p>
+    </div>
+    <div class="swatches">
+      <div class="sw"><div class="fill" style="background:var(--primary)"></div><div class="meta"><span class="name">primary</span><span class="hex">accent, one per page</span></div></div>
+      <div class="sw"><div class="fill" style="background:var(--primary-container)"></div><div class="meta"><span class="name">primary-container</span><span class="hex">accent, quiet</span></div></div>
+      <div class="sw"><div class="fill" style="background:var(--surface)"></div><div class="meta"><span class="name">surface</span><span class="hex">the page ground</span></div></div>
+      <div class="sw"><div class="fill" style="background:var(--surface-container-low)"></div><div class="meta"><span class="name">container-low</span><span class="hex">cards</span></div></div>
+      <div class="sw"><div class="fill" style="background:var(--surface-container-high)"></div><div class="meta"><span class="name">container-high</span><span class="hex">inside a card</span></div></div>
+      <div class="sw"><div class="fill" style="background:var(--outline)"></div><div class="meta"><span class="name">outline</span><span class="hex">carries shape</span></div></div>
+    </div>
+    <div class="prose">
+      <p>
+        <strong>The surface ramp is how you express depth.</strong> Page on
+        <code style="font-family:var(--mono);font-size:12.5px">surface</code>,
+        cards a step up, things inside cards a step above that. Reach for a
+        border only when the ramp genuinely is not enough.
+      </p>
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="eyebrow">Status</div>
+    <h2>Colour that means something, and never travels alone</h2>
+    <div class="prose">
+      <p>
+        Status colour is a separate set from the accent and from any categorical
+        palette. It never gets reused for "series 4". Three states is usually
+        all you need; here they read as a camera's.
+      </p>
+    </div>
+
+    <div class="cams">
+      <div class="cam">
+        <div class="cam-head">
+          <div><div class="cam-name">Front door</div><div class="cam-where">Porch, 1080p</div></div>
+          <span class="pill ok"><span class="dot"></span>Online</span>
+        </div>
+        <div>
+          <div class="hero-num">14<span style="font-size:24px;font-weight:400">d</span></div>
+          <div class="hero-label">uptime</div>
+        </div>
+      </div>
+      <div class="cam">
+        <div class="cam-head">
+          <div><div class="cam-name">Driveway</div><div class="cam-where">Pole mount, 4K</div></div>
+          <span class="pill warn"><span class="dot"></span>Recording</span>
+        </div>
+        <div>
+          <div class="hero-num">3</div>
+          <div class="hero-label">clips in the last hour</div>
+        </div>
+      </div>
+      <div class="cam">
+        <div class="cam-head">
+          <div><div class="cam-name">Garage</div><div class="cam-where">Wall, 1080p</div></div>
+          <span class="pill bad"><span class="dot"></span>Offline</span>
+        </div>
+        <div>
+          <div class="hero-num">42<span style="font-size:24px;font-weight:400">m</span></div>
+          <div class="hero-label">since last seen</div>
+        </div>
+      </div>
+    </div>
+
+    <ul class="rules">
+      <li><span class="mark">01</span><span><b>Always ship a word with the colour.</b> Every pill above says what it is. A dot that is only red is unreadable for a lot of people, and invisible the moment someone screenshots it in greyscale.</span></li>
+      <li><span class="mark">02</span><span><b>Separate by lightness as well as hue.</b> Red against green is the fundamental colourblindness case and no hue choice fixes it. These three sit deliberately outside a uniform lightness band.</span></li>
+      <li><span class="mark">03</span><span><b>Validate, do not eyeball.</b> An earlier version of these harmonised toward the brand hue and collapsed to <b>dE 1.0 apart in deuteranopia</b>. They looked fine on screen. They were the same colour.</span></li>
+    </ul>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="eyebrow">Density</div>
+    <h2>A badge only when the status is not the default</h2>
+    <div class="prose">
+      <p>
+        This one is worth internalising. If every row is fine, marking every row
+        as fine carries no information and buries the row that is not.
+      </p>
+    </div>
+    <div class="compare">
+      <div>
+        <h3>Every row badged</h3>
+        <div class="rows">
+          <div class="row"><span class="nm">Front door</span><span class="pill ok"><span class="dot"></span>Online</span></div>
+          <div class="row"><span class="nm">Back gate</span><span class="pill ok"><span class="dot"></span>Online</span></div>
+          <div class="row"><span class="nm">Driveway</span><span class="pill ok"><span class="dot"></span>Online</span></div>
+          <div class="row"><span class="nm">Garage</span><span class="pill bad"><span class="dot"></span>Offline</span></div>
+          <div class="row"><span class="nm">Side path</span><span class="pill ok"><span class="dot"></span>Online</span></div>
+        </div>
+      </div>
+      <div>
+        <h3>Only the exception</h3>
+        <div class="rows">
+          <div class="row"><span class="nm">Front door</span><span class="sub">Online</span></div>
+          <div class="row"><span class="nm">Back gate</span><span class="sub">Online</span></div>
+          <div class="row"><span class="nm">Driveway</span><span class="sub">Online</span></div>
+          <div class="row"><span class="nm">Garage</span><span class="pill bad"><span class="dot"></span>Offline 42m</span></div>
+          <div class="row"><span class="nm">Side path</span><span class="sub">Online</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="prose">
+      <p>
+        The state is still stated on every row. It is just stated in words, at
+        the weight it deserves, so the one that needs you is the only thing
+        wearing colour.
+      </p>
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="eyebrow">Categorical</div>
+    <h2>Telling N things apart</h2>
+    <div class="prose">
+      <p>
+        For charts, zones, or motion-event types. Assign in fixed order and
+        <strong>never cycle</strong>: a fifth category is not a generated hue, it
+        folds into "Other" or earns its own view. Colour follows the entity, not
+        its rank, so filtering one out must not repaint the survivors.
+      </p>
+    </div>
+    <div class="swatches">
+      <div class="sw"><div class="fill" style="background:var(--cat-1)"></div><div class="meta"><span class="name">cat-1</span><span class="hex">people</span></div></div>
+      <div class="sw"><div class="fill" style="background:var(--cat-2)"></div><div class="meta"><span class="name">cat-2</span><span class="hex">vehicles</span></div></div>
+      <div class="sw"><div class="fill" style="background:var(--cat-3)"></div><div class="meta"><span class="name">cat-3</span><span class="hex">animals</span></div></div>
+      <div class="sw"><div class="fill" style="background:var(--cat-4)"></div><div class="meta"><span class="name">cat-4</span><span class="hex">packages</span></div></div>
+    </div>
+    <div class="prose">
+      <p>
+        Validated, not guessed: worst adjacent pair <strong>dE 18.8 in
+        deuteranopia</strong> in light and <strong>19.7 in protanopia</strong> in
+        dark. Change them and re-validate rather than trusting your eyes.
+      </p>
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="eyebrow">Shape</div>
+    <h2>Nothing is rounded at 8 or below</h2>
+    <div class="prose">
+      <p>That single rule does most of the work of making it look deliberate.</p>
+    </div>
+    <div class="shapes">
+      <div class="shape" style="border-radius:var(--radius-card)">30 card</div>
+      <div class="shape" style="border-radius:var(--radius-inner)">20 inner</div>
+      <div class="shape" style="border-radius:var(--radius-small)">14 small</div>
+      <div class="shape" style="border-radius:var(--radius-pill)">pill</div>
+    </div>
+    <div class="prose">
+      <p>
+        Chips and status indicators are <strong>full pills</strong>, not slightly
+        rounded rectangles. Outer containers get 30, anything nested inside one
+        gets 20, so the nesting reads as nesting.
+      </p>
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="eyebrow">Type</div>
+    <h2>Hierarchy by size and weight, not colour</h2>
+    <div class="scale">
+      <div><span class="tag">hero 52 / 300</span><span class="hero-num" style="font-size:44px">128</span></div>
+      <div><span class="tag">title 31 / 400</span><span style="font-size:31px;font-weight:400;letter-spacing:-0.015em">Driveway camera</span></div>
+      <div><span class="tag">body 16 / 400</span><span style="font-size:16px">Motion detected at 4:02 PM</span></div>
+      <div><span class="tag">label 11 / mono</span><span class="hero-label" style="margin:0">clips in the last hour</span></div>
+    </div>
+    <div class="prose">
+      <p>
+        The key number on a card is <strong>oversized and light</strong>.
+        Everything else recedes. Labels under big numbers are small, muted and
+        wide tracked. Do not bold body text to make it matter, make the thing
+        next to it quieter instead.
+      </p>
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="eyebrow">Take it with you</div>
+    <h2>The whole thing, as CSS variables</h2>
+    <div class="code">
+<pre><span class="c">/* light is the bare :root; dark redefines only the tokens */</span>
+:root {
+  --primary: <span class="v">#8d4e2c</span>;      --on-primary: <span class="v">#ffffff</span>;
+  --surface: <span class="v">#fff8f6</span>;      --on-surface: <span class="v">#221a16</span>;
+  --surface-container-low: <span class="v">#fff1eb</span>;
+  --outline: <span class="v">#85736c</span>;      --outline-variant: <span class="v">#d7c2b9</span>;
+  --ok: <span class="v">#589b44</span>;  --warn: <span class="v">#996100</span>;  --bad: <span class="v">#782f28</span>;
+  --radius-card: <span class="v">30px</span>;     --radius-pill: <span class="v">999px</span>;
+}
+
+<span class="c">/* guarded so an explicit light choice still beats a dark OS */</span>
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: <span class="v">#ffb693</span>;    --on-primary: <span class="v">#542104</span>;
+    --surface: <span class="v">#1a120e</span>;    --on-surface: <span class="v">#f0dfd8</span>;
+    --ok: <span class="v">#8bd376</span>;  --warn: <span class="v">#ffddb7</span>;  --bad: <span class="v">#c46a61</span>;
+  }
+}</pre>
+    </div>
+    <div class="prose">
+      <p>
+        The full set, both themes, every role, is in
+        <strong>design/tokens.css</strong> in the repo, with
+        <strong>tokens.json</strong> for anything that is not CSS and
+        <strong>STYLE.md</strong> for the reasoning. All three are generated from
+        the app's real theme rather than transcribed, so they cannot drift.
+      </p>
+    </div>
+  </section>
+
+  <hr>
+
+  <section>
+    <div class="eyebrow">Hard-won</div>
+    <h2>Four things that will bite you</h2>
+    <ul class="rules">
+      <li><span class="mark">&rarr;</span><span><b>Test at phone width with real content.</b> An empty state is the one layout that cannot overflow, so testing empty proves nothing. This exact mistake passed cleanly and hid three real bugs.</span></li>
+      <li><span class="mark">&rarr;</span><span><b>Test at 2x text size.</b> Every fixed-height row in TigerHub overflowed at 1.3x. Fixed heights and user text sizes are fundamentally in tension: scale the container, or cap the text inside a fixed shape, but decide which.</span></li>
+      <li><span class="mark">&rarr;</span><span><b>Fixed shapes need their text capped.</b> A number inside a circle cannot grow with the system font, or it leaves the circle.</span></li>
+      <li><span class="mark">&rarr;</span><span><b>Measure contrast against the surface it actually sits on</b>, not against white. A 1.2:1 fill is invisible however good the swatch looked on its own.</span></li>
+    </ul>
+  </section>
+
+  <div class="foot">
+    <span>Every colour on this page is a live CSS variable from the set described. Switch your system theme and the whole thing re-resolves, which is the point.</span>
+  </div>
+
+</div>
