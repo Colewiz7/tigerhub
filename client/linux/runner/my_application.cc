@@ -159,6 +159,13 @@ static gboolean on_terminate(gpointer user_data) {
 }
 
 static void my_application_activate(GApplication* application) {
+  // A second launch activates the instance that is already running rather
+  // than building another window into the same process.
+  if (g_tracked_window != nullptr) {
+    gtk_window_present(g_tracked_window);
+    return;
+  }
+
   MyApplication* self = MY_APPLICATION(application);
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
@@ -309,7 +316,17 @@ MyApplication* my_application_new() {
   // the application to be recognized beyond its binary name.
   g_set_prgname(APPLICATION_ID);
 
+  // Single instance, deliberately.
+  //
+  // The Flutter template ships G_APPLICATION_NON_UNIQUE, so every launch got
+  // its own process and its own window. Opening the app from the launcher
+  // while it was already running left you with two of them, both scraping on
+  // their own two minute tickers and both writing the same snapshot files.
+  //
+  // With uniqueness on, a second launch hands its activation to the running
+  // instance over D-Bus and exits, and my_application_activate presents the
+  // window that already exists.
   return MY_APPLICATION(g_object_new(my_application_get_type(),
                                      "application-id", APPLICATION_ID, "flags",
-                                     G_APPLICATION_NON_UNIQUE, nullptr));
+                                     G_APPLICATION_DEFAULT_FLAGS, nullptr));
 }
