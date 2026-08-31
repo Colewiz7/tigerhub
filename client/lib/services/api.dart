@@ -63,6 +63,18 @@ class ApiClient {
       ? RemoteBackend(baseUrl: AppConfig.apiBaseUrl)
       : LocalBackend();
 
+  /// Refetch everything, because the user asked.
+  ///
+  /// Deliberately not on the Backend interface. Only the local backend holds
+  /// snapshots and cadences, so it is the only one with anything to
+  /// invalidate, and putting it on the interface would make every test fake
+  /// carry a no-op that means nothing to it. See `LocalBackend.refreshNow`
+  /// for why this is not the same as a tick.
+  Future<void> refreshNow() async {
+    final backend = _backend;
+    if (backend is LocalBackend) await backend.refreshNow();
+  }
+
   /// Query parameters that are derived from the clock rather than chosen, and
   /// so must not appear in a cache key.
   ///
@@ -159,6 +171,14 @@ class ApiClient {
 
   Stream<Result<Collection<MenuItem>>> visitingChefs() => watch(
     '/dining/visiting-chefs',
+    (j) => Collection.fromJson(j, MenuItem.fromJson),
+  );
+
+  /// Every item RIT has published for today's location menus. TigerCenter
+  /// does not use a category named "Special", so this endpoint intentionally
+  /// remains unfiltered rather than returning an empty list every day.
+  Stream<Result<Collection<MenuItem>>> diningFeatures() => watch(
+    '/dining/specials',
     (j) => Collection.fromJson(j, MenuItem.fromJson),
   );
 
