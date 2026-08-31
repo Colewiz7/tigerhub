@@ -9,6 +9,8 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 
 import '../widgets/empty_state.dart';
 import '../cards/housing_card.dart';
@@ -16,6 +18,8 @@ import '../models/api_models.dart';
 import '../data/campus_time.dart';
 import '../services/todays_hours.dart';
 import '../services/api.dart';
+import '../services/preferences.dart';
+import '../services/academic_dates.dart';
 import '../theme/semantic.dart';
 import '../theme/tokens.dart';
 import '../widgets/freshness.dart';
@@ -32,11 +36,13 @@ class CampusScreen extends StatefulWidget {
     required this.api,
     required this.areas,
     this.events = const Result(value: null, state: DataState.priming),
+    this.now,
   });
 
   final ApiClient api;
   final Result<Collection<HousingArea>> areas;
   final Result<Collection<CampusEvent>> events;
+  final DateTime? now;
 
   @override
   State<CampusScreen> createState() => _CampusScreenState();
@@ -71,27 +77,43 @@ class _CampusScreenState extends State<CampusScreen> {
   @override
   void initState() {
     super.initState();
-    _subscriptions.add(widget.api.postOffices().listen((r) {
-      if (mounted) setState(() => _offices = r);
-    }));
-    _subscriptions.add(widget.api.makerspaceHours().listen((r) {
-      if (mounted) setState(() => _shed = r);
-    }));
-    _subscriptions.add(widget.api.makerspaceRooms().listen((r) {
-      if (mounted) setState(() => _rooms = r);
-    }));
-    _subscriptions.add(widget.api.recreation().listen((r) {
-      if (mounted) setState(() => _rec = r);
-    }));
-    _subscriptions.add(widget.api.placeKinds().listen((r) {
-      if (mounted) setState(() => _kinds = r);
-    }));
+    Preferences.instance.addListener(_onPreferencesChanged);
+    _subscriptions.add(
+      widget.api.postOffices().listen((r) {
+        if (mounted) setState(() => _offices = r);
+      }),
+    );
+    _subscriptions.add(
+      widget.api.makerspaceHours().listen((r) {
+        if (mounted) setState(() => _shed = r);
+      }),
+    );
+    _subscriptions.add(
+      widget.api.makerspaceRooms().listen((r) {
+        if (mounted) setState(() => _rooms = r);
+      }),
+    );
+    _subscriptions.add(
+      widget.api.recreation().listen((r) {
+        if (mounted) setState(() => _rec = r);
+      }),
+    );
+    _subscriptions.add(
+      widget.api.placeKinds().listen((r) {
+        if (mounted) setState(() => _kinds = r);
+      }),
+    );
   }
 
   @override
   void dispose() {
+    Preferences.instance.removeListener(_onPreferencesChanged);
     _subscriptions.dispose();
     super.dispose();
+  }
+
+  void _onPreferencesChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
@@ -121,6 +143,30 @@ class _CampusScreenState extends State<CampusScreen> {
           builder: (context) => _FindSection(api: widget.api, kinds: _kinds),
         ),
         SectionSpec(
+          id: 'dates',
+          title: 'Academic dates',
+          subtitle: 'Deadlines, breaks, reading days and finals',
+          icon: Icons.event_available_rounded,
+          builder: (context) => _AcademicDatesSection(now: widget.now),
+        ),
+        SectionSpec(
+          id: 'shuttles',
+          title: 'Shuttles',
+          subtitle: 'Today’s routes for where you live',
+          icon: Icons.directions_bus_rounded,
+          builder: (context) => _ShuttleSection(
+            areas: widget.areas.value?.data ?? const <HousingArea>[],
+            now: widget.now,
+          ),
+        ),
+        SectionSpec(
+          id: 'safety',
+          title: 'Safety',
+          subtitle: 'Emergency, text and non-emergency contacts',
+          icon: Icons.health_and_safety_rounded,
+          builder: (context) => const _SafetySection(),
+        ),
+        SectionSpec(
           id: 'rec',
           title: 'Gym and pool',
           subtitle: 'Facility hours for the week',
@@ -138,6 +184,280 @@ class _CampusScreenState extends State<CampusScreen> {
       ],
     );
   }
+}
+
+typedef _ShuttleRoute = ({
+  int number,
+  String name,
+  String hours,
+  bool weekday,
+  bool weekend,
+});
+
+const _campusConnection3 = (
+  number: 3,
+  name: 'Campus Connection Shuttle',
+  hours: '7:00 AM–11:16 PM',
+  weekday: true,
+  weekend: false,
+);
+const _campusConnection4 = (
+  number: 4,
+  name: 'Campus Connection Shuttle',
+  hours: '5:00 AM–6:00 PM',
+  weekday: true,
+  weekend: false,
+);
+const _campusConnection5 = (
+  number: 5,
+  name: 'Campus Connection Shuttle',
+  hours: '11:20 AM–4:30 PM',
+  weekday: true,
+  weekend: false,
+);
+const _eastMorning = (
+  number: 9,
+  name: 'Early Morning East Residence',
+  hours: '7:00 AM–6:51 PM',
+  weekday: true,
+  weekend: false,
+);
+const _eastEvening = (
+  number: 11,
+  name: 'East Residence Shuttle',
+  hours: '7:00 PM–11:56 PM',
+  weekday: true,
+  weekend: false,
+);
+const _retail = (
+  number: 12,
+  name: 'Retail Shuttle',
+  hours: '7:00 AM–11:50 PM',
+  weekday: false,
+  weekend: true,
+);
+const _campusInn = (
+  number: 13,
+  name: 'Campus & Inn Shuttle',
+  hours: '7:47 AM–12:33 AM',
+  weekday: false,
+  weekend: true,
+);
+const _perkins = (
+  number: 7,
+  name: 'Perkins Green',
+  hours: '7:00 AM–6:47 PM',
+  weekday: true,
+  weekend: false,
+);
+
+const Map<String, List<_ShuttleRoute>> _shuttlesByHome = {
+  'global-village': [
+    _campusConnection3,
+    _campusConnection4,
+    _campusConnection5,
+    _retail,
+    _campusInn,
+  ],
+  'residence-halls': [
+    _campusConnection3,
+    _campusConnection4,
+    _campusConnection5,
+    _eastMorning,
+    _eastEvening,
+    _retail,
+    _campusInn,
+  ],
+  'perkins-green': [_perkins, _eastMorning, _eastEvening, _campusInn],
+  'riverknoll': [
+    _campusConnection3,
+    _campusConnection4,
+    _campusConnection5,
+    _campusInn,
+  ],
+  'university-commons': [
+    _campusConnection3,
+    _campusConnection4,
+    _campusConnection5,
+    _campusInn,
+  ],
+};
+
+class _ShuttleSection extends StatelessWidget {
+  const _ShuttleSection({required this.areas, this.now});
+
+  final List<HousingArea> areas;
+  final DateTime? now;
+
+  @override
+  Widget build(BuildContext context) {
+    final homeId = Preferences.instance.homeArea;
+    final home = areas.where((area) => area.id == homeId).firstOrNull;
+    final clock = now ?? DateTime.now();
+    final weekend =
+        clock.weekday == DateTime.saturday || clock.weekday == DateTime.sunday;
+    final laborDay = clock.year == 2026 && clock.month == 9 && clock.day == 7;
+    final routes = laborDay
+        ? const <_ShuttleRoute>[
+            (
+              number: 1,
+              name: 'RIT RTS Connection — Holiday',
+              hours: 'See the holiday timetable',
+              weekday: true,
+              weekend: true,
+            ),
+            (
+              number: 14,
+              name: 'Campus & Inn Break Shuttle',
+              hours: '7:20 AM–12:06 AM',
+              weekday: true,
+              weekend: true,
+            ),
+          ]
+        : (_shuttlesByHome[homeId] ?? const <_ShuttleRoute>[])
+              .where((route) => weekend ? route.weekend : route.weekday)
+              .toList();
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      children: [
+        _Heading(
+          title: laborDay
+              ? 'Labor Day service'
+              : 'Today from ${home?.name ?? 'home'}',
+          subtitle: laborDay
+              ? 'Reduced service published for Monday, September 7.'
+              : 'Scheduled windows, not live arrivals. Arrive at the stop at least five minutes early.',
+          state: DataState.ok,
+        ),
+        if (homeId == null)
+          const EmptyState(
+            kind: EmptyKind.notFound,
+            title: 'Choose your housing area in Mail first',
+            compact: false,
+          )
+        else if (!laborDay && !_shuttlesByHome.containsKey(homeId))
+          const EmptyState(
+            kind: EmptyKind.notFound,
+            title: 'RIT does not publish a route table for this housing area',
+            compact: false,
+          )
+        else if (routes.isEmpty)
+          const EmptyState(
+            kind: EmptyKind.noEvents,
+            title: 'No scheduled routes today',
+            compact: false,
+          )
+        else
+          for (final route in routes)
+            StatusRow(
+              icon: Icons.directions_bus_rounded,
+              title: '${route.number} · ${route.name}',
+              subtitle: route.hours,
+            ),
+        const SizedBox(height: 8),
+        Text(
+          'Live vehicle locations and arrival estimates are available in TripShot.',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+}
+
+class _AcademicDatesSection extends StatelessWidget {
+  const _AcademicDatesSection({this.now});
+
+  final DateTime? now;
+
+  @override
+  Widget build(BuildContext context) {
+    final upcoming = upcomingAcademicMilestones(now: now, limit: 8);
+    final formatter = DateFormat('EEE, MMM d');
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      children: [
+        const _Heading(
+          title: 'What is next',
+          subtitle: 'Official Rochester campus dates for 2026–27. Past dates disappear automatically.',
+          state: DataState.ok,
+        ),
+        if (upcoming.isEmpty)
+          const EmptyState(
+            kind: EmptyKind.noEvents,
+            title: 'No more dates in this academic year',
+            compact: false,
+          )
+        else
+          for (var index = 0; index < upcoming.length; index++)
+            StatusRow(
+              icon: index == 0
+                  ? Icons.upcoming_rounded
+                  : Icons.calendar_today_rounded,
+              title: upcoming[index].title,
+              subtitle: upcoming[index].detail,
+              trailing: Text(
+                formatter.format(upcoming[index].date),
+                textAlign: TextAlign.end,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+class _SafetySection extends StatelessWidget {
+  const _SafetySection();
+
+  static const contacts = [
+    (
+      label: 'Emergency call',
+      number: '585-475-3333',
+      icon: Icons.emergency_rounded,
+    ),
+    (label: 'Emergency text', number: '585-205-8333', icon: Icons.sms_rounded),
+    (
+      label: 'General calls',
+      number: '585-475-2853',
+      icon: Icons.support_agent_rounded,
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    children: [
+      const _Heading(
+        title: 'RIT Public Safety',
+        subtitle: 'Available 24 hours a day. For an immediate life-threatening emergency, call 911.',
+        state: DataState.ok,
+      ),
+      for (final contact in contacts)
+        StatusRow(
+          icon: contact.icon,
+          title: contact.label,
+          subtitle: contact.number,
+          trailing: const Icon(Icons.content_copy_rounded, size: 18),
+          semanticHint: 'Copies ${contact.number} to the clipboard',
+          onTap: () async {
+            await Clipboard.setData(ClipboardData(text: contact.number));
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(content: Text('${contact.label} number copied')),
+              );
+          },
+        ),
+      const SizedBox(height: 12),
+      Text(
+        'TigerSafe adds Mobile BlueLight, Friend Walk, safety alerts and assistance requests. This app does not replace TigerSafe.',
+        style: Theme.of(context).textTheme.bodySmall,
+      ),
+    ],
+  );
 }
 
 class _MailSection extends StatelessWidget {
@@ -396,25 +716,21 @@ class _TodayLine extends StatelessWidget {
 
     // Status is always stated in words. Colour never carries it alone.
     final (label, detail) = switch (today.state) {
-      ServiceState.open => (
-          'OPEN',
-          'until ${_clockAt(today.closesAt!)}',
-        ),
+      ServiceState.open => ('OPEN', 'until ${_clockAt(today.closesAt!)}'),
       // Between spans is not the same as finished, and saying "closed" alone
       // would send someone away minutes before it reopens.
       ServiceState.closedUntilLater => (
-          'CLOSED',
-          'opens ${_clockAt(today.opensAt!)}',
-        ),
+        'CLOSED',
+        'opens ${_clockAt(today.opensAt!)}',
+      ),
       ServiceState.closedForDay => (
-          'CLOSED',
-          today.spans.isEmpty ? 'not open today' : 'for the day',
-        ),
+        'CLOSED',
+        today.spans.isEmpty ? 'not open today' : 'for the day',
+      ),
       ServiceState.unknown => ('', ''),
     };
 
-    final accent =
-        today.isOpen ? semantic.open : scheme.onSurfaceVariant;
+    final accent = today.isOpen ? semantic.open : scheme.onSurfaceVariant;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -604,7 +920,8 @@ class _ServiceModules extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        final twoUp = width >= _twoUpFrom &&
+        final twoUp =
+            width >= _twoUpFrom &&
             (width - _gap) / 2 >= _minModuleWidth &&
             entries.length > 1;
 
@@ -725,14 +1042,13 @@ class _ServiceHours extends StatelessWidget {
                           Divider(
                             height: 1,
                             thickness: 1,
-                            color: scheme.outlineVariant.withValues(alpha: 0.35),
+                            color: scheme.outlineVariant.withValues(
+                              alpha: 0.35,
+                            ),
                           ),
                           const SizedBox(height: 14),
                         ],
-                        _DaySpans(
-                          label: grouped[i].$1,
-                          rules: grouped[i].$2,
-                        ),
+                        _DaySpans(label: grouped[i].$1, rules: grouped[i].$2),
                       ],
                     ],
                   ),
@@ -777,7 +1093,12 @@ class _ServiceHeading extends StatelessWidget {
         children: [name, const SizedBox(height: 2), label],
       );
     }
-    return Row(children: [Expanded(child: name), label]);
+    return Row(
+      children: [
+        Expanded(child: name),
+        label,
+      ],
+    );
   }
 }
 
@@ -829,22 +1150,20 @@ class _WavyBreak extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: SizedBox(
-            height: 7,
-            child: CustomPaint(
-              painter: _WavyPainter(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.55),
-              ),
-              size: const Size(double.infinity, 7),
-            ),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: SizedBox(
+        height: 7,
+        child: CustomPaint(
+          painter: _WavyPainter(
+            color: Theme.of(context).colorScheme.primary
+                .withValues(alpha: 0.55),
           ),
+          size: const Size(double.infinity, 7),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _WavyPainter extends CustomPainter {

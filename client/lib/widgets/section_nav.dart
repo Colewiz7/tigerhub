@@ -209,46 +209,51 @@ class SectionNavRow extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: StatusRow.gap),
-      child: Material(
-        elevation: 0,
-        color: background,
-        borderRadius: Shapes.inner,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: StatusRow.badgeSize,
-                  height: StatusRow.badgeSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: badge,
+      child: Semantics(
+        button: true,
+        selected: active,
+        label: '${spec.title}, ${spec.subtitle}',
+        child: Material(
+          elevation: 0,
+          color: background,
+          borderRadius: Shapes.inner,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: StatusRow.badgeSize,
+                    height: StatusRow.badgeSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: badge,
+                    ),
+                    child: spec.glyph == null
+                        ? Icon(spec.icon, size: 21, color: iconColor)
+                        : Glyph(spec.glyph!, size: 21, color: iconColor),
                   ),
-                  child: spec.glyph == null
-                      ? Icon(spec.icon, size: 21, color: iconColor)
-                      : Glyph(spec.glyph!, size: 21, color: iconColor),
-                ),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(spec.title, style: text.titleMedium),
-                      const SizedBox(height: 2),
-                      Text(
-                        spec.subtitle,
-                        style: text.bodySmall,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(spec.title, style: text.titleMedium),
+                        const SizedBox(height: 2),
+                        Text(
+                          spec.subtitle,
+                          style: text.bodySmall,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

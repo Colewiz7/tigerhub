@@ -261,6 +261,9 @@ class Preferences extends ChangeNotifier {
     _hide = defaultHideKeywords;
     _boost = defaultBoostKeywords;
     _keywordRulesEnabled = true;
+    _homeArea = null;
+    _homeUnit = '';
+    _setupSeen = false;
     _loaded = false;
   }
 }

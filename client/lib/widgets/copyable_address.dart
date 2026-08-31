@@ -146,43 +146,52 @@ class _AddressLineState extends State<_AddressLine> {
     // otherwise so a touch screen still shows the affordance exists.
     final show = _hovering || widget.copied;
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovering = true),
-      onExit: (_) => setState(() => _hovering = false),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: Shapes.small,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: widget.onCopy,
-          // Every line is its own target, which is the whole point.
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.line,
-                    style: text.bodyMedium?.copyWith(height: 1.4),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Space is reserved whether or not the icon shows, so nothing
-                // shifts when a row is hovered.
-                SizedBox(
-                  width: 18,
-                  child: Opacity(
-                    opacity: show ? 1 : 0.28,
-                    child: _CopyMark(
-                      copied: widget.copied,
-                      size: 15,
-                      color: widget.copied
-                          ? scheme.primary
-                          : scheme.onSurfaceVariant,
+    return Tooltip(
+      message: widget.copied ? 'Copied' : 'Copy ${widget.line}',
+      child: Semantics(
+        button: true,
+        liveRegion: widget.copied,
+        label: widget.copied ? '${widget.line}, copied' : 'Copy ${widget.line}',
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          onEnter: (_) => setState(() => _hovering = true),
+          onExit: (_) => setState(() => _hovering = false),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: Shapes.small,
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: widget.onCopy,
+              // Every line is its own target, which is the whole point.
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.line,
+                        style: text.bodyMedium?.copyWith(height: 1.4),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 10),
+                    // Space is reserved whether or not the icon shows, so nothing
+                    // shifts when a row is hovered.
+                    SizedBox(
+                      width: 18,
+                      child: Opacity(
+                        opacity: show ? 1 : 0.28,
+                        child: _CopyMark(
+                          copied: widget.copied,
+                          size: 15,
+                          color: widget.copied
+                              ? scheme.primary
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -202,26 +211,34 @@ class _CopyAllButton extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
-    return Material(
-      elevation: 0,
-      color: scheme.surfaceContainerHigh,
-      shape: Shapes.pill,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onCopy,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _CopyMark(
-                copied: copied,
-                size: 14,
-                color: copied ? scheme.primary : scheme.onSurfaceVariant,
+    return Tooltip(
+      message: copied ? 'Full address copied' : 'Copy full address',
+      child: Semantics(
+        button: true,
+        liveRegion: copied,
+        label: copied ? 'Full address copied' : 'Copy full address',
+        child: Material(
+          elevation: 0,
+          color: scheme.surfaceContainerHigh,
+          shape: Shapes.pill,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onCopy,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _CopyMark(
+                    copied: copied,
+                    size: 14,
+                    color: copied ? scheme.primary : scheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(copied ? 'Copied' : 'Copy all', style: text.bodySmall),
+                ],
               ),
-              const SizedBox(width: 6),
-              Text(copied ? 'Copied' : 'Copy all', style: text.bodySmall),
-            ],
+            ),
           ),
         ),
       ),
@@ -243,7 +260,8 @@ class _CopyMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.maybeOf(context);
-    final reduceMotion = (media?.disableAnimations ?? false) ||
+    final reduceMotion =
+        (media?.disableAnimations ?? false) ||
         (media?.accessibleNavigation ?? false);
 
     return AnimatedSwitcher(

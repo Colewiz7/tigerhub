@@ -71,10 +71,7 @@ class _HousingCardState extends State<HousingCard> {
   /// run setup and this card cannot drift apart. They are the same setting: it
   /// is where you live, not a property of one card.
   Future<void> _remember() async {
-    await Preferences.instance.setHome(
-      area: _areaId,
-      unit: _unit.text.trim(),
-    );
+    await Preferences.instance.setHome(area: _areaId, unit: _unit.text.trim());
   }
 
   @override
@@ -87,9 +84,13 @@ class _HousingCardState extends State<HousingCard> {
   void _load() {
     final areaId = _areaId;
     if (areaId == null) return;
-    _subscriptions.add(widget.api.address(areaId, 'Your Name', _unit.text.trim()).listen((result) {
-      if (mounted) setState(() => _address = result);
-    }));
+    _subscriptions.add(
+      widget.api.address(areaId, 'Your Name', _unit.text.trim()).listen((
+        result,
+      ) {
+        if (mounted) setState(() => _address = result);
+      }),
+    );
     _remember();
   }
 
@@ -106,38 +107,38 @@ class _HousingCardState extends State<HousingCard> {
       child: switch ((widget.areas.isPriming, areas.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading housing areas'),
         (_, true) => const EmptyState(
-            kind: EmptyKind.sourceDown,
-            title: 'Housing areas are unavailable',
-          ),
+          kind: EmptyKind.sourceDown,
+          title: 'Housing areas are unavailable',
+        ),
         // Never an empty card: it is either the picker or the answer.
         (_, _) when _address?.value == null => _AreaChips(
-            areas: areas,
-            onPick: (id) {
-              setState(() => _areaId = id);
-              _load();
-            },
-          ),
+          areas: areas,
+          onPick: (id) {
+            setState(() => _areaId = id);
+            _load();
+          },
+        ),
         _ => SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _AreaPicker(
-                  areas: areas,
-                  selected: _areaId,
-                  onChanged: (value) {
-                    setState(() {
-                      _areaId = value;
-                      _address = null;
-                    });
-                    _load();
-                  },
-                ),
-                const SizedBox(height: 12),
-                _AddressBlock(address: _address!.value!),
-              ],
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _AreaPicker(
+                areas: areas,
+                selected: _areaId,
+                onChanged: (value) {
+                  setState(() {
+                    _areaId = value;
+                    _address = null;
+                  });
+                  _load();
+                },
+              ),
+              const SizedBox(height: 12),
+              _AddressBlock(address: _address!.value!),
+            ],
           ),
+        ),
       },
     );
   }
@@ -155,6 +156,7 @@ class _AreaChips extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final sortedAreas = [...areas]..sort((a, b) => a.name.compareTo(b.name));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -166,7 +168,7 @@ class _AreaChips extends StatelessWidget {
           spacing: 7,
           runSpacing: 7,
           children: [
-            for (final area in areas)
+            for (final area in sortedAreas)
               Material(
                 elevation: 0,
                 color: scheme.surfaceContainerHigh,
@@ -175,8 +177,10 @@ class _AreaChips extends StatelessWidget {
                 child: InkWell(
                   onTap: () => onPick(area.id),
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 15,
+                      vertical: 9,
+                    ),
                     child: Text(area.name, style: text.bodyMedium),
                   ),
                 ),
@@ -206,51 +210,72 @@ class _AreaPicker extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final current = areas.where((a) => a.id == selected).firstOrNull;
+    final sortedAreas = [...areas]..sort((a, b) => a.name.compareTo(b.name));
 
-    return Row(
-      children: [
-        Expanded(
-          child: Material(
-            elevation: 0,
-            color: scheme.surfaceContainerHigh,
-            shape: Shapes.pill,
-            clipBehavior: Clip.antiAlias,
-            child: PopupMenuButton<String>(
-              tooltip: 'Choose housing area',
-              onSelected: onChanged,
-              itemBuilder: (context) => [
-                for (final area in areas)
-                  PopupMenuItem(value: area.id, child: Text(area.name)),
-              ],
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Text(
-                  current?.name ?? 'Where do you live',
-                  style: text.bodyMedium?.copyWith(
-                    color: current == null ? scheme.onSurfaceVariant : scheme.onSurface,
+    // One popup owns the entire split-looking control. Previously only the
+    // text half was inside PopupMenuButton, so the visually louder chevron was
+    // a dead target.
+    return Semantics(
+      button: true,
+      label: 'Housing area: ${current?.name ?? 'not selected'}',
+      child: PopupMenuButton<String>(
+        tooltip: 'Choose housing area',
+        onSelected: onChanged,
+        itemBuilder: (context) => [
+          for (final area in sortedAreas)
+            PopupMenuItem(
+              value: area.id,
+              child: Row(
+                children: [
+                  Expanded(child: Text(area.name)),
+                  if (area.id == selected)
+                    Icon(Icons.check_rounded, color: scheme.primary),
+                ],
+              ),
+            ),
+        ],
+        child: Row(
+          children: [
+            Expanded(
+              child: Material(
+                elevation: 0,
+                color: scheme.surfaceContainerHigh,
+                shape: Shapes.pill,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  child: Text(
+                    current?.name ?? 'Where do you live',
+                    style: text.bodyMedium?.copyWith(
+                      color: current == null
+                          ? scheme.onSurfaceVariant
+                          : scheme.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 7),
-        Material(
-          elevation: 0,
-          color: scheme.primary,
-          shape: Shapes.pill,
-          child: Padding(
-            padding: const EdgeInsets.all(11),
-            child: Icon(
-              Icons.expand_more_rounded,
-              size: 19,
-              color: scheme.onPrimary,
+            const SizedBox(width: 7),
+            Material(
+              elevation: 0,
+              color: scheme.primary,
+              shape: Shapes.pill,
+              child: Padding(
+                padding: const EdgeInsets.all(11),
+                child: Icon(
+                  Icons.expand_more_rounded,
+                  size: 19,
+                  color: scheme.onPrimary,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -304,13 +329,16 @@ class _CautionPill extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded, size: 13, color: scheme.onErrorContainer),
+            Icon(
+              Icons.error_outline_rounded,
+              size: 13,
+              color: scheme.onErrorContainer,
+            ),
             const SizedBox(width: 5),
             Text(
               'unverified',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: scheme.onErrorContainer,
-                  ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: scheme.onErrorContainer),
             ),
           ],
         ),

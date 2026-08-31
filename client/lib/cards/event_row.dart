@@ -11,16 +11,25 @@ import '../models/api_models.dart';
 import '../theme/semantic.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
+import '../widgets/event_details_sheet.dart';
 
 IconData iconForEventType(String? type) {
   final t = (type ?? '').toLowerCase();
   if (t.contains('athletics')) return Icons.sports_score_rounded;
   if (t.contains('meeting')) return Icons.groups_rounded;
-  if (t.contains('workshop') || t.contains('training')) return Icons.construction_rounded;
-  if (t.contains('religious') || t.contains('spiritual')) return Icons.self_improvement_rounded;
-  if (t.contains('recreation') || t.contains('sport')) return Icons.sports_basketball_rounded;
+  if (t.contains('workshop') || t.contains('training')) {
+    return Icons.construction_rounded;
+  }
+  if (t.contains('religious') || t.contains('spiritual')) {
+    return Icons.self_improvement_rounded;
+  }
+  if (t.contains('recreation') || t.contains('sport')) {
+    return Icons.sports_basketball_rounded;
+  }
   if (t.contains('blood')) return Icons.bloodtype_rounded;
-  if (t.contains('tabling') || t.contains('outreach')) return Icons.campaign_rounded;
+  if (t.contains('tabling') || t.contains('outreach')) {
+    return Icons.campaign_rounded;
+  }
   return Icons.event_rounded;
 }
 
@@ -59,37 +68,49 @@ class EventRow extends StatelessWidget {
     // Show the day whenever the event is not today. Two genuinely different
     // events on different days used to render as an identical clock time,
     // which read as a duplicated row.
-    final sameDay = event.startsAt.year == moment.year &&
+    final sameDay =
+        event.startsAt.year == moment.year &&
         event.startsAt.month == moment.month &&
         event.startsAt.day == moment.day;
     final stamp = event.allDay
         ? 'ALL DAY'
         : (sameDay
-            ? formatClock(event.startsAt)
-            : formatDayAndClock(event.startsAt));
+              ? formatClock(event.startsAt)
+              : formatDayAndClock(event.startsAt));
 
     return StatusRow(
       icon: forceDimmed
           ? Icons.visibility_off_rounded
-          : (isPast ? Icons.history_rounded : iconForEventType(event.eventType)),
+          : (isPast
+                ? Icons.history_rounded
+                : iconForEventType(event.eventType)),
       title: boosted ? '✦ ${event.title}' : event.title,
       subtitle: event.location?.isNotEmpty == true ? event.location : when,
       accent: boosted
           ? Theme.of(context).colorScheme.primary
           : (isPast ? semantic.closed : semantic.open),
       emphasis: isPast ? RowEmphasis.dimmed : RowEmphasis.normal,
+      semanticHint: 'Opens event details',
+      onTap: () => showEventDetailsSheet(context, event),
       trailing: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             stamp,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: text.bodySmall?.copyWith(
-              color: isPast ? semantic.closed : Theme.of(context).colorScheme.onSurface,
+              color: isPast
+                  ? semantic.closed
+                  : Theme.of(context).colorScheme.onSurface,
             ),
           ),
           if (isPast)
-            Text('ENDED', style: text.labelSmall?.copyWith(color: semantic.closed)),
+            Text(
+              'ENDED',
+              style: text.labelSmall?.copyWith(color: semantic.closed),
+            ),
         ],
       ),
     );

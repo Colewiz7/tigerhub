@@ -67,44 +67,49 @@ class _Tab extends StatelessWidget {
         (media?.disableAnimations ?? false) ||
         (media?.accessibleNavigation ?? false);
 
-    return InkWell(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 11),
-          Icon(spec.icon, size: 29, color: color),
-          const SizedBox(height: 6),
-          Text(
-            spec.label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: color,
-              fontVariations: active ? Weights.semibold : Weights.regular,
-            ),
-          ),
-          const SizedBox(height: 8),
-          // The underline is the whole indicator.
-          TweenAnimationBuilder<double>(
-            tween: Tween(end: active ? 1 : 0),
-            duration: reduceMotion
-                ? Duration.zero
-                : const Duration(milliseconds: 160),
-            curve: Curves.easeOutCubic,
-            builder: (context, value, child) => Opacity(
-              opacity: value,
-              child: Transform.scale(scaleX: value, child: child),
-            ),
-            child: Container(
-              height: 3,
-              width: 34,
-              decoration: BoxDecoration(
-                color: scheme.primary,
-                borderRadius: BorderRadius.circular(2),
+    return Semantics(
+      button: true,
+      selected: active,
+      label: '${spec.label} tab',
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 11),
+            Icon(spec.icon, size: 29, color: color),
+            const SizedBox(height: 6),
+            Text(
+              spec.label,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: color,
+                fontVariations: active ? Weights.semibold : Weights.regular,
               ),
             ),
-          ),
-          const SizedBox(height: 6),
-        ],
+            const SizedBox(height: 8),
+            // The underline is the whole indicator.
+            TweenAnimationBuilder<double>(
+              tween: Tween(end: active ? 1 : 0),
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 160),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, child) => Opacity(
+                opacity: value,
+                child: Transform.scale(scaleX: value, child: child),
+              ),
+              child: Container(
+                height: 3,
+                width: 34,
+                decoration: BoxDecoration(
+                  color: scheme.primary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
+        ),
       ),
     );
   }

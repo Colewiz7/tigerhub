@@ -77,19 +77,20 @@ in `docs/post-office-hours-spec.md`.
 **Customize dashboard.** Light and dark mockups plus the instance, scope, size
 and packing model are in `docs/modular-dashboard-spec.md`.
 
-### Still open, for Claude (behaviour)
+### Behaviour follow-ups completed
 
 **Post office hours for today.** The data already carries per service, per day
 rules; what is missing is a "today" projection so the answer is one line rather
-than a table to read.
+than a table to read. *(done)*
 
 **Split the events widget.** One widget for a single club's events, another for
 events in general. The organizer facets and muting already exist, so this is
-mostly a matter of a card that is scoped to one organizer.
+mostly a matter of a card that is scoped to one organizer. *(done)*
 
 **A calendar view.** For events at least, possibly for dining hours. Worth
 deciding which, since a calendar of everything is a different feature from a
-month view of one club.
+month view of one club. Implemented as a seven-day event calendar, optionally
+scoped to one organizer. *(done)*
 
 ## Motion and loading animations  *(done)*
 

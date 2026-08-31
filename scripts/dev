@@ -178,14 +178,22 @@ cmd_shot_tabs() {
   # an unfocused app means typing "1234" into someone's terminal or chat.
   require_focus
 
-  local geo
-  geo="$(hyprctl clients -j | python3 "$ROOT/scripts/_geometry.py")" \
-    || die "not safe to capture, see above"
-
   local pair key name failed=0
-  for pair in "1:01-today" "2:02-dining" "3:03-events" "4:04-campus"; do
+  for pair in \
+    "1:01-today" \
+    "2:02-dining" \
+    "3:03-events" \
+    "4:04-map" \
+    "5:05-campus"; do
     key="${pair%%:*}"; name="${pair##*:}"
+    # The app can exit between frames. Rechecking both focus and geometry on
+    # every iteration prevents grim from silently capturing the desktop at the
+    # old coordinates after the TigerHub window disappears.
+    require_focus
     wtype "$key"; sleep 2
+    local geo
+    geo="$(hyprctl clients -j | python3 "$ROOT/scripts/_geometry.py")" \
+      || die "not safe to capture, see above"
     grim -g "$geo" "$dir/$name.png" || { warn "grim failed for $name"; failed=1; continue; }
     ok "$name.png"
   done

@@ -175,4 +175,36 @@ void main() {
     expect(find.bySemanticsLabel(AppConfig.appName), findsWidgets);
     handle.dispose();
   });
+
+  testWidgets('a live theme change invalidates the coloured SVG', (
+    tester,
+  ) async {
+    ThemeData theme(Brightness brightness) => ThemeData(
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFFF76902),
+        brightness: brightness,
+      ),
+    );
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: theme(Brightness.light),
+        darkTheme: theme(Brightness.dark),
+        themeMode: ThemeMode.system,
+        home: const Scaffold(
+          body: Center(child: SizedBox(width: 260, child: Wordmark())),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final darkKey = tester.widget<SvgPicture>(find.byType(SvgPicture)).key;
+
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    await tester.pumpAndSettle();
+    final lightKey = tester.widget<SvgPicture>(find.byType(SvgPicture)).key;
+
+    expect(lightKey, isNot(darkKey));
+  });
 }

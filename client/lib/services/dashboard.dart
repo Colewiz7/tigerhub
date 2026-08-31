@@ -34,7 +34,8 @@ enum ModuleType {
   visitingChefs('visiting_chefs'),
   mailingAddress('mailing_address'),
   facilityHours('facility_hours'),
-  campusMap('campus_map');
+  campusMap('campus_map'),
+  academicDates('academic_dates');
 
   const ModuleType(this.id);
 
@@ -92,7 +93,37 @@ const Map<ModuleType, List<CardSize>> supportedSizes = {
   ModuleType.mailingAddress: [CardSize.standard],
   ModuleType.facilityHours: [CardSize.compact, CardSize.standard],
   ModuleType.campusMap: [CardSize.wide],
+  ModuleType.academicDates: [CardSize.compact, CardSize.standard],
 };
+
+/// The footprint a newly added module starts with.
+///
+/// A calendar only communicates the shape of a week when its seven days have
+/// room to sit together, so it is the one template that starts wide. Existing
+/// migrated cards retain their saved/default standard footprint.
+CardSize defaultSizeFor(ModuleType type) {
+  final sizes = supportedSizes[type] ?? const [CardSize.standard];
+  return type == ModuleType.calendar && sizes.contains(CardSize.wide)
+      ? CardSize.wide
+      : sizes.first;
+}
+
+/// The concise state a screen reader needs before entering a card's content.
+String dashboardCardSemanticsLabel(
+  CardInstance? card,
+  int position,
+  int total,
+) {
+  final size = switch (card?.size) {
+    CardSize.compact => 'compact',
+    CardSize.standard => 'standard',
+    CardSize.wide => 'wide',
+    null => 'unknown',
+  };
+  final name = card == null ? 'Dashboard' : moduleLabels[card.type];
+  return '$name card, position $position of $total, '
+      '$size size';
+}
 
 /// One placed card.
 class CardInstance {
@@ -169,6 +200,7 @@ const Map<ModuleType, String> moduleLabels = {
   ModuleType.mailingAddress: 'Mailing Address',
   ModuleType.facilityHours: 'Facility hours',
   ModuleType.campusMap: 'Campus map',
+  ModuleType.academicDates: 'Academic Dates',
 };
 
 /// The four cards the app shipped with, as instances.

@@ -8,6 +8,8 @@
 /// work.
 library;
 
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,9 +34,9 @@ void main() {
     clipboard = [];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-      if (call.method == 'Clipboard.setData') clipboard.add(call);
-      return null;
-    });
+          if (call.method == 'Clipboard.setData') clipboard.add(call);
+          return null;
+        });
   });
 
   tearDown(() {
@@ -46,14 +48,18 @@ void main() {
       clipboard.isEmpty ? null : clipboard.last.arguments['text'] as String?;
 
   Future<void> pump(WidgetTester tester) async {
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.from(
-        ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.from(
+          ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+        ),
+        home: const Scaffold(
+          body: Center(
+            child: SizedBox(width: 420, child: CopyableAddress(lines: lines)),
+          ),
+        ),
       ),
-      home: const Scaffold(
-        body: Center(child: SizedBox(width: 420, child: CopyableAddress(lines: lines))),
-      ),
-    ));
+    );
     await tester.pumpAndSettle();
   }
 
@@ -70,8 +76,11 @@ void main() {
     await tester.tap(find.text('43 Greenleaf Court'));
     await tester.pump();
 
-    expect(lastCopied(), '43 Greenleaf Court',
-        reason: 'a form field wants the street on its own, not the block');
+    expect(
+      lastCopied(),
+      '43 Greenleaf Court',
+      reason: 'a form field wants the street on its own, not the block',
+    );
     expect(lastCopied(), isNot(contains('Rochester')));
   });
 
@@ -86,7 +95,19 @@ void main() {
     expect(clipboard.length, lines.length);
   });
 
-  testWidgets('copy all takes the whole block, newline separated', (tester) async {
+  testWidgets('copy targets explain themselves on hover', (tester) async {
+    await pump(tester);
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    await gesture.moveTo(tester.getCenter(find.text('43 Greenleaf Court')));
+    await tester.pumpAndSettle(const Duration(milliseconds: 600));
+    expect(find.text('Copy 43 Greenleaf Court'), findsOneWidget);
+    await gesture.removePointer();
+  });
+
+  testWidgets('copy all takes the whole block, newline separated', (
+    tester,
+  ) async {
     await pump(tester);
 
     await tester.tap(find.text('Copy all'));
@@ -102,8 +123,11 @@ void main() {
 
     await tester.tap(find.text('Copy all'));
     await tester.pump();
-    expect(find.text('Copied'), findsOneWidget,
-        reason: 'a copy with no feedback leaves you tapping twice');
+    expect(
+      find.text('Copied'),
+      findsOneWidget,
+      reason: 'a copy with no feedback leaves you tapping twice',
+    );
 
     // The confirmation clears itself rather than sticking around.
     await tester.pump(const Duration(milliseconds: 1500));
@@ -122,20 +146,27 @@ void main() {
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
   });
 
-  testWidgets('a trailing widget sits beside the copy all button', (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      theme: AppTheme.from(
-        ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
-      ),
-      home: const Scaffold(
-        body: Center(
-          child: SizedBox(
-            width: 420,
-            child: CopyableAddress(lines: lines, trailing: Text('unverified')),
+  testWidgets('a trailing widget sits beside the copy all button', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.from(
+          ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+        ),
+        home: const Scaffold(
+          body: Center(
+            child: SizedBox(
+              width: 420,
+              child: CopyableAddress(
+                lines: lines,
+                trailing: Text('unverified'),
+              ),
+            ),
           ),
         ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     expect(find.text('unverified'), findsOneWidget);
   });

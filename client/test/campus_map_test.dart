@@ -351,6 +351,7 @@ void main() {
     await tester.tap(find.byType(InteractiveViewer));
     await tester.pump();
     expect(controller.value.getMaxScaleOnAxis(), closeTo(1.5, 0.01));
+    expect(find.text('1.5×'), findsOneWidget);
 
     final mapFocus = tester.widget<Focus>(
       find.byWidgetPredicate(
@@ -363,6 +364,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.equal);
     await tester.pump();
     expect(controller.value.getMaxScaleOnAxis(), closeTo(2.25, 0.01));
+    expect(find.text('2.3×'), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.minus);
     await tester.pump();

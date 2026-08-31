@@ -85,8 +85,10 @@ class _DiningSectionState extends State<DiningSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Allergens to flag',
-                  style: text.titleLarge?.copyWith(fontSize: 21)),
+              Text(
+                'Allergens to flag',
+                style: text.titleLarge?.copyWith(fontSize: 21),
+              ),
               const SizedBox(height: 4),
               Text(
                 'A dish containing one of these is marked on the menu. It is '
@@ -120,8 +122,11 @@ class _DiningSectionState extends State<DiningSection> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.warning_amber_rounded,
-                  size: 18, color: semantic.closed),
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 18,
+                color: semantic.closed,
+              ),
               const SizedBox(width: 11),
               Expanded(
                 child: Text(
@@ -159,31 +164,36 @@ class _Toggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Material(
-      elevation: 0,
-      color: selected ? selectedBackground : scheme.surfaceContainerHigh,
-      shape: Shapes.pill,
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                selected ? Icons.check_rounded : Icons.add_rounded,
-                size: 15,
-                color: selected ? selectedColor : scheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 7),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: selected ? selectedColor : scheme.onSurface,
-                    ),
-              ),
-            ],
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: Material(
+        elevation: 0,
+        color: selected ? selectedBackground : scheme.surfaceContainerHigh,
+        shape: Shapes.pill,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  selected ? Icons.check_rounded : Icons.add_rounded,
+                  size: 15,
+                  color: selected ? selectedColor : scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 7),
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: selected ? selectedColor : scheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

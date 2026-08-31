@@ -13,7 +13,12 @@ import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 
 class MoreRow extends StatelessWidget {
-  const MoreRow({super.key, required this.hidden, this.onTap, this.noun = 'more'});
+  const MoreRow({
+    super.key,
+    required this.hidden,
+    this.onTap,
+    this.noun = 'more',
+  });
 
   final int hidden;
   final VoidCallback? onTap;
@@ -27,28 +32,35 @@ class MoreRow extends StatelessWidget {
 
     return Align(
       alignment: Alignment.centerLeft,
-      child: Material(
-        elevation: 0,
-        color: scheme.surfaceContainerHigh,
-        shape: Shapes.pill,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '+$hidden $noun',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: muted,
-                        fontVariations: Weights.medium,
-                      ),
-                ),
-                const SizedBox(width: 3),
-                Icon(Icons.chevron_right_rounded, size: 15, color: muted),
-              ],
+      child: Semantics(
+        button: onTap != null,
+        enabled: onTap != null,
+        label: '$hidden more $noun',
+        child: Material(
+          elevation: 0,
+          color: scheme.surfaceContainerHigh,
+          shape: Shapes.pill,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '+$hidden $noun',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: muted,
+                      fontVariations: Weights.medium,
+                    ),
+                  ),
+                  if (onTap != null) ...[
+                    const SizedBox(width: 3),
+                    Icon(Icons.chevron_right_rounded, size: 15, color: muted),
+                  ],
+                ],
+              ),
             ),
           ),
         ),

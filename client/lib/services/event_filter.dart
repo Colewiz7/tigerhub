@@ -67,7 +67,11 @@ bool _matches(String title, List<String> keywords) {
 }
 
 /// Apply both filters and group by organizer.
-FilterResult filterEvents(List<CampusEvent> events, Preferences prefs) {
+FilterResult filterEvents(
+  List<CampusEvent> events,
+  Preferences prefs, {
+  bool revealKeywordMatches = false,
+}) {
   final byOrganizer = <String, List<CampusEvent>>{};
   final keys = <String, String?>{};
   for (final event in events) {
@@ -88,25 +92,30 @@ FilterResult filterEvents(List<CampusEvent> events, Preferences prefs) {
 
     for (final event in entry.value) {
       if (muted) {
-        hidden.add(FilteredEvent(
-          event: event,
-          hiddenReason: HiddenReason.mutedOrganizer,
-        ));
+        hidden.add(
+          FilteredEvent(
+            event: event,
+            hiddenReason: HiddenReason.mutedOrganizer,
+          ),
+        );
         continue;
       }
-      if (prefs.keywordRulesEnabled &&
+      if (!revealKeywordMatches &&
+          prefs.keywordRulesEnabled &&
           _matches(event.title, prefs.hideKeywords)) {
-        hidden.add(FilteredEvent(
-          event: event,
-          hiddenReason: HiddenReason.hiddenKeyword,
-        ));
+        hidden.add(
+          FilteredEvent(event: event, hiddenReason: HiddenReason.hiddenKeyword),
+        );
         continue;
       }
-      visible.add(FilteredEvent(
-        event: event,
-        boosted: prefs.keywordRulesEnabled &&
-            _matches(event.title, prefs.boostKeywords),
-      ));
+      visible.add(
+        FilteredEvent(
+          event: event,
+          boosted:
+              prefs.keywordRulesEnabled &&
+              _matches(event.title, prefs.boostKeywords),
+        ),
+      );
     }
 
     // Boosted first, then by start time.
@@ -122,12 +131,14 @@ FilterResult filterEvents(List<CampusEvent> events, Preferences prefs) {
     // does not leave a header with no rows under it. Its events still count
     // toward hiddenTotal, so they stay recoverable.
     if (visible.isNotEmpty) {
-      groups.add(FilteredGroup(
-        organizer: entry.key,
-        organizerKey: key,
-        visible: visible,
-        hidden: hidden,
-      ));
+      groups.add(
+        FilteredGroup(
+          organizer: entry.key,
+          organizerKey: key,
+          visible: visible,
+          hidden: hidden,
+        ),
+      );
     }
   }
 
