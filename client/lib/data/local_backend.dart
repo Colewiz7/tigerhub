@@ -240,6 +240,37 @@ class LocalBackend implements Backend {
     return entry;
   }
 
+  /// The shortest gap between two user-driven refreshes of the same source.
+  ///
+  /// CLAUDE.md 6 says scheduled scrapes only and never per request. A person
+  /// deliberately pulling to refresh is not a request being served, but it
+  /// still has to be bounded or holding the gesture would hammer RIT. A minute
+  /// is long enough that mashing it costs nothing and short enough that the
+  /// gesture always feels like it did something.
+  static const Duration manualRefreshFloor = Duration(minutes: 1);
+
+  /// Refetch every source whose snapshot is older than [manualRefreshFloor].
+  ///
+  /// The pull-to-refresh on the home screen used to run the same code path as
+  /// the two minute ticker, which respects each source's cadence. Dining is
+  /// hourly and campus places are twice a day, so pulling almost always did
+  /// nothing at all while showing a spinner that said otherwise. A control
+  /// that cannot do the thing it depicts is worse than no control.
+  Future<void> refreshNow() async {
+    final store = await _openStore();
+    await Future.wait([
+      for (final name in sources.keys)
+        () async {
+          final age = await store.fetchedAt(name);
+          if (age != null &&
+              DateTime.now().difference(age) < manualRefreshFloor) {
+            return;
+          }
+          await _refreshIfDue(name, force: true);
+        }(),
+    ]);
+  }
+
   /// The snapshot for [name], refreshing first only if nothing is stored yet.
   ///
   /// With a snapshot in hand the refresh is fired and not awaited, so the UI

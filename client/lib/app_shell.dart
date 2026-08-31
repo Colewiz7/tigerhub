@@ -156,6 +156,17 @@ class _AppShellState extends State<AppShell> {
 
   final _subscriptions = Subscriptions();
 
+  /// The pull-to-refresh on the home screen.
+  ///
+  /// It used to call [_refresh], which is the same path the two minute ticker
+  /// takes and therefore respects every source's cadence. Dining is hourly and
+  /// campus places are twice a day, so pulling almost always fetched nothing
+  /// while showing a spinner that implied otherwise.
+  Future<void> _refreshFromUser() async {
+    await widget.api.refreshNow();
+    await _refresh();
+  }
+
   Future<void> _refresh() async {
     // Replace the previous tick's subscriptions rather than stacking on them.
     // Without this the ticker added four every two minutes, and stale ones
@@ -256,7 +267,7 @@ class _AppShellState extends State<AppShell> {
                               events: _events,
                               chefs: _chefs,
                               areas: _areas,
-                              onRefresh: _refresh,
+                              onRefresh: _refreshFromUser,
                               onGoToTab: _go,
                             ),
                             DiningScreen(result: _dining, api: widget.api),
@@ -456,17 +467,22 @@ class _Masthead extends StatelessWidget {
           const Spacer(),
           Tooltip(
             message: settingsOpen ? 'Close settings' : 'Settings',
-            child: InkWell(
-              onTap: onSettings,
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Icon(
-                  settingsOpen ? Icons.close_rounded : Icons.settings_rounded,
-                  size: 24,
-                  color: settingsOpen
-                      ? colors.primary
-                      : colors.onSurfaceVariant,
+            child: Semantics(
+              button: true,
+              toggled: settingsOpen,
+              label: settingsOpen ? 'Close settings' : 'Open settings',
+              child: InkWell(
+                onTap: onSettings,
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Icon(
+                    settingsOpen ? Icons.close_rounded : Icons.settings_rounded,
+                    size: 24,
+                    color: settingsOpen
+                        ? colors.primary
+                        : colors.onSurfaceVariant,
+                  ),
                 ),
               ),
             ),
@@ -479,19 +495,26 @@ class _Masthead extends StatelessWidget {
             message: state.isDynamic
                 ? 'Theme source: wallpaper\n${state.detail ?? ''}\nTap to use the built-in palette'
                 : 'Theme source: built-in palette\n${state.detail ?? ''}\nTap to follow the wallpaper',
-            child: InkWell(
-              onTap: () => scheme.setForceSeed(!scheme.forcedToSeed),
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: Icon(
-                  state.isDynamic
-                      ? Icons.palette_rounded
-                      : Icons.lock_outline_rounded,
-                  size: 24,
-                  color: state.isDynamic
-                      ? colors.primary
-                      : colors.onSurfaceVariant,
+            child: Semantics(
+              button: true,
+              toggled: !state.isDynamic,
+              label: state.isDynamic
+                  ? 'Use built-in color palette'
+                  : 'Follow wallpaper colors',
+              child: InkWell(
+                onTap: () => scheme.setForceSeed(!scheme.forcedToSeed),
+                borderRadius: BorderRadius.circular(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Icon(
+                    state.isDynamic
+                        ? Icons.palette_rounded
+                        : Icons.lock_outline_rounded,
+                    size: 24,
+                    color: state.isDynamic
+                        ? colors.primary
+                        : colors.onSurfaceVariant,
+                  ),
                 ),
               ),
             ),
