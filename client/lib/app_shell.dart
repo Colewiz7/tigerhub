@@ -223,75 +223,97 @@ class _AppShellState extends State<AppShell> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: scheme.surfaceContainerLowest,
-      // Digit keys jump between tabs. Standard on a desktop app, and it also
-      // makes the UI drivable for screenshots.
-      body: CallbackShortcuts(
-        bindings: {
-          for (var i = 0; i < _tabs.length && i < _digits.length; i++)
-            SingleActivator(_digits[i]): () => _go(i, animate: false),
-          // Conventional settings shortcut.
-          const SingleActivator(LogicalKeyboardKey.comma, control: true): () =>
-              setState(() => _showSettings = !_showSettings),
-          const SingleActivator(LogicalKeyboardKey.escape): () =>
-              setState(() => _showSettings = false),
-        },
-        child: Focus(
-          autofocus: true,
-          child: SafeArea(
-            child: Column(
-              children: [
-                _Masthead(
-                  scheme: widget.scheme,
-                  settingsOpen: _showSettings,
-                  onSettings: () =>
-                      setState(() => _showSettings = !_showSettings),
-                ),
-                Expanded(
-                  child: _showSettings
-                      ? SettingsScreen(
-                          scheme: widget.scheme,
-                          events: _events,
-                          cards: _cards,
-                          hiddenCards: _hiddenCards,
-                          onCardsChanged: _setCards,
-                        )
-                      : _TabStack(
-                          index: _index,
-                          animate: _animateTabChange,
-                          children: [
-                            HomeScreen(
-                              api: widget.api,
-                              dining: _dining,
-                              events: _events,
-                              chefs: _chefs,
-                              areas: _areas,
-                              onRefresh: _refreshFromUser,
-                              onGoToTab: _go,
-                            ),
-                            DiningScreen(result: _dining, api: widget.api),
-                            EventsScreen(result: _events),
-                            MapScreen(api: widget.api, events: _events),
-                            CampusScreen(
-                              api: widget.api,
-                              areas: _areas,
-                              events: _events,
-                            ),
-                          ],
-                        ),
-                ),
-                AppTabBar(
-                  tabs: _tabs,
-                  index: _showSettings ? -1 : _index,
-                  onSelect: (i) {
-                    if (_showSettings) {
-                      setState(() => _showSettings = false);
-                    }
-                    _go(i);
-                  },
-                ),
-              ],
+    // Android's back button.
+    //
+    // Without this, back exits the app from wherever you happen to be. Every
+    // real Android app walks back to its home tab first, and leaving Settings
+    // or the Campus tab by closing the whole app is a jarring way to lose your
+    // place. Desktop is unaffected: there is no system back gesture there, and
+    // the tab digits and the tab strip are untouched.
+    final atHome = !_showSettings && _index == 0;
+    return PopScope(
+      canPop: atHome,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        if (_showSettings) {
+          setState(() => _showSettings = false);
+        } else {
+          _go(0);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: scheme.surfaceContainerLowest,
+        // Digit keys jump between tabs. Standard on a desktop app, and it also
+        // makes the UI drivable for screenshots.
+        body: CallbackShortcuts(
+          bindings: {
+            for (var i = 0; i < _tabs.length && i < _digits.length; i++)
+              SingleActivator(_digits[i]): () => _go(i, animate: false),
+            // Conventional settings shortcut.
+            const SingleActivator(
+              LogicalKeyboardKey.comma,
+              control: true,
+            ): () =>
+                setState(() => _showSettings = !_showSettings),
+            const SingleActivator(LogicalKeyboardKey.escape): () =>
+                setState(() => _showSettings = false),
+          },
+          child: Focus(
+            autofocus: true,
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _Masthead(
+                    scheme: widget.scheme,
+                    settingsOpen: _showSettings,
+                    onSettings: () =>
+                        setState(() => _showSettings = !_showSettings),
+                  ),
+                  Expanded(
+                    child: _showSettings
+                        ? SettingsScreen(
+                            scheme: widget.scheme,
+                            events: _events,
+                            cards: _cards,
+                            hiddenCards: _hiddenCards,
+                            onCardsChanged: _setCards,
+                          )
+                        : _TabStack(
+                            index: _index,
+                            animate: _animateTabChange,
+                            children: [
+                              HomeScreen(
+                                api: widget.api,
+                                dining: _dining,
+                                events: _events,
+                                chefs: _chefs,
+                                areas: _areas,
+                                onRefresh: _refreshFromUser,
+                                onGoToTab: _go,
+                              ),
+                              DiningScreen(result: _dining, api: widget.api),
+                              EventsScreen(result: _events),
+                              MapScreen(api: widget.api, events: _events),
+                              CampusScreen(
+                                api: widget.api,
+                                areas: _areas,
+                                events: _events,
+                              ),
+                            ],
+                          ),
+                  ),
+                  AppTabBar(
+                    tabs: _tabs,
+                    index: _showSettings ? -1 : _index,
+                    onSelect: (i) {
+                      if (_showSettings) {
+                        setState(() => _showSettings = false);
+                      }
+                      _go(i);
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),
