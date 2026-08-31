@@ -184,7 +184,7 @@ class _Flat extends StatelessWidget {
 
     return BoundedList(
       itemCount: ordered.length,
-      itemHeight: StatusRow.height,
+      itemHeight: StatusRow.heightFor(context),
       noun: 'events',
       onShowAll: onShowAll,
       itemBuilder: (context, i) => EventRow(event: ordered[i]),
@@ -202,8 +202,10 @@ class _Grouped extends StatelessWidget {
   /// what lets BoundedList work out exactly how many fit. Density is meant to
   /// be low here: the Events tab is where the full feed lives.
   static const int _perGroup = 1;
-  static double get _groupHeight =>
-      GroupHeader.height + GroupHeader.gap + StatusRow.height * _perGroup;
+  static double _groupHeightFor(BuildContext context) =>
+      GroupHeader.height +
+      GroupHeader.gap +
+      StatusRow.heightFor(context) * _perGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +220,7 @@ class _Grouped extends StatelessWidget {
 
     return BoundedList(
       itemCount: ordered.length,
-      itemHeight: _groupHeight,
+      itemHeight: _groupHeightFor(context),
       noun: 'organizers',
       onShowAll: onShowAll,
       itemBuilder: (context, i) => Column(

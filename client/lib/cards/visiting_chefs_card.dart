@@ -58,7 +58,7 @@ class VisitingChefsCard extends StatelessWidget {
           // chef at the top with the rest of the card empty beneath it. The
           // widget exists precisely so nobody has to guess this number.
           itemCount: all.length,
-          itemHeight: StatusRow.height,
+          itemHeight: StatusRow.heightFor(context),
           noun: 'chefs',
           onShowAll: onShowAll,
           itemBuilder: (context, index) => StatusRow(
