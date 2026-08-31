@@ -175,7 +175,7 @@ class _List extends StatelessWidget {
 
     return BoundedList(
       itemCount: limit == null ? sorted.length : sorted.length.clamp(0, limit!),
-      itemHeight: StatusRow.height,
+      itemHeight: StatusRow.heightFor(context),
       noun: 'open',
       // Open rows sort first, so visible capacity is consumed by open
       // locations before closed ones. The footer and the hero badge then count

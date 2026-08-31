@@ -172,7 +172,7 @@ class _CalendarCardState extends State<CalendarCard> {
                     ? _NothingOn(day: selected)
                     : BoundedList(
                         itemCount: selected.events.length,
-                        itemHeight: StatusRow.height + 4,
+                        itemHeight: StatusRow.heightFor(context) + 4,
                         noun: 'events',
                         onShowAll: widget.onShowAll,
                         itemBuilder: (context, i) =>

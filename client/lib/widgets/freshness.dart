@@ -89,43 +89,56 @@ class PrimingPlaceholder extends StatelessWidget {
       label: label,
       liveRegion: true,
       child: ExcludeSemantics(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: scheme.primaryContainer,
-                      shape: BoxShape.circle,
+        // Transient chrome in a card whose height is already fixed. At the
+        // largest text sizes the skeleton grew past the card it is standing in
+        // for, which is a strange thing for a placeholder to do: the real rows
+        // that replace it scale properly, and this is only ever on screen
+        // while they load. Its own label is announced to a screen reader by
+        // the Semantics above regardless of how it is drawn.
+        child: MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(
+              MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.3),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color: scheme.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.more_horiz_rounded,
+                        size: 20,
+                        color: scheme.onPrimaryContainer,
+                      ),
                     ),
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.more_horiz_rounded,
-                      size: 20,
-                      color: scheme.onPrimaryContainer,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        label,
+                        style: Theme.of(context).textTheme.labelSmall
+                            ?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: Theme.of(context).textTheme.labelSmall
-                          ?.copyWith(color: scheme.onSurfaceVariant),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              _SkeletonRow(tint: tint, primaryFraction: 0.70),
-              const SizedBox(height: 8),
-              _SkeletonRow(tint: tint, primaryFraction: 0.52),
-              const SizedBox(height: 8),
-              _SkeletonRow(tint: tint, primaryFraction: 0.38),
-            ],
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _SkeletonRow(tint: tint, primaryFraction: 0.70),
+                const SizedBox(height: 8),
+                _SkeletonRow(tint: tint, primaryFraction: 0.52),
+                const SizedBox(height: 8),
+                _SkeletonRow(tint: tint, primaryFraction: 0.38),
+              ],
+            ),
           ),
         ),
       ),
