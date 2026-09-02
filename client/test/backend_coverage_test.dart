@@ -106,10 +106,10 @@ void main() {
 
     final address = await backend.fetch(
       '/housing/areas/residence-halls/address',
-      {'name': 'Cole', 'unit': 'Peterson 1234'},
+      {'name': 'Sample Student', 'unit': 'Peterson 1234'},
     );
     expect(address['lines'], [
-      'Cole',
+      'Sample Student',
       'Peterson 1234',
       '43 Greenleaf Court',
       'Rochester NY 14623',
@@ -122,11 +122,11 @@ void main() {
     // Drive is explicitly not a student package address (docs/notes.md 7.9).
     final address = await backend.fetch(
       '/housing/areas/rit-inn/address',
-      {'name': 'Cole'},
+      {'name': 'Sample Student'},
     );
     expect(address['direct_delivery'], isTrue);
     expect(address['lines'], [
-      'Cole',
+      'Sample Student',
       '5257 W Henrietta Rd',
       'Henrietta NY 14467',
     ]);

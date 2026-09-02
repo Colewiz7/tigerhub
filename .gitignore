@@ -37,3 +37,10 @@ dist/
 
 # local scratch, not the repo docs
 CLAUDE.md
+
+# Scratch screenshots dropped at the repo root. Real art lives in
+# assets/ and client/assets/, so anything loose up here is throwaway and
+# tends to carry whatever else was on screen when it was taken.
+/*.png
+/*.jpg
+/*.jpeg
