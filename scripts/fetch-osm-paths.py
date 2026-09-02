@@ -57,7 +57,7 @@ out geom;
 )
 
 ENDPOINT = "https://overpass-api.de/api/interpreter"
-AGENT = "TigerHub/0.1 (personal RIT campus app; colewiz72@gmail.com)"
+AGENT = "TigerHub/0.1 (personal RIT campus app; https://github.com/Colewiz7/tigerhub)"
 
 
 def fetch() -> dict:
