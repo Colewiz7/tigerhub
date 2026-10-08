@@ -1,5 +1,6 @@
 library;
 
+import '../data/campus_time.dart';
 import 'package:flutter/material.dart';
 
 import '../models/api_models.dart';
@@ -58,7 +59,7 @@ class ScopedEventsCard extends StatelessWidget {
     final events = _scopedEvents(result, organizerKey);
     final future = events
         .where(
-          (event) => (event.endsAt ?? event.startsAt).isAfter(DateTime.now()),
+          (event) => (event.endsAt ?? event.startsAt).isAfter(CampusTime.nowUtc()),
         )
         .toList();
     final shown = future.isEmpty ? events : future;
@@ -117,14 +118,16 @@ class _EventCalendarCardState extends State<EventCalendarCard> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final days = List.generate(7, (index) => today.add(Duration(days: index)));
+    final today = CampusTime.wallDate();
+    final days = List.generate(
+      7,
+      (index) => DateTime(today.year, today.month, today.day + index),
+    );
     final events = _scopedEvents(widget.result, widget.organizerKey);
     final byDay = [
       for (final day in days)
         events.where((event) {
-          final start = event.startsAt.toLocal();
+          final start = CampusTime.fieldsOf(event.startsAt);
           return start.year == day.year &&
               start.month == day.month &&
               start.day == day.day;

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/cards/academic_dates_card.dart';
+import 'package:tigerhub/data/campus_time.dart';
+import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/services/academic_dates.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 
@@ -21,9 +23,19 @@ void main() {
     expect(dates.first.title, 'Add/drop ends');
   });
 
+  tearDown(RitClock.reset);
+
+  test('the default day is the campus day, not the device day', () {
+    // 02:00 UTC on 1 Sep is still the evening of 31 Aug in Rochester.
+    RitClock.pin(DateTime.utc(2026, 9, 1, 2));
+    final dates = upcomingAcademicMilestones(limit: 1);
+    expect(dates.first.title, 'Add/drop ends');
+  });
+
   testWidgets('dashboard card shows the next deadline and countdown', (
     tester,
   ) async {
+    RitClock.pin(CampusTime.wall(2026, 8, 31, 12));
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.from(

@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/data/campus_time.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/app_shell.dart';
@@ -742,10 +743,10 @@ void _designTokens() {
 void _screenshotReview() {
   group('screenshot review fixes', () {
     test('midnight and noon apply only at exact boundaries', () {
-      expect(formatClock(DateTime(2026, 8, 28, 0, 0)), 'midnight');
-      expect(formatClock(DateTime(2026, 8, 28, 12, 0)), 'noon');
-      expect(formatClock(DateTime(2026, 8, 28, 0, 1)), '12:01 AM');
-      expect(formatClock(DateTime(2026, 8, 28, 23, 59)), '11:59 PM');
+      expect(formatClock(CampusTime.wall(2026, 8, 28, 0, 0)), 'midnight');
+      expect(formatClock(CampusTime.wall(2026, 8, 28, 12, 0)), 'noon');
+      expect(formatClock(CampusTime.wall(2026, 8, 28, 0, 1)), '12:01 AM');
+      expect(formatClock(CampusTime.wall(2026, 8, 28, 23, 59)), '11:59 PM');
     });
 
     testWidgets(
@@ -943,7 +944,7 @@ void _visualStructure() {
                 id: 1,
                 name: 'Beanz',
                 isOpen: true,
-                closesAt: DateTime(2026, 8, 28, 22),
+                closesAt: CampusTime.wall(2026, 8, 28, 22),
               ),
             ),
           ),
