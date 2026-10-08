@@ -6,6 +6,7 @@ Run from the repo root:  python3 -m unittest discover -s tools/omnigent_policy/t
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import multiprocessing
 import os
@@ -13,7 +14,6 @@ import shutil
 import stat
 import tempfile
 import threading
-import time
 import unittest
 from unittest import mock
 from types import SimpleNamespace
@@ -552,32 +552,41 @@ class JudgeTests(LedgerMixin, unittest.TestCase):
 
     def _race_taint_against(self, op_for_b):
         """Taint (ledger write fails, sentinel is the fallback) while B, which has already
-        passed its pre-lock check, is waiting for the flock. Returns (B's outcome, T's thread)."""
+        passed its pre-lock check, is waiting for the flock. Ordered with Events, not sleeps.
+        `op_for_b(ledger_cls)` runs B's operation using a handle class with the needed hooks."""
         path = self.ledger
         _RealLedger(path).reserve("c1", 20, 1.0, 0.001, 0)  # a record for settle to find
-        entered, b_started = threading.Event(), threading.Event()
+        entered, b_at_lock, b_in_lock = threading.Event(), threading.Event(), threading.Event()
         holder = {}
         orig_write, orig_sentinel = _RealLedger._write, _RealLedger._create_sentinel
 
+        class BLedger(OtherProcessLedger):
+            @contextlib.contextmanager
+            def _flock(inner):
+                b_at_lock.set()  # B's pre-lock check is done; it now goes for the flock
+                with OtherProcessLedger._flock(inner):
+                    b_in_lock.set()
+                    yield
+
         def write(self, data):
             if threading.current_thread() is holder["t"]:
-                entered.set()
-                b_started.wait(5)
-                time.sleep(0.3)  # B passes its pre-lock check and blocks on the flock meanwhile
+                entered.set()  # T holds the flock and has not marked anything yet
+                b_at_lock.wait(5)
                 raise OSError("ledger write fails")
             return orig_write(self, data)
 
         def sentinel(self):
             if threading.current_thread() is holder["t"]:
-                time.sleep(0.5)  # widen the window between "ledger write failed" and "sentinel exists"
+                # Unfixed code has released the flock by now, so B gets in right away and
+                # this returns early; with the fix B stays blocked, so this just times out.
+                b_in_lock.wait(1.0)
             return orig_sentinel(self)
 
         outcome = {}
 
         def b():
             entered.wait(5)
-            b_started.set()
-            outcome["b"] = op_for_b()
+            outcome["b"] = op_for_b(BLedger)
 
         with mock.patch.object(_RealLedger, "_write", write), mock.patch.object(_RealLedger, "_create_sentinel", sentinel):
             holder["t"] = threading.Thread(target=lambda: _RealLedger(path).taint())
@@ -591,8 +600,8 @@ class JudgeTests(LedgerMixin, unittest.TestCase):
     def test_reserve_that_passed_the_precheck_cannot_slip_past_a_fallback_taint(self):
         llm = MockLLM(ALLOW_JSON)
 
-        def b():
-            with mock.patch.object(P, "_Ledger", OtherProcessLedger):
+        def b(ledger_cls):
+            with mock.patch.object(P, "_Ledger", ledger_cls):
                 judge = mj()
             return run(judge(ev("ls lib", llm=llm)))
 
@@ -602,13 +611,25 @@ class JudgeTests(LedgerMixin, unittest.TestCase):
         self.assertTrue(os.path.exists(self.ledger + ".tainted"))
 
     def test_settle_that_passed_the_precheck_cannot_slip_past_a_fallback_taint(self):
-        def b():
+        def b(ledger_cls):
             try:
-                OtherProcessLedger(self.ledger).settle("c1", 0.001, 0.0005)
+                ledger_cls(self.ledger).settle("c1", 0.001, 0.0005)
             except P.LedgerError as exc:
                 return exc
 
         self.assertIsInstance(self._race_taint_against(b), P.LedgerError)
+
+    def test_symlinked_ledger_directory_is_not_chmodded(self):
+        real = os.path.join(self.tmp, "real")
+        os.mkdir(real, 0o755)
+        os.chmod(real, 0o755)
+        link = os.path.join(self.tmp, "link")
+        os.symlink(real, link)
+        path = os.path.join(link, "ledger.json")
+        out = run(mj(ledger_path=path)(ev("ls lib", llm=MockLLM(ALLOW_JSON))))
+        self.assertEqual(out["result"], "ALLOW")  # still operates
+        self.assertEqual(stat.S_IMODE(os.stat(real).st_mode), 0o755)  # but the target was left alone
+        self.assertEqual(stat.S_IMODE(os.stat(os.path.join(real, "ledger.json")).st_mode), 0o600)
 
     def test_existing_directory_and_lock_file_are_tightened(self):
         d = os.path.join(self.tmp, "loose")

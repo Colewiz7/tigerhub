@@ -491,10 +491,18 @@ class _Ledger:
     def _flock(self) -> Iterator[None]:
         directory = os.path.dirname(self.path) or "."
         os.makedirs(directory, mode=0o700, exist_ok=True)
-        st = os.stat(directory)
-        if st.st_uid == os.getuid() and stat.S_IMODE(st.st_mode) != 0o700:
-            os.chmod(directory, 0o700)  # new, or an existing directory of ours that was looser
-        lock_fd = os.open(self.path + ".lock", os.O_RDWR | os.O_CREAT, 0o600)
+        try:  # never follow a symlink here: fchmod acts on the directory we actually opened
+            dir_fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        except OSError:
+            dir_fd = None  # a symlinked (or unopenable) directory is used as is, never chmod'd
+        if dir_fd is not None:
+            try:
+                st = os.fstat(dir_fd)
+                if st.st_uid == os.getuid() and stat.S_IMODE(st.st_mode) != 0o700:
+                    os.fchmod(dir_fd, 0o700)  # new, or an existing directory of ours that was looser
+            finally:
+                os.close(dir_fd)
+        lock_fd = os.open(self.path + ".lock", os.O_RDWR | os.O_CREAT | os.O_NOFOLLOW, 0o600)
         lst = os.fstat(lock_fd)
         if lst.st_uid == os.getuid() and stat.S_IMODE(lst.st_mode) != 0o600:
             os.fchmod(lock_fd, 0o600)
