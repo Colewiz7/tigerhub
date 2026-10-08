@@ -7,11 +7,14 @@ from __future__ import annotations
 
 import asyncio
 import json
+import multiprocessing
 import os
 import shutil
 import stat
 import tempfile
+import threading
 import unittest
+from unittest import mock
 from types import SimpleNamespace
 
 from tools import omnigent_policy
@@ -81,6 +84,11 @@ class MockLLM:
         if self.exc:
             raise self.exc
         return SimpleNamespace(output_text=self.text)
+
+
+def _taint_worker(path):
+    """Module level so multiprocessing can import it."""
+    P._Ledger(path).taint()
 
 
 class UsageLLM(MockLLM):
@@ -467,6 +475,95 @@ class JudgeTests(LedgerMixin, unittest.TestCase):
         self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(os.stat(path + ".lock").st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(os.stat(os.path.dirname(path)).st_mode), 0o700)
+
+    # -- durable taint -----------------------------------------------------------
+
+    def _break_settle_and_taint_writes(self):
+        """Run one judge call during which every ledger write fails afterwards."""
+        blocker = self.ledger + ".tmp"
+
+        class Breaker(MockLLM):
+            async def create(inner, **kw):
+                os.mkdir(blocker)  # settle AND the ledger taint mark both write via this path
+                return await super().create(**kw)
+
+        out = run(mj()(ev("ls lib", llm=Breaker(ALLOW_JSON))))
+        os.rmdir(blocker)  # disk is healthy again
+        return out
+
+    def test_taint_survives_restart_when_settle_and_taint_writes_both_fail(self):
+        self.assertEqual(self._break_settle_and_taint_writes()["result"], "ASK")
+        self.assertNotIn(P.TAINT_KEY, read_ledger(self.ledger))  # the ledger itself carries no mark
+        sentinel = self.ledger + ".tainted"
+        self.assertEqual(stat.S_IMODE(os.stat(sentinel).st_mode), 0o600)
+        P._TAINTED.clear()  # restart: no process state survives, writes work again
+        fresh = MockLLM(ALLOW_JSON)
+        self.assertEqual(run(mj()(ev("ls lib", llm=fresh)))["result"], "ASK")
+        self.assertEqual(run(mg()(ev("ls lib", llm=fresh)))["result"], "ASK")
+        self.assertEqual(fresh.calls, [])
+
+    def test_sentinel_alone_forces_ask(self):
+        with open(self.ledger + ".tainted", "w") as fh:
+            fh.write("tainted\n")
+        llm = MockLLM(ALLOW_JSON)
+        self.assertEqual(run(mj()(ev("ls lib", llm=llm)))["result"], "ASK")
+        self.assertEqual(llm.calls, [])
+        self.assertFalse(os.path.exists(self.ledger))  # nothing was reserved or written
+
+    def test_ledger_taint_mark_alone_forces_ask_after_restart(self):
+        write_raw(self.ledger, json.dumps({P.TAINT_KEY: True}))
+        P._TAINTED.clear()
+        llm = MockLLM(ALLOW_JSON)
+        self.assertEqual(run(mj()(ev("ls lib", llm=llm)))["result"], "ASK")
+        self.assertEqual(llm.calls, [])
+        self.assertFalse(os.path.exists(self.ledger + ".tainted"))
+
+    def test_in_process_taint_holds_when_sentinel_creation_fails_too(self):
+        with mock.patch.object(P._Ledger, "_create_sentinel", side_effect=OSError("disk full")):
+            self.assertEqual(self._break_settle_and_taint_writes()["result"], "ASK")
+        self.assertFalse(os.path.exists(self.ledger + ".tainted"))
+        later = MockLLM(ALLOW_JSON)  # same process, fresh instances, healthy disk
+        self.assertEqual(run(mj()(ev("ls lib", llm=later)))["result"], "ASK")
+        self.assertEqual(run(mg()(ev("ls lib", llm=later)))["result"], "ASK")
+        self.assertEqual(later.calls, [])
+
+    def test_taint_waits_for_the_lock_other_writers_hold(self):
+        ledger = P._Ledger(self.ledger)
+        done = threading.Event()
+        with ledger._flock():
+            t = threading.Thread(target=lambda: (P._Ledger(self.ledger).taint(), done.set()))
+            t.start()
+            self.assertFalse(done.wait(0.3))  # blocked on the flock we hold
+        t.join(5)
+        self.assertTrue(done.is_set())
+        self.assertTrue(read_ledger(self.ledger)[P.TAINT_KEY])
+
+    def _assert_clean_taint(self):
+        self.assertTrue(read_ledger(self.ledger)[P.TAINT_KEY])
+        self.assertEqual(read_ledger(self.ledger)["c1"]["calls"], 1)  # existing record not lost
+        self.assertFalse(os.path.exists(self.ledger + ".tainted"))  # no fallback was needed => no write error
+        self.assertFalse(os.path.exists(self.ledger + ".tmp"))
+
+    def test_concurrent_threads_tainting_lose_nothing(self):
+        run(mj()(ev("ls lib", llm=MockLLM(ALLOW_JSON))))  # creates a "c1" record
+        n = 8
+        barrier = threading.Barrier(n)
+
+        def work():
+            barrier.wait()
+            P._Ledger(self.ledger).taint()
+
+        for _ in range(10):
+            threads = [threading.Thread(target=work) for _ in range(n)]
+            [t.start() for t in threads]
+            [t.join(10) for t in threads]
+            self._assert_clean_taint()
+
+    def test_concurrent_processes_tainting_lose_nothing(self):
+        run(mj()(ev("ls lib", llm=MockLLM(ALLOW_JSON))))
+        with multiprocessing.get_context("fork").Pool(4) as pool:
+            pool.map(_taint_worker, [self.ledger] * 16)
+        self._assert_clean_taint()
 
     # -- cd ----------------------------------------------------------------------
 

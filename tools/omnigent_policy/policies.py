@@ -16,6 +16,7 @@ only :func:`make_gate` (which turns "unsure" into an explicit ASK) and
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import fcntl
 import json
 import logging
@@ -25,6 +26,7 @@ import re
 import secrets
 import shlex
 import threading
+from collections.abc import Iterator
 from typing import Any, Callable
 
 from . import shellparse as sp
@@ -444,15 +446,38 @@ class _Ledger:
     0700 directory), updated under a file lock and fsync'd BEFORE the judge is
     called. Any I/O, parse or validation failure, or a taint, raises
     :class:`LedgerError` so the caller ASKs.
+
+    Taint is recorded in up to three places, and ANY ONE forces ASK on every
+    call, including from a fresh process: the in-process set, a ``_tainted``
+    mark inside the ledger, and a separate ``<ledger>.tainted`` sentinel file
+    (created O_EXCL, 0600, fsync'd with its directory) used when the ledger
+    itself cannot be written.
     """
 
     def __init__(self, path: str) -> None:
         self.path = path
 
+    @property
+    def sentinel_path(self) -> str:
+        return self.path + ".tainted"
+
     def _key(self) -> str:
         return os.path.realpath(self.path)
 
+    def _sentinel_exists(self) -> bool:
+        try:
+            os.lstat(self.sentinel_path)
+            return True
+        except FileNotFoundError:
+            return False
+        except OSError:
+            return True  # cannot tell: fail closed
+
+    def is_tainted(self) -> bool:
+        return self._key() in _TAINTED or self._sentinel_exists()
+
     def _write(self, data: dict[str, Any]) -> None:
+        """Write the ledger atomically. Caller MUST hold the flock."""
         tmp = self.path + ".tmp"
         fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
         with os.fdopen(fd, "w") as fh:
@@ -461,24 +486,34 @@ class _Ledger:
             os.fsync(fh.fileno())
         os.replace(tmp, self.path)
 
+    @contextlib.contextmanager
+    def _flock(self) -> Iterator[None]:
+        directory = os.path.dirname(self.path) or "."
+        created = not os.path.isdir(directory)
+        os.makedirs(directory, mode=0o700, exist_ok=True)
+        if created:
+            os.chmod(directory, 0o700)
+        lock_fd = os.open(self.path + ".lock", os.O_RDWR | os.O_CREAT, 0o600)
+        with os.fdopen(lock_fd, "w") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            yield
+
+    def _read(self) -> dict[str, Any]:
+        """Read and validate the ledger. Caller MUST hold the flock."""
+        try:
+            with open(self.path) as fh:
+                data = json.load(fh, parse_constant=_reject_constant)
+        except FileNotFoundError:
+            data = {}
+        _validate_ledger(data)
+        return data
+
     def _locked(self, fn: Callable[[dict[str, Any]], Any]) -> Any:
-        if self._key() in _TAINTED:
+        if self.is_tainted():
             raise LedgerError("ledger tainted")
         try:
-            directory = os.path.dirname(self.path) or "."
-            created = not os.path.isdir(directory)
-            os.makedirs(directory, mode=0o700, exist_ok=True)
-            if created:
-                os.chmod(directory, 0o700)
-            lock_fd = os.open(self.path + ".lock", os.O_RDWR | os.O_CREAT, 0o600)
-            with os.fdopen(lock_fd, "w") as lock:
-                fcntl.flock(lock, fcntl.LOCK_EX)
-                try:
-                    with open(self.path) as fh:
-                        data = json.load(fh, parse_constant=_reject_constant)
-                except FileNotFoundError:
-                    data = {}
-                _validate_ledger(data)
+            with self._flock():
+                data = self._read()
                 if data.get(TAINT_KEY):
                     _TAINTED.add(self._key())
                     raise LedgerError("ledger tainted")
@@ -493,8 +528,10 @@ class _Ledger:
     def reserve(self, convo: str, max_calls: int, cap_usd: float, reserve_usd: float, floor_calls: int) -> int | None:
         """Atomically (count += 1, spend += reserve_usd) or refuse.
 
-        Returns the new count, None if the call limit or cost cap forbids the call,
-        and raises :class:`LedgerError` if the ledger cannot be trusted.
+        Always rewrites the ledger, so it doubles as the "is the ledger writable
+        and untainted?" check made before every judge call. Returns the new
+        count, None if the call limit or cost cap forbids the call, and raises
+        :class:`LedgerError` if the ledger cannot be trusted.
         """
 
         def op(data: dict[str, Any]) -> int | None:
@@ -525,20 +562,45 @@ class _Ledger:
             self.taint()
             raise
 
+    def _create_sentinel(self) -> None:
+        """Create the sentinel file O_EXCL, 0600, and fsync it and its directory."""
+        try:
+            fd = os.open(self.sentinel_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError:
+            return
+        with os.fdopen(fd, "w") as fh:
+            fh.write("tainted\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+        try:
+            dir_fd = os.open(os.path.dirname(self.sentinel_path) or ".", os.O_RDONLY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        except OSError:
+            pass  # best effort: the file itself is already durable
+
     def taint(self) -> None:
-        """Make every later call ASK: in-process flag always, plus a best-effort mark on disk."""
+        """Make every later call ASK, now and after a restart.
+
+        Always sets the in-process flag. Then marks the ledger itself (under the
+        same flock as reserve/settle); if that fails, falls back to the separate
+        sentinel file. If even that fails the in-process flag still holds.
+        """
         _TAINTED.add(self._key())
         try:
-            try:
-                with open(self.path) as fh:
-                    data = json.load(fh, parse_constant=_reject_constant)
-                _validate_ledger(data)
-            except FileNotFoundError:
-                data = {}
-            data[TAINT_KEY] = True
-            self._write(data)
+            with self._flock():
+                data = self._read()
+                data[TAINT_KEY] = True
+                self._write(data)
+            return
+        except Exception:  # noqa: BLE001 — fall back to the sentinel
+            _log.warning("could not write taint mark to judge ledger; using sentinel", exc_info=True)
+        try:
+            self._create_sentinel()
         except Exception:  # noqa: BLE001 — the in-process flag is already set
-            _log.warning("could not write taint mark to judge ledger", exc_info=True)
+            _log.error("could not create judge taint sentinel; taint is in-process only", exc_info=True)
 
 
 def _ask(reason: str) -> dict[str, Any]:

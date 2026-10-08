@@ -45,10 +45,16 @@ and fsync'd. The judge returns an explicit **ASK** (never DENY) whenever this ma
 * **Call limit** `max_judge_calls` (default 20). Incremented and persisted *before* the call; ALLOW, UNSURE, errors
   and timeouts all count. A file rather than only `session_state` because the engine withholds `state_updates` on
   ASK; the count is still mirrored to `session_state` (`_tigerhub_judge_calls`) on ALLOW and read back as a floor.
-* **Ledger failures.** If writing the actual cost back fails after a call, the result is ASK (even if the judge said
-  ALLOW) and the ledger is tainted: in memory for the process, and marked `_tainted` on disk if that write works.
-  Every later call ASKs. The file is parsed with NaN/Infinity rejected and every record validated (types, finite,
-  non-negative, exact fields); anything invalid is treated as corrupt and ASKs.
+* **Ledger failures and taint.** If writing the actual cost back fails after a call, the result is ASK (even if the
+  judge said ALLOW) and the ledger is tainted. Taint is kept in up to three places and ANY ONE forces ASK on every
+  call, including from a fresh process after a restart: (1) in memory; (2) a `_tainted` mark in the ledger, written
+  under the same flock as reserve/settle; (3) if (2) cannot be written, a separate `<ledger>.tainted` sentinel file,
+  created O_EXCL, mode 0600, fsync'd along with its directory. Before every judge call the ledger is rewritten under
+  the lock (so it must be writable) and both markers are checked first. If even the sentinel cannot be created, only
+  (1) remains and a restart loses it; that residual risk is unavoidable without a working disk. To reset after a
+  taint, delete the ledger's `_tainted` mark and the `.tainted` file by hand.
+  The ledger is parsed with NaN/Infinity rejected and every record validated (types, finite, non-negative, exact
+  fields); anything invalid is treated as corrupt and ASKs.
 * **`cd`/`pushd`/`popd`** anywhere in a command (chains, `bash -c`, wrappers) => ASK, judge not consulted.
 * Session-wide, use omnigent's builtins (`omnigent.policies.builtins.cost.cost_budget`,
   `omnigent.policies.builtins.safety.max_tool_calls_per_session`); not wired up here.
