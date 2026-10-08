@@ -7,8 +7,8 @@ this repo's settings or config references it. Review first.
 
 | Piece | File | Behaviour |
 |---|---|---|
-| `deny_policy` | `policies.py` | DENY: anything touching `*codemagic_api*` (any tool, any argument), `sudo`/`doas`, `rm` with recursive+force (`-rf`, `-fr`, `-r -f`, `--recursive --force`, `--no-preserve-root`), `git push` (also via `git -C/-c ...`, `-c alias.*`), `gh pr merge/create/close`. Sees through `;`/`&&`/`\|`/newlines, `VAR=x` prefixes, quoting, absolute paths, `$(...)`/backticks, `bash -c`, `eval`, `env`/`timeout`/`xargs`/... wrappers. |
-| `allow_policy` | `policies.py` | ALLOW exactly one plain `flutter`/`dart` build-test-analyze-format-pub-get command or read-only `git`/`gh` command. Character whitelist: no `; & \| < > $ \` ( ) \\`, no newline, no globs, no env prefix, no absolute binary path. |
+| `deny_policy` | `policies.py` | DENY: anything touching `*codemagic_api*` (any tool, any argument; by name, and by `realpath`/`samefile` against the configurable `credentials_path`, so a symlink to it is caught), `sudo`/`doas`, `rm` with recursive+force (`-rf`, `-fr`, `-r -f`, `--recursive --force`, `--no-preserve-root`), `git push` (also via `git -C/-c ...`, `-c alias.*`), `gh pr merge/create/close`. Sees through `;`/`&&`/`\|`/newlines, `VAR=x` prefixes, quoting, absolute paths, `$(...)`/backticks, `bash -c`, `eval`, `env`/`timeout`/`xargs`/... wrappers. |
+| `allow_policy` | `policies.py` | ALLOW exactly one plain `flutter`/`dart` build-test-analyze-format command or `pub get` (`pub upgrade`/`add`/`remove`/`outdated`/... are not allowed and never reach the judge, so they ASK) or read-only `git`/`gh` command. Character whitelist: no `; & \| < > $ \` ( ) \\`, no newline, no globs, no env prefix, no absolute binary path. |
 | `make_judge_policy` | `policies.py` | LLM judge. Can only return ALLOW or `None`; never DENY. Prompt says repo/web text is untrusted data. Strict JSON parse; error/timeout means `None`. Has a call limit and a cost cap. |
 | `make_gate` | `policies.py` | The thing to register: deny, then allow, then judge, then an **explicit ASK**. |
 
@@ -27,10 +27,18 @@ the requested `None`-when-unsure contract (and are tested that way) but are not 
 
 ## Cost cap and call limit
 
-* **Judge call limit** `max_judge_calls` (default 20/conversation) and **judge cost cap** `judge_cost_cap_usd`
-  (default 0.50; judge stops once `context.usage.total_cost_usd` reaches it). The count is kept in-process and
-  mirrored to `session_state` (`_tigerhub_judge_calls`); in-process matters because the engine withholds
-  `state_updates` when a policy ends in ASK, so `session_state` alone would undercount.
+Both live in the judge, per conversation, in a small **ledger file** (`ledger_path`, default
+`~/.local/state/tigerhub-omnigent/judge-ledger.json`), written under a file lock and fsync'd.
+
+* **Call limit** `max_judge_calls` (default 20). The count is incremented and persisted *before* the judge is
+  called, and counts ALLOW, UNSURE, errors and timeouts alike. Why a file and not only `session_state`: the engine
+  withholds a policy's `state_updates` when the result is ASK, so a judge call that ends in UNSURE could never be
+  recorded there. The count is still mirrored to `session_state` (`_tigerhub_judge_calls`) on ALLOW and read back
+  as a floor. If the ledger cannot be read or written, the judge is skipped (fail closed, so the gate ASKs).
+* **Cost cap** `judge_cost_cap_usd` (default 0.50). `max_call_cost_usd` (default 0.02, worst case for one call) is
+  reserved before the call; if recorded spend + reservation > cap the judge is not called and the gate ASKs.
+  Afterwards the reservation is replaced by the actual cost from `response.usage` token counts and
+  `input_usd_per_mtok` / `output_usd_per_mtok`; with no rates or no usage the reservation stays (never under-recorded).
 * Session-wide, use omnigent's builtins (`omnigent.policies.builtins.cost.cost_budget`,
   `omnigent.policies.builtins.safety.max_tool_calls_per_session`); not wired up here.
 
@@ -40,7 +48,7 @@ package managers, `git`/`gh`; any absolute or `~` or `..` path (keeps it inside 
 
 ## Limits
 
-Best-effort text analysis, not a sandbox. Not caught: commands assembled at runtime (`$VAR`, `base64 -d | sh`,
+Best-effort text analysis, not a sandbox. Not caught: hard links, globs, `~`/`$VAR`/redirect targets and other indirect paths to the credentials file (only name matching and symlink/realpath/samefile on literal path arguments are done), commands assembled at runtime (`$VAR`, `base64 -d | sh`,
 `$'\x63...'`; these are never auto-allowed, so they ASK), repo-local git aliases in `.gitconfig`, scripts the agent
 writes then runs. Keep the OS-level permission mode as the real backstop.
 

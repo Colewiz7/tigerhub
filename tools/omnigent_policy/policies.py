@@ -16,8 +16,10 @@ only :func:`make_gate` (which turns "unsure" into an explicit ASK) and
 from __future__ import annotations
 
 import asyncio
+import fcntl
 import json
 import logging
+import os
 import re
 import secrets
 import shlex
@@ -74,30 +76,61 @@ def _strings(value: Any, _depth: int = 0) -> list[str]:
 # ── 1. DENY ──────────────────────────────────────────────────────────────────
 
 
-def deny_policy(event: Any) -> dict[str, Any] | None:
-    """DENY credentials access, sudo, rm -rf, git push, gh pr merge/create/close.
+DEFAULT_CREDENTIALS_PATH = "/home/cole/projects/codemagic_api.txt"
 
-    Looks at every tool call: file tools are checked for the credentials path
-    in any argument; shell tools get the full command analysis. Returns None
-    (abstain) otherwise.
-    """
+
+def _is_credentials_file(word: str, credentials_path: str) -> bool:
+    """True if *word* resolves (symlinks followed) to the credentials file."""
     try:
+        for cand in {word, word.split("=", 1)[-1]}:
+            if not cand or len(cand) > 4096 or "\x00" in cand:
+                continue
+            if os.path.realpath(cand) == os.path.realpath(credentials_path):
+                return True
+            if os.path.exists(cand) and os.path.exists(credentials_path) and os.path.samefile(cand, credentials_path):
+                return True
+    except (OSError, ValueError):
+        return False
+    return False
+
+
+def make_deny_policy(credentials_path: str | None = None) -> Callable[[Any], dict[str, Any] | None]:
+    """Factory: the deny policy with a configurable credentials path."""
+    credentials_path = credentials_path or DEFAULT_CREDENTIALS_PATH
+
+    def deny(event: Any) -> dict[str, Any] | None:
+        """DENY credentials access, sudo, rm -rf, git push, gh pr merge/create/close.
+
+        File tools are checked for the credentials path in any argument (by
+        name, and by realpath/samefile so symlinks to it are caught); shell
+        tools get the full command analysis. Returns None (abstain) otherwise.
+        """
         call = _tool_call(event)
         if call is None:
             return None
         name, args = call
-        for text in _strings(args):
-            if sp.mentions_credentials(text):
+        strings = _strings(args)
+        for text in strings:
+            if sp.mentions_credentials(text) or _is_credentials_file(text, credentials_path):
                 return {"result": "DENY", "reason": f"{name}: touches the Codemagic credentials file"}
         command = _shell_command(name, args)
         if command is not None:
             reason = sp.deny_reason(command)
+            if reason is None:
+                try:
+                    words = [w for argv in sp.simple_commands(command) for w in argv]
+                except sp.Unparseable:
+                    words = []
+                if any(_is_credentials_file(w, credentials_path) for w in words):
+                    reason = "touches the Codemagic credentials file"
             if reason:
                 return {"result": "DENY", "reason": f"{name}: {reason}"}
-    except Exception:  # noqa: BLE001 — a crashing deny policy is DENY'd by the engine anyway
-        _log.exception("deny_policy failed")
-        raise
-    return None
+        return None
+
+    return deny
+
+
+deny_policy = make_deny_policy()
 
 
 # ── 2. ALLOW ─────────────────────────────────────────────────────────────────
@@ -125,7 +158,7 @@ _GH_READONLY = frozenset(
      ("release", "view"), ("workflow", "list"), ("workflow", "view")}
 )
 _GH_BAD_ARG = frozenset({"--web", "-w"})
-_TOOLCHAIN_PUB = frozenset({"get", "outdated", "deps", "upgrade"})
+_TOOLCHAIN_PUB = frozenset({"get"})  # upgrade/add/etc. must ASK
 _FLUTTER_SUBS = frozenset(
     {"analyze", "test", "build", "doctor", "devices", "clean", "format", "gen-l10n",
      "--version", "version", "--help", "-h", "help"}
@@ -236,6 +269,11 @@ _NEVER_JUDGE = (
 )
 
 
+_PUB_VERBS = frozenset(
+    {"pub", "upgrade", "downgrade", "add", "remove", "publish", "install", "global", "channel", "config"}
+)
+
+
 def judge_eligible(command: str) -> bool:
     """Deterministic pre-filter. The LLM is only consulted for plain,
     worktree-relative commands with no substitution, escapes, injection
@@ -253,6 +291,8 @@ def judge_eligible(command: str) -> bool:
     if not argvs:
         return False
     for argv in argvs:
+        if sp.head_name(argv) in ("flutter", "dart") and _PUB_VERBS.intersection(argv[1:]):
+            return False
         if sp.head_name(argv) in _NEVER_JUDGE or sp.SCRIPT_INTERPRETERS.match(sp.head_name(argv)):
             return False
         for tok in argv:
@@ -291,7 +331,9 @@ def parse_judge_verdict(text: str) -> str | None:
     return "ALLOW"
 
 
-async def judge_command(llm_client: Any, command: str, timeout_s: float = 20.0) -> str | None:
+async def judge_command(
+    llm_client: Any, command: str, timeout_s: float = 20.0, response_box: list[Any] | None = None
+) -> str | None:
     """Ask the LLM judge. Returns "ALLOW" or None; never raises, never DENYs."""
     try:
         nonce = "data_" + secrets.token_hex(8)
@@ -304,32 +346,119 @@ async def judge_command(llm_client: Any, command: str, timeout_s: float = 20.0) 
             ),
             timeout=timeout_s,
         )
+        if response_box is not None:
+            response_box.append(response)
         return parse_judge_verdict(_response_text(response))
     except Exception as exc:  # noqa: BLE001 — errors and timeouts mean "no opinion"
         _log.warning("shell judge failed; abstaining: %r", exc)
         return None
 
 
+DEFAULT_LEDGER_PATH = os.path.expanduser("~/.local/state/tigerhub-omnigent/judge-ledger.json")
+
+
+class _Ledger:
+    """Durable per-conversation judge call count and spend (USD).
+
+    omnigent withholds a policy's ``state_updates`` when the policy's result
+    is ASK, so ``session_state`` cannot record a judge call that ends in
+    UNSURE/error. The ledger is therefore a small JSON file, updated under a
+    file lock and fsync'd BEFORE the judge is called. Any I/O or parse failure
+    refuses the call (fail closed).
+    """
+
+    def __init__(self, path: str) -> None:
+        self.path = path
+
+    def _locked(self, fn: Callable[[dict[str, Any]], Any]) -> Any:
+        os.makedirs(os.path.dirname(self.path) or ".", exist_ok=True)
+        with open(self.path + ".lock", "a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            try:
+                with open(self.path) as fh:
+                    data = json.load(fh)
+            except FileNotFoundError:
+                data = {}
+            if not isinstance(data, dict):
+                raise ValueError("ledger corrupt")
+            result = fn(data)
+            tmp = self.path + ".tmp"
+            with open(tmp, "w") as fh:
+                json.dump(data, fh)
+                fh.flush()
+                os.fsync(fh.fileno())
+            os.replace(tmp, self.path)
+            return result
+
+    def reserve(self, convo: str, max_calls: int, cap_usd: float, reserve_usd: float, floor_calls: int) -> int | None:
+        """Atomically refuse or (count += 1, spend += reserve). Returns the new count, or None if refused."""
+
+        def op(data: dict[str, Any]) -> int | None:
+            rec = data.get(convo)
+            rec = rec if isinstance(rec, dict) else {}
+            calls = max(int(rec.get("calls", 0)), floor_calls)
+            spent = float(rec.get("spent_usd", 0.0))
+            if calls >= max_calls or spent + reserve_usd > cap_usd:
+                return None
+            data[convo] = {"calls": calls + 1, "spent_usd": spent + reserve_usd}
+            return calls + 1
+
+        try:
+            return self._locked(op)
+        except (OSError, ValueError, TypeError):
+            _log.warning("judge ledger unavailable; refusing judge call", exc_info=True)
+            return None
+
+    def settle(self, convo: str, reserved_usd: float, actual_usd: float) -> None:
+        def op(data: dict[str, Any]) -> None:
+            rec = data.get(convo)
+            if isinstance(rec, dict):
+                rec["spent_usd"] = max(0.0, float(rec.get("spent_usd", 0.0)) - reserved_usd + actual_usd)
+
+        try:
+            self._locked(op)
+        except (OSError, ValueError, TypeError):
+            _log.warning("judge ledger settle failed", exc_info=True)
+
+
+def _actual_cost(response: Any, reserved: float, in_rate: float | None, out_rate: float | None) -> float:
+    """Cost of one call from ``response.usage`` and per-million-token rates.
+
+    Unknown (no usage or no rates) -> the reservation: never under-record.
+    """
+    usage = getattr(response, "usage", None)
+    tin, tout = getattr(usage, "input_tokens", None), getattr(usage, "output_tokens", None)
+    if in_rate is None or out_rate is None or not isinstance(tin, int) or not isinstance(tout, int):
+        return reserved
+    return tin * in_rate / 1e6 + tout * out_rate / 1e6
+
+
 def make_judge_policy(
     max_judge_calls: int = 20,
     judge_cost_cap_usd: float = 0.50,
     judge_timeout_s: float = 20.0,
+    max_call_cost_usd: float = 0.02,
+    ledger_path: str | None = None,
+    input_usd_per_mtok: float | None = None,
+    output_usd_per_mtok: float | None = None,
 ) -> Callable[[Any], Any]:
     """Factory: the LLM-judge policy with its call limit and cost cap.
 
-    * ``max_judge_calls`` — hard limit on judge LLM calls per conversation.
-      Counted in-process (a call that ends in ASK has its ``state_updates``
-      withheld by the engine, so ``session_state`` alone cannot enforce it)
-      and mirrored into ``session_state`` so it survives a server restart.
-    * ``judge_cost_cap_usd`` — the judge stops being consulted once the
-      session's cumulative ``context.usage.total_cost_usd`` reaches this.
+    * ``max_judge_calls`` — limit per conversation. The counter is incremented
+      and persisted (ledger file, also mirrored to ``session_state`` on ALLOW)
+      BEFORE the call, and counts ALLOW, UNSURE, error and timeout alike.
+    * ``judge_cost_cap_usd`` — cap on cumulative judge spend per conversation.
+      ``max_call_cost_usd`` (worst case for one call) is reserved before the
+      call; if recorded + reservation > cap the judge is skipped (so the gate
+      ASKs). Afterwards the reservation is replaced by the actual cost computed
+      from ``response.usage`` and the per-Mtok rates, or kept as-is if those
+      are unknown.
 
     Returns ``{"result": "ALLOW"}`` (with a state update) or None. Never DENY.
     """
-    if max_judge_calls < 0 or judge_cost_cap_usd < 0 or judge_timeout_s <= 0:
+    if max_judge_calls < 0 or judge_cost_cap_usd < 0 or max_call_cost_usd < 0 or judge_timeout_s <= 0:
         raise ValueError("limits must be non-negative and timeout positive")
-    counts: dict[str, int] = {}
-    lock = threading.Lock()
+    ledger = _Ledger(ledger_path or DEFAULT_LEDGER_PATH)
 
     async def judge(event: Any) -> dict[str, Any] | None:
         try:
@@ -340,25 +469,24 @@ def make_judge_policy(
             llm_client = event.get("llm_client")
             if llm_client is None:
                 return None
-            context = event.get("context") or {}
-            usage = context.get("usage") or {}
-            cost = usage.get("total_cost_usd", 0.0)
-            if not isinstance(cost, (int, float)) or cost >= judge_cost_cap_usd:
+            convo = str((event.get("context") or {}).get("conversation_id") or "?")
+            persisted = (event.get("session_state") or {}).get(JUDGE_CALLS_KEY, 0)
+            floor = persisted if isinstance(persisted, int) and persisted >= 0 else 0
+            count = ledger.reserve(convo, max_judge_calls, judge_cost_cap_usd, max_call_cost_usd, floor)
+            if count is None:
                 return None
-            convo = str(context.get("conversation_id") or "?")
-            state = event.get("session_state") or {}
-            persisted = state.get(JUDGE_CALLS_KEY, 0)
-            persisted = persisted if isinstance(persisted, int) and persisted >= 0 else 0
-            with lock:
-                used = max(counts.get(convo, 0), persisted)
-                if used >= max_judge_calls:
-                    return None
-                counts[convo] = used + 1
-            if await judge_command(llm_client, command, judge_timeout_s) != "ALLOW":
+            # Past this point the call is counted and its worst-case cost reserved.
+            response_box: list[Any] = []
+            verdict = await judge_command(llm_client, command, judge_timeout_s, response_box)
+            actual = _actual_cost(
+                response_box[0] if response_box else None, max_call_cost_usd, input_usd_per_mtok, output_usd_per_mtok
+            )
+            ledger.settle(convo, max_call_cost_usd, actual)
+            if verdict != "ALLOW":
                 return None
             return {
                 "result": "ALLOW",
-                "state_updates": [{"key": JUDGE_CALLS_KEY, "action": "set", "value": used + 1}],
+                "state_updates": [{"key": JUDGE_CALLS_KEY, "action": "set", "value": count}],
             }
         except Exception as exc:  # noqa: BLE001
             _log.warning("judge policy failed; abstaining: %r", exc)
@@ -374,6 +502,11 @@ def make_gate(
     max_judge_calls: int = 20,
     judge_cost_cap_usd: float = 0.50,
     judge_timeout_s: float = 20.0,
+    max_call_cost_usd: float = 0.02,
+    ledger_path: str | None = None,
+    input_usd_per_mtok: float | None = None,
+    output_usd_per_mtok: float | None = None,
+    credentials_path: str | None = None,
 ) -> Callable[[Any], Any]:
     """Factory: DENY list -> allow list -> LLM judge -> explicit ASK.
 
@@ -383,13 +516,17 @@ def make_gate(
     also prompt). Every shell command that is neither denied, allow-listed nor
     cleanly judged ALLOW gets an explicit ASK.
     """
-    judge = make_judge_policy(max_judge_calls, judge_cost_cap_usd, judge_timeout_s)
+    judge = make_judge_policy(
+        max_judge_calls, judge_cost_cap_usd, judge_timeout_s, max_call_cost_usd,
+        ledger_path, input_usd_per_mtok, output_usd_per_mtok,
+    )
+    deny = make_deny_policy(credentials_path)
 
     async def gate(event: Any) -> dict[str, Any] | None:
         call = _tool_call(event)
         if call is None:
             return None
-        denied = deny_policy(event)
+        denied = deny(event)
         if denied is not None:
             return denied
         command = _shell_command(*call)
