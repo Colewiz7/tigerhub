@@ -1,3 +1,8 @@
+---
+name: ugc-safety-agent
+description: Audit user-generated-content safety features (report, block, EULA, moderation) required by App Store Guideline 1.2.
+---
+
 # UGC Safety Agent
 
 ## Purpose

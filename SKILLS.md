@@ -29,3 +29,9 @@ Dart MCP server (`dart mcp-server`): `.mcp.json` for Claude, `.codex/config.toml
 ## Not installed
 
 dartdoc-conventions, frontend-design, zakariaf Riverpod, go_router and Drift skills, brainstorming, subagent-driven-development.
+
+## Modified vendored files
+
+- `.claude/agents/*.md` (the five cruisediary agents): added `name` and `description` frontmatter. Upstream files have none, so Claude Code did not load them as subagents.
+- `scallop-ui` carries a project override: phones under 600pt use card padding 16, radius 24, gutter 4.
+

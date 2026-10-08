@@ -1,3 +1,8 @@
+---
+name: appstore-full-audit
+description: Pre-submission App Store rejection-risk audit of the iOS app, running all review checks in one pass. Use before a TestFlight or App Store submission.
+---
+
 # App Store Full Audit Agent
 
 ## Purpose

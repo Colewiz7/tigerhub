@@ -1,3 +1,8 @@
+---
+name: permission-audit-agent
+description: Audit iOS permission usage descriptions, request timing and scope for App Store rejection risk.
+---
+
 # Permission Audit Agent
 
 ## Purpose

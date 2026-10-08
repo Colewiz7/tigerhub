@@ -1,3 +1,8 @@
+---
+name: ipad-layout-agent
+description: Audit iPad layout, safe area, Dynamic Type and orientation issues that cause App Store rejection.
+---
+
 # iPad Layout Agent
 
 ## Purpose

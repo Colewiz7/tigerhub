@@ -1,6 +1,6 @@
 ---
 name: scallop-ui
-description: Scallop UI style (seeded Material 3, scalloped badge). Use when writing or reviewing UI in Scallop style. The spec overrides Material 3 defaults and any third-party design skill.
+description: Use whenever writing or reviewing UI in TigerHub or any Scallop-styled app (Flutter, Svelte, CSS): screens, widgets, cards, theming, colours, spacing. The spec overrides Material 3 defaults and any third-party design skill.
 ---
 
 # scallop-ui
@@ -13,6 +13,9 @@ explicit user instruction > Tried and Rejected > Do's and Don'ts > YAML tokens >
 - Tokens are normative. Never invent a hex, radius, duration or font; derive from the nearest token and flag it.
 - Colour comes from the engine: pick a seed, run `scripts/scallop-palette.mjs`, ship its output. Never hand-edit a role.
 - Reference roles, never values. When unsure, choose the quieter option.
+
+## Project overrides
+- TigerHub phones under 600pt use responsive tokens: card padding 16, radius 24, gutter 4 (via the `Insets` token). This is the owner-approved Phase 2 A+B decision (tigerhub docs/backlog.md) and wins over the spec's 26 / 30 / 10 there. At 600pt and above the spec values stand. The radius still obeys "no radius <= 8".
 
 ## Do
 - One seed (chroma >= 5), engine renders both modes; read every warning.

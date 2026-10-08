@@ -1,3 +1,8 @@
+---
+name: privacy-audit-agent
+description: Audit privacy policy, PrivacyInfo.xcprivacy, ATT, account deletion and data minimization for App Store rejection risk.
+---
+
 # Privacy Audit Agent
 
 ## Purpose
