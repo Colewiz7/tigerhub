@@ -50,9 +50,13 @@ and fsync'd. The judge returns an explicit **ASK** (never DENY) whenever this ma
   call, including from a fresh process after a restart: (1) in memory; (2) a `_tainted` mark in the ledger, written
   under the same flock as reserve/settle; (3) if (2) cannot be written, a separate `<ledger>.tainted` sentinel file,
   created O_EXCL, mode 0600, fsync'd along with its directory. Before every judge call the ledger is rewritten under
-  the lock (so it must be writable) and both markers are checked first. If even the sentinel cannot be created, only
-  (1) remains and a restart loses it; that residual risk is unavoidable without a working disk. To reset after a
-  taint, delete the ledger's `_tainted` mark and the `.tainted` file by hand.
+  the lock (so it must be writable) and both markers are checked first, then checked again after taking the lock.
+  The sentinel is created while `taint()` still holds the flock, so a process that already passed the pre-lock check
+  cannot reserve a call from a ledger that is being tainted. If even the sentinel cannot be created, only (1) remains
+  and a restart loses it; that residual risk is unavoidable without a working disk. To reset after a taint, delete
+  BOTH disk markers (the ledger's `_tainted` mark and the `<ledger>.tainted` file) by hand AND restart the process:
+  the in-memory taint flag stays set until then. An existing ledger directory or lock file owned by the current user
+  is tightened to 0700/0600 on first use, so do not point `ledger_path` into a shared directory.
   The ledger is parsed with NaN/Infinity rejected and every record validated (types, finite, non-negative, exact
   fields); anything invalid is treated as corrupt and ASKs.
 * **`cd`/`pushd`/`popd`** anywhere in a command (chains, `bash -c`, wrappers) => ASK, judge not consulted.

@@ -25,6 +25,7 @@ import os
 import re
 import secrets
 import shlex
+import stat
 import threading
 from collections.abc import Iterator
 from typing import Any, Callable
@@ -489,11 +490,14 @@ class _Ledger:
     @contextlib.contextmanager
     def _flock(self) -> Iterator[None]:
         directory = os.path.dirname(self.path) or "."
-        created = not os.path.isdir(directory)
         os.makedirs(directory, mode=0o700, exist_ok=True)
-        if created:
-            os.chmod(directory, 0o700)
+        st = os.stat(directory)
+        if st.st_uid == os.getuid() and stat.S_IMODE(st.st_mode) != 0o700:
+            os.chmod(directory, 0o700)  # new, or an existing directory of ours that was looser
         lock_fd = os.open(self.path + ".lock", os.O_RDWR | os.O_CREAT, 0o600)
+        lst = os.fstat(lock_fd)
+        if lst.st_uid == os.getuid() and stat.S_IMODE(lst.st_mode) != 0o600:
+            os.fchmod(lock_fd, 0o600)
         with os.fdopen(lock_fd, "w") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             yield
@@ -513,6 +517,10 @@ class _Ledger:
             raise LedgerError("ledger tainted")
         try:
             with self._flock():
+                # Re-check under the lock: another process may have tainted the
+                # ledger (mark or fallback sentinel) after the pre-lock check above.
+                if self.is_tainted():
+                    raise LedgerError("ledger tainted")
                 data = self._read()
                 if data.get(TAINT_KEY):
                     _TAINTED.add(self._key())
@@ -581,26 +589,37 @@ class _Ledger:
         except OSError:
             pass  # best effort: the file itself is already durable
 
-    def taint(self) -> None:
-        """Make every later call ASK, now and after a restart.
-
-        Always sets the in-process flag. Then marks the ledger itself (under the
-        same flock as reserve/settle); if that fails, falls back to the separate
-        sentinel file. If even that fails the in-process flag still holds.
-        """
-        _TAINTED.add(self._key())
-        try:
-            with self._flock():
-                data = self._read()
-                data[TAINT_KEY] = True
-                self._write(data)
-            return
-        except Exception:  # noqa: BLE001 — fall back to the sentinel
-            _log.warning("could not write taint mark to judge ledger; using sentinel", exc_info=True)
+    def _try_sentinel(self) -> None:
         try:
             self._create_sentinel()
         except Exception:  # noqa: BLE001 — the in-process flag is already set
             _log.error("could not create judge taint sentinel; taint is in-process only", exc_info=True)
+
+    def taint(self) -> None:
+        """Make every later call ASK, now and after a restart.
+
+        Always sets the in-process flag. Then marks the ledger itself, under the
+        same flock as reserve/settle. If that write fails, the fallback sentinel
+        is created while STILL HOLDING the flock, so no other process can take
+        the lock, see an unmarked ledger and reserve a call in between. If the
+        lock itself cannot be taken the sentinel is created without it. If even
+        that fails the in-process flag still holds.
+        """
+        _TAINTED.add(self._key())
+        try:
+            with self._flock():
+                try:
+                    data = self._read()
+                    data[TAINT_KEY] = True
+                    self._write(data)
+                    return
+                except Exception:  # noqa: BLE001 — fall back to the sentinel, lock still held
+                    _log.warning("could not write taint mark to judge ledger; using sentinel", exc_info=True)
+                self._try_sentinel()
+            return
+        except Exception:  # noqa: BLE001 — could not even take the lock
+            _log.warning("could not lock judge ledger to taint it; using sentinel", exc_info=True)
+        self._try_sentinel()
 
 
 def _ask(reason: str) -> dict[str, Any]:

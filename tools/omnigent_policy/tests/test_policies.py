@@ -13,6 +13,7 @@ import shutil
 import stat
 import tempfile
 import threading
+import time
 import unittest
 from unittest import mock
 from types import SimpleNamespace
@@ -84,6 +85,17 @@ class MockLLM:
         if self.exc:
             raise self.exc
         return SimpleNamespace(output_text=self.text)
+
+
+_RealLedger = P._Ledger
+
+
+class OtherProcessLedger(_RealLedger):
+    """A ledger handle that does not share this process's in-memory taint flag,
+    like a second server process using the same files."""
+
+    def _key(self):
+        return "other-process:" + self.path
 
 
 def _taint_worker(path):
@@ -537,6 +549,79 @@ class JudgeTests(LedgerMixin, unittest.TestCase):
         t.join(5)
         self.assertTrue(done.is_set())
         self.assertTrue(read_ledger(self.ledger)[P.TAINT_KEY])
+
+    def _race_taint_against(self, op_for_b):
+        """Taint (ledger write fails, sentinel is the fallback) while B, which has already
+        passed its pre-lock check, is waiting for the flock. Returns (B's outcome, T's thread)."""
+        path = self.ledger
+        _RealLedger(path).reserve("c1", 20, 1.0, 0.001, 0)  # a record for settle to find
+        entered, b_started = threading.Event(), threading.Event()
+        holder = {}
+        orig_write, orig_sentinel = _RealLedger._write, _RealLedger._create_sentinel
+
+        def write(self, data):
+            if threading.current_thread() is holder["t"]:
+                entered.set()
+                b_started.wait(5)
+                time.sleep(0.3)  # B passes its pre-lock check and blocks on the flock meanwhile
+                raise OSError("ledger write fails")
+            return orig_write(self, data)
+
+        def sentinel(self):
+            if threading.current_thread() is holder["t"]:
+                time.sleep(0.5)  # widen the window between "ledger write failed" and "sentinel exists"
+            return orig_sentinel(self)
+
+        outcome = {}
+
+        def b():
+            entered.wait(5)
+            b_started.set()
+            outcome["b"] = op_for_b()
+
+        with mock.patch.object(_RealLedger, "_write", write), mock.patch.object(_RealLedger, "_create_sentinel", sentinel):
+            holder["t"] = threading.Thread(target=lambda: _RealLedger(path).taint())
+            tb = threading.Thread(target=b)
+            holder["t"].start()
+            tb.start()
+            holder["t"].join(10)
+            tb.join(10)
+        return outcome["b"]
+
+    def test_reserve_that_passed_the_precheck_cannot_slip_past_a_fallback_taint(self):
+        llm = MockLLM(ALLOW_JSON)
+
+        def b():
+            with mock.patch.object(P, "_Ledger", OtherProcessLedger):
+                judge = mj()
+            return run(judge(ev("ls lib", llm=llm)))
+
+        out = self._race_taint_against(b)
+        self.assertEqual(out["result"], "ASK")
+        self.assertEqual(llm.calls, [])  # the judge was never called
+        self.assertTrue(os.path.exists(self.ledger + ".tainted"))
+
+    def test_settle_that_passed_the_precheck_cannot_slip_past_a_fallback_taint(self):
+        def b():
+            try:
+                OtherProcessLedger(self.ledger).settle("c1", 0.001, 0.0005)
+            except P.LedgerError as exc:
+                return exc
+
+        self.assertIsInstance(self._race_taint_against(b), P.LedgerError)
+
+    def test_existing_directory_and_lock_file_are_tightened(self):
+        d = os.path.join(self.tmp, "loose")
+        os.mkdir(d, 0o755)
+        os.chmod(d, 0o755)
+        path = os.path.join(d, "ledger.json")
+        fd = os.open(path + ".lock", os.O_CREAT | os.O_WRONLY, 0o644)
+        os.close(fd)
+        os.chmod(path + ".lock", 0o644)
+        run(mj(ledger_path=path)(ev("ls lib", llm=MockLLM(ALLOW_JSON))))
+        self.assertEqual(stat.S_IMODE(os.stat(d).st_mode), 0o700)
+        self.assertEqual(stat.S_IMODE(os.stat(path + ".lock").st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
 
     def _assert_clean_taint(self):
         self.assertTrue(read_ledger(self.ledger)[P.TAINT_KEY])
