@@ -2,7 +2,7 @@
 
 Agent skills for this repo. C = Claude Code (`.claude/skills`), X = Codex (`.agents/skills`). Shared skills have one real copy in `.agents/skills` and a symlink in `.claude/skills`. Reviewed before install: SKILL.md and every script read, no network calls or credential access found (skill-creator style tooling not used here).
 
-cole-code-style (global) wins over any skill here on comments and formatting. scallop-ui wins over material-3 and other design skills.
+cole-code-style (global) wins over any skill here on comments and formatting. scallop-ui wins over material-3 and other design skills. carrel-ui (the global default) and folio-ui are not used here.
 
 | Skill | Agent | Source | Commit | License |
 |---|---|---|---|---|
