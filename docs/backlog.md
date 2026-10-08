@@ -18,21 +18,61 @@ Order matters; later items assume earlier ones.
    own PR, before any submission. The owner is sending RIT the permission
    email and brand project request answers; record the send date and any reply
    in docs/notes.md section 12 when told.
-4. Privacy policy and support pages (GitHub Pages or colewiz.dev). Required by
-   App Store Connect even for Data Not Collected.
+4. Privacy policy and support pages, hosted on GitHub Pages from this repo
+   (owner decision 2026-10-08; privacy.colewiz.dev CNAME possible later). Drafts
+   are not written yet. Do not publish or enable Pages until the owner approves the
+   text. Required by App Store Connect even for Data Not Collected.
 5. Remaining device zone leaks: `api_models.dart` falls back to
    `DateTime.now()` for a missing open, close or start time. Replace with an
    explicit "unknown" rather than inventing a time.
 6. Pull to refresh outside the Today tab, adaptive refresh indicator on iOS.
-7. Phase 2: phone dashboard rework, in this order, each its own PR, none
-   blocking the first TestFlight build. Verify the audit claims first (done
-   2026-10-08, see notes). A phone sizes under 600pt by card type; B responsive
-   phone tokens (padding 16, radius 24, gutter 4, STYLE.md updated); C "Right
-   now" strip; D Customize as a top icon plus a bottom sheet editor; E reorder
-   only in edit mode (`enableDraggable`); F new-install defaults only.
+7. Phase 2: phone dashboard rework. Owner-approved order (2026-10-08), each its
+   own PR, none blocking the first TestFlight build. Audit claims verified
+   2026-10-08 (see notes).
+   1. **E** reorder only in edit mode (`enableDraggable`), hide the drag
+      handle otherwise. Keep move earlier/later buttons (also as custom
+      semantics actions, announcing the new position).
+   2. **A+B** phone density, one PR. Under 600pt, size by card type, as
+      minimums that grow with content and text scale (compact ~170, standard
+      ~240-360, wide follows standard); no fixed maximum on phones. BoundedList
+      bounds by available height, reserves room for "+N more" first, shows
+      1-3 rows, and "+N more" is a 44pt button with a spoken count. Responsive
+      tokens: padding 16, radius 24, gutter 4 (gutter must use the `Insets`
+      token, not the literal 6). Radius 24 vs 30 is a responsive token;
+      **update design/STYLE.md in the same PR**. Desktop/tablet logic above
+      600pt unchanged. Use `LayoutBuilder` on the dashboard width. Check the
+      600-819pt band.
+      **First step:** test variable-height children in
+      `flutter_reorderable_grid_view` (5.7.0), including a text-size change at
+      runtime. If it fails, use a plain `Column` outside edit mode and the
+      reorderable grid only in edit mode.
+   3. **D** Customize as a small top icon (44x44 hit area, labelled) and a
+      per-card editor as a scrollable, safe-area-aware bottom sheet with a
+      labelled Done button; focus returns to the invoking control. Add a
+      visible "Hidden cards" / "Add cards" entry in Customize so the mailing
+      address stays discoverable. Update docs/modular-dashboard-spec.md.
+   4. **C1** "Right now" data model: per-item freshness, empty and offline
+      states, "last known" wording when stale. **C2** the UI: one container
+      with a header, one merged semantics node per item, no live regions,
+      absolute "updated at" time, vertical stack at large text, drop items
+      with nothing useful, one summary row when all offline.
+   5. **F** last. New-install defaults only (compact dining, compact next
+      event, chefs; mailing address hidden). Needs an **explicit
+      layout-initialization marker** (e.g. `layoutVersion`), not "no saved
+      layout", plus a migration test: existing users keep their layout, fresh
+      installs get the new defaults. The legacy migration tests in
+      services/dashboard.dart must still pass.
+   Cross-cutting for every PR in this list:
+   - Reduce Motion: read `AccessibilityFeatures.reduceMotion` directly;
+     `MediaQuery.disableAnimations` is not set by iOS Reduce Motion.
+   - No `TextScaler` clamping; fix layouts instead.
+   - Update tests that hardcode height 560 (seven files). Add goldens at 320,
+     375, 430, 599, 600 and 820 wide, text scale 1.0 and 3.0, edit mode, empty
+     and stale-cache states.
+   - Linux and Android must not regress; offline-first behavior unchanged.
 8. After the first green Codemagic build, pin Xcode and Flutter to the exact
    versions that worked and record them in codemagic.yaml and ci.yml.
-9. Privacy policy and support pages, hosting to be chosen by the owner.
+9. (merged into item 4)
 10. Phase 2 UX and accessibility pass; Phase 3 notifications, calendar export,
    deep links, then the widget branch.
 
