@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/data/campus_time.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/widgets/campus_event_mapper.dart';
 
@@ -38,12 +39,13 @@ CampusEvent event(String uid, String? location, DateTime startsAt) =>
 
 void main() {
   final day = DateTime(2026, 8, 30);
+  final dayStart = CampusTime.wall(2026, 8, 30);
 
   test('exact building abbreviations map and same-building events cluster', () {
     final result = mapCampusEvents(
       [
-        event('1', 'GOL-1400', day.add(const Duration(hours: 9))),
-        event('2', 'GOL 2400', day.add(const Duration(hours: 10))),
+        event('1', 'GOL-1400', dayStart.add(const Duration(hours: 9))),
+        event('2', 'GOL 2400', dayStart.add(const Duration(hours: 10))),
       ],
       features,
       day: day,
@@ -61,9 +63,9 @@ void main() {
     () {
       final result = mapCampusEvents(
         [
-          event('1', 'GOLD room', day.add(const Duration(hours: 9))),
-          event('2', 'Unknown Hall', day.add(const Duration(hours: 10))),
-          event('3', null, day.add(const Duration(hours: 11))),
+          event('1', 'GOLD room', dayStart.add(const Duration(hours: 9))),
+          event('2', 'Unknown Hall', dayStart.add(const Duration(hours: 10))),
+          event('3', null, dayStart.add(const Duration(hours: 11))),
         ],
         features,
         day: day,
@@ -76,7 +78,7 @@ void main() {
 
   test('a location naming two buildings is ambiguous and is not pinned', () {
     final result = mapCampusEvents(
-      [event('1', 'GOL / SHED', day.add(const Duration(hours: 9)))],
+      [event('1', 'GOL / SHED', dayStart.add(const Duration(hours: 9)))],
       features,
       day: day,
     );
@@ -87,7 +89,7 @@ void main() {
 
   test('events outside the selected day do not affect its counts', () {
     final result = mapCampusEvents(
-      [event('1', 'GOL', day.add(const Duration(days: 1)))],
+      [event('1', 'GOL', dayStart.add(const Duration(days: 1)))],
       features,
       day: day,
     );

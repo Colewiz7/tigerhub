@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../data/campus_time.dart';
 import '../services/academic_dates.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
@@ -19,11 +20,16 @@ class AcademicDatesCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final dates = upcomingAcademicMilestones();
     final formatter = DateFormat('MMM d');
-    final today = DateTime.now();
-    final day = DateTime(today.year, today.month, today.day);
+    final today = CampusTime.wallDate();
+    // Whole calendar days, counted in UTC so a device DST change cannot make a
+    // 23 or 25 hour day round the count down by one.
     final daysAway = dates.isEmpty
         ? null
-        : dates.first.date.difference(day).inDays;
+        : DateTime.utc(
+            dates.first.date.year,
+            dates.first.date.month,
+            dates.first.date.day,
+          ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
 
     return CardShell(
       glyph: GlyphKind.events,
