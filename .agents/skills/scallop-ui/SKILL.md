@@ -54,4 +54,4 @@ explicit user instruction > Tried and Rejected > Do's and Don'ts > YAML tokens >
 | Hardcoded row caps, fixed row heights | Measure the box, scale budget |
 | Testing at desktop size with no data | Phone width, real data, 1.0 and 2.0 text |
 
-Palette script: scripts/scallop-palette.mjs (see scripts/README.md).
+Palette script: scripts/scallop-palette.mjs (rebuilt from the spec, see scripts/README.md).

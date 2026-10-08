@@ -1,1 +1,2 @@
-scallop-palette.mjs was not found on this machine when this skill was built. Drop it here. Usage: node scallop-palette.mjs "#RRGGBB"
+Rebuilt from the appendix of references/spec.md (the original script was lost). Run `npm i` once here, then `node scallop-palette.mjs "#RRGGBB" [--write [dir]]`.
+Checked against the spec: every dark role for seed #F76902 matches reference-dark exactly. The spec's quoted dark CVD numbers (protan 17.1, deutan 12.6) are not reproduced exactly, the light ones are, so the CVD simulation may differ slightly from the original.
