@@ -15,15 +15,25 @@ Order matters; later items assume earlier ones.
 2. Owner go-ahead, then Codemagic: signing check, unsigned build, TestFlight.
    Install from TestFlight on the owner's iPhone 17 Pro Max.
 3. Per source terms, robots and official feed audit (guideline 5.2.2), as its
-   own PR, before any submission. Draft the email asking RIT for written
-   permission or a no objection.
+   own PR, before any submission. The owner is sending RIT the permission
+   email and brand project request answers; record the send date and any reply
+   in docs/notes.md section 12 when told.
 4. Privacy policy and support pages (GitHub Pages or colewiz.dev). Required by
    App Store Connect even for Data Not Collected.
 5. Remaining device zone leaks: `api_models.dart` falls back to
    `DateTime.now()` for a missing open, close or start time. Replace with an
    explicit "unknown" rather than inventing a time.
 6. Pull to refresh outside the Today tab, adaptive refresh indicator on iOS.
-7. Phase 2 UX and accessibility pass; Phase 3 notifications, calendar export,
+7. Phase 2: phone dashboard rework, in this order, each its own PR, none
+   blocking the first TestFlight build. Verify the audit claims first (done
+   2026-10-08, see notes). A phone sizes under 600pt by card type; B responsive
+   phone tokens (padding 16, radius 24, gutter 4, STYLE.md updated); C "Right
+   now" strip; D Customize as a top icon plus a bottom sheet editor; E reorder
+   only in edit mode (`enableDraggable`); F new-install defaults only.
+8. After the first green Codemagic build, pin Xcode and Flutter to the exact
+   versions that worked and record them in codemagic.yaml and ci.yml.
+9. Privacy policy and support pages, hosting to be chosen by the owner.
+10. Phase 2 UX and accessibility pass; Phase 3 notifications, calendar export,
    deep links, then the widget branch.
 
 ---
