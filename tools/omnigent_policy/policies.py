@@ -19,6 +19,7 @@ import asyncio
 import fcntl
 import json
 import logging
+import math
 import os
 import re
 import secrets
@@ -282,7 +283,7 @@ def judge_eligible(command: str) -> bool:
         return False
     if re.search(r"\$|`|\\|<\(|>\(", command) or _INJECTION_MARKERS.search(command):
         return False
-    if sp.deny_reason(command) is not None:
+    if sp.deny_reason(command) is not None or has_chdir(command):
         return False
     try:
         argvs = list(sp.simple_commands(command))
@@ -331,8 +332,52 @@ def parse_judge_verdict(text: str) -> str | None:
     return "ALLOW"
 
 
+JUDGE_MAX_TOKENS = 100  # enforced on the request (`max_tokens`, omnigent's documented kwarg)
+_CHDIR_HEADS = frozenset({"cd", "pushd", "popd"})
+_CHDIR_TEXT = re.compile(r"(?<![\w.-])(cd|pushd|popd)(?![\w.-])")
+
+
+def has_chdir(command: str) -> bool:
+    """True if *command* contains cd/pushd/popd anywhere (chains, bash -c, wrappers)."""
+    if _CHDIR_TEXT.search(command):
+        return True
+    try:
+        return any(sp.head_name(argv) in _CHDIR_HEADS for argv in sp.simple_commands(command))
+    except sp.Unparseable:
+        return False
+
+
+def judge_input_bound(command: str) -> int:
+    """Upper bound on the judge request's input tokens.
+
+    Assumes a tokenizer never emits more than one token per UTF-8 byte, over the
+    exact instructions + fenced command + response schema, plus 256 of slack for
+    message framing. Commands are capped at MAX_JUDGE_COMMAND_CHARS first.
+    """
+    dummy = "data_" + "0" * 16  # same length as a real nonce
+    text = (
+        JUDGE_INSTRUCTIONS.replace("NONCE", dummy)
+        + f"<{dummy}>\n{command}\n</{dummy}>"
+        + json.dumps(_JUDGE_TEXT_FORMAT)
+    )
+    return len(text.encode("utf-8")) + 256
+
+
+def _valid_rate(rate: Any) -> bool:
+    return isinstance(rate, (int, float)) and not isinstance(rate, bool) and math.isfinite(rate) and rate >= 0
+
+
+def judge_worst_case_cost(command: str, max_tokens: int, in_usd_per_mtok: float, out_usd_per_mtok: float) -> float:
+    """Worst-case USD cost of one judge call: max input tokens + enforced max_tokens, at the given prices."""
+    return judge_input_bound(command) * in_usd_per_mtok / 1e6 + max_tokens * out_usd_per_mtok / 1e6
+
+
 async def judge_command(
-    llm_client: Any, command: str, timeout_s: float = 20.0, response_box: list[Any] | None = None
+    llm_client: Any,
+    command: str,
+    timeout_s: float = 20.0,
+    response_box: list[Any] | None = None,
+    max_tokens: int = JUDGE_MAX_TOKENS,
 ) -> str | None:
     """Ask the LLM judge. Returns "ALLOW" or None; never raises, never DENYs."""
     try:
@@ -343,6 +388,7 @@ async def judge_command(
                 input=[{"role": "user", "content": [{"type": "input_text", "text": fenced}]}],
                 instructions=JUDGE_INSTRUCTIONS.replace("NONCE", nonce),
                 text=_JUDGE_TEXT_FORMAT,
+                max_tokens=max_tokens,
             ),
             timeout=timeout_s,
         )
@@ -355,6 +401,38 @@ async def judge_command(
 
 
 DEFAULT_LEDGER_PATH = os.path.expanduser("~/.local/state/tigerhub-omnigent/judge-ledger.json")
+TAINT_KEY = "_tainted"
+_TAINTED: set[str] = set()  # ledger paths tainted in this process (even if the file could not be marked)
+
+
+class LedgerError(Exception):
+    """The ledger is unreadable, invalid, unwritable or tainted: the judge must not run."""
+
+
+def _reject_constant(name: str) -> None:
+    raise ValueError(f"non-finite JSON number {name}")
+
+
+def _finite_nonneg(v: Any) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) and v >= 0
+
+
+def _validate_ledger(data: Any) -> None:
+    """Raise ValueError unless *data* is a well-formed ledger."""
+    if not isinstance(data, dict):
+        raise ValueError("ledger is not an object")
+    for key, rec in data.items():
+        if key == TAINT_KEY:
+            if not isinstance(rec, bool):
+                raise ValueError("bad taint flag")
+            continue
+        if not isinstance(key, str) or not isinstance(rec, dict) or set(rec) != {"calls", "spent_usd"}:
+            raise ValueError(f"bad record {key!r}")
+        calls = rec["calls"]
+        if not isinstance(calls, int) or isinstance(calls, bool) or calls < 0:
+            raise ValueError(f"bad calls in {key!r}")
+        if not _finite_nonneg(rec["spent_usd"]):
+            raise ValueError(f"bad spent_usd in {key!r}")
 
 
 class _Ledger:
@@ -362,126 +440,189 @@ class _Ledger:
 
     omnigent withholds a policy's ``state_updates`` when the policy's result
     is ASK, so ``session_state`` cannot record a judge call that ends in
-    UNSURE/error. The ledger is therefore a small JSON file, updated under a
-    file lock and fsync'd BEFORE the judge is called. Any I/O or parse failure
-    refuses the call (fail closed).
+    UNSURE/error. The ledger is therefore a small JSON file (mode 0600 in a
+    0700 directory), updated under a file lock and fsync'd BEFORE the judge is
+    called. Any I/O, parse or validation failure, or a taint, raises
+    :class:`LedgerError` so the caller ASKs.
     """
 
     def __init__(self, path: str) -> None:
         self.path = path
 
+    def _key(self) -> str:
+        return os.path.realpath(self.path)
+
+    def _write(self, data: dict[str, Any]) -> None:
+        tmp = self.path + ".tmp"
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w") as fh:
+            json.dump(data, fh, allow_nan=False)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, self.path)
+
     def _locked(self, fn: Callable[[dict[str, Any]], Any]) -> Any:
-        os.makedirs(os.path.dirname(self.path) or ".", exist_ok=True)
-        with open(self.path + ".lock", "a") as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
-            try:
-                with open(self.path) as fh:
-                    data = json.load(fh)
-            except FileNotFoundError:
-                data = {}
-            if not isinstance(data, dict):
-                raise ValueError("ledger corrupt")
-            result = fn(data)
-            tmp = self.path + ".tmp"
-            with open(tmp, "w") as fh:
-                json.dump(data, fh)
-                fh.flush()
-                os.fsync(fh.fileno())
-            os.replace(tmp, self.path)
-            return result
+        if self._key() in _TAINTED:
+            raise LedgerError("ledger tainted")
+        try:
+            directory = os.path.dirname(self.path) or "."
+            created = not os.path.isdir(directory)
+            os.makedirs(directory, mode=0o700, exist_ok=True)
+            if created:
+                os.chmod(directory, 0o700)
+            lock_fd = os.open(self.path + ".lock", os.O_RDWR | os.O_CREAT, 0o600)
+            with os.fdopen(lock_fd, "w") as lock:
+                fcntl.flock(lock, fcntl.LOCK_EX)
+                try:
+                    with open(self.path) as fh:
+                        data = json.load(fh, parse_constant=_reject_constant)
+                except FileNotFoundError:
+                    data = {}
+                _validate_ledger(data)
+                if data.get(TAINT_KEY):
+                    _TAINTED.add(self._key())
+                    raise LedgerError("ledger tainted")
+                result = fn(data)
+                self._write(data)
+                return result
+        except LedgerError:
+            raise
+        except (OSError, ValueError, TypeError, OverflowError) as exc:
+            raise LedgerError(f"ledger unusable: {exc!r}") from exc
 
     def reserve(self, convo: str, max_calls: int, cap_usd: float, reserve_usd: float, floor_calls: int) -> int | None:
-        """Atomically refuse or (count += 1, spend += reserve). Returns the new count, or None if refused."""
+        """Atomically (count += 1, spend += reserve_usd) or refuse.
+
+        Returns the new count, None if the call limit or cost cap forbids the call,
+        and raises :class:`LedgerError` if the ledger cannot be trusted.
+        """
 
         def op(data: dict[str, Any]) -> int | None:
-            rec = data.get(convo)
-            rec = rec if isinstance(rec, dict) else {}
-            calls = max(int(rec.get("calls", 0)), floor_calls)
-            spent = float(rec.get("spent_usd", 0.0))
+            rec = data.get(convo) or {"calls": 0, "spent_usd": 0.0}
+            calls = max(rec["calls"], floor_calls)
+            spent = float(rec["spent_usd"])
             if calls >= max_calls or spent + reserve_usd > cap_usd:
                 return None
             data[convo] = {"calls": calls + 1, "spent_usd": spent + reserve_usd}
             return calls + 1
 
-        try:
-            return self._locked(op)
-        except (OSError, ValueError, TypeError):
-            _log.warning("judge ledger unavailable; refusing judge call", exc_info=True)
-            return None
+        return self._locked(op)
 
     def settle(self, convo: str, reserved_usd: float, actual_usd: float) -> None:
+        """Replace the reservation with the actual cost. Raises LedgerError (and taints) on failure."""
+
         def op(data: dict[str, Any]) -> None:
             rec = data.get(convo)
-            if isinstance(rec, dict):
-                rec["spent_usd"] = max(0.0, float(rec.get("spent_usd", 0.0)) - reserved_usd + actual_usd)
+            if not isinstance(rec, dict):
+                raise LedgerError("reservation missing")
+            rec["spent_usd"] = max(0.0, float(rec["spent_usd"]) - reserved_usd + actual_usd)
+            if not math.isfinite(rec["spent_usd"]):
+                raise LedgerError("non-finite spend")
 
         try:
             self._locked(op)
-        except (OSError, ValueError, TypeError):
-            _log.warning("judge ledger settle failed", exc_info=True)
+        except LedgerError:
+            self.taint()
+            raise
+
+    def taint(self) -> None:
+        """Make every later call ASK: in-process flag always, plus a best-effort mark on disk."""
+        _TAINTED.add(self._key())
+        try:
+            try:
+                with open(self.path) as fh:
+                    data = json.load(fh, parse_constant=_reject_constant)
+                _validate_ledger(data)
+            except FileNotFoundError:
+                data = {}
+            data[TAINT_KEY] = True
+            self._write(data)
+        except Exception:  # noqa: BLE001 — the in-process flag is already set
+            _log.warning("could not write taint mark to judge ledger", exc_info=True)
 
 
-def _actual_cost(response: Any, reserved: float, in_rate: float | None, out_rate: float | None) -> float:
-    """Cost of one call from ``response.usage`` and per-million-token rates.
-
-    Unknown (no usage or no rates) -> the reservation: never under-record.
-    """
-    usage = getattr(response, "usage", None)
-    tin, tout = getattr(usage, "input_tokens", None), getattr(usage, "output_tokens", None)
-    if in_rate is None or out_rate is None or not isinstance(tin, int) or not isinstance(tout, int):
-        return reserved
-    return tin * in_rate / 1e6 + tout * out_rate / 1e6
+def _ask(reason: str) -> dict[str, Any]:
+    return {"result": "ASK", "reason": reason}
 
 
 def make_judge_policy(
     max_judge_calls: int = 20,
     judge_cost_cap_usd: float = 0.50,
     judge_timeout_s: float = 20.0,
-    max_call_cost_usd: float = 0.02,
     ledger_path: str | None = None,
     input_usd_per_mtok: float | None = None,
     output_usd_per_mtok: float | None = None,
+    judge_max_tokens: int = JUDGE_MAX_TOKENS,
 ) -> Callable[[Any], Any]:
     """Factory: the LLM-judge policy with its call limit and cost cap.
 
-    * ``max_judge_calls`` — limit per conversation. The counter is incremented
-      and persisted (ledger file, also mirrored to ``session_state`` on ALLOW)
-      BEFORE the call, and counts ALLOW, UNSURE, error and timeout alike.
-    * ``judge_cost_cap_usd`` — cap on cumulative judge spend per conversation.
-      ``max_call_cost_usd`` (worst case for one call) is reserved before the
-      call; if recorded + reservation > cap the judge is skipped (so the gate
-      ASKs). Afterwards the reservation is replaced by the actual cost computed
-      from ``response.usage`` and the per-Mtok rates, or kept as-is if those
-      are unknown.
+    Returns ``{"result": "ALLOW"}`` (with a state update) only for a clean ALLOW
+    verdict. Returns None when the command is not judge-eligible or the judge
+    says anything else. Returns an explicit ASK (never DENY) whenever the
+    budget machinery cannot vouch for a call: prices not configured, call limit
+    or cost cap reached, ledger unreadable/invalid/unwritable/tainted, a
+    ``cd``/``pushd`` in the command, or a response that broke the token bounds.
 
-    Returns ``{"result": "ALLOW"}`` (with a state update) or None. Never DENY.
+    * Cost: before each call the worst case is computed from the maximum input
+      tokens (:func:`judge_input_bound`) plus the enforced ``max_tokens`` request
+      parameter, times the configured per-Mtok prices, and reserved in the
+      ledger. If recorded + reservation > ``judge_cost_cap_usd`` the judge is
+      not called. Afterwards the reservation is replaced by the actual cost from
+      ``response.usage``; unknown usage keeps the FULL reservation. Usage above
+      the bounds (a provider ignoring ``max_tokens``) is recorded as reported,
+      taints the ledger and ASKs.
+    * Calls: ``max_judge_calls`` per conversation, incremented and persisted
+      (ledger file; mirrored to ``session_state`` on ALLOW) BEFORE the call and
+      counting every outcome.
     """
-    if max_judge_calls < 0 or judge_cost_cap_usd < 0 or max_call_cost_usd < 0 or judge_timeout_s <= 0:
-        raise ValueError("limits must be non-negative and timeout positive")
+    if max_judge_calls < 0 or judge_cost_cap_usd < 0 or judge_timeout_s <= 0 or judge_max_tokens <= 0:
+        raise ValueError("limits must be non-negative, timeout and max tokens positive")
     ledger = _Ledger(ledger_path or DEFAULT_LEDGER_PATH)
 
     async def judge(event: Any) -> dict[str, Any] | None:
         try:
             call = _tool_call(event)
             command = _shell_command(*call) if call else None
-            if command is None or not judge_eligible(command):
+            if command is None:
+                return None
+            if has_chdir(command):
+                return _ask("command changes directory (cd/pushd); not auto-judged")
+            if not judge_eligible(command):
                 return None
             llm_client = event.get("llm_client")
             if llm_client is None:
                 return None
+            if not (_valid_rate(input_usd_per_mtok) and _valid_rate(output_usd_per_mtok)):
+                return _ask("judge prices not configured; cannot bound judge cost")
+            assert input_usd_per_mtok is not None and output_usd_per_mtok is not None
+            in_bound = judge_input_bound(command)
+            reserve = judge_worst_case_cost(command, judge_max_tokens, input_usd_per_mtok, output_usd_per_mtok)
             convo = str((event.get("context") or {}).get("conversation_id") or "?")
             persisted = (event.get("session_state") or {}).get(JUDGE_CALLS_KEY, 0)
             floor = persisted if isinstance(persisted, int) and persisted >= 0 else 0
-            count = ledger.reserve(convo, max_judge_calls, judge_cost_cap_usd, max_call_cost_usd, floor)
+            try:
+                count = ledger.reserve(convo, max_judge_calls, judge_cost_cap_usd, reserve, floor)
+            except LedgerError as exc:
+                return _ask(f"judge ledger unusable: {exc}")
             if count is None:
-                return None
-            # Past this point the call is counted and its worst-case cost reserved.
-            response_box: list[Any] = []
-            verdict = await judge_command(llm_client, command, judge_timeout_s, response_box)
-            actual = _actual_cost(
-                response_box[0] if response_box else None, max_call_cost_usd, input_usd_per_mtok, output_usd_per_mtok
+                return _ask("judge call limit or cost cap reached")
+            # From here the call is counted and its worst-case cost reserved.
+            box: list[Any] = []
+            verdict = await judge_command(llm_client, command, judge_timeout_s, box, judge_max_tokens)
+            usage = getattr(box[0], "usage", None) if box else None
+            tin, tout = getattr(usage, "input_tokens", None), getattr(usage, "output_tokens", None)
+            known = all(isinstance(t, int) and not isinstance(t, bool) and t >= 0 for t in (tin, tout))
+            violation = known and (tin > in_bound or tout > judge_max_tokens)
+            actual = (
+                tin * input_usd_per_mtok / 1e6 + tout * output_usd_per_mtok / 1e6 if known else reserve
             )
-            ledger.settle(convo, max_call_cost_usd, actual)
+            try:
+                ledger.settle(convo, reserve, actual)
+            except LedgerError as exc:
+                return _ask(f"judge ledger write failed after the call (ledger tainted): {exc}")
+            if violation:
+                ledger.taint()
+                return _ask("judge response exceeded the enforced token bounds (ledger tainted)")
             if verdict != "ALLOW":
                 return None
             return {
@@ -502,10 +643,10 @@ def make_gate(
     max_judge_calls: int = 20,
     judge_cost_cap_usd: float = 0.50,
     judge_timeout_s: float = 20.0,
-    max_call_cost_usd: float = 0.02,
     ledger_path: str | None = None,
     input_usd_per_mtok: float | None = None,
     output_usd_per_mtok: float | None = None,
+    judge_max_tokens: int = JUDGE_MAX_TOKENS,
     credentials_path: str | None = None,
 ) -> Callable[[Any], Any]:
     """Factory: DENY list -> allow list -> LLM judge -> explicit ASK.
@@ -517,8 +658,8 @@ def make_gate(
     cleanly judged ALLOW gets an explicit ASK.
     """
     judge = make_judge_policy(
-        max_judge_calls, judge_cost_cap_usd, judge_timeout_s, max_call_cost_usd,
-        ledger_path, input_usd_per_mtok, output_usd_per_mtok,
+        max_judge_calls, judge_cost_cap_usd, judge_timeout_s,
+        ledger_path, input_usd_per_mtok, output_usd_per_mtok, judge_max_tokens,
     )
     deny = make_deny_policy(credentials_path)
 

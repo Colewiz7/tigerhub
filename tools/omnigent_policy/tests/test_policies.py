@@ -9,6 +9,7 @@ import asyncio
 import json
 import os
 import shutil
+import stat
 import tempfile
 import unittest
 from types import SimpleNamespace
@@ -24,6 +25,27 @@ P.DEFAULT_CREDENTIALS_PATH = os.path.join(_TMP, "default-creds-stand-in.txt")
 
 def tearDownModule():
     shutil.rmtree(_TMP, ignore_errors=True)
+
+
+PRICES = {"input_usd_per_mtok": 1.0, "output_usd_per_mtok": 5.0}
+
+
+def mj(**kw):
+    return P.make_judge_policy(**{**PRICES, **kw})
+
+
+def mg(**kw):
+    return P.make_gate(**{**PRICES, **kw})
+
+
+def read_ledger(path):
+    with open(path) as fh:
+        return json.load(fh)
+
+
+def write_raw(path, text):
+    with open(path, "w") as fh:
+        fh.write(text)
 
 
 class LedgerMixin:
@@ -59,6 +81,19 @@ class MockLLM:
         if self.exc:
             raise self.exc
         return SimpleNamespace(output_text=self.text)
+
+
+class UsageLLM(MockLLM):
+    """MockLLM whose responses carry token usage (or none when tin is None)."""
+
+    def __init__(self, text, tin=None, tout=None):
+        super().__init__(text)
+        self.usage = None if tin is None else SimpleNamespace(input_tokens=tin, output_tokens=tout)
+
+    async def create(self, **kwargs):
+        response = await super().create(**kwargs)
+        response.usage = self.usage
+        return response
 
 
 ALLOW_JSON = json.dumps({"verdict": "ALLOW", "reason": "read-only"})
@@ -182,7 +217,7 @@ class PubScopeTests(LedgerMixin, unittest.TestCase):
     def test_pub_mutations_ask_even_if_judge_would_allow(self):
         llm = MockLLM(ALLOW_JSON)
         for c in self.CASES:
-            self.assertEqual(run(P.make_gate()(ev(c, llm=llm)))["result"], "ASK", c)
+            self.assertEqual(run(mg()(ev(c, llm=llm)))["result"], "ASK", c)
         self.assertEqual(llm.calls, [])
 
 
@@ -201,14 +236,14 @@ class CredentialsSymlinkTests(unittest.TestCase):
             self.assertEqual((deny(event) or {}).get("result"), "DENY", event)
         self.assertIsNone(deny(ev(f"cat {os.path.join(d, 'other.txt')}")))
         llm = MockLLM(ALLOW_JSON)
-        gate = P.make_gate(credentials_path=creds, ledger_path=os.path.join(d, "l.json"))
+        gate = mg(credentials_path=creds, ledger_path=os.path.join(d, "l.json"))
         self.assertEqual(run(gate(ev(f"cat {link}", llm=llm)))["result"], "DENY")
         self.assertEqual(llm.calls, [])
 
 
 class JudgeTests(LedgerMixin, unittest.TestCase):
     def judge(self, command, llm, **kw):
-        return run(P.make_judge_policy(**kw)(ev(command, llm=llm)))
+        return run(mj(**kw)(ev(command, llm=llm)))
 
     def test_clean_allow(self):
         llm = MockLLM(ALLOW_JSON)
@@ -273,22 +308,22 @@ class JudgeTests(LedgerMixin, unittest.TestCase):
             self.assertIsNone(self.judge(c, llm), c)
         self.assertEqual(llm.calls, [])
 
+    # -- call limit --------------------------------------------------------------
+
     def test_call_limit(self):
         llm = MockLLM(ALLOW_JSON)
-        judge = P.make_judge_policy(max_judge_calls=2)
-        outs = [run(judge(ev("ls lib", llm=llm))) for _ in range(4)]
-        self.assertEqual([o is not None for o in outs], [True, True, False, False])
+        judge = mj(max_judge_calls=2)
+        outs = [run(judge(ev("ls lib", llm=llm)))["result"] for _ in range(4)]
+        self.assertEqual(outs, ["ALLOW", "ALLOW", "ASK", "ASK"])
         self.assertEqual(len(llm.calls), 2)
 
     def test_call_counted_and_persisted_before_call_survives_restart_after_unsure(self):
         unsure = MockLLM(json.dumps({"verdict": "UNSURE", "reason": "x"}))
-        run(P.make_judge_policy(max_judge_calls=1)(ev("ls lib", llm=unsure)))
+        run(mj(max_judge_calls=1)(ev("ls lib", llm=unsure)))
         self.assertEqual(len(unsure.calls), 1)
-        # the count was on disk before/regardless of the outcome
-        self.assertEqual(json.load(open(self.ledger))["c1"]["calls"], 1)
-        # "restart": a brand-new policy instance, nothing shared in memory
-        fresh = MockLLM(ALLOW_JSON)
-        self.assertIsNone(run(P.make_judge_policy(max_judge_calls=1)(ev("ls lib", llm=fresh))))
+        self.assertEqual(read_ledger(self.ledger)["c1"]["calls"], 1)
+        fresh = MockLLM(ALLOW_JSON)  # "restart": brand-new instance, nothing shared in memory
+        self.assertEqual(run(mj(max_judge_calls=1)(ev("ls lib", llm=fresh)))["result"], "ASK")
         self.assertEqual(fresh.calls, [])
 
     def test_counter_is_written_before_the_llm_is_called(self):
@@ -296,72 +331,161 @@ class JudgeTests(LedgerMixin, unittest.TestCase):
 
         class Spy(MockLLM):
             async def create(inner, **kw):
-                with open(self.ledger) as fh:
-                    seen["calls"] = json.load(fh)["c1"]["calls"]
+                seen["calls"] = read_ledger(self.ledger)["c1"]["calls"]
                 return await super().create(**kw)
 
-        run(P.make_judge_policy()(ev("ls lib", llm=Spy(ALLOW_JSON))))
+        run(mj()(ev("ls lib", llm=Spy(ALLOW_JSON))))
         self.assertEqual(seen["calls"], 1)
 
     def test_errors_and_timeouts_count_toward_limit(self):
-        err = MockLLM(exc=RuntimeError("boom"))
-        run(P.make_judge_policy(max_judge_calls=1)(ev("ls lib", llm=err)))
+        run(mj(max_judge_calls=1)(ev("ls lib", llm=MockLLM(exc=RuntimeError("boom")))))
         again = MockLLM(ALLOW_JSON)
-        self.assertIsNone(run(P.make_judge_policy(max_judge_calls=1)(ev("ls lib", llm=again))))
+        self.assertEqual(run(mj(max_judge_calls=1)(ev("ls lib", llm=again)))["result"], "ASK")
         self.assertEqual(again.calls, [])
-
-    def test_unwritable_ledger_fails_closed(self):
-        llm = MockLLM(ALLOW_JSON)
-        judge = P.make_judge_policy(ledger_path="/proc/nope/ledger.json")
-        self.assertIsNone(run(judge(ev("ls lib", llm=llm))))
-        self.assertEqual(llm.calls, [])
 
     def test_call_limit_is_per_conversation_and_honours_session_state(self):
         llm = MockLLM(ALLOW_JSON)
-        judge = P.make_judge_policy(max_judge_calls=1)
-        self.assertIsNotNone(run(judge(ev("ls lib", llm=llm, convo="a"))))
-        self.assertIsNotNone(run(judge(ev("ls lib", llm=llm, convo="b"))))
-        self.assertIsNone(run(judge(ev("ls lib", llm=llm, convo="c", state={P.JUDGE_CALLS_KEY: 1}))))
+        judge = mj(max_judge_calls=1)
+        self.assertEqual(run(judge(ev("ls lib", llm=llm, convo="a")))["result"], "ALLOW")
+        self.assertEqual(run(judge(ev("ls lib", llm=llm, convo="b")))["result"], "ALLOW")
+        self.assertEqual(run(judge(ev("ls lib", llm=llm, convo="c", state={P.JUDGE_CALLS_KEY: 1})))["result"], "ASK")
 
-    def test_cost_cap_reserves_worst_case_before_calling(self):
-        # each call actually costs $0.049 (1M in-tokens @ $0.049/Mtok); reserve is $0.05; cap $0.10
-        class Usage(MockLLM):
-            async def create(inner, **kw):
-                r = await super().create(**kw)
-                r.usage = SimpleNamespace(input_tokens=1_000_000, output_tokens=0)
-                return r
+    # -- cost cap ----------------------------------------------------------------
 
-        llm = Usage(ALLOW_JSON)
-        judge = P.make_judge_policy(
-            judge_cost_cap_usd=0.10, max_call_cost_usd=0.05, input_usd_per_mtok=0.049, output_usd_per_mtok=0.0
-        )
-        self.assertIsNotNone(run(judge(ev("ls lib", llm=llm))))  # 0 + .05 <= .10 ; records .049
-        self.assertIsNotNone(run(judge(ev("ls lib", llm=llm))))  # .049 + .05 <= .10 ; records .098
-        spent = json.load(open(self.ledger))["c1"]["spent_usd"]
-        self.assertAlmostEqual(spent, 0.098)
-        self.assertIsNone(run(judge(ev("ls lib", llm=llm))))  # .098 + .05 > .10 -> refused, not called
-        self.assertEqual(len(llm.calls), 2)
+    def test_prices_missing_fails_closed(self):
+        llm = MockLLM(ALLOW_JSON)
+        self.assertEqual(run(P.make_judge_policy()(ev("ls lib", llm=llm)))["result"], "ASK")
+        self.assertEqual(run(P.make_gate()(ev("ls lib", llm=llm)))["result"], "ASK")
+        for bad in (float("nan"), float("inf"), -1.0, None):
+            out = run(P.make_judge_policy(input_usd_per_mtok=bad, output_usd_per_mtok=1.0)(ev("ls lib", llm=llm)))
+            self.assertEqual(out["result"], "ASK")
+        self.assertEqual(llm.calls, [])
 
-    def test_cost_cap_unknown_cost_keeps_reservation(self):
-        llm = MockLLM(ALLOW_JSON)  # no usage in the response
-        judge = P.make_judge_policy(judge_cost_cap_usd=0.10, max_call_cost_usd=0.05)
-        run(judge(ev("ls lib", llm=llm)))
-        self.assertAlmostEqual(json.load(open(self.ledger))["c1"]["spent_usd"], 0.05)
+    def test_request_enforces_max_tokens(self):
+        llm = MockLLM(ALLOW_JSON)
+        run(mj(judge_max_tokens=37)(ev("ls lib", llm=llm)))
+        self.assertEqual(llm.calls[0]["max_tokens"], 37)
+
+    def test_calls_costing_the_full_worst_case_never_push_spend_over_the_cap(self):
+        wc = P.judge_worst_case_cost("ls lib", P.JUDGE_MAX_TOKENS, 1.0, 5.0)
+        cap = wc * 3.5
+        # every call uses exactly the maximum input and the enforced max_tokens
+        llm = UsageLLM(ALLOW_JSON, tin=P.judge_input_bound("ls lib"), tout=P.JUDGE_MAX_TOKENS)
+        judge = mj(judge_cost_cap_usd=cap, max_judge_calls=100)
+        results = []
+        for _ in range(8):
+            results.append(run(judge(ev("ls lib", llm=llm)))["result"])
+            self.assertLessEqual(read_ledger(self.ledger)["c1"]["spent_usd"], cap)
+        self.assertEqual(results, ["ALLOW"] * 3 + ["ASK"] * 5)
+        self.assertEqual(len(llm.calls), 3)
+        self.assertAlmostEqual(read_ledger(self.ledger)["c1"]["spent_usd"], 3 * wc)
+
+    def test_spend_just_under_cap_refuses_next_call(self):
+        wc = P.judge_worst_case_cost("ls lib", P.JUDGE_MAX_TOKENS, 1.0, 5.0)
+        write_raw(self.ledger, json.dumps({"c1": {"calls": 1, "spent_usd": 0.5 - wc / 2}}))
+        llm = MockLLM(ALLOW_JSON)
+        self.assertEqual(run(mj(judge_cost_cap_usd=0.5)(ev("ls lib", llm=llm)))["result"], "ASK")
+        self.assertEqual(llm.calls, [])
+
+    def test_unknown_usage_charges_full_worst_case_reserve(self):
+        wc = P.judge_worst_case_cost("ls lib", P.JUDGE_MAX_TOKENS, 1.0, 5.0)
+        for llm in (MockLLM(ALLOW_JSON), UsageLLM(ALLOW_JSON, tin=None), UsageLLM(ALLOW_JSON, tin=-1, tout=5)):
+            os.path.exists(self.ledger) and os.remove(self.ledger)
+            run(mj()(ev("ls lib", llm=llm)))
+            self.assertAlmostEqual(read_ledger(self.ledger)["c1"]["spent_usd"], wc)
+        self.assertNotAlmostEqual(wc, 0.02)
+
+    def test_response_over_the_token_bounds_is_recorded_taints_and_asks(self):
+        wc = P.judge_worst_case_cost("ls lib", P.JUDGE_MAX_TOKENS, 1.0, 5.0)
+        liar = UsageLLM(ALLOW_JSON, tin=10, tout=P.JUDGE_MAX_TOKENS * 50)  # provider ignored max_tokens
+        self.assertEqual(run(mj()(ev("ls lib", llm=liar)))["result"], "ASK")
+        data = read_ledger(self.ledger)
+        self.assertAlmostEqual(data["c1"]["spent_usd"], 10 / 1e6 + P.JUDGE_MAX_TOKENS * 50 * 5 / 1e6)
+        self.assertGreater(data["c1"]["spent_usd"], wc)
+        self.assertTrue(data[P.TAINT_KEY])
+        P._TAINTED.clear()  # restart: only the on-disk mark remains
+        later = MockLLM(ALLOW_JSON)
+        self.assertEqual(run(mj()(ev("ls lib", llm=later)))["result"], "ASK")
+        self.assertEqual(later.calls, [])
 
     def test_gate_asks_when_cost_cap_refuses(self):
         llm = MockLLM(ALLOW_JSON)
-        gate = P.make_gate(judge_cost_cap_usd=0.01, max_call_cost_usd=0.02)
-        self.assertEqual(run(gate(ev("ls lib", llm=llm)))["result"], "ASK")
+        self.assertEqual(run(mg(judge_cost_cap_usd=0.0)(ev("ls lib", llm=llm)))["result"], "ASK")
+        self.assertEqual(llm.calls, [])
+
+    # -- ledger failures ---------------------------------------------------------
+
+    def test_unwritable_ledger_fails_closed(self):
+        llm = MockLLM(ALLOW_JSON)
+        out = run(mj(ledger_path="/proc/nope/ledger.json")(ev("ls lib", llm=llm)))
+        self.assertEqual(out["result"], "ASK")
+        self.assertEqual(llm.calls, [])
+
+    def test_post_call_ledger_write_failure_asks_and_taints(self):
+        blocker = self.ledger + ".tmp"
+
+        class Breaker(MockLLM):
+            async def create(inner, **kw):
+                os.mkdir(blocker)  # the post-call write of the actual cost now fails
+                return await super().create(**kw)
+
+        out = run(mj()(ev("ls lib", llm=Breaker(ALLOW_JSON))))  # the judge said ALLOW...
+        self.assertEqual(out["result"], "ASK")  # ...but we cannot account for it
+        os.rmdir(blocker)  # even with the disk healthy again, the ledger stays tainted
+        later = MockLLM(ALLOW_JSON)
+        self.assertEqual(run(mj()(ev("ls lib", llm=later)))["result"], "ASK")
+        self.assertEqual(run(mg()(ev("ls lib", llm=later)))["result"], "ASK")
+        self.assertEqual(later.calls, [])
+
+    def test_taint_mark_on_disk_asks(self):
+        write_raw(self.ledger, json.dumps({P.TAINT_KEY: True}))
+        llm = MockLLM(ALLOW_JSON)
+        self.assertEqual(run(mj()(ev("ls lib", llm=llm)))["result"], "ASK")
+        self.assertEqual(llm.calls, [])
+
+    def test_invalid_ledger_contents_are_corrupt_and_ask(self):
+        rec = '{"c1": {"calls": %s, "spent_usd": %s}}'
+        bad = [
+            rec % ("NaN", "0"), rec % ("0", "NaN"), rec % ("0", "Infinity"), rec % ("0", "-Infinity"),
+            rec % ("Infinity", "0"), rec % ("0", "1e999"), rec % ("0", "-0.5"), rec % ("-1", "0"),
+            rec % ('"1"', "0"), rec % ("0", '"0"'), rec % ("true", "0"), rec % ("0", "true"),
+            rec % ("1.5", "0"), rec % ("null", "0"), rec % ("0", "null"),
+            '{"c1": [1, 2]}', '{"c1": 5}', '{"c1": {"calls": 1}}', '{"c1": {"calls": 1, "spent_usd": 0, "x": 1}}',
+            '{"_tainted": "no"}', "[]", '"x"', "null", "{", "", '{"c1": {"calls": 1, "spent_usd": 0}} trailing',
+        ]
+        for raw in bad:
+            write_raw(self.ledger, raw)
+            llm = MockLLM(ALLOW_JSON)
+            self.assertEqual(run(mj()(ev("ls lib", llm=llm)))["result"], "ASK", raw)
+            self.assertEqual(llm.calls, [], raw)
+        write_raw(self.ledger, rec % ("0", "0.0"))  # a valid ledger works
+        self.assertEqual(run(mj()(ev("ls lib", llm=MockLLM(ALLOW_JSON))))["result"], "ALLOW")
+
+    def test_ledger_file_and_directory_are_private(self):
+        path = os.path.join(self.tmp, "sub", "ledger.json")
+        run(mj(ledger_path=path)(ev("ls lib", llm=MockLLM(ALLOW_JSON))))
+        self.assertEqual(stat.S_IMODE(os.stat(path).st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(os.stat(path + ".lock").st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(os.stat(os.path.dirname(path)).st_mode), 0o700)
+
+    # -- cd ----------------------------------------------------------------------
+
+    def test_cd_or_pushd_asks_without_consulting_the_judge(self):
+        llm = MockLLM(ALLOW_JSON)
+        for c in ("cd lib && ls", "ls lib; cd .. ; ls", "bash -c 'cd lib && ls'", 'env bash -c "pushd lib"',
+                  "ls && builtin cd lib", "sh -c 'sh -c \"cd x\"'", "ls | cd lib", "ls\ncd lib", "popd"):
+            self.assertEqual(run(mj()(ev(c, llm=llm)))["result"], "ASK", c)
+            self.assertEqual(run(mg()(ev(c, llm=llm)))["result"], "ASK", c)
         self.assertEqual(llm.calls, [])
 
     def test_bad_limits_rejected(self):
         with self.assertRaises(ValueError):
-            P.make_judge_policy(max_judge_calls=-1)
+            mj(max_judge_calls=-1)
 
 
 class GateTests(LedgerMixin, unittest.TestCase):
     def gate(self, command, llm=None, **kw):
-        return run(P.make_gate(**kw)(ev(command, llm=llm)))
+        return run(mg(**kw)(ev(command, llm=llm)))
 
     def test_deny_beats_everything_even_if_judge_would_allow(self):
         llm = MockLLM(ALLOW_JSON)
@@ -402,7 +526,7 @@ class GateTests(LedgerMixin, unittest.TestCase):
         self.assertEqual(llm.calls, [])
 
     def test_non_shell_and_other_phases_abstain(self):
-        gate = P.make_gate()
+        gate = mg()
         self.assertIsNone(run(gate({"type": "request", "data": "hi"})))
         self.assertIsNone(run(gate({"type": "tool_call", "data": {"name": "Read", "arguments": {"file_path": "a.dart"}}})))
         self.assertEqual(
@@ -411,7 +535,7 @@ class GateTests(LedgerMixin, unittest.TestCase):
 
     def test_gate_limits_flow_through(self):
         llm = MockLLM(ALLOW_JSON)
-        gate = P.make_gate(max_judge_calls=1)
+        gate = mg(max_judge_calls=1)
         self.assertEqual(run(gate(ev("ls lib", llm=llm)))["result"], "ALLOW")
         self.assertEqual(run(gate(ev("ls lib", llm=llm)))["result"], "ASK")
 

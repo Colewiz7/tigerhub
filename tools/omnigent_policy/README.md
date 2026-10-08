@@ -27,22 +27,33 @@ the requested `None`-when-unsure contract (and are tested that way) but are not 
 
 ## Cost cap and call limit
 
-Both live in the judge, per conversation, in a small **ledger file** (`ledger_path`, default
-`~/.local/state/tigerhub-omnigent/judge-ledger.json`), written under a file lock and fsync'd.
+Both live in the judge, per conversation, in a **ledger file** (`ledger_path`, default
+`~/.local/state/tigerhub-omnigent/judge-ledger.json`; file mode 0600, directory 0700), updated under a file lock
+and fsync'd. The judge returns an explicit **ASK** (never DENY) whenever this machinery cannot vouch for a call.
 
-* **Call limit** `max_judge_calls` (default 20). The count is incremented and persisted *before* the judge is
-  called, and counts ALLOW, UNSURE, errors and timeouts alike. Why a file and not only `session_state`: the engine
-  withholds a policy's `state_updates` when the result is ASK, so a judge call that ends in UNSURE could never be
-  recorded there. The count is still mirrored to `session_state` (`_tigerhub_judge_calls`) on ALLOW and read back
-  as a floor. If the ledger cannot be read or written, the judge is skipped (fail closed, so the gate ASKs).
-* **Cost cap** `judge_cost_cap_usd` (default 0.50). `max_call_cost_usd` (default 0.02, worst case for one call) is
-  reserved before the call; if recorded spend + reservation > cap the judge is not called and the gate ASKs.
-  Afterwards the reservation is replaced by the actual cost from `response.usage` token counts and
-  `input_usd_per_mtok` / `output_usd_per_mtok`; with no rates or no usage the reservation stays (never under-recorded).
+* **Prices are required.** `input_usd_per_mtok` and `output_usd_per_mtok` must be configured (finite, >= 0).
+  Without them the judge never runs and the gate ASKs.
+* **Worst case per call** = (maximum input tokens + the enforced `max_tokens` on the request) x the prices.
+  Input is bounded by `judge_input_bound` (one token per UTF-8 byte of instructions + command + schema, plus 256 slack;
+  commands are capped at 1000 chars). Output is bounded by `judge_max_tokens` (default 100), sent as `max_tokens`
+  (omnigent's documented kwarg). This worst case is reserved before the call; if recorded + reservation >
+  `judge_cost_cap_usd` (default 0.50) the call is refused and the gate ASKs.
+* **After the call** the reservation is replaced by the actual cost from `response.usage`. Unknown usage keeps the
+  FULL reservation. Usage above the bounds (a provider ignoring `max_tokens`) is recorded as reported, taints the
+  ledger and ASKs. So a call at the maximum cannot push spend over the cap; the cap can only be exceeded by a
+  provider that disobeys `max_tokens`, and then every later call ASKs.
+* **Call limit** `max_judge_calls` (default 20). Incremented and persisted *before* the call; ALLOW, UNSURE, errors
+  and timeouts all count. A file rather than only `session_state` because the engine withholds `state_updates` on
+  ASK; the count is still mirrored to `session_state` (`_tigerhub_judge_calls`) on ALLOW and read back as a floor.
+* **Ledger failures.** If writing the actual cost back fails after a call, the result is ASK (even if the judge said
+  ALLOW) and the ledger is tainted: in memory for the process, and marked `_tainted` on disk if that write works.
+  Every later call ASKs. The file is parsed with NaN/Infinity rejected and every record validated (types, finite,
+  non-negative, exact fields); anything invalid is treated as corrupt and ASKs.
+* **`cd`/`pushd`/`popd`** anywhere in a command (chains, `bash -c`, wrappers) => ASK, judge not consulted.
 * Session-wide, use omnigent's builtins (`omnigent.policies.builtins.cost.cost_budget`,
   `omnigent.policies.builtins.safety.max_tool_calls_per_session`); not wired up here.
 
-Judge pre-filter (no LLM call at all): command over 1000 chars; any `$`, backtick, backslash, `<(`; wording like
+Judge pre-filter (no LLM call at all): `cd`/`pushd`/`popd`; command over 1000 chars; any `$`, backtick, backslash, `<(`; wording like
 "ignore previous", "verdict", "reply ALLOW"; shells, interpreters, wrappers, network tools, `rm`/`mv`/`cp`,
 package managers, `git`/`gh`; any absolute or `~` or `..` path (keeps it inside the worktree).
 
