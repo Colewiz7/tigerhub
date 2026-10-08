@@ -28,6 +28,18 @@ void main() {
     expect(plist, isNot(contains('~ipad')));
   });
 
+  test('it is portrait only on iPhone', () {
+    expect(plist, contains('UIInterfaceOrientationPortrait'));
+    expect(plist, isNot(contains('UIInterfaceOrientationLandscape')));
+    expect(plist, isNot(contains('UIInterfaceOrientationPortraitUpsideDown')));
+  });
+
+  test('the re-downloadable snapshots are excluded from backup', () {
+    final delegate = File('ios/Runner/AppDelegate.swift').readAsStringSync();
+    expect(delegate, contains('isExcludedFromBackup = true'));
+    expect(delegate, contains('applicationSupportDirectory'));
+  });
+
   test('the privacy manifest exists, is bundled, and declares no tracking', () {
     final manifest = File('ios/Runner/PrivacyInfo.xcprivacy').readAsStringSync();
     expect(manifest, contains('<key>NSPrivacyTracking</key>\n\t<false/>'));
