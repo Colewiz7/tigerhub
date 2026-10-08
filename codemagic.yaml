@@ -1,0 +1,38 @@
+workflows:
+  ios-testflight:
+    name: iOS to TestFlight
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    integrations:
+      # Name of the App Store Connect API key under Codemagic Team settings,
+      # Integrations. Must match exactly.
+      app_store_connect: codemagic
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: dev.colewiz.tigerhub
+      vars:
+        BUNDLE_ID: dev.colewiz.tigerhub
+    scripts:
+      - name: Dependencies
+        script: cd client && flutter pub get
+      - name: Tests
+        script: cd client && flutter test
+      - name: Apply signing
+        script: xcode-project use-profiles --project client/ios/Runner.xcodeproj
+      - name: Build number from TestFlight
+        script: |
+          cd client
+          LATEST=$(app-store-connect get-latest-app-store-build-number "$BUNDLE_ID" || echo 0)
+          echo "BUILD_NUMBER=$((LATEST + 1))" >> "$CM_ENV"
+      - name: Build ipa
+        script: cd client && flutter build ipa --release --build-number=$BUILD_NUMBER --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - client/build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

@@ -21,8 +21,8 @@ ships in the README, the repo, and the app's about screen.
 
 ## 2. Development environment
 
-- Linux only, on Hyprland. There is no Mac here and never will be, which is
-  why the iOS story in section 3 ends where it does.
+- Linux only, on Hyprland. There is no Mac here, so iOS is built and signed
+  entirely in CI (section 11).
 - Everything below about screenshots is Hyprland specific and can be ignored
   on another desktop.
 
@@ -120,8 +120,9 @@ Workspaces are bound to `super + <number>` for moving it by hand.
   ```
 
   Native platforms have no such restriction, so Linux and Android are
-  unaffected. Web was the iOS story, since native iOS is impossible without a
-  Mac, so **there is currently no iOS path.** Accepted deliberately.
+  unaffected. Web was the iOS story at the time, since there is no Mac here.
+  **iOS is now native, built by Codemagic CI** (section 11), which has no CORS
+  restriction either.
 
 - **The alternative that was considered and rejected.** GitHub Actions could run
   the scrapers on a schedule and publish about 62 KB of JSON to a public branch,
@@ -753,3 +754,31 @@ changing when the toolchain arrives:
 scripts/android-setup              # what is still missing
 cd client && flutter build apk --release
 ```
+
+## 11. iOS
+
+Added 2026-10-08, after an Apple Developer Program membership. There is no Mac,
+so nothing is built locally. `codemagic.yaml` at the repo root builds, signs and
+uploads to TestFlight on a hosted Mac.
+
+**Committed:** `client/ios/` from `flutter create --platforms=ios`, bundle id
+`dev.colewiz.tigerhub` (same as Android), display name `TigerHub`, all 19 icon
+sizes cut from `assets/icons/app-icon.png` (the full bleed one, flattened with
+no alpha, since App Store Connect rejects transparency), and
+`ITSAppUsesNonExemptEncryption` false (HTTPS only, skips the export prompt).
+
+**One time setup that cannot be scripted:**
+
+1. Register the app id `dev.colewiz.tigerhub` and create the app record in App
+   Store Connect.
+2. Create an App Store Connect API key (Users and Access, Integrations) and add
+   it in Codemagic under Team settings, Integrations, named `codemagic` to match
+   the yaml.
+3. Add the repo as an app in Codemagic and start the `ios-testflight` workflow.
+
+Build numbers come from the latest TestFlight build plus one, so reruns never
+collide. Tests run before the build and a failure stops the upload.
+
+**Untested on a device.** Nothing has run on iOS yet. Check first: the 2 minute
+ticker while backgrounded, and text sizes (see the commit that made the app
+work at large text sizes).
