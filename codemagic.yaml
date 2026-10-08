@@ -1,38 +1,147 @@
+# TigerHub iOS builds. There is no Mac, so every iOS build, signature and
+# TestFlight upload happens here.
+#
+# macOS minutes are metered (500 total), so there are three workflows of
+# increasing cost. Run them in order and only when the one before is green.
+# None of them has a `triggering` block, so none starts on a push: they start
+# only when someone clicks Start new build for that workflow in Codemagic.
+#
+# Everything free (analyze, tests, the timezone matrix, plist checks, the Linux
+# and Android builds) runs on GitHub Actions instead, see .github/workflows.
+#
+# No secret is written in this file. The App Store Connect API key (issuer ID,
+# key ID, .p8) lives in the Codemagic App Store Connect integration named
+# `Apple`, under Teams > Personal account > Integrations.
+#
+# `ios_signing` below only SELECTS signing files already stored in Codemagic
+# (Teams > Personal account > Code signing identities). The integration alone
+# does not create them, so the Apple Distribution certificate and the App Store
+# profile for dev.colewiz.tigerhub must exist there first. Workflow 1 fails in
+# a couple of minutes if they do not, before any compile is paid for.
+
+definitions:
+  # Bump FLUTTER_VERSION in .github/workflows/ci.yml with this.
+  flutter: &flutter 3.47.6
+  integration: &asc_integration Apple
+  # Public identifiers, not secrets.
+  vars: &app_vars
+    BUNDLE_ID: dev.colewiz.tigerhub
+    APP_STORE_APPLE_ID: "6820556718"
+
 workflows:
-  ios-testflight:
-    name: iOS to TestFlight
-    max_build_duration: 30
+  # 1. Cheapest. Proves the API key, certificate and profile work before any
+  #    compile. Expect roughly 2 to 5 macOS minutes.
+  ios-signing-check:
+    name: iOS 1 - signing check
+    max_build_duration: 8
     instance_type: mac_mini_m2
     integrations:
-      # Name of the App Store Connect API key under Codemagic Team settings,
-      # Integrations. Must match exactly.
-      app_store_connect: codemagic
+      app_store_connect: *asc_integration
     environment:
-      flutter: stable
+      flutter: *flutter
       xcode: latest
-      cocoapods: default
+      vars: *app_vars
       ios_signing:
         distribution_type: app_store
         bundle_identifier: dev.colewiz.tigerhub
-      vars:
-        BUNDLE_ID: dev.colewiz.tigerhub
     scripts:
-      - name: Dependencies
-        script: cd client && flutter pub get
-      - name: Tests
-        script: cd client && flutter test
-      - name: Apply signing
+      - name: The Xcode project carries the right bundle id
+        script: |
+          grep -q 'PRODUCT_BUNDLE_IDENTIFIER = dev.colewiz.tigerhub;' client/ios/Runner.xcodeproj/project.pbxproj
+      - name: A distribution identity and an App Store profile were installed
+        script: |
+          set -e
+          echo "--- code signing identities (names only)"
+          security find-identity -v -p codesigning | tee /tmp/identities.txt
+          grep -q "Apple Distribution" /tmp/identities.txt
+          echo "--- provisioning profiles"
+          ls -1 "$HOME/Library/MobileDevice/Provisioning Profiles"
+          test -n "$(ls -A "$HOME/Library/MobileDevice/Provisioning Profiles")"
+      - name: Profiles can be applied to the project
         script: xcode-project use-profiles --project client/ios/Runner.xcodeproj
-      - name: Build number from TestFlight
+      - name: App Store Connect API key works (prints the exit code, never fails here)
+        script: |
+          # Shows how the CLI behaves for an app with no builds yet, so the
+          # build number step in workflow 3 can be right the first time.
+          set +e
+          app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID"
+          echo "exit code: $?"
+
+  # 2. Compiles the iOS target with no signing. Catches plugin, plist and Swift
+  #    errors. Expect roughly 10 to 20 macOS minutes. Flutter 3.47 resolves iOS
+  #    dependencies with Swift Package Manager and falls back to CocoaPods
+  #    itself, so there is no separate pod install step.
+  ios-build-check:
+    name: iOS 2 - build, no codesign
+    max_build_duration: 25
+    instance_type: mac_mini_m2
+    environment:
+      flutter: *flutter
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Packages
+        script: cd client && flutter pub get
+      - name: Build (unsigned)
+        script: cd client && flutter build ios --release --no-codesign
+    artifacts:
+      - /tmp/xcodebuild_logs/*.log
+      - client/ios/Podfile
+      - client/ios/Podfile.lock
+
+  # 3. The real thing: signed IPA, uploaded to TestFlight. Expect roughly 15 to
+  #    30 macOS minutes. Tests are not repeated here; GitHub Actions already ran
+  #    them on the same commit.
+  #
+  #    submit_to_testflight is false for the first run: true asks for external
+  #    Beta App Review, which needs beta metadata that does not exist yet. The
+  #    build still uploads and appears in TestFlight for internal testers. Flip
+  #    it when external testing is wanted.
+  ios-testflight:
+    name: iOS 3 - signed IPA to TestFlight
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: *asc_integration
+    environment:
+      flutter: *flutter
+      xcode: latest
+      cocoapods: default
+      vars: *app_vars
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: dev.colewiz.tigerhub
+    scripts:
+      # First, so a bad key or API error fails in seconds, not after a compile.
+      - name: Next build number (TestFlight, not the App Store release)
+        script: |
+          set -euo pipefail
+          OUT=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID")
+          LATEST=$(printf '%s\n' "$OUT" | tail -n 1 | tr -d '[:space:]')
+          case "$LATEST" in ''|None|none|null) LATEST=0 ;; esac
+          case "$LATEST" in
+            *[!0-9]*) echo "Unexpected build number output: $LATEST"; exit 1 ;;
+          esac
+          echo "BUILD_NUMBER=$((LATEST + 1))" >> "$CM_ENV"
+      - name: The Xcode project carries the right bundle id
+        script: |
+          grep -q 'PRODUCT_BUNDLE_IDENTIFIER = dev.colewiz.tigerhub;' client/ios/Runner.xcodeproj/project.pbxproj
+      - name: Packages
+        script: cd client && flutter pub get
+      - name: Apply signing to the Xcode project
+        script: xcode-project use-profiles --project client/ios/Runner.xcodeproj
+      - name: Build IPA
         script: |
           cd client
-          LATEST=$(app-store-connect get-latest-app-store-build-number "$BUNDLE_ID" || echo 0)
-          echo "BUILD_NUMBER=$((LATEST + 1))" >> "$CM_ENV"
-      - name: Build ipa
-        script: cd client && flutter build ipa --release --build-number=$BUILD_NUMBER --export-options-plist=/Users/builder/export_options.plist
+          flutter build ipa --release \
+            --build-number="$BUILD_NUMBER" \
+            --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - client/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - client/ios/Podfile
+      - client/ios/Podfile.lock
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        submit_to_testflight: false
