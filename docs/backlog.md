@@ -6,6 +6,28 @@ reasoning behind the implementation. New unfinished work belongs at the top.
 
 ---
 
+## iOS and release, open  *(2026-10-08)*
+
+Order matters; later items assume earlier ones.
+
+1. Merge the Phase 1 PRs (secrets hygiene, RitClock, occupancy and portal
+   guards, portrait and backup exclusion, docs, CI plus codemagic.yaml).
+2. Owner go-ahead, then Codemagic: signing check, unsigned build, TestFlight.
+   Install from TestFlight on the owner's iPhone 17 Pro Max.
+3. Per source terms, robots and official feed audit (guideline 5.2.2), as its
+   own PR, before any submission. Draft the email asking RIT for written
+   permission or a no objection.
+4. Privacy policy and support pages (GitHub Pages or colewiz.dev). Required by
+   App Store Connect even for Data Not Collected.
+5. Remaining device zone leaks: `api_models.dart` falls back to
+   `DateTime.now()` for a missing open, close or start time. Replace with an
+   explicit "unknown" rather than inventing a time.
+6. Pull to refresh outside the Today tab, adaptive refresh indicator on iOS.
+7. Phase 2 UX and accessibility pass; Phase 3 notifications, calendar export,
+   deep links, then the widget branch.
+
+---
+
 ## Event dedupe, now that the overlap is measurable  *(done)*
 
 Observed 2026-08-30. docs/notes.md section 8 decision 2 deliberately shipped **no

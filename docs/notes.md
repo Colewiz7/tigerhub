@@ -796,3 +796,44 @@ refresh outside the Today tab, and excluding the cache from iCloud backup.
 **Untested on a device.** Nothing has run on iOS yet. Check first: the 2 minute
 ticker while backgrounded, and text sizes (see the commit that made the app
 work at large text sizes).
+
+
+## 12. Decisions, 2026-10-08
+
+Recorded by Claude as arbiter. These are settled unless the owner reopens them.
+
+1. **The name stays TigerHub.** Another student's app, TigerDine, exists. It is
+   not ours, shares no code, and takes no data from us or we from it. TigerHub
+   stays visually and verbally distinct from it: different icon, palette,
+   listing copy and screenshots, no "Dine" in any name, subtitle or keyword, and
+   TigerDine is never named in metadata (guideline 2.3.7). The app name lives in
+   one constant per platform config (Dart `appName`, iOS `CFBundleDisplayName`,
+   Android label).
+2. **1.0 scope.** iPhone only, portrait only, iOS 15 minimum. In: local
+   notifications for saved events, add to calendar (EventKit). Out: iPad,
+   landscape, remote push, analytics, crash SDKs (Apple's crash reports only).
+3. **Widget (WidgetKit)** is requested by the owner and stays in Phase 3 on its
+   own branch. It must keep working when stale (show a timestamp). It needs a
+   Swift extension, an App Group, bundle id `dev.colewiz.tigerhub.Widget` and a
+   hand edited `project.pbxproj`. **If it is not green in CI with signing, 1.0
+   ships without it and it ships in 1.1.** It never blocks first submission.
+   Claude and GPT both advised deferring it to 1.1; the owner's rule above is
+   the compromise.
+4. **Campus time.** One `RitClock` (injectable instant) behind `CampusTime`.
+   Anything that means "what time is it at RIT" uses it. `DateTime.now()` is for
+   elapsed time only. Event and dining clocks render on the campus clock in
+   every device zone. CI runs the suite under New York, Los Angeles, Tokyo and
+   UTC.
+5. **Occupancy poll with no answer** (offline, portal page, error status) no
+   longer counts as "this location has no sensor". It used to mark every probed
+   location sensorless for 12 hours and drop its last reading.
+6. **Codemagic.** The App Store Connect integration is named `Apple`.
+   Workflows are manual start only, in order: signing check, unsigned build,
+   TestFlight. Free checks run on GitHub Actions. Budget: 500 macOS minutes.
+7. **Credentials.** The Codemagic token file is outside the repo, mode 600, and a
+   literal match scan of the full history and worktree found nothing. `.gitignore`
+   now covers key and profile file types, and CI fails if one is tracked.
+8. **Android** ships later as a signed APK on GitHub Releases. Google Play is
+   out of scope. CI keeps a debug APK building.
+9. **Not submitting until** the owner decides about asking RIT for written
+   permission, and the per source terms audit (5.2.2) has its own PR.

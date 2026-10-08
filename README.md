@@ -38,8 +38,8 @@ It used to be a FastAPI service on a homelab. That box gets rebuilt and rebooted
 for other projects, so its uptime could not be promised for something you check
 between classes, and the server was removed on 2026-08-30.
 
-**The cost was the Web target, and with it iOS.** Four of the six upstreams send
-no `Access-Control-Allow-Origin`, so a browser cannot reach them:
+**The cost was the Web target.** Four of the six upstreams send no
+`Access-Control-Allow-Origin`, so a browser cannot reach them:
 
 ```
 tigercenter.rit.edu           no ACAO
@@ -50,9 +50,8 @@ make.rit.edu                  ACAO: https://make.rit.edu   (its own origin only)
 locations.fdmealplanner.com   ACAO: *
 ```
 
-Native platforms have no such restriction, so **Linux and Android** are
-unaffected. Web was the iOS story, since native iOS is impossible without a Mac,
-so there is currently no iOS path.
+Native platforms have no such restriction, so **Linux, Android and iOS** are
+unaffected. Web is not a target.
 
 ## Local development
 
@@ -94,7 +93,8 @@ arise.
 `dist/` are gitignored.
 
 Android needs the Android SDK installed, which the development machine does not
-currently have. Linux builds and runs with no extra setup.
+currently have; CI builds it. Linux builds and runs with no extra setup. iOS
+builds only on Codemagic: see `codemagic.yaml` and docs/notes.md section 11.
 
 ## Data sources
 
@@ -176,11 +176,20 @@ sent there is delayed.
 - SHED hours are hardcoded because the upstream GraphQL hours feed is buggy.
   The open and close times came off that payload but the weekday mapping is
   inferred, so treat as provisional and cross check against rit.edu/shed.
-- **No iOS path.** Web was it, and CORS on RIT's endpoints rules Web out. See
-  above.
-- **Android is not set up yet.** The SDK is not installed on the development
-  machine and there is no `android/` directory, so Linux is the only target that
-  currently builds.
+- **iOS has never been built or run.** `client/ios/` exists (iPhone only,
+  portrait, iOS 15, bundle id `dev.colewiz.tigerhub`) and `codemagic.yaml`
+  defines the build, signing and TestFlight workflows, but no Codemagic build
+  has run yet and nothing has been tried on a device. This line goes once a
+  signed build installs from TestFlight.
+- **Android is not built on the development machine** (no SDK installed here).
+  `client/android/` exists and CI builds a debug APK on every PR. A signed
+  release APK via GitHub Releases is planned; Google Play is out of scope.
+- **Not affiliated with RIT, and no written permission yet.** Each upstream's
+  terms have not been audited. See docs/notes.md before any App Store
+  submission.
+- **Times are campus time, not device time.** Everything goes through
+  `CampusTime`/`RitClock`; `DateTime.now()` remains only for elapsed time such
+  as cache age. A few model fallbacks still use it; see docs/backlog.md.
 - Menus, allergens and dietary tags describe ingredients, not preparation. They
   say nothing about shared fryers or surfaces. **Halal and kosher are not
   published by any source and are never inferred.**
