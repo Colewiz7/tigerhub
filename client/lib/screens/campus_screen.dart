@@ -9,7 +9,6 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../widgets/empty_state.dart';
@@ -18,6 +17,7 @@ import '../models/api_models.dart';
 import '../data/campus_time.dart';
 import '../services/todays_hours.dart';
 import '../services/api.dart';
+import '../services/open_link.dart';
 import '../services/preferences.dart';
 import '../services/academic_dates.dart';
 import '../theme/semantic.dart';
@@ -439,17 +439,14 @@ class _SafetySection extends StatelessWidget {
           icon: contact.icon,
           title: contact.label,
           subtitle: contact.number,
-          trailing: const Icon(Icons.content_copy_rounded, size: 18),
-          semanticHint: 'Copies ${contact.number} to the clipboard',
-          onTap: () async {
-            await Clipboard.setData(ClipboardData(text: contact.number));
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(
-                SnackBar(content: Text('${contact.label} number copied')),
-              );
-          },
+          trailing: const Icon(Icons.call_rounded, size: 18),
+          semanticHint: 'Calls ${contact.number}',
+          onTap: () => openOrCopy(
+            context,
+            phoneUri(contact.number),
+            label: '${contact.label} number',
+            copyText: contact.number,
+          ),
         ),
       const SizedBox(height: 12),
       Text(

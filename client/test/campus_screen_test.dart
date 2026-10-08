@@ -16,6 +16,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/backend.dart';
@@ -27,6 +28,8 @@ import 'package:tigerhub/screens/campus_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:url_launcher_platform_interface/method_channel_url_launcher.dart';
+import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 /// Serves the same envelopes LocalBackend does, from captured fixtures, with no
 /// network and no clock dependence.
@@ -181,7 +184,23 @@ void main() {
     expect(find.textContaining('Last day of the fall'), findsOneWidget);
   });
 
-  testWidgets('safety contacts copy the exact official number', (tester) async {
+  testWidgets('safety contacts dial the exact official number', (tester) async {
+    final launcher = _FakeLauncher(succeeds: true);
+    UrlLauncherPlatform.instance = launcher;
+
+    await pumpCampus(tester);
+
+    await tester.tap(find.text('Safety'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Emergency call'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(launcher.launched, ['tel:5854753333']);
+  });
+
+  testWidgets('with no dialer the number is copied instead', (tester) async {
+    UrlLauncherPlatform.instance = _FakeLauncher(succeeds: false);
     String? copied;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
@@ -324,4 +343,17 @@ void main() {
           'two rules rather than one lunch closure',
     );
   });
+}
+
+class _FakeLauncher extends MethodChannelUrlLauncher with MockPlatformInterfaceMixin {
+  _FakeLauncher({required this.succeeds});
+
+  final bool succeeds;
+  final launched = <String>[];
+
+  @override
+  Future<bool> launchUrl(String url, LaunchOptions options) async {
+    if (succeeds) launched.add(url);
+    return succeeds;
+  }
 }

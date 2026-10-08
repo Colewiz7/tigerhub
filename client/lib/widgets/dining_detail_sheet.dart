@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../services/open_link.dart';
 import '../services/preferences.dart';
 import '../theme/semantic.dart';
 import '../theme/tokens.dart';
@@ -277,32 +278,45 @@ class _LinkRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    // No url_launcher dependency, so the link is shown and copyable rather
-    // than opened. Adding a package for one link is not worth it yet.
     return Tooltip(
       message: url,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHigh,
-          borderRadius: Shapes.inner,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: scheme.primary),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: Theme.of(context).textTheme.bodyMedium),
-                  const SizedBox(height: 2),
-                  Text(url, style: Theme.of(context).textTheme.bodySmall,
-                      maxLines: 1, overflow: TextOverflow.ellipsis),
-                ],
-              ),
+      child: Material(
+        color: scheme.surfaceContainerHigh,
+        borderRadius: Shapes.inner,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => openOrCopy(
+            context,
+            Uri.parse(url),
+            label: 'Link',
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: scheme.primary),
+                const SizedBox(width: 11),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        url,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
