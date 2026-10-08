@@ -779,6 +779,20 @@ no alpha, since App Store Connect rejects transparency), and
 Build numbers come from the latest TestFlight build plus one, so reruns never
 collide. Tests run before the build and a failure stops the upload.
 
+**iPhone only, plus Android.** No iPad: `TARGETED_DEVICE_FAMILY = 1`, which also
+means no iPad screenshots for review.
+
+**Pre-flight audit, 2026-10-08, done:** `PrivacyInfo.xcprivacy` (UserDefaults
+CA92.1, file timestamps C617.1, no tracking, no collected data; ads will need
+it revisited), `url_launcher` for `tel:` and web links with copy as the fallback
+(`services/open_link.dart`, Linux has no dialer), and a refresh on app resume,
+since iOS suspends the two minute ticker. Android gained the matching
+`<queries>`. `test/ios_readiness_test.dart` pins the plist, the manifest and the
+icon.
+
+**Not done:** a privacy policy URL (App Store Connect requires one), pull to
+refresh outside the Today tab, and excluding the cache from iCloud backup.
+
 **Untested on a device.** Nothing has run on iOS yet. Check first: the 2 minute
 ticker while backgrounded, and text sizes (see the commit that made the app
 work at large text sizes).

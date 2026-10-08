@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../models/api_models.dart';
+import '../services/open_link.dart';
 import 'status_row.dart';
 
 String eventDescriptionText(String? raw, {String? eventUrl}) {
@@ -135,6 +136,15 @@ class _EventDetailsSheet extends StatelessWidget {
                 runSpacing: 10,
                 children: [
                   FilledButton.icon(
+                    onPressed: () => openOrCopy(
+                      context,
+                      Uri.parse(event.url!),
+                      label: 'Event link',
+                    ),
+                    icon: const Icon(Icons.open_in_new_rounded),
+                    label: const Text('Open event page'),
+                  ),
+                  OutlinedButton.icon(
                     onPressed: () => _copy(context, event.url!, 'Event link'),
                     icon: const Icon(Icons.link_rounded),
                     label: const Text('Copy event link'),

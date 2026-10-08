@@ -46,7 +46,8 @@ class AppShell extends StatefulWidget {
   State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends State<AppShell>
+    with WidgetsBindingObserver {
   int _index = 0;
   bool _showSettings = false;
   bool _animateTabChange = true;
@@ -102,10 +103,21 @@ class _AppShellState extends State<AppShell> {
     _restoreCards();
     _refresh();
     _ticker = Timer.periodic(_tick, (_) => _refresh());
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// A phone suspends the app and its timers with it, so the ticker above does
+  /// not run in a pocket. Coming back asks once immediately, through the same
+  /// path as a tick, so every source's cadence still decides what is scraped.
+  /// Without it, reopening after lunch shows lunch's occupancy.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _refresh();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _ticker?.cancel();
     _subscriptions.dispose();
     Preferences.instance.removeListener(_onPreferences);
