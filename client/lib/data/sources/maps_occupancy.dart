@@ -112,17 +112,42 @@ Map<String, dynamic>? parseOccupancy(String raw, int mdoId) {
   };
 }
 
-Future<Map<String, dynamic>?> fetchOccupancy(Upstream http, int mdoId) async {
+/// What one occupancy request told us.
+///
+/// [answered] separates "the map server replied and this location has no
+/// sensor" (a real answer, worth remembering for 12 hours) from "the request
+/// failed, or a captive portal or error page came back with a 200" (no answer
+/// at all, which must change nothing). Without the split a single bad poll
+/// marked every location sensorless and dropped its last good reading.
+typedef OccupancyProbe = ({bool answered, Map<String, dynamic>? reading});
+
+/// Is [raw] shaped like the map's turbo-stream payload: a first line that is a
+/// JSON array. An HTML login page is not.
+bool looksLikeTurboStream(String raw) {
+  final firstLine = raw.split('\n').first.trim();
+  if (!firstLine.startsWith('[')) return false;
+  try {
+    return jsonDecode(firstLine) is List;
+  } on FormatException {
+    return false;
+  }
+}
+
+Future<OccupancyProbe> probeOccupancy(Upstream http, int mdoId) async {
   try {
     final raw = await http.getText(
       occupancyDetailsUrl.replaceFirst('{id}', '$mdoId'),
     );
-    return parseOccupancy(raw, mdoId);
+    if (!looksLikeTurboStream(raw)) return (answered: false, reading: null);
+    return (answered: true, reading: parseOccupancy(raw, mdoId));
   } catch (_) {
     // One location failing never fails anything else.
-    return null;
+    return (answered: false, reading: null);
   }
 }
+
+Future<Map<String, dynamic>?> fetchOccupancy(Upstream http, int mdoId) async =>
+    (await probeOccupancy(http, mdoId)).reading;
 
 /// How long before a location that reported no sensor is tried again.
 ///
@@ -215,7 +240,10 @@ Future<Map<String, dynamic>> scrapeOccupancy(ScrapeContext ctx) async {
   final stamp = now.toUtc().toIso8601String();
 
   for (final mdoId in due) {
-    final reading = await fetchOccupancy(ctx.http, mdoId);
+    final probe = await probeOccupancy(ctx.http, mdoId);
+    // No answer is not "no sensor": leave the probe and the reading alone.
+    if (!probe.answered) continue;
+    final reading = probe.reading;
     if (reading == null) {
       // Expected for most locations: they simply have no sensor.
       probes['$mdoId'] = {'has_density': false, 'probed_at': stamp};
