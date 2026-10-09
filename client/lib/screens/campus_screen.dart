@@ -1251,13 +1251,17 @@ class _RecreationRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final semantic = Semantic.of(context);
-    final today = facility.days.isEmpty ? null : facility.days.first;
+    final today = facility.dayOn(CampusTime.wallDate());
     final open = today != null && !today.closed && today.spans.isNotEmpty;
 
     return StatusRow(
       icon: _icon(facility.name),
       title: facility.name,
-      subtitle: today == null ? 'No hours published' : _spansOf(today),
+      subtitle: today == null
+          ? (facility.droppedNested > 0
+                ? 'Hours unavailable'
+                : 'No hours published')
+          : _spansOf(today),
       accent: open ? semantic.open : semantic.closed,
       emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
       onTap: facility.days.length < 2
@@ -1308,7 +1312,7 @@ class _WeekSheet extends StatelessWidget {
     final rows = [
       for (var i = 0; i < facility.days.length; i++)
         WeekRow(
-          label: i == 0
+          label: facility.days[i] == facility.dayOn(CampusTime.wallDate())
               ? 'Today'
               : _dayNames[facility.days[i].serviceDate.weekday - 1],
           note: facility.days[i].note,
