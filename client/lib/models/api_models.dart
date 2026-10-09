@@ -18,7 +18,7 @@ class Collection<T> {
   final DateTime? lastUpdated;
 
   /// Total items skipped for a missing required time, top level records and
-  /// nested ones (spans, days) together.
+  /// nested spans together.
   final int dropped;
 
   factory Collection.fromJson(
@@ -189,8 +189,8 @@ class DiningLocation with NestedDrops {
 
   factory DiningLocation.fromJson(Map<String, dynamic> json) {
     final (spans, dropped) = _parseNested(json['today'], OpenSpan.fromJson);
-    // every span was bad, so the status falls back to "hours unavailable"
-    final allBad = spans.isEmpty && dropped > 0;
+    // no spans left, so the status falls back to "hours unavailable"
+    final noSpans = spans.isEmpty;
     return DiningLocation(
       id: json['id'] as int,
       name: json['name'] as String,
@@ -202,9 +202,9 @@ class DiningLocation with NestedDrops {
       mapsUrl: json['maps_url'] as String?,
       today: spans,
       isOpen: json['is_open'] as bool? ?? false,
-      opensAt: allBad ? null : _date(json['opens_at']),
-      closesAt: allBad ? null : _date(json['closes_at']),
-      nextTransition: allBad ? null : _date(json['next_transition']),
+      opensAt: noSpans ? null : _date(json['opens_at']),
+      closesAt: noSpans ? null : _date(json['closes_at']),
+      nextTransition: noSpans ? null : _date(json['next_transition']),
       occupancy: json['occupancy'] == null
           ? null
           : Occupancy.fromJson(json['occupancy'] as Map<String, dynamic>),
@@ -427,37 +427,19 @@ class MenuDay {
     required this.locationId,
     required this.serviceDate,
     required this.dishes,
-    this.dropped = 0,
   });
 
   final int locationId;
-
-  /// Null only on a dropped menu, which also has no dishes.
-  final DateTime? serviceDate;
+  final DateTime serviceDate;
   final List<Dish> dishes;
 
-  /// 1 when the menu had no service_date and was emptied.
-  final int dropped;
-
-  factory MenuDay.fromJson(Map<String, dynamic> json) {
-    final serviceDate = _date(json['service_date']);
-    final locationId = json['location_id'] as int? ?? 0;
-    if (serviceDate == null) {
-      return MenuDay(
-        locationId: locationId,
-        serviceDate: null,
-        dishes: const [],
-        dropped: 1,
-      );
-    }
-    return MenuDay(
-      locationId: locationId,
-      serviceDate: serviceDate,
-      dishes: (json['dishes'] as List<dynamic>? ?? const [])
-          .map((e) => Dish.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
-  }
+  factory MenuDay.fromJson(Map<String, dynamic> json) => MenuDay(
+    locationId: json['location_id'] as int? ?? 0,
+    serviceDate: _requiredDate(json, 'service_date'),
+    dishes: (json['dishes'] as List<dynamic>? ?? const [])
+        .map((e) => Dish.fromJson(e as Map<String, dynamic>))
+        .toList(),
+  );
 }
 
 class OccupancyHour {
@@ -707,27 +689,19 @@ class RecreationDay {
   );
 }
 
-class RecreationFacility with NestedDrops {
-  const RecreationFacility({
-    required this.name,
-    required this.days,
-    this.droppedNested = 0,
-  });
-
-  @override
-  final int droppedNested;
+class RecreationFacility {
+  const RecreationFacility({required this.name, required this.days});
 
   final String name;
   final List<RecreationDay> days;
 
-  factory RecreationFacility.fromJson(Map<String, dynamic> json) {
-    final (days, dropped) = _parseNested(json['days'], RecreationDay.fromJson);
-    return RecreationFacility(
-      name: json['name'] as String? ?? '',
-      days: days,
-      droppedNested: dropped,
-    );
-  }
+  factory RecreationFacility.fromJson(Map<String, dynamic> json) =>
+      RecreationFacility(
+        name: json['name'] as String? ?? '',
+        days: (json['days'] as List<dynamic>? ?? const [])
+            .map((e) => RecreationDay.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
 }
 
 class MakerSpaceHours {
