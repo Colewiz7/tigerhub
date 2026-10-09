@@ -42,12 +42,16 @@ class Result<T> {
     required this.state,
     this.fetchedAt,
     this.error,
+    this.dropped = 0,
   });
 
   final T? value;
   final DataState state;
   final DateTime? fetchedAt;
   final Object? error;
+
+  /// 1 when the record was skipped for a missing required time.
+  final int dropped;
 
   bool get hasData => value != null;
   bool get isPriming => state == DataState.priming;
@@ -109,17 +113,19 @@ class ApiClient {
   /// an error, because a stale cache must never produce an error screen.
   Stream<Result<T>> watch<T>(
     String path,
-    T Function(Map<String, dynamic>) parse, {
+    T? Function(Map<String, dynamic>) parse, {
     Map<String, String>? query,
   }) async* {
     final cacheKey = cacheKeyFor(path, query);
 
     final cached = await _cache.read(cacheKey);
     if (cached != null) {
+      final value = parse(cached.body);
       yield Result<T>(
-        value: parse(cached.body),
+        value: value,
         state: DataState.stale,
         fetchedAt: cached.fetchedAt,
+        dropped: value == null ? 1 : 0,
       );
     } else {
       yield Result<T>(value: null, state: DataState.priming);
@@ -132,18 +138,22 @@ class ApiClient {
       // The backend reports its own staleness, so the presentation layer
       // mirrors that signal rather than inventing a second one.
       final serverStale = body['stale'] as bool? ?? false;
+      final value = parse(body);
       yield Result<T>(
-        value: parse(body),
+        value: value,
         state: serverStale ? DataState.stale : DataState.ok,
         fetchedAt: DateTime.now(),
+        dropped: value == null ? 1 : 0,
       );
     } catch (error) {
       if (cached != null) {
+        final value = parse(cached.body);
         yield Result<T>(
-          value: parse(cached.body),
+          value: value,
           state: DataState.failing,
           fetchedAt: cached.fetchedAt,
           error: error,
+          dropped: value == null ? 1 : 0,
         );
       } else {
         yield Result<T>(value: null, state: DataState.priming, error: error);
@@ -189,9 +199,16 @@ class ApiClient {
   );
 
   /// Today's menu for one location. Only 12 of 24 publish one, so an empty
-  /// dish list is a normal answer.
+  /// dish list is a normal answer. A menu with no service_date comes back as
+  /// a null value with one drop, never as a dated guess.
   Stream<Result<MenuDay>> menu(int locationId) =>
-      watch('/dining/$locationId/menu', MenuDay.fromJson);
+      watch('/dining/$locationId/menu', (j) {
+        try {
+          return MenuDay.fromJson(j);
+        } on MissingTimeException {
+          return null;
+        }
+      });
 
   /// The 24 hour occupancy series for one location. Only the five locations
   /// with a sensor return anything.

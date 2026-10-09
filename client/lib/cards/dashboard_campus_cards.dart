@@ -2,6 +2,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../theme/semantic.dart';
@@ -81,10 +82,12 @@ class _FacilityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final day = facility.days.isEmpty ? null : facility.days.first;
+    final day = facility.dayOn(CampusTime.wallDate());
     final open = day != null && !day.closed && day.spans.isNotEmpty;
     final hours = day == null
-        ? 'No hours published'
+        ? (facility.droppedNested > 0
+              ? 'Hours unavailable'
+              : 'No hours published')
         : !open
         ? (day.note ?? 'Closed today')
         : day.spans
