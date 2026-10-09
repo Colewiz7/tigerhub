@@ -6,21 +6,39 @@ library;
 
 /// Envelope returned by every list endpoint.
 class Collection<T> {
-  const Collection({required this.data, required this.stale, this.lastUpdated});
+  const Collection({
+    required this.data,
+    required this.stale,
+    this.lastUpdated,
+    this.dropped = 0,
+  });
 
   final List<T> data;
   final bool stale;
   final DateTime? lastUpdated;
+
+  /// Records skipped because a required time field was missing.
+  final int dropped;
 
   factory Collection.fromJson(
     Map<String, dynamic> json,
     T Function(Map<String, dynamic>) parse,
   ) {
     final raw = (json['data'] as List<dynamic>? ?? const []);
+    final data = <T>[];
+    var dropped = 0;
+    for (final e in raw) {
+      try {
+        data.add(parse(e as Map<String, dynamic>));
+      } on MissingTimeException {
+        dropped++;
+      }
+    }
     return Collection<T>(
-      data: raw.map((e) => parse(e as Map<String, dynamic>)).toList(),
+      data: data,
       stale: json['stale'] as bool? ?? false,
       lastUpdated: _date(json['last_updated']),
+      dropped: dropped,
     );
   }
 
@@ -28,11 +46,27 @@ class Collection<T> {
     data: data,
     stale: stale ?? this.stale,
     lastUpdated: lastUpdated,
+    dropped: dropped,
   );
+}
+
+class MissingTimeException implements Exception {
+  const MissingTimeException(this.field);
+
+  final String field;
+
+  @override
+  String toString() => 'missing required time field: $field';
 }
 
 DateTime? _date(Object? value) =>
     value is String ? DateTime.tryParse(value)?.toLocal() : null;
+
+DateTime _requiredDate(Map<String, dynamic> json, String key) {
+  final value = _date(json[key]);
+  if (value == null) throw MissingTimeException(key);
+  return value;
+}
 
 class Occupancy {
   const Occupancy({
@@ -75,8 +109,8 @@ class OpenSpan {
   final bool isException;
 
   factory OpenSpan.fromJson(Map<String, dynamic> json) => OpenSpan(
-    opensAt: _date(json['opens_at']) ?? DateTime.now(),
-    closesAt: _date(json['closes_at']) ?? DateTime.now(),
+    opensAt: _requiredDate(json, 'opens_at'),
+    closesAt: _requiredDate(json, 'closes_at'),
     isException: json['is_exception'] as bool? ?? false,
   );
 }
@@ -209,7 +243,7 @@ class CampusEvent {
     uid: json['uid'] as String,
     source: json['source'] as String? ?? '',
     title: json['title'] as String? ?? '',
-    startsAt: _date(json['starts_at']) ?? DateTime.now(),
+    startsAt: _requiredDate(json, 'starts_at'),
     endsAt: _date(json['ends_at']),
     description: json['description'] as String?,
     location: json['location'] as String?,
@@ -370,9 +404,7 @@ class MenuDay {
 
   factory MenuDay.fromJson(Map<String, dynamic> json) => MenuDay(
     locationId: json['location_id'] as int? ?? 0,
-    serviceDate:
-        DateTime.tryParse(json['service_date'] as String? ?? '') ??
-        DateTime.now(),
+    serviceDate: _requiredDate(json, 'service_date'),
     dishes: (json['dishes'] as List<dynamic>? ?? const [])
         .map((e) => Dish.fromJson(e as Map<String, dynamic>))
         .toList(),
@@ -617,9 +649,7 @@ class RecreationDay {
   final String? note;
 
   factory RecreationDay.fromJson(Map<String, dynamic> json) => RecreationDay(
-    serviceDate:
-        DateTime.tryParse(json['service_date'] as String? ?? '') ??
-        DateTime.now(),
+    serviceDate: _requiredDate(json, 'service_date'),
     closed: json['closed'] as bool? ?? false,
     note: json['note'] as String?,
     spans: (json['spans'] as List<dynamic>? ?? const [])
