@@ -13,7 +13,7 @@ import UIKit
 
   /// The scraped snapshots live under Application Support and can all be
   /// fetched again, so they do not belong in an iCloud or device backup
-  /// (App Store guideline 2.23). The directory is created here first so the
+  /// (iOS Data Storage Guidelines). The directory is created here first so the
   /// flag is set before Dart writes anything into it.
   private func excludeAppSupportFromBackup() {
     let fileManager = FileManager.default
