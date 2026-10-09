@@ -7,11 +7,12 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../theme/semantic.dart';
+import '../widgets/event_details_sheet.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
-import '../widgets/event_details_sheet.dart';
 
 IconData iconForEventType(String? type) {
   final t = (type ?? '').toLowerCase();
@@ -57,7 +58,7 @@ class EventRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final semantic = Semantic.of(context);
     final text = Theme.of(context).textTheme;
-    final moment = now ?? DateTime.now();
+    final moment = now ?? CampusTime.nowUtc();
 
     // An event is past once its end has gone by, or its start if it has no end.
     final ends = event.endsAt ?? event.startsAt;
@@ -69,9 +70,7 @@ class EventRow extends StatelessWidget {
     // events on different days used to render as an identical clock time,
     // which read as a duplicated row.
     final sameDay =
-        event.startsAt.year == moment.year &&
-        event.startsAt.month == moment.month &&
-        event.startsAt.day == moment.day;
+        CampusTime.dateOf(event.startsAt) == CampusTime.dateOf(moment);
     final stamp = event.allDay
         ? 'ALL DAY'
         : (sameDay

@@ -5,6 +5,8 @@
 /// build cannot present an expired deadline as upcoming.
 library;
 
+import '../data/campus_time.dart';
+
 class AcademicMilestone {
   const AcademicMilestone(this.date, this.title, this.detail);
 
@@ -86,7 +88,8 @@ List<AcademicMilestone> upcomingAcademicMilestones({
   DateTime? now,
   int? limit,
 }) {
-  final clock = now ?? DateTime.now();
+  // [now] is campus wall clock fields; the default is the campus day.
+  final clock = now ?? CampusTime.wallNow();
   final today = DateTime(clock.year, clock.month, clock.day);
   final upcoming = academicMilestones
       .where((item) => !item.date.isBefore(today))

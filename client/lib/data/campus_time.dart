@@ -17,6 +17,8 @@
 /// change, which is the reason it is one file.
 library;
 
+import 'rit_clock.dart';
+
 const Duration _standard = Duration(hours: -5); // EST
 const Duration _daylight = Duration(hours: -4); // EDT
 
@@ -72,7 +74,19 @@ class CampusTime {
   static DateTime fieldsOf(DateTime instant) =>
       instant.toUtc().add(offsetAt(instant));
 
-  static DateTime nowUtc() => DateTime.now().toUtc();
+  /// The current instant, in UTC. Pin it with `RitClock.pin` in tests.
+  static DateTime nowUtc() => RitClock.nowUtc();
+
+  /// Today's campus calendar date as a midnight `DateTime(y, m, d)`. For
+  /// comparing against other calendar dates and for labels, never for
+  /// arithmetic across a device DST change.
+  static DateTime wallDate() {
+    final f = fieldsOf(nowUtc());
+    return DateTime(f.year, f.month, f.day);
+  }
+
+  /// Campus wall clock fields for right now. Never use this for arithmetic.
+  static DateTime wallNow() => fieldsOf(nowUtc());
 
   /// The campus calendar date of a UTC instant.
   static DateTime dateOf(DateTime instant) {

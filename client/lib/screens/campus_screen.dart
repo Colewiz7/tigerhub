@@ -293,7 +293,7 @@ class _ShuttleSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final homeId = Preferences.instance.homeArea;
     final home = areas.where((area) => area.id == homeId).firstOrNull;
-    final clock = now ?? DateTime.now();
+    final clock = now ?? CampusTime.wallNow();
     final weekend =
         clock.weekday == DateTime.saturday || clock.weekday == DateTime.sunday;
     final laborDay = clock.year == 2026 && clock.month == 9 && clock.day == 7;
