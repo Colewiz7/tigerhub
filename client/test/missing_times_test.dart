@@ -44,27 +44,41 @@ void main() {
     expect(c.dropped, 0);
   });
 
-  test('open spans missing opens_at or closes_at drop their location', () {
+  test('bad spans are dropped, the location and valid spans stay', () {
     final noOpen = _span()..remove('opens_at');
     final noClose = _span()..remove('closes_at');
     final json = {
       'data': [
         _location(1, [_span()]),
-        _location(2, [noOpen]),
+        _location(2, [noOpen, _span()]),
         _location(3, [noClose]),
-        _location(4, [_span(), noOpen]),
-        _location(5, []),
+        _location(4, []),
       ],
     };
     final c = Collection.fromJson(json, DiningLocation.fromJson);
-    expect(c.data.map((l) => l.id), [1, 5]);
-    expect(c.dropped, 3);
-    expect(
-      c.data.first.today.single.opensAt.isAtSameMomentAs(
-        DateTime.utc(2026, 3, 1, 8),
-      ),
-      isTrue,
-    );
+    expect(c.data.map((l) => l.id), [1, 2, 3, 4]);
+    expect(c.data.map((l) => l.today.length), [1, 1, 0, 0]);
+    expect(c.dropped, 2);
+    final kept = c.data[1].today.single.opensAt;
+    expect(kept.isAtSameMomentAs(DateTime.utc(2026, 3, 1, 8)), isTrue);
+  });
+
+  test('all spans bad falls back to hours unavailable', () {
+    final noOpen = _span()..remove('opens_at');
+    final loc = _location(1, [noOpen])
+      ..['opens_at'] = '2026-03-01T08:00:00Z'
+      ..['closes_at'] = '2026-03-01T17:00:00Z'
+      ..['next_transition'] = '2026-03-01T17:00:00Z';
+    final l = DiningLocation.fromJson(loc);
+    expect(l.opensAt, isNull);
+    expect(l.closesAt, isNull);
+    expect(l.nextTransition, isNull);
+    expect(l.droppedNested, 1);
+  });
+
+  test('a location with no spans at all keeps its own times', () {
+    final loc = _location(1, [])..['opens_at'] = '2026-03-01T08:00:00Z';
+    expect(DiningLocation.fromJson(loc).opensAt, isNotNull);
   });
 
   test('optional dining times stay null', () {
@@ -76,40 +90,55 @@ void main() {
     expect(c.data.single.nextTransition, isNull);
   });
 
-  test('menu day without service_date throws instead of using now', () {
-    expect(
-      () => MenuDay.fromJson({'location_id': 1}),
-      throwsA(isA<MissingTimeException>()),
-    );
+  test('menu day without service_date is dropped and counted', () {
+    final bad = MenuDay.fromJson({
+      'location_id': 1,
+      'dishes': [
+        {'name': 'Soup'},
+      ],
+    });
+    expect(bad.dropped, 1);
+    expect(bad.serviceDate, isNull);
+    expect(bad.dishes, isEmpty);
     final ok = MenuDay.fromJson({
       'location_id': 1,
       'service_date': '2026-03-01',
     });
-    expect(ok.serviceDate.year, 2026);
+    expect(ok.dropped, 0);
+    expect(ok.serviceDate!.year, 2026);
   });
 
-  test('recreation days without service_date drop the facility', () {
+  test('bad recreation day is dropped, facility and good days stay', () {
     final json = {
       'data': [
         {
-          'id': 1,
-          'name': 'Good',
+          'name': 'Pool',
           'days': [
             {'service_date': '2026-03-01'},
+            {'closed': true},
+            {'service_date': 'nope'},
           ],
         },
         {
-          'id': 2,
-          'name': 'Bad',
+          'name': 'Gym',
           'days': [
-            {'closed': true},
+            {'service_date': '2026-03-02'},
           ],
         },
       ],
     };
     final c = Collection.fromJson(json, RecreationFacility.fromJson);
-    expect(c.data.length, 1);
-    expect(c.dropped, 1);
+    expect(c.data.map((f) => f.days.length), [1, 1]);
+    expect(c.dropped, 2);
+  });
+
+  test('dropped counts top level and nested items together', () {
+    final json = {
+      'data': [
+        _location(1, [_span()..remove('closes_at')]),
+      ],
+    };
+    expect(Collection.fromJson(json, DiningLocation.fromJson).dropped, 1);
   });
 
   test('dropped survives copyWith', () {
