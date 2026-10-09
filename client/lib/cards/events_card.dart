@@ -10,30 +10,27 @@ library;
 
 import 'package:flutter/material.dart';
 
-import '../widgets/empty_state.dart';
+import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
-import '../widgets/glyph.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
+import '../widgets/glyph.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
 import 'event_row.dart';
 
 /// Count events on the viewer's current calendar day.
 ///
-/// Event instants arrive with an offset, while the device may represent them
-/// in UTC internally. Converting both sides to local time keeps "today" tied
-/// to the day the student sees on their clock.
+/// Event instants arrive with an offset. "Today" is the campus calendar day
+/// (America/New_York), the same day the event times are shown in.
 int eventsToday(List<CampusEvent> events, {DateTime? now}) {
-  final localNow = (now ?? DateTime.now()).toLocal();
-  return events.where((event) {
-    final start = event.startsAt.toLocal();
-    return start.year == localNow.year &&
-        start.month == localNow.month &&
-        start.day == localNow.day;
-  }).length;
+  final today = CampusTime.dateOf(now ?? CampusTime.nowUtc());
+  return events
+      .where((event) => CampusTime.dateOf(event.startsAt) == today)
+      .length;
 }
 
 /// Organizer type drives the header icon.
@@ -157,7 +154,7 @@ class _Compact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
+    final now = CampusTime.nowUtc();
     final ordered = [...events]
       ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
     final next = ordered

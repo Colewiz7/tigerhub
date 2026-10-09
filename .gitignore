@@ -44,3 +44,16 @@ CLAUDE.md
 /*.png
 /*.jpg
 /*.jpeg
+
+# Signing material and credentials. None of this ever belongs in the repo.
+*.p8
+*.p12
+*.pem
+*.cer
+*.mobileprovision
+*.keystore
+*.jks
+key.properties
+codemagic_api*
+.env
+.env.*

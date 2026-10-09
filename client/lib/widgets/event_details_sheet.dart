@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/open_link.dart';
 import 'status_row.dart';
@@ -59,18 +60,19 @@ class _EventDetailsSheet extends StatelessWidget {
 
   final CampusEvent event;
 
+  /// Campus clock, not device clock: see `formatClock`.
   String get _when {
     final date = DateFormat('EEEE, MMMM d');
     final clock = DateFormat('h:mm a');
-    if (event.allDay) return '${date.format(event.startsAt)} · All day';
-    final start =
-        '${date.format(event.startsAt)} · ${clock.format(event.startsAt)}';
-    final end = event.endsAt;
+    final from = CampusTime.fieldsOf(event.startsAt);
+    if (event.allDay) return '${date.format(from)} · All day';
+    final start = '${date.format(from)} · ${clock.format(from)}';
+    final end = event.endsAt == null
+        ? null
+        : CampusTime.fieldsOf(event.endsAt!);
     if (end == null) return start;
     final sameDay =
-        end.year == event.startsAt.year &&
-        end.month == event.startsAt.month &&
-        end.day == event.startsAt.day;
+        end.year == from.year && end.month == from.month && end.day == from.day;
     return sameDay
         ? '$start–${clock.format(end)}'
         : '$start–${date.format(end)} · ${clock.format(end)}';

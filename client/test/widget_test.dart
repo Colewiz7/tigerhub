@@ -8,27 +8,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/app_shell.dart';
-import 'package:tigerhub/models/api_models.dart';
-import 'package:tigerhub/services/api.dart';
-import 'package:tigerhub/widgets/freshness.dart';
 import 'package:tigerhub/cards/dining_card.dart';
 import 'package:tigerhub/cards/event_row.dart';
-import 'package:tigerhub/theme/app_theme.dart';
-import 'package:tigerhub/theme/semantic.dart';
-import 'package:tigerhub/theme/dynamic_theme.dart';
-import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/data/backend.dart';
-import 'package:tigerhub/widgets/menu_section.dart';
+import 'package:tigerhub/data/campus_time.dart';
+import 'package:tigerhub/models/api_models.dart';
+import 'package:tigerhub/screens/campus_screen.dart' show currentSeason;
+import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/preferences.dart';
-import 'package:tigerhub/widgets/jump_list.dart';
-import 'package:tigerhub/widgets/section_nav.dart';
-import 'package:tigerhub/widgets/week_grid.dart';
+import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/theme/dynamic_theme.dart';
+import 'package:tigerhub/theme/semantic.dart';
+import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
 import 'package:tigerhub/widgets/content_column.dart';
+import 'package:tigerhub/widgets/freshness.dart';
+import 'package:tigerhub/widgets/jump_list.dart';
+import 'package:tigerhub/widgets/menu_section.dart';
 import 'package:tigerhub/widgets/more_row.dart';
-import 'package:tigerhub/screens/campus_screen.dart' show currentSeason;
 import 'package:tigerhub/widgets/occupancy_chart.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart';
+import 'package:tigerhub/widgets/section_nav.dart';
+import 'package:tigerhub/widgets/week_grid.dart';
 
 /// Stands in for a scrape. `ApiClient`'s caching and state machine are
 /// transport independent, so these tests inject a [Backend] rather than a
@@ -742,10 +743,10 @@ void _designTokens() {
 void _screenshotReview() {
   group('screenshot review fixes', () {
     test('midnight and noon apply only at exact boundaries', () {
-      expect(formatClock(DateTime(2026, 8, 28, 0, 0)), 'midnight');
-      expect(formatClock(DateTime(2026, 8, 28, 12, 0)), 'noon');
-      expect(formatClock(DateTime(2026, 8, 28, 0, 1)), '12:01 AM');
-      expect(formatClock(DateTime(2026, 8, 28, 23, 59)), '11:59 PM');
+      expect(formatClock(CampusTime.wall(2026, 8, 28, 0, 0)), 'midnight');
+      expect(formatClock(CampusTime.wall(2026, 8, 28, 12, 0)), 'noon');
+      expect(formatClock(CampusTime.wall(2026, 8, 28, 0, 1)), '12:01 AM');
+      expect(formatClock(CampusTime.wall(2026, 8, 28, 23, 59)), '11:59 PM');
     });
 
     testWidgets(
@@ -943,7 +944,7 @@ void _visualStructure() {
                 id: 1,
                 name: 'Beanz',
                 isOpen: true,
-                closesAt: DateTime(2026, 8, 28, 22),
+                closesAt: CampusTime.wall(2026, 8, 28, 22),
               ),
             ),
           ),

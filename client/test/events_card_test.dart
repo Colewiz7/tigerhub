@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/cards/events_card.dart';
+import 'package:tigerhub/data/campus_time.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart';
@@ -13,12 +14,12 @@ CampusEvent _event(String uid, DateTime startsAt) => CampusEvent(
 );
 
 void main() {
-  test('eventsToday compares calendar days in local time', () {
-    final now = DateTime(2026, 8, 30, 12);
+  test('eventsToday compares campus calendar days', () {
+    final now = CampusTime.wall(2026, 8, 30, 12);
     final events = [
-      _event('morning', DateTime(2026, 8, 30, 8)),
-      _event('evening', DateTime(2026, 8, 30, 20)),
-      _event('tomorrow', DateTime(2026, 8, 31, 9)),
+      _event('morning', CampusTime.wall(2026, 8, 30, 8)),
+      _event('evening', CampusTime.wall(2026, 8, 30, 20)),
+      _event('tomorrow', CampusTime.wall(2026, 8, 31, 9)),
     ];
 
     expect(eventsToday(events, now: now), 2);
