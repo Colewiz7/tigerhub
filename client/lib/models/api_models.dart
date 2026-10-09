@@ -85,6 +85,21 @@ DateTime? _date(Object? value) =>
   return (items, dropped);
 }
 
+// a calendar date carries no zone, so fields are kept as utc midnight and
+// never shifted by the device offset
+DateTime _requiredCalendarDate(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  final match = value is String
+      ? RegExp(r'^(\d{4})-(\d{2})-(\d{2})').firstMatch(value)
+      : null;
+  if (match == null) throw MissingTimeException(key);
+  return DateTime.utc(
+    int.parse(match[1]!),
+    int.parse(match[2]!),
+    int.parse(match[3]!),
+  );
+}
+
 DateTime _requiredDate(Map<String, dynamic> json, String key) {
   final value = _date(json[key]);
   if (value == null) throw MissingTimeException(key);
@@ -435,7 +450,7 @@ class MenuDay {
 
   factory MenuDay.fromJson(Map<String, dynamic> json) => MenuDay(
     locationId: json['location_id'] as int? ?? 0,
-    serviceDate: _requiredDate(json, 'service_date'),
+    serviceDate: _requiredCalendarDate(json, 'service_date'),
     dishes: (json['dishes'] as List<dynamic>? ?? const [])
         .map((e) => Dish.fromJson(e as Map<String, dynamic>))
         .toList(),
@@ -680,7 +695,7 @@ class RecreationDay {
   final String? note;
 
   factory RecreationDay.fromJson(Map<String, dynamic> json) => RecreationDay(
-    serviceDate: _requiredDate(json, 'service_date'),
+    serviceDate: _requiredCalendarDate(json, 'service_date'),
     closed: json['closed'] as bool? ?? false,
     note: json['note'] as String?,
     spans: (json['spans'] as List<dynamic>? ?? const [])
@@ -702,7 +717,7 @@ class RecreationFacility with NestedDrops {
   @override
   final int droppedNested;
 
-  // matched by date so a dropped today never shows another day
+  // [date] is the campus today, matched on y/m/d fields only
   RecreationDay? dayOn(DateTime date) {
     for (final day in days) {
       final d = day.serviceDate;

@@ -48,13 +48,17 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
     super.initState();
     _prefs.addListener(_onChanged);
     if (widget.location.occupancy != null) {
-      _subscriptions.add(widget.api.occupancyHistory(widget.location.id).listen((r) {
-        if (mounted) setState(() => _history = r);
-      }));
+      _subscriptions.add(
+        widget.api.occupancyHistory(widget.location.id).listen((r) {
+          if (mounted) setState(() => _history = r);
+        }),
+      );
     }
-    _subscriptions.add(widget.api.menu(widget.location.id).listen((r) {
-      if (mounted) setState(() => _menu = r);
-    }));
+    _subscriptions.add(
+      widget.api.menu(widget.location.id).listen((r) {
+        if (mounted) setState(() => _menu = r);
+      }),
+    );
   }
 
   @override
@@ -98,8 +102,10 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(location.name,
-                          style: text.titleLarge?.copyWith(fontSize: 24)),
+                      Text(
+                        location.name,
+                        style: text.titleLarge?.copyWith(fontSize: 24),
+                      ),
                       if (location.summary != null) ...[
                         const SizedBox(height: 3),
                         Text(location.summary!, style: text.bodySmall),
@@ -129,11 +135,11 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                   Text(
                     open
                         ? (location.closesAt == null
-                            ? 'Open · hours unavailable'
-                            : 'Open until ${formatClock(location.closesAt!)}')
+                              ? 'Open · hours unavailable'
+                              : 'Open until ${formatClock(location.closesAt!)}')
                         : (location.opensAt == null
-                            ? 'Closed · hours unavailable'
-                            : 'Opens ${formatDayAndClock(location.opensAt!)}'),
+                              ? 'Closed · hours unavailable'
+                              : 'Opens ${formatDayAndClock(location.opensAt!)}'),
                     textAlign: TextAlign.center,
                     style: text.displayMedium?.copyWith(
                       fontSize: 24,
@@ -145,8 +151,10 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                     const SizedBox(height: 6),
                     Text(
                       location.today
-                          .map((s) =>
-                              '${formatClock(s.opensAt)} to ${formatClock(s.closesAt)}')
+                          .map(
+                            (s) =>
+                                '${formatClock(s.opensAt)} to ${formatClock(s.closesAt)}',
+                          )
                           .join(',  '),
                       textAlign: TextAlign.center,
                       style: text.bodySmall,
@@ -184,7 +192,10 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                 children: [
                   Text('ON THE MENU TODAY', style: text.labelSmall),
                   const Spacer(),
-                  Text('${_menu!.value!.dishes.length}', style: text.labelSmall),
+                  Text(
+                    '${_menu!.value!.dishes.length}',
+                    style: text.labelSmall,
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -256,8 +267,8 @@ class _PinButton extends StatelessWidget {
                 Text(
                   pinned ? 'Pinned' : 'Pin',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: pinned ? scheme.onPrimary : scheme.onSurface,
-                      ),
+                    color: pinned ? scheme.onPrimary : scheme.onSurface,
+                  ),
                 ),
               ],
             ),
@@ -285,11 +296,7 @@ class _LinkRow extends StatelessWidget {
         borderRadius: Shapes.inner,
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => openOrCopy(
-            context,
-            Uri.parse(url),
-            label: 'Link',
-          ),
+          onTap: () => openOrCopy(context, Uri.parse(url), label: 'Link'),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
