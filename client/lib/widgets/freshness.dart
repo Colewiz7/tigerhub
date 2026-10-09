@@ -7,6 +7,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../data/campus_time.dart';
 import '../services/api.dart';
 import '../theme/tokens.dart';
 
@@ -19,18 +20,21 @@ String formatAge(DateTime when) {
   return '${delta.inDays}d ago';
 }
 
-/// Displays a timestamp the API computed. Never derives one.
+/// Displays a campus instant on the campus clock (America/New_York), never the
+/// device's. A student away from Eastern time still wants RIT's hours.
 ///
 /// Midnight and noon read better as words than as "12:00 AM", which is easy to
 /// misread as midday.
 String formatClock(DateTime when) {
-  if (when.minute == 0 && when.hour == 0) return 'midnight';
-  if (when.minute == 0 && when.hour == 12) return 'noon';
-  return DateFormat('h:mm a').format(when);
+  final f = CampusTime.fieldsOf(when);
+  if (f.minute == 0 && f.hour == 0) return 'midnight';
+  if (f.minute == 0 && f.hour == 12) return 'noon';
+  return DateFormat('h:mm a').format(f);
 }
 
 String formatDayAndClock(DateTime when) =>
-    '${DateFormat('EEE d MMM').format(when)}, ${formatClock(when)}';
+    '${DateFormat('EEE d MMM').format(CampusTime.fieldsOf(when))}, '
+    '${formatClock(when)}';
 
 class FreshnessLine extends StatelessWidget {
   const FreshnessLine({super.key, required this.state, this.fetchedAt});
