@@ -1,15 +1,15 @@
 library;
 
-import '../data/campus_time.dart';
 import 'package:flutter/material.dart';
 
+import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
-import '../widgets/status_row.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/glyph.dart';
+import '../widgets/status_row.dart';
 import 'event_row.dart';
 
 List<CampusEvent> _scopedEvents(
@@ -59,7 +59,8 @@ class ScopedEventsCard extends StatelessWidget {
     final events = _scopedEvents(result, organizerKey);
     final future = events
         .where(
-          (event) => (event.endsAt ?? event.startsAt).isAfter(CampusTime.nowUtc()),
+          (event) =>
+              (event.endsAt ?? event.startsAt).isAfter(CampusTime.nowUtc()),
         )
         .toList();
     final shown = future.isEmpty ? events : future;

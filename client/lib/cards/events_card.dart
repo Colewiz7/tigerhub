@@ -8,16 +8,16 @@
 /// reads as one club's feed.
 library;
 
-import '../data/campus_time.dart';
 import 'package:flutter/material.dart';
 
-import '../widgets/empty_state.dart';
+import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
-import '../widgets/glyph.dart';
+import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
+import '../widgets/glyph.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
 import 'event_row.dart';
