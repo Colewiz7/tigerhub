@@ -18,7 +18,7 @@ class Collection<T> {
   final DateTime? lastUpdated;
 
   /// Total items skipped for a missing required time, top level records and
-  /// nested spans together.
+  /// nested spans and days together.
   final int dropped;
 
   factory Collection.fromJson(
@@ -689,19 +689,38 @@ class RecreationDay {
   );
 }
 
-class RecreationFacility {
-  const RecreationFacility({required this.name, required this.days});
+class RecreationFacility with NestedDrops {
+  const RecreationFacility({
+    required this.name,
+    required this.days,
+    this.droppedNested = 0,
+  });
 
   final String name;
   final List<RecreationDay> days;
 
-  factory RecreationFacility.fromJson(Map<String, dynamic> json) =>
-      RecreationFacility(
-        name: json['name'] as String? ?? '',
-        days: (json['days'] as List<dynamic>? ?? const [])
-            .map((e) => RecreationDay.fromJson(e as Map<String, dynamic>))
-            .toList(),
-      );
+  @override
+  final int droppedNested;
+
+  // matched by date so a dropped today never shows another day
+  RecreationDay? dayOn(DateTime date) {
+    for (final day in days) {
+      final d = day.serviceDate;
+      final same =
+          d.year == date.year && d.month == date.month && d.day == date.day;
+      if (same) return day;
+    }
+    return null;
+  }
+
+  factory RecreationFacility.fromJson(Map<String, dynamic> json) {
+    final (days, dropped) = _parseNested(json['days'], RecreationDay.fromJson);
+    return RecreationFacility(
+      name: json['name'] as String? ?? '',
+      days: days,
+      droppedNested: dropped,
+    );
+  }
 }
 
 class MakerSpaceHours {

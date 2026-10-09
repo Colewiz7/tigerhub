@@ -129,10 +129,10 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                   Text(
                     open
                         ? (location.closesAt == null
-                            ? 'Open'
+                            ? 'Open · hours unavailable'
                             : 'Open until ${formatClock(location.closesAt!)}')
                         : (location.opensAt == null
-                            ? 'Closed'
+                            ? 'Closed · hours unavailable'
                             : 'Opens ${formatDayAndClock(location.opensAt!)}'),
                     textAlign: TextAlign.center,
                     style: text.displayMedium?.copyWith(

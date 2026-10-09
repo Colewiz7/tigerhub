@@ -148,19 +148,18 @@ void main() {
     },
   );
 
-  test('recreation days without service_date drop the facility', () {
+  test('a bad recreation day is dropped and counted, the facility stays', () {
     final json = {
       'data': [
         {
-          'id': 1,
-          'name': 'Good',
+          'name': 'Pool',
           'days': [
             {'service_date': '2026-03-01'},
+            {'closed': true},
           ],
         },
         {
-          'id': 2,
-          'name': 'Bad',
+          'name': 'Gym',
           'days': [
             {'closed': true},
           ],
@@ -168,8 +167,21 @@ void main() {
       ],
     };
     final c = Collection.fromJson(json, RecreationFacility.fromJson);
-    expect(c.data.length, 1);
-    expect(c.dropped, 1);
+    expect(c.data.map((f) => f.days.length), [1, 0]);
+    expect(c.data.map((f) => f.droppedNested), [1, 1]);
+    expect(c.dropped, 2);
+  });
+
+  test('dayOn matches by date, never falls through to another day', () {
+    final f = RecreationFacility.fromJson({
+      'name': 'Pool',
+      'days': [
+        {'closed': true},
+        {'service_date': '2026-03-02'},
+      ],
+    });
+    expect(f.dayOn(DateTime(2026, 3, 1)), isNull);
+    expect(f.dayOn(DateTime(2026, 3, 2)), isNotNull);
   });
 
   test('dropped counts top level and nested items together', () {
