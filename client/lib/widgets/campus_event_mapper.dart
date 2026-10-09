@@ -5,6 +5,7 @@
 /// fallback and no pin at campus centre.
 library;
 
+import '../data/campus_time.dart';
 import '../models/api_models.dart';
 
 class MappedEventGroup {
@@ -50,9 +51,10 @@ CampusEventMapResult mapCampusEvents(
   List<CampusMapFeature> features, {
   DateTime? day,
 }) {
-  final target = day ?? DateTime.now();
-  final start = DateTime(target.year, target.month, target.day);
-  final end = start.add(const Duration(days: 1));
+  // [day] is a campus calendar date; the window is that campus day.
+  final target = day ?? CampusTime.wallDate();
+  final start = CampusTime.wall(target.year, target.month, target.day);
+  final end = CampusTime.wall(target.year, target.month, target.day + 1);
   final today = events
       .where(
         (event) =>

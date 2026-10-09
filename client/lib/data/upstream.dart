@@ -21,7 +21,7 @@ const String appVersion = '0.1.0';
 /// The repo rather than a personal address, because this string ships in a
 /// public repo and goes out to upstream logs on every request.
 const String contact = 'https://github.com/Colewiz7/tigerhub';
-const String userAgent = 'RITTimes/$appVersion (personal non-commercial campus '
+const String userAgent = 'TigerHub/$appVersion (personal non-commercial campus '
     'info app; not affiliated with RIT; contact $contact)';
 
 const Duration httpTimeout = Duration(seconds: 20);

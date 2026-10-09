@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/data/campus_paths.dart';
+import 'package:tigerhub/data/campus_time.dart';
+import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
@@ -412,8 +414,9 @@ void main() {
   });
 
   testWidgets('events mode reports mapped and unmapped events', (tester) async {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day, 10);
+    final today = CampusTime.wall(2026, 10, 8, 10);
+    RitClock.pin(today);
+    addTearDown(RitClock.reset);
     await tester.pumpWidget(
       app(
         events: [
