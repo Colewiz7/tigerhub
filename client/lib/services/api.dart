@@ -14,6 +14,7 @@ import 'dart:async';
 
 import '../config.dart';
 import '../data/backend.dart';
+import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import 'cache.dart';
 
@@ -156,15 +157,15 @@ class ApiClient {
   Stream<Result<Collection<CampusEvent>>> events() {
     // From midnight, not from now, so events earlier today are included and
     // can be shown as past rather than silently dropped.
-    final now = DateTime.now();
-    final midnight = DateTime(now.year, now.month, now.day);
+    final today = CampusTime.wallDate();
+    final midnight = CampusTime.wall(today.year, today.month, today.day);
     return watch(
       '/events',
       (j) => Collection.fromJson(j, CampusEvent.fromJson),
       query: {
         'days': '14',
         'limit': '300',
-        'start': midnight.toIso8601String(),
+        'start': CampusTime.format(midnight),
       },
     );
   }
