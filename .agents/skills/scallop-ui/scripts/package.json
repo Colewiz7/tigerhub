@@ -1,0 +1,9 @@
+{
+  "name": "scallop-palette",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@material/material-color-utilities": "0.3.0",
+    "culori": "4.0.2"
+  }
+}
