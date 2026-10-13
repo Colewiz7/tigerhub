@@ -23,11 +23,12 @@ ID="dev.colewiz.tigerhub"
 # on every version bump.
 LAUNCHER="${XDG_BIN_HOME:-$HOME/.local/bin}/tigerhub"
 TARGET="${1:-}"
-if [ "$TARGET" = "--uninstall" ]; then TARGET=""; fi
+if [ "$TARGET" = "--uninstall" ] || [ "$TARGET" = "--launcher" ]; then TARGET=""; fi
 if [ -z "$TARGET" ]; then
   TARGET="$(ls -1t "$ROOT"/dist/*.AppImage 2>/dev/null | head -1 || true)"
 fi
 [ -n "$TARGET" ] || TARGET="$BUNDLE/tigerhub"
+if [ "${1:-}" = "--launcher" ]; then TARGET="$LAUNCHER"; fi
 BIN="$LAUNCHER"
 
 APPS="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
@@ -42,13 +43,20 @@ if [ "${1:-}" = "--uninstall" ]; then
   exit 0
 fi
 
-[ -x "$TARGET" ] || {
+[ "${1:-}" = "--launcher" ] || [ -x "$TARGET" ] || {
   echo "nothing to install. Run scripts/package, or scripts/dev build" >&2
   exit 1
 }
 
 mkdir -p "$(dirname "$LAUNCHER")"
-ln -sfn "$TARGET" "$LAUNCHER"
+if [ "${1:-}" = "--launcher" ]; then
+  # a copy, not a symlink, so it survives deleting this checkout. builds from TIGERHUB_SRC
+  rm -f "$LAUNCHER"
+  sed "s|@SRC@|${TIGERHUB_SRC:-$ROOT}|" "$ROOT/scripts/tigerhub-launch" > "$LAUNCHER"
+  chmod +x "$LAUNCHER"
+else
+  ln -sfn "$TARGET" "$LAUNCHER"
+fi
 
 mkdir -p "$APPS"
 sed -e "s|^Exec=.*|Exec=$BIN|" -e "s|^Icon=.*|Icon=$ID|" \
