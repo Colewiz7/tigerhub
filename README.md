@@ -68,6 +68,20 @@ scripts/dev package      # build a single file AppImage into dist/
 scripts/dev install      # desktop entry and icons, for launchers
 ```
 
+## Desktop launcher that stays current
+
+```bash
+TIGERHUB_SRC=~/projects/tigerhub scripts/dev install --launcher
+```
+
+Installs `~/.local/bin/tigerhub` (a copy of `scripts/tigerhub-launch`), the
+desktop entry and the icons, all under `$HOME`. Each launch compares the git
+HEAD and the contents of `client/` in `TIGERHUB_SRC` against the last build and
+runs `scripts/dev build` only when they differ. If the build fails it starts the
+previous build and sends a notification; the log is
+`~/.local/state/tigerhub/build.log`. It never fetches or pulls. Set
+`TIGERHUB_NO_REBUILD=1` in the environment (or the `Exec=` line) to skip the check.
+
 ## Getting it as one file
 
 ```bash

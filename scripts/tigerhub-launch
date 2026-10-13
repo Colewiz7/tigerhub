@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Desktop launcher: rebuild the release bundle if the source changed, then start the app.
+# Installed as a copy by scripts/install-desktop --launcher, so it outlives any worktree.
+# TIGERHUB_NO_REBUILD=1 skips the rebuild check.
+set -uo pipefail
+
+SRC="${TIGERHUB_SRC:-@SRC@}"
+BIN="$SRC/client/build/linux/x64/release/bundle/tigerhub"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/tigerhub"
+STAMP="$STATE/build-stamp"
+LOG="$STATE/build.log"
+
+notify() {
+  command -v notify-send >/dev/null && notify-send -a TigerHub -i dev.colewiz.tigerhub "$@" || true
+}
+
+# head plus a hash of tracked diffs and untracked files under client/
+source_state() {
+  git -C "$SRC" rev-parse HEAD
+  git -C "$SRC" diff HEAD -- client | sha256sum
+  git -C "$SRC" ls-files -o --exclude-standard -z -- client | (cd "$SRC" && xargs -0 -r sha256sum) | sha256sum
+}
+
+rebuild_if_changed() {
+  local now
+  now="$(source_state)" || return 0
+  [ -x "$BIN" ] && [ "$(cat "$STAMP" 2>/dev/null)" = "$now" ] && return 0
+  notify "Updating TigerHub" "Building the latest version, this can take a minute"
+  if "$SRC/scripts/dev" build >"$LOG" 2>&1; then
+    printf '%s\n' "$now" >"$STAMP"
+  else
+    notify -u critical "TigerHub build failed" "Starting the previous build. Log: $LOG"
+  fi
+}
+
+mkdir -p "$STATE"
+
+if [ "${TIGERHUB_NO_REBUILD:-}" != 1 ] && [ -d "$SRC/.git" ]; then
+  # second launch waits here, then finds the stamp current
+  exec 9>"$STATE/lock"
+  flock 9
+  rebuild_if_changed
+  flock -u 9
+fi
+
+if [ ! -x "$BIN" ]; then
+  notify -u critical "TigerHub cannot start" "No build found at $BIN. Log: $LOG"
+  exit 1
+fi
+exec 9>&-
+exec "$BIN" "$@"
