@@ -18,6 +18,8 @@ import 'campus_event_mapper.dart';
 import 'empty_state.dart';
 import 'freshness.dart';
 
+const double _maxMapZoom = 20;
+
 class CampusMapView extends StatefulWidget {
   const CampusMapView({super.key, required this.result, this.events});
 
@@ -58,7 +60,7 @@ class _CampusMapViewState extends State<CampusMapView> {
   void _zoomBy(double factor) {
     final matrix = _transform.value;
     final current = matrix.getMaxScaleOnAxis();
-    final target = (current * factor).clamp(1.0, 5.0);
+    final target = (current * factor).clamp(1.0, _maxMapZoom);
     final applied = target / current;
     if (applied == 1) return;
     final focus = _viewportSize.isEmpty
@@ -207,6 +209,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                 }),
               );
               final toolbar = _MapToolbar(
+                compact: constraints.maxWidth < 620,
                 kinds: _showEvents ? const {} : kinds,
                 selectedKind: _kind,
                 onKindChanged: (kind) => setState(() {
@@ -260,8 +263,8 @@ class _CampusMapViewState extends State<CampusMapView> {
                               child: InteractiveViewer(
                                 transformationController: _transform,
                                 minScale: 1,
-                                maxScale: 5,
-                                boundaryMargin: const EdgeInsets.all(80),
+                                maxScale: _maxMapZoom,
+                                boundaryMargin: EdgeInsets.zero,
                                 child: GestureDetector(
                                   behavior: HitTestBehavior.opaque,
                                   onDoubleTap: () => _zoomBy(1.5),
@@ -277,6 +280,8 @@ class _CampusMapViewState extends State<CampusMapView> {
                                     );
                                     final hit = projection.nearest(
                                       details.localPosition,
+                                      zoom: _transform.value
+                                          .getMaxScaleOnAxis(),
                                     );
                                     if (hit != null) {
                                       setState(() => _selectedId = hit.id);
@@ -353,12 +358,13 @@ class _CampusMapViewState extends State<CampusMapView> {
           ),
           const SizedBox(height: 10),
           SizedBox(
-            height:
-                selected == null &&
-                    selectedBuilding == null &&
-                    selectedEvent == null
-                ? 92
-                : 146,
+            height: MediaQuery.textScalerOf(context).scale(
+              selected == null &&
+                      selectedBuilding == null &&
+                      selectedEvent == null
+                  ? 102
+                  : 146,
+            ),
             child: _showEvents
                 ? selectedEvent == null
                       ? _EventStrip(
@@ -498,7 +504,7 @@ class _MapZoomControls extends StatelessWidget {
               ),
               IconButton(
                 tooltip: 'Zoom in',
-                onPressed: zoom < 4.99 ? onZoomIn : null,
+                onPressed: zoom < _maxMapZoom - 0.01 ? onZoomIn : null,
                 icon: const Icon(Icons.add_rounded),
               ),
             ],
@@ -728,12 +734,15 @@ class _MapSearchDelegate extends SearchDelegate<CampusMapFeature?> {
 
 class _MapToolbar extends StatelessWidget {
   const _MapToolbar({
+    required this.compact,
     required this.kinds,
     required this.selectedKind,
     required this.onKindChanged,
     required this.onFit,
     required this.onSearch,
   });
+
+  final bool compact;
 
   final Map<String, String> kinds;
   final String? selectedKind;
@@ -763,6 +772,7 @@ class _MapToolbar extends StatelessWidget {
         if (kinds.isNotEmpty)
           PopupMenuButton<String>(
             tooltip: 'Filter map places',
+            icon: compact ? Icon(selectedIcon) : null,
             onSelected: (value) => onKindChanged(value.isEmpty ? null : value),
             itemBuilder: (context) => [
               const PopupMenuItem(
@@ -787,26 +797,28 @@ class _MapToolbar extends StatelessWidget {
                   ),
                 ),
             ],
-            child: Material(
-              color: scheme.surfaceContainerHigh,
-              shape: Shapes.pill,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 11,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(selectedIcon, size: 19),
-                    const SizedBox(width: 8),
-                    Text(selectedLabel),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.expand_more_rounded, size: 18),
-                  ],
-                ),
-              ),
-            ),
+            child: compact
+                ? null
+                : Material(
+                    color: scheme.surfaceContainerHigh,
+                    shape: Shapes.pill,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 11,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(selectedIcon, size: 19),
+                          const SizedBox(width: 8),
+                          Text(selectedLabel),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.expand_more_rounded, size: 18),
+                        ],
+                      ),
+                    ),
+                  ),
           ),
         const SizedBox(width: 8),
         IconButton.filledTonal(
@@ -1205,9 +1217,9 @@ class CampusMapProjection {
     );
   }
 
-  CampusMapFeature? nearest(Offset position) {
+  CampusMapFeature? nearest(Offset position, {double zoom = 1}) {
     CampusMapFeature? nearestFeature;
-    var nearestDistance = 28.0;
+    var nearestDistance = 28.0 / zoom;
     for (final feature in features.where((f) => f.geometryType == 'Point')) {
       final anchor = feature.anchor;
       if (anchor == null) continue;
@@ -1428,7 +1440,7 @@ class CampusMapPainter extends CustomPainter {
             key: ValueKey(feature.id),
             rect: Rect.fromCircle(
               center: projection.project(feature.anchor!),
-              radius: 22,
+              radius: 22 / zoom,
             ),
             properties: SemanticsProperties(
               label: [
@@ -1569,7 +1581,7 @@ class CampusMapPainter extends CustomPainter {
     _paintBuildingLabels(canvas, geometry.labels, scheme);
     _paintScaleBar(canvas, projection, mapRect, scheme);
 
-    final buckets = geometry.pins;
+    final buckets = geometry.pinsAt(zoom);
 
     // "All places" is a category chooser, not a heat map. Almost every kind
     // is concentrated in the academic core, so showing all twelve at once
@@ -1582,7 +1594,12 @@ class CampusMapPainter extends CustomPainter {
               >[]
             : buckets.entries) {
       final bucket = entry.value;
-      final center = geometry.pinCenters[entry.key]!;
+      final center = Offset(
+        bucket.map((item) => item.at.dx).reduce((a, b) => a + b) /
+            bucket.length,
+        bucket.map((item) => item.at.dy).reduce((a, b) => a + b) /
+            bucket.length,
+      );
       final selected = bucket.any((item) => item.feature.id == selectedId);
       final eventCount = bucket.fold<int>(0, (total, item) {
         final kind = item.feature.kind;
@@ -1924,7 +1941,8 @@ class CampusMapPainter extends CustomPainter {
   bool shouldRebuildSemantics(CampusMapPainter oldDelegate) =>
       oldDelegate.features != features ||
       oldDelegate.boundsFeatures != boundsFeatures ||
-      oldDelegate.selectedId != selectedId;
+      oldDelegate.selectedId != selectedId ||
+      oldDelegate.zoom != zoom;
 }
 
 /// Names the three outline families.
@@ -2000,8 +2018,14 @@ class _MapGeometry {
     categoryOverview =
         pointKinds.length > 1 &&
         pointKinds.every((kind) => !kind.startsWith('_event:'));
-    clusterCell = 46.0;
-    final visible = projection.mapRect.inflate(12);
+  }
+
+  Map<Object, List<({CampusMapFeature feature, Offset at})>> pinsAt(
+    double zoom,
+  ) {
+    final pins = <Object, List<({CampusMapFeature feature, Offset at})>>{};
+    final clusterCell = 46.0 / zoom;
+    final visible = projection.mapRect.inflate(12 / zoom);
     for (final feature in features) {
       if (feature.geometryType != 'Point') continue;
       final anchor = feature.anchor;
@@ -2020,7 +2044,7 @@ class _MapGeometry {
             );
       pins.putIfAbsent(key, () => []).add((feature: feature, at: center));
     }
-    _layoutPins();
+    return pins;
   }
 
   /// Labels are measured at this size and scaled when drawn.
@@ -2036,26 +2060,10 @@ class _MapGeometry {
     ({TextPainter halo, TextPainter painter, Rect bounds, double area})
   >
   labels = [];
-  final Map<Object, List<({CampusMapFeature feature, Offset at})>> pins = {};
-  final Map<Object, Offset> pinCenters = {};
   late final Set<String> pointKinds;
   late final bool categoryOverview;
-  late final double clusterCell;
   late final Path foot;
   late final Path road;
-
-  void _layoutPins() {
-    for (final entry in pins.entries) {
-      final bucket = entry.value;
-      final center = Offset(
-        bucket.map((item) => item.at.dx).reduce((a, b) => a + b) /
-            bucket.length,
-        bucket.map((item) => item.at.dy).reduce((a, b) => a + b) /
-            bucket.length,
-      );
-      pinCenters[entry.key] = center;
-    }
-  }
 
   Path _network(List<List<GeoCoordinate>> ways) {
     final path = Path();

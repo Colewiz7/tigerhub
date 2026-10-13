@@ -374,6 +374,42 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
   });
 
+  testWidgets('zoom controls reach 20x and stop there', (tester) async {
+    await tester.pumpWidget(app());
+    final viewer = tester.widget<InteractiveViewer>(
+      find.byType(InteractiveViewer),
+    );
+    final controller = viewer.transformationController!;
+
+    expect(viewer.maxScale, 20);
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom in'));
+      await tester.pump();
+    }
+
+    expect(controller.value.getMaxScaleOnAxis(), 20);
+    expect(find.text('20×'), findsOneWidget);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.add_rounded),
+          )
+          .onPressed,
+      isNull,
+    );
+  });
+
+  test('map tap radius stays near a pin at 20x', () {
+    final projection = CampusMapProjection(const [
+      west,
+      east,
+    ], const Size(800, 600));
+    final pin = projection.project(west.anchor!);
+
+    expect(projection.nearest(pin + const Offset(1, 0), zoom: 20), west);
+    expect(projection.nearest(pin + const Offset(2, 0), zoom: 20), isNull);
+  });
+
   testWidgets('selecting the list shows useful place details', (tester) async {
     await tester.pumpWidget(app());
     await tester.tap(find.text('Defibrillators'));
@@ -404,6 +440,18 @@ void main() {
 
     westPin.properties.onTap!();
     expect(selected, west);
+  });
+
+  test('pin semantics keep a screen sized target at 20x', () {
+    final painter = CampusMapPainter(
+      features: const [west],
+      selectedId: null,
+      scheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+      zoom: 20,
+    );
+
+    final pin = painter.semanticsBuilder(const Size(800, 500)).single;
+    expect(pin.rect.width * 20, closeTo(44, 0.01));
   });
 
   testWidgets('priming uses the shared skeleton', (tester) async {
