@@ -501,6 +501,26 @@ void main() {
     }
   }
 
+  testWidgets('edit mode does not change card 1 or the gap after it', (
+    tester,
+  ) async {
+    await pumpHome(tester);
+    ({double height, double gap}) measure() {
+      final first = tester.getRect(find.byType(CardShell).at(0));
+      final second = tester.getRect(find.byType(CardShell).at(1));
+      return (height: first.height, gap: second.top - first.bottom);
+    }
+
+    final normal = measure();
+    // the gap on base commit 5e818fa, which this change must not move
+    expect(normal.gap, 314);
+    await toggleCustomize(tester);
+    final edit = measure();
+
+    expect(edit.height, normal.height);
+    expect(edit.gap, normal.gap);
+  });
+
   // Card widths the dashboard gives one column cards: the viewport minus 16 of
   // page padding and 12 of gutter, at 320, 390, 430 and a tablet.
   for (final cardWidth in [292.0, 362.0, 402.0, 672.0]) {
@@ -637,8 +657,11 @@ void main() {
   const sizes = {
     '390x844': Size(390, 844),
     '430x932': Size(430, 932),
-    '390x2600': Size(390, 2600),
-    '430x2600': Size(430, 2600),
+    // tall enough that the cards reach their maximum height and the page,
+    // including the Customize or Done bar and the colophon at 2x text, fits
+    // with no scrolling
+    '390x4800': Size(390, 4800),
+    '430x4800': Size(430, 4800),
   };
   const themes = {'light': Brightness.light, 'dark': Brightness.dark};
   const scales = {'1x': 1.0, '2x': 2.0};
@@ -675,6 +698,16 @@ void main() {
               textScale: scale.value,
             );
             if (edit) await toggleCustomize(tester);
+            if (size.value.height > 2000) {
+              // the tall images must show every card and the whole bar
+              expect(position(tester).maxScrollExtent, 0);
+              final bar = tester.getRect(find.text(edit ? 'Done' : 'Customize'));
+              expect(bar.bottom, lessThanOrEqualTo(size.value.height));
+              expect(
+                tester.getRect(find.byType(CardShell).at(3)).bottom,
+                lessThan(bar.top),
+              );
+            }
             await expectLater(
               await shot(tester),
               matchesGoldenFile('goldens/home_reorder_$name.png'),
