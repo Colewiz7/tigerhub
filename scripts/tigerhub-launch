@@ -28,35 +28,64 @@ source_state() {
   printf '%s\n%s\n%s\n' "$head" "$diff" "$untracked"
 }
 
-# last good bundle, so a failed build cant take the app away
+# previous only ever exists as a complete copy: copy aside, then swap in
 keep_previous() {
-  rm -rf "$PREV.new"
-  cp -a "$SRC/client/build/linux/x64/release/bundle" "$PREV.new" || return 0
-  rm -rf "$PREV"
-  mv "$PREV.new" "$PREV"
+  rm -rf "$PREV.tmp"
+  if ! cp -a "$BIN_DIR" "$PREV.tmp" || [ ! -x "$PREV.tmp/tigerhub" ]; then
+    rm -rf "$PREV.tmp"
+    return 1
+  fi
+  rm -rf "$PREV.old"
+  if [ -d "$PREV" ] && ! mv "$PREV" "$PREV.old"; then
+    rm -rf "$PREV.tmp"
+    return 1
+  fi
+  if ! mv "$PREV.tmp" "$PREV"; then
+    [ -d "$PREV.old" ] && mv "$PREV.old" "$PREV"
+    rm -rf "$PREV.tmp"
+    return 1
+  fi
+  rm -rf "$PREV.old"
+}
+
+# put the verified previous bundle back where the app expects it
+restore_previous() {
+  rm -rf "$BIN_DIR.restore"
+  mkdir -p "$(dirname "$BIN_DIR")"
+  cp -a "$PREV" "$BIN_DIR.restore" && [ -x "$BIN_DIR.restore/tigerhub" ] || { rm -rf "$BIN_DIR.restore"; return 1; }
+  rm -rf "$BIN_DIR"
+  mv "$BIN_DIR.restore" "$BIN_DIR"
 }
 
 rebuild_if_changed() {
   local now
   now="$(source_state)" || { skip "git failed in $SRC, starting the existing build"; return 0; }
   [ -x "$BIN" ] && [ "$(cat "$STAMP" 2>/dev/null)" = "$now" ] && return 0
-  [ -d "$PREV" ] || { [ -x "$BIN" ] && keep_previous; }
+  [ -d "$PREV" ] || [ ! -x "$BIN" ] || keep_previous || skip "could not back up the current build"
   notify "Updating TigerHub" "Building the latest version, this can take a minute"
   if "$SRC/scripts/dev" build >"$LOG" 2>&1; then
-    printf '%s\n' "$now" >"$STAMP"
-    keep_previous
-  else
+    if keep_previous; then
+      printf '%s\n' "$now" >"$STAMP"
+    else
+      skip "built, but the backup copy failed. Will retry next launch"
+    fi
+  elif [ -x "$PREV/tigerhub" ] && restore_previous; then
     notify -u critical "TigerHub build failed" "Starting the previous build. Log: $LOG"
-    rm -rf "$BIN_DIR"
-    [ -d "$PREV" ] && mkdir -p "$(dirname "$BIN_DIR")" && cp -a "$PREV" "$BIN_DIR"
+  else
+    notify -u critical "TigerHub build failed" "No backup to restore, starting what is there. Log: $LOG"
   fi
 }
 
 mkdir -p "$STATE"
 SRC="${TIGERHUB_SRC:-}"
-[ -n "$SRC" ] || { IFS= read -r SRC < "$STATE/src"; } 2>/dev/null || SRC=""
+[ -n "$SRC" ] || { IFS= read -r -d '' SRC < "$STATE/src"; } 2>/dev/null || SRC=""
 BIN_DIR="$SRC/client/build/linux/x64/release/bundle"
 BIN="$BIN_DIR/tigerhub"
+# only previous is safe to run when another launch may still be building
+BUSY=0
+
+# a crash between the two renames in keep_previous
+[ -d "$PREV" ] || [ ! -d "$PREV.old" ] || mv "$PREV.old" "$PREV"
 
 if [ "${TIGERHUB_NO_REBUILD:-}" != 1 ]; then
   git_dir="$(git -C "$SRC" rev-parse --absolute-git-dir 2>/dev/null)"
@@ -65,20 +94,26 @@ if [ "${TIGERHUB_NO_REBUILD:-}" != 1 ]; then
     skip "no main checkout at '$SRC', run scripts/install-desktop --launcher"
   elif ! command -v flock >/dev/null; then
     skip "flock not found, not rebuilding"
-  elif ! exec 9>"$STATE/lock" || ! flock -w 600 9; then
-    skip "could not take the build lock, not rebuilding"
+  elif ! exec 9>"$STATE/lock"; then
+    skip "could not open the build lock, not rebuilding"
   else
-    # second launch waits here, then finds the stamp current
-    rebuild_if_changed
-    flock -u 9
+    if ! flock -n 9; then
+      notify "TigerHub is updating" "Another launch is building, waiting..."
+      if ! flock -w "${TIGERHUB_LOCK_WAIT:-600}" 9; then
+        BUSY=1
+        skip "still building after waiting, starting the previous build"
+      fi
+    fi
+    # second launch waits above, then finds the stamp current
+    [ "$BUSY" = 1 ] || { rebuild_if_changed; flock -u 9; }
   fi
 fi
 
 exec 9>&-
-if [ -x "$BIN" ]; then
+if [ "$BUSY" != 1 ] && [ -x "$BIN" ]; then
   exec "$BIN" "$@"
 elif [ -x "$PREV/tigerhub" ]; then
   exec "$PREV/tigerhub" "$@"
 fi
-notify -u critical "TigerHub cannot start" "No build found. Log: $LOG"
+notify -u critical "TigerHub cannot start" "No usable build found. Log: $LOG"
 exit 1

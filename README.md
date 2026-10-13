@@ -81,15 +81,25 @@ checkout (found from any worktree) and is stored in
 contents of `client/` there against the last build and runs `scripts/dev build`
 only when they differ, one build at a time (`flock`). It never fetches or pulls.
 
-After every good build the bundle is also copied to
-`~/.local/state/tigerhub/previous`. If a build fails, that copy is put back and
-started, with a notification; the log is `~/.local/state/tigerhub/build.log`.
-If the main checkout, `flock` or git is unusable, no rebuild is attempted, the
-existing build starts, and the reason goes to `launcher.log` in the same
-directory. With no build at all it cannot start.
+A rebuild counts as done only when the new bundle has also been copied to
+`~/.local/state/tigerhub/previous` (copied aside, then swapped in, so it is
+always a complete copy). Only then is the stamp updated. If that backup copy
+fails, the working bundle is kept, the stamp is not updated, and the next
+launch retries.
 
-Set `TIGERHUB_NO_REBUILD=1` in the environment (or the `Exec=` line) to skip
-the check.
+If a build fails and a `previous` copy exists, it is put back and started, with
+a notification; otherwise nothing is deleted and whatever bundle exists starts.
+The log is `~/.local/state/tigerhub/build.log`. If the main checkout, `flock`
+or git is unusable, no rebuild is attempted, the existing build starts, and
+the reason goes to `launcher.log` in the same directory.
+
+A second launch during a build says it is waiting. If the wait times out (10
+minutes, `TIGERHUB_LOCK_WAIT` in seconds) it starts `previous` rather than a
+bundle that is being rebuilt, or does not start if there is none. With no
+usable build at all it cannot start.
+
+To skip the check, set `TIGERHUB_NO_REBUILD=1` in the environment or put it in
+the desktop entry as `Exec=env TIGERHUB_NO_REBUILD=1 /home/you/.local/bin/tigerhub`.
 
 ## Getting it as one file
 

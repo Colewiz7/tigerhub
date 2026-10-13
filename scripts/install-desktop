@@ -57,7 +57,7 @@ if [ "${1:-}" = "--launcher" ]; then
   [ -x "$SRC/scripts/dev" ] && [ -d "$SRC/.git" ] || { echo "not a main TigerHub checkout: $SRC" >&2; exit 1; }
   STATE="${XDG_STATE_HOME:-$HOME/.local/state}/tigerhub"
   mkdir -p "$STATE"
-  printf '%s\n' "$SRC" > "$STATE/src"
+  printf '%s\0' "$SRC" > "$STATE/src"
   rm -f "$LAUNCHER"
   cp "$ROOT/scripts/tigerhub-launch" "$LAUNCHER"
   chmod +x "$LAUNCHER"
