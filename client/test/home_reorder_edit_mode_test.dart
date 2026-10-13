@@ -1,8 +1,10 @@
 /// Today grid reordering only exists in Customize mode.
 ///
-/// Outside it the drag handle is hidden and dragging is off. Inside it the
-/// handle shows, the cards expose move earlier/later as custom semantics
-/// actions, and every move announces the new position.
+/// Outside it there is no drag handle and dragging is off. Inside it the
+/// handle shows (keyboard focusable, with a visible focus ring), the cards
+/// expose Move up and Move down as custom semantics actions, and every move
+/// announces the new position. The handle, Inspect and Remove share one
+/// header row that never overlaps the title.
 library;
 
 import 'dart:ui' as ui;
@@ -19,6 +21,7 @@ import 'package:tigerhub/home_screen.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/widgets/card_shell.dart';
 
 class _EmptyBackend implements Backend {
   @override
@@ -187,13 +190,13 @@ void main() {
       card(i).evaluate().single.label.split(' card,').first,
   ];
 
-  testWidgets('outside edit mode the handle is hidden and dragging is off', (
+  testWidgets('outside edit mode there is no handle and dragging is off', (
     tester,
   ) async {
     await pumpHome(tester);
 
-    expect(handleOpacities(tester), isNotEmpty);
-    expect(handleOpacities(tester).every((o) => o == 0), isTrue);
+    expect(find.byIcon(Icons.drag_indicator_rounded), findsNothing);
+    expect(find.byType(FocusableActionDetector), findsNothing);
     expect(draggable(tester), isFalse);
   });
 
@@ -207,7 +210,7 @@ void main() {
     expect(draggable(tester), isTrue);
 
     await toggleCustomize(tester);
-    expect(handleOpacities(tester).every((o) => o == 0), isTrue);
+    expect(find.byIcon(Icons.drag_indicator_rounded), findsNothing);
     expect(draggable(tester), isFalse);
   });
 
@@ -275,12 +278,12 @@ void main() {
     await toggleCustomize(tester);
     expect(
       actionLabels(card(2)),
-      unorderedEquals(['Move earlier', 'Move later']),
+      unorderedEquals(['Move up', 'Move down']),
     );
 
     // the ends only offer the move that does something
-    expect(actionLabels(card(1)), ['Move later']);
-    expect(actionLabels(card(4)), ['Move earlier']);
+    expect(actionLabels(card(1)), ['Move down']);
+    expect(actionLabels(card(4)), ['Move up']);
     handle.dispose();
   });
 
@@ -293,7 +296,7 @@ void main() {
     await toggleCustomize(tester);
 
     final before = cardLabels(tester);
-    runAction(tester, card(1), 'Move later');
+    runAction(tester, card(1), 'Move down');
     await tester.pumpAndSettle();
 
     expect(spoken.last, '${before[0]} moved to position 2');
@@ -301,7 +304,7 @@ void main() {
     expect(after[1], before[0]);
     expect(after[0], before[1]);
 
-    runAction(tester, card(2), 'Move earlier');
+    runAction(tester, card(2), 'Move up');
     await tester.pumpAndSettle();
     expect(spoken.last, '${before[0]} moved to position 1');
     expect(cardLabels(tester), before);
@@ -324,7 +327,7 @@ void main() {
     await tester.tap(inspect);
     await tester.pumpAndSettle();
     await scrollTo(tester, bottom: true);
-    await tester.tap(find.byTooltip('Move earlier'));
+    await tester.tap(find.byTooltip('Move up'));
     await tester.pumpAndSettle();
 
     expect(spoken.last, '${before[2]} moved to position 2');
@@ -363,8 +366,9 @@ void main() {
     await pumpHome(tester, height: 2800);
 
     final before = cardLabels(tester);
+    // no handle outside edit mode, so grab where the handle would be
     final gesture = await tester.startGesture(
-      tester.getCenter(find.byIcon(Icons.drag_indicator_rounded).first),
+      tester.getTopRight(find.byType(CardShell).first) + const Offset(-30, 30),
     );
     await tester.pump(const Duration(milliseconds: 600));
     await gesture.moveBy(const Offset(0, 20));
@@ -426,8 +430,216 @@ void main() {
     );
   });
 
-  // 3x device ratio, one image per combination
-  const sizes = {'390x844': Size(390, 844), '430x932': Size(430, 932)};
+  // The dashboard itself at 2x text overflows inside the empty states
+  // (empty_state.dart, not this change), so the 2x cases are covered at the
+  // card header level below, where nothing is expected to overflow.
+  for (final width in [390.0, 430.0, 700.0, 1000.0]) {
+    for (final scale in [1.0]) {
+      testWidgets(
+        'edit header at ${width.toInt()} wide, text ${scale}x: handle, '
+        'Inspect and Remove never overlap each other or the title',
+        (tester) async {
+          await pumpHome(
+            tester,
+            width: width,
+            height: 2800,
+            textScale: scale,
+          );
+          await toggleCustomize(tester);
+
+          final shells = find.byType(CardShell);
+          expect(shells, findsNWidgets(4));
+          for (var i = 0; i < 4; i++) {
+            final shell = shells.at(i);
+            Finder inShell(Finder f) => find.descendant(of: shell, matching: f);
+            final card = tester.getRect(shell);
+            final handle = Rect.fromCenter(
+              center: tester.getCenter(
+                inShell(find.byIcon(Icons.drag_indicator_rounded)),
+              ),
+              width: 32,
+              height: 32,
+            );
+            final inspect = tester.getRect(
+              inShell(find.byTooltip('Customize card')),
+            );
+            final remove = tester.getRect(
+              inShell(find.byTooltip('Remove card from Today')),
+            );
+            final title = tester.getRect(inShell(find.byType(Text)).first);
+            final named = {
+              'handle': handle,
+              'inspect': inspect,
+              'remove': remove,
+              'title': title,
+            };
+
+            for (final a in named.entries) {
+              expect(
+                card.contains(a.value.topLeft) &&
+                    card.contains(a.value.bottomRight),
+                isTrue,
+                reason: 'card $i ${a.key} ${a.value} leaves card $card',
+              );
+              for (final b in named.entries) {
+                if (a.key.compareTo(b.key) >= 0) continue;
+                expect(
+                  a.value.overlaps(b.value),
+                  isFalse,
+                  reason: 'card $i ${a.key} ${a.value} overlaps '
+                      '${b.key} ${b.value}',
+                );
+              }
+            }
+            // the title ends before the first control starts
+            expect(title.right, lessThanOrEqualTo(handle.left));
+            expect(handle.right, lessThanOrEqualTo(inspect.left));
+            expect(inspect.right, lessThanOrEqualTo(remove.left));
+          }
+        },
+      );
+    }
+  }
+
+  // Card widths the dashboard gives one column cards: the viewport minus 16 of
+  // page padding and 12 of gutter, at 320, 390, 430 and a tablet.
+  for (final cardWidth in [292.0, 362.0, 402.0, 672.0]) {
+    for (final scale in [1.0, 2.0]) {
+      for (final hero in [false, true]) {
+        testWidgets(
+          'card header, ${cardWidth.toInt()} wide, text ${scale}x'
+          '${hero ? ', with hero' : ''}: title stops before the controls',
+          (tester) async {
+            // a phone sized view, so the card padding is the phone's
+            tester.view.devicePixelRatio = 1;
+            tester.view.physicalSize = Size(cardWidth + 28, 4000);
+            addTearDown(tester.view.reset);
+            tester.platformDispatcher.textScaleFactorTestValue = scale;
+            addTearDown(tester.platformDispatcher.clearAllTestValues);
+            const title = 'Visiting chefs and a very long module title';
+            await tester.pumpWidget(
+              MaterialApp(
+                theme: _theme(Brightness.light),
+                home: Scaffold(
+                  body: Align(
+                    alignment: Alignment.topLeft,
+                    child: SizedBox(
+                      width: cardWidth,
+                      child: CardShell(
+                        title: title,
+                        hero: hero
+                            ? const SizedBox(width: 88, height: 88)
+                            : null,
+                        dragHandle: EditControls(
+                          selected: false,
+                          onInspect: () {},
+                          onRemove: () {},
+                        ),
+                        child: const SizedBox(height: 40),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            final handle = Rect.fromCenter(
+              center: tester.getCenter(
+                find.byIcon(Icons.drag_indicator_rounded),
+              ),
+              width: 32,
+              height: 32,
+            );
+            final inspect = tester.getRect(find.byTooltip('Customize card'));
+            final remove = tester.getRect(
+              find.byTooltip('Remove card from Today'),
+            );
+            final titleRect = tester.getRect(find.text(title));
+            final shell = tester.getRect(find.byType(CardShell));
+            final named = {
+              'handle': handle,
+              'inspect': inspect,
+              'remove': remove,
+              'title': titleRect,
+            };
+            for (final a in named.entries) {
+              expect(shell.contains(a.value.topLeft), isTrue);
+              expect(shell.contains(a.value.bottomRight), isTrue);
+              for (final b in named.entries) {
+                if (a.key.compareTo(b.key) >= 0) continue;
+                expect(
+                  a.value.overlaps(b.value),
+                  isFalse,
+                  reason: '${a.key} ${a.value} overlaps ${b.key} ${b.value}',
+                );
+              }
+            }
+            expect(titleRect.right, lessThanOrEqualTo(handle.left));
+            // the long title wrapped rather than running under the controls
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+  }
+
+  testWidgets('in edit mode the handle takes keyboard focus with a ring', (
+    tester,
+  ) async {
+    await pumpHome(tester, height: 2800);
+    await toggleCustomize(tester);
+
+    final ring = find.byKey(const ValueKey('drag-handle-focus-ring'));
+    expect(ring, findsNothing);
+
+    var tabs = 0;
+    while (ring.evaluate().isEmpty && tabs < 40) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      tabs++;
+    }
+    expect(ring, findsOneWidget, reason: 'Tab never reached a drag handle');
+
+    // the focused node belongs to a handle, and the ring is visibly outside it
+    final focused = FocusManager.instance.primaryFocus!.context!;
+    final handleIcon = find.descendant(
+      of: find.byElementPredicate((e) => e == focused),
+      matching: find.byIcon(Icons.drag_indicator_rounded),
+    );
+    expect(handleIcon, findsOneWidget);
+    expect(
+      tester.getRect(ring).size,
+      const Size(40, 40),
+      reason: '32px handle plus the 2px ring and 2px offset on each side',
+    );
+
+    // Enter opens the card's options, where Move up and Move down live
+    expect(find.text('SIZE'), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+    expect(find.text('SIZE'), findsOneWidget);
+  });
+
+  testWidgets('outside edit mode no handle can take focus', (tester) async {
+    await pumpHome(tester, height: 2800);
+
+    for (var i = 0; i < 40; i++) {
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(find.byKey(const ValueKey('drag-handle-focus-ring')), findsNothing);
+    }
+    expect(find.byType(FocusableActionDetector), findsNothing);
+  });
+
+  // 3x device ratio, one image per combination. The tall sizes show all four
+  // cards and the Customize or Done control in one image.
+  const sizes = {
+    '390x844': Size(390, 844),
+    '430x932': Size(430, 932),
+    '390x2600': Size(390, 2600),
+    '430x2600': Size(430, 2600),
+  };
   const themes = {'light': Brightness.light, 'dark': Brightness.dark};
   const scales = {'1x': 1.0, '2x': 2.0};
   for (final size in sizes.entries) {
@@ -442,7 +654,14 @@ void main() {
             final previous = FlutterError.onError;
             FlutterError.onError = (details) {
               if (details.exceptionAsString().contains('overflowed')) {
-                overflows.add(details.exceptionAsString().split('\n').first);
+                final where = details
+                    .toString()
+                    .split('\n')
+                    .where((l) => l.contains('lib/') && l.contains('.dart:'))
+                    .take(1);
+                overflows.add(
+                  '${details.exceptionAsString().split('\n').first} $where',
+                );
                 return;
               }
               previous?.call(details);
