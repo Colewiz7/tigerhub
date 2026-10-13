@@ -38,6 +38,8 @@ class CardShell extends StatelessWidget {
   /// it costs no vertical room from the list underneath.
   final Widget? hero;
 
+  /// The edit mode controls (drag handle, Inspect, Remove), null outside edit
+  /// mode. They take their own space in the header, never an overlay.
   final Widget? dragHandle;
 
   @override
@@ -60,7 +62,9 @@ class CardShell extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: dragHandle == null
+                  ? CrossAxisAlignment.center
+                  : CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Column(
@@ -81,8 +85,23 @@ class CardShell extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (hero != null) ...[const SizedBox(width: 10), hero!],
-                ?dragHandle,
+                // The title column is Expanded, so it wraps or ellipsizes
+                // before it can reach anything on this side. In edit mode the
+                // controls sit above the hero rather than beside it, which
+                // keeps the title's share of the width.
+                if (dragHandle != null && hero != null) ...[
+                  const SizedBox(width: 10),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [dragHandle!, const SizedBox(height: 6), hero!],
+                  ),
+                ] else if (hero != null) ...[
+                  const SizedBox(width: 10),
+                  hero!,
+                ] else if (dragHandle != null) ...[
+                  const SizedBox(width: 10),
+                  dragHandle!,
+                ],
               ],
             ),
             const SizedBox(height: 12),
