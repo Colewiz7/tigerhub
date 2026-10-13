@@ -78,19 +78,21 @@ Installs `~/.local/bin/tigerhub` (a copy of `scripts/tigerhub-launch`), the
 desktop entry and the icons, all under `$HOME`. The source is the main checkout
 (found from any worktree), stored in `~/.local/state/tigerhub/src`.
 
-The app always runs from `~/.local/state/tigerhub/current`, a symlink to a
-complete, checked copy of a build in `releases/`. Each launch compares the git
+The app runs from `~/.local/state/tigerhub/current`, a symlink to a complete,
+checked copy of a build in `releases/`. The one exception is below: with no
+release at all it runs the build folder directly. Each launch compares the git
 HEAD and the contents of `client/` against the last build. If they differ it
 runs `scripts/dev build` under a lock, copies the result into a new release,
-and only then switches `current` and records the new state. The newest two
-releases are kept. It never fetches or pulls.
+and only then switches `current` and records the new state. The newest five
+releases are kept, plus any a running app is still using. It never fetches or pulls.
 
 If a build or the copy fails, `current` is untouched and still starts, with a
 notification (log: `build.log` in the state directory). If git, `flock` or the
 checkout is unusable, no rebuild is attempted and `launcher.log` says why. A
 launch during someone else's build starts `current` straight away. With no
-release at all it falls back to the build folder, or refuses to start while a
-build is running.
+release at all it first tries to copy the existing build folder into one; if
+that fails it starts the build folder as it is and does not rebuild, and it
+refuses to start while another launch is building.
 
 To skip the check, set `TIGERHUB_NO_REBUILD=1` in the environment or in the
 desktop entry as `Exec=env TIGERHUB_NO_REBUILD=1 /home/you/.local/bin/tigerhub`.

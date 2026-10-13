@@ -50,13 +50,18 @@ publish() {
   ln -s "$REL/$id" "$CUR.tmp" && mv -T "$CUR.tmp" "$CUR"
 }
 
-# keep the newest two, and never what current points at
+# a running app maps its release files, a wrapper has the path in its args
+in_use() {
+  grep -saqF -- "$1/" /proc/[0-9]*/maps /proc/[0-9]*/cmdline 2>/dev/null
+}
+
+# keep the newest five, and never what current points at or a live process uses
 prune() {
   local live name n=0
   live="$(readlink -f "$CUR")"
   for name in $(ls -1t "$REL"); do
     n=$((n + 1))
-    [ "$n" -gt 2 ] && [ "$REL/$name" != "$live" ] && rm -rf "${REL:?}/$name"
+    [ "$n" -gt 5 ] && [ "$REL/$name" != "$live" ] && ! in_use "$REL/$name" && rm -rf "${REL:?}/$name"
   done
 }
 
@@ -64,8 +69,9 @@ rebuild_if_changed() {
   local now
   rm -rf "$REL"/*.tmp "$CUR.tmp" "$STATE"/previous "$STATE"/previous.tmp "$STATE"/previous.old
   now="$(source_state)" || { skip "git failed in $SRC, starting the current release"; return 0; }
+  # never build over a working build folder unless a release can fall back
   if [ ! -x "$CUR/tigerhub" ] && verify_bundle "$BIN_DIR"; then
-    publish seed || skip "could not copy the existing build into a release"
+    publish seed || { skip "could not copy the existing build into a release, not rebuilding"; return 0; }
   fi
   [ -x "$CUR/tigerhub" ] && [ "$(cat "$STAMP" 2>/dev/null)" = "$now" ] && return 0
   notify "Updating TigerHub" "Building the latest version, this can take a minute"
