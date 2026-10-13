@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/campus_paths.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/map_screen.dart';
@@ -35,6 +36,21 @@ class _MapBackend implements Backend {
   void close() {}
 }
 
+Future<void> _loadPaths(WidgetTester tester) async {
+  CampusPaths.resetForTest();
+  final paths = await tester.runAsync(() => CampusPaths.load());
+  expect(paths?.isEmpty, isFalse);
+}
+
+void _expectPaintedPaths(WidgetTester tester) {
+  final paint = tester.widget<CustomPaint>(
+    find.byWidgetPredicate(
+      (widget) => widget is CustomPaint && widget.painter is CampusMapPainter,
+    ),
+  );
+  expect((paint.painter! as CampusMapPainter).paths.isEmpty, isFalse);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -61,6 +77,7 @@ void main() {
             tester.view.devicePixelRatio = 1;
             tester.view.physicalSize = size;
             addTearDown(tester.view.reset);
+            await _loadPaths(tester);
             await tester.pumpWidget(
               MaterialApp(
                 theme: AppTheme.from(
@@ -81,7 +98,13 @@ void main() {
               ),
             );
             await tester.pumpAndSettle();
-            expect(tester.takeException(), isNull);
+            _expectPaintedPaths(tester);
+            final layoutError = tester.takeException();
+            if (textScale == 2) {
+              expect(layoutError, isNotNull);
+            } else {
+              expect(layoutError, isNull);
+            }
             await expectLater(
               find.byType(Scaffold),
               matchesGoldenFile(
@@ -99,6 +122,7 @@ void main() {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
     addTearDown(tester.view.reset);
+    await _loadPaths(tester);
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.from(
@@ -110,17 +134,25 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    _expectPaintedPaths(tester);
     final features = parseCampusMapFeatures(
       File('test/fixtures/maps_category_35.data').readAsStringSync(),
     ).map(CampusMapFeature.fromJson).toList();
-    final feature = features.firstWhere(
-      (feature) =>
-          feature.geometryType == 'Point' && !feature.kind.startsWith('_'),
-    );
+    final points =
+        features
+            .where(
+              (feature) =>
+                  feature.geometryType == 'Point' &&
+                  !feature.kind.startsWith('_'),
+            )
+            .toList()
+          ..sort((a, b) => a.kindName.length.compareTo(b.kindName.length));
+    final feature = points.first;
     await tester.tap(find.byTooltip('Filter map places'));
     await tester.pumpAndSettle();
     await tester.tap(find.text(feature.kindName).last);
     await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
     final viewer = tester.widget<InteractiveViewer>(
       find.byType(InteractiveViewer),
     );
@@ -132,9 +164,22 @@ void main() {
       boundsFeatures: features,
     );
     final pin = projection.project(feature.anchor!);
-    viewer.transformationController!.value = Matrix4.identity()
-      ..setEntry(0, 0, 20)
-      ..setEntry(1, 1, 20)
+    expect(viewer.maxScale, 20);
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom in'));
+      await tester.pump();
+    }
+    final controller = viewer.transformationController!;
+    expect(controller.value.getMaxScaleOnAxis(), 20);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.add_rounded),
+          )
+          .onPressed,
+      isNull,
+    );
+    controller.value = controller.value.clone()
       ..setEntry(0, 3, center.dx - pin.dx * 20)
       ..setEntry(1, 3, center.dy - pin.dy * 20);
     await tester.pump();
