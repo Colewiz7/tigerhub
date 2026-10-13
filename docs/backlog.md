@@ -398,3 +398,23 @@ area, which the current `housing_areas.json` does not carry, and the zone based
 mail model (docs/notes.md 7.9) means an "address" is an office plus a line 2 format,
 not a street address per hall. So the anchor is probably the residence area's
 own location, not the post office's. Check that before designing the sort.
+
+## A CalendarDate type for service dates
+
+`service_date` is a calendar day, not an instant. Today `RecreationDay` and
+`MenuDay` keep it as `DateTime.utc(y, m, d)` (`_requiredCalendarDate` in
+`api_models.dart`), which only works by convention: any code that later treats
+`serviceDate` as an instant can shift the day in some device zones.
+
+**What it should do:**
+
+- Add a small `CalendarDate` type (year, month, day, equality, ordering, parse
+  from `YYYY-MM-DD`) and use it for `service_date` in the models.
+- Compare it with `CampusTime.wallDate()` by fields, with no `DateTime` in
+  between, so no code can read it as an instant.
+- Keep the failing-parse behaviour: a missing or malformed date is a drop.
+
+**Note for whoever builds it.** Not scheduled. The PR #9 revert check showed
+`recreation_campus_date_test.dart` catches the old `toLocal()` bug only on
+devices west of UTC (fails under Los Angeles, passes under Tokyo), so run it
+under America/Los_Angeles.

@@ -20,6 +20,7 @@
 # a couple of minutes if they do not, before any compile is paid for.
 
 definitions:
+  # pinned from first green build
   # Bump FLUTTER_VERSION in .github/workflows/ci.yml with this.
   flutter: &flutter 3.47.6
   integration: &asc_integration Apple
@@ -39,7 +40,7 @@ workflows:
       app_store_connect: *asc_integration
     environment:
       flutter: *flutter
-      xcode: latest
+      xcode: 26.6
       vars: *app_vars
       ios_signing:
         distribution_type: app_store
@@ -77,7 +78,7 @@ workflows:
     instance_type: mac_mini_m2
     environment:
       flutter: *flutter
-      xcode: latest
+      xcode: 26.6
       cocoapods: default
     scripts:
       - name: Packages
@@ -105,7 +106,7 @@ workflows:
       app_store_connect: *asc_integration
     environment:
       flutter: *flutter
-      xcode: latest
+      xcode: 26.6
       cocoapods: default
       vars: *app_vars
       ios_signing:
