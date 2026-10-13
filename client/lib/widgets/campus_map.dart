@@ -261,7 +261,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                               onKeyEvent: _handleMapKey,
                               child: ValueListenableBuilder<Matrix4>(
                                 valueListenable: _transform,
-                                builder: (context, matrix, _) =>
+                                builder: (context, matrix, child) =>
                                     InteractiveViewer(
                                       transformationController: _transform,
                                       minScale: 1,
@@ -269,67 +269,62 @@ class _CampusMapViewState extends State<CampusMapView> {
                                       boundaryMargin: EdgeInsets.all(
                                         80 / matrix.getMaxScaleOnAxis(),
                                       ),
-                                      child: GestureDetector(
-                                        behavior: HitTestBehavior.opaque,
-                                        onDoubleTap: () => _zoomBy(1.5),
-                                        onTapUp: (details) {
-                                          _mapFocus.requestFocus();
-                                          final projection =
-                                              CampusMapProjection(
-                                                mapFeatures,
-                                                Size(
-                                                  constraints.maxWidth,
-                                                  constraints.maxHeight,
-                                                ),
-                                                boundsFeatures: all,
-                                              );
-                                          final hit = projection.nearest(
-                                            details.localPosition,
-                                            zoom: _transform.value
-                                                .getMaxScaleOnAxis(),
-                                          );
-                                          if (hit != null) {
-                                            setState(
-                                              () => _selectedId = hit.id,
-                                            );
-                                          }
-                                        },
-                                        // Repaints as the viewer scales, which is what
-                                        // lets labels and the scale bar hold a constant
-                                        // on-screen size instead of growing with the map.
-                                        child: ValueListenableBuilder<Matrix4>(
-                                          valueListenable: _transform,
-                                          // Its own layer, so a pan is the compositor
-                                          // moving a finished raster rather than Skia
-                                          // redrawing 191 outlines and the whole walking
-                                          // network for every frame of the gesture.
-                                          builder: (context, matrix, _) =>
-                                              RepaintBoundary(
-                                                child: CustomPaint(
-                                                  size: Size(
-                                                    constraints.maxWidth,
-                                                    constraints.maxHeight,
-                                                  ),
-                                                  painter: CampusMapPainter(
-                                                    features: mapFeatures,
-                                                    boundsFeatures: all,
-                                                    selectedId: _selectedId,
-                                                    scheme: Theme.of(context)
-                                                        .colorScheme,
-                                                    zoom: matrix
-                                                        .getMaxScaleOnAxis(),
-                                                    paths: _paths,
-                                                    onSelect: (feature) =>
-                                                        setState(
-                                                          () => _selectedId =
-                                                              feature.id,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                        ),
-                                      ),
+                                      child: child!,
                                     ),
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onDoubleTap: () => _zoomBy(1.5),
+                                  onTapUp: (details) {
+                                    _mapFocus.requestFocus();
+                                    final projection = CampusMapProjection(
+                                      mapFeatures,
+                                      Size(
+                                        constraints.maxWidth,
+                                        constraints.maxHeight,
+                                      ),
+                                      boundsFeatures: all,
+                                    );
+                                    final hit = projection.nearest(
+                                      details.localPosition,
+                                      zoom: _transform.value
+                                          .getMaxScaleOnAxis(),
+                                    );
+                                    if (hit != null) {
+                                      setState(() => _selectedId = hit.id);
+                                    }
+                                  },
+                                  // Repaints as the viewer scales, which is what
+                                  // lets labels and the scale bar hold a constant
+                                  // on-screen size instead of growing with the map.
+                                  child: ValueListenableBuilder<Matrix4>(
+                                    valueListenable: _transform,
+                                    // Its own layer, so a pan is the compositor
+                                    // moving a finished raster rather than Skia
+                                    // redrawing 191 outlines and the whole walking
+                                    // network for every frame of the gesture.
+                                    builder: (context, matrix, _) =>
+                                        RepaintBoundary(
+                                          child: CustomPaint(
+                                            size: Size(
+                                              constraints.maxWidth,
+                                              constraints.maxHeight,
+                                            ),
+                                            painter: CampusMapPainter(
+                                              features: mapFeatures,
+                                              boundsFeatures: all,
+                                              selectedId: _selectedId,
+                                              scheme: Theme.of(context)
+                                                  .colorScheme,
+                                              zoom: matrix.getMaxScaleOnAxis(),
+                                              paths: _paths,
+                                              onSelect: (feature) => setState(
+                                                () => _selectedId = feature.id,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
@@ -1444,7 +1439,7 @@ class CampusMapPainter extends CustomPainter {
             key: ValueKey(feature.id),
             rect: Rect.fromCircle(
               center: projection.project(feature.anchor!),
-              radius: 22 / zoom,
+              radius: 24 / zoom,
             ),
             properties: SemanticsProperties(
               label: [
