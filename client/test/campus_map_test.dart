@@ -1,4 +1,7 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/data/campus_paths.dart';
@@ -399,6 +402,50 @@ void main() {
     );
   });
 
+  testWidgets('pan margin stays 80 screen pixels from 1x through 20x', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    InteractiveViewer viewer() =>
+        tester.widget<InteractiveViewer>(find.byType(InteractiveViewer));
+    expect(viewer().boundaryMargin.left, 80);
+
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom in'));
+      await tester.pump();
+    }
+
+    expect(viewer().transformationController!.value.getMaxScaleOnAxis(), 20);
+    expect(viewer().boundaryMargin.left * 20, closeTo(80, 0.01));
+  });
+
+  testWidgets('double tap and keyboard zoom can pass 5x', (tester) async {
+    await tester.pumpWidget(app());
+    final controller = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!;
+
+    for (var i = 0; i < 4; i++) {
+      await tester.tap(find.byType(InteractiveViewer));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.byType(InteractiveViewer));
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+    expect(controller.value.getMaxScaleOnAxis(), greaterThan(5));
+
+    final mapFocus = tester.widget<Focus>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Focus && widget.focusNode?.debugLabel == 'Campus map',
+      ),
+    );
+    mapFocus.focusNode!.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.equal);
+    await tester.pump();
+    expect(controller.value.getMaxScaleOnAxis(), greaterThan(7));
+  });
+
   test('map tap radius stays near a pin at 20x', () {
     final projection = CampusMapProjection(const [
       west,
@@ -408,6 +455,53 @@ void main() {
 
     expect(projection.nearest(pin + const Offset(1, 0), zoom: 20), west);
     expect(projection.nearest(pin + const Offset(2, 0), zoom: 20), isNull);
+    expect(projection.nearest(pin + const Offset(27, 0)), west);
+    expect(projection.nearest(pin + const Offset(28, 0)), isNull);
+  });
+
+  testWidgets('tap hit testing uses the live 20x transform', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.tap(find.text('Water fountains'));
+    await tester.pumpAndSettle();
+    final controller = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!;
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom in'));
+      await tester.pump();
+    }
+    expect(controller.value.getMaxScaleOnAxis(), 20);
+
+    final viewer = find.byType(InteractiveViewer);
+    final size = tester.getSize(viewer);
+    final pin = CampusMapProjection(const [
+      west,
+      east,
+    ], size).project(west.anchor!);
+    final detector = tester.widget<GestureDetector>(
+      find.descendant(
+        of: viewer,
+        matching: find.byWidgetPredicate(
+          (widget) => widget is GestureDetector && widget.onTapUp != null,
+        ),
+      ),
+    );
+    detector.onTapUp!(
+      TapUpDetails(
+        localPosition: pin + const Offset(2, 0),
+        kind: PointerDeviceKind.touch,
+      ),
+    );
+    await tester.pump();
+    expect(find.byTooltip('Close details'), findsNothing);
+    detector.onTapUp!(
+      TapUpDetails(
+        localPosition: pin + const Offset(1, 0),
+        kind: PointerDeviceKind.touch,
+      ),
+    );
+    await tester.pump();
+    expect(find.byTooltip('Close details'), findsOneWidget);
   });
 
   testWidgets('selecting the list shows useful place details', (tester) async {
@@ -452,6 +546,75 @@ void main() {
 
     final pin = painter.semanticsBuilder(const Size(800, 500)).single;
     expect(pin.rect.width * 20, closeTo(44, 0.01));
+  });
+
+  test('pin semantics rebuild only after a quarter step of zoom', () {
+    CampusMapPainter at(double zoom) => CampusMapPainter(
+      features: const [west],
+      selectedId: null,
+      scheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+      zoom: zoom,
+    );
+
+    expect(at(20).shouldRebuildSemantics(at(20.01)), isFalse);
+    expect(at(20).shouldRebuildSemantics(at(19.7)), isTrue);
+  });
+
+  test('cached pin paint matches a fresh layout at 1x and 20x', () async {
+    const nearby = CampusMapFeature(
+      id: 4,
+      kind: 'water',
+      kindName: 'Water fountains',
+      name: 'Nearby fountain',
+      geometryType: 'Point',
+      coordinates: [
+        [GeoCoordinate(-77.6796, 43.08)],
+      ],
+    );
+    final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFF76902));
+    const size = Size(240, 160);
+    final cachedPainter = CampusMapPainter(
+      features: const [west, nearby],
+      boundsFeatures: const [west, east],
+      selectedId: null,
+      scheme: scheme,
+      zoom: 20,
+    );
+    expect(
+      identical(
+        cachedPainter.pinLayoutForTest(size),
+        cachedPainter.pinLayoutForTest(size),
+      ),
+      isTrue,
+    );
+    Future<List<int>> pixels(double zoom) async {
+      final recorder = ui.PictureRecorder();
+      final painter = CampusMapPainter(
+        features: const [west, nearby],
+        boundsFeatures: const [west, east],
+        selectedId: null,
+        scheme: scheme,
+        zoom: zoom,
+      );
+      painter.paint(Canvas(recorder), size);
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(240, 160);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      image.dispose();
+      picture.dispose();
+      return bytes!.buffer.asUint8List();
+    }
+
+    final first = await pixels(1);
+    expect(await pixels(1), orderedEquals(first));
+    CampusMapPainter.resetGeometryCacheForTest();
+    expect(await pixels(1), orderedEquals(first));
+
+    final close = await pixels(20);
+    expect(close, isNot(orderedEquals(first)));
+    expect(await pixels(20), orderedEquals(close));
+    CampusMapPainter.resetGeometryCacheForTest();
+    expect(await pixels(20), orderedEquals(close));
   });
 
   testWidgets('priming uses the shared skeleton', (tester) async {

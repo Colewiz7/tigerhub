@@ -209,7 +209,6 @@ class _CampusMapViewState extends State<CampusMapView> {
                 }),
               );
               final toolbar = _MapToolbar(
-                compact: constraints.maxWidth < 620,
                 kinds: _showEvents ? const {} : kinds,
                 selectedKind: _kind,
                 onKindChanged: (kind) => setState(() {
@@ -260,65 +259,77 @@ class _CampusMapViewState extends State<CampusMapView> {
                             child: Focus(
                               focusNode: _mapFocus,
                               onKeyEvent: _handleMapKey,
-                              child: InteractiveViewer(
-                                transformationController: _transform,
-                                minScale: 1,
-                                maxScale: _maxMapZoom,
-                                boundaryMargin: EdgeInsets.zero,
-                                child: GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onDoubleTap: () => _zoomBy(1.5),
-                                  onTapUp: (details) {
-                                    _mapFocus.requestFocus();
-                                    final projection = CampusMapProjection(
-                                      mapFeatures,
-                                      Size(
-                                        constraints.maxWidth,
-                                        constraints.maxHeight,
+                              child: ValueListenableBuilder<Matrix4>(
+                                valueListenable: _transform,
+                                builder: (context, matrix, _) =>
+                                    InteractiveViewer(
+                                      transformationController: _transform,
+                                      minScale: 1,
+                                      maxScale: _maxMapZoom,
+                                      boundaryMargin: EdgeInsets.all(
+                                        80 / matrix.getMaxScaleOnAxis(),
                                       ),
-                                      boundsFeatures: all,
-                                    );
-                                    final hit = projection.nearest(
-                                      details.localPosition,
-                                      zoom: _transform.value
-                                          .getMaxScaleOnAxis(),
-                                    );
-                                    if (hit != null) {
-                                      setState(() => _selectedId = hit.id);
-                                    }
-                                  },
-                                  // Repaints as the viewer scales, which is what
-                                  // lets labels and the scale bar hold a constant
-                                  // on-screen size instead of growing with the map.
-                                  child: ValueListenableBuilder<Matrix4>(
-                                    valueListenable: _transform,
-                                    // Its own layer, so a pan is the compositor
-                                    // moving a finished raster rather than Skia
-                                    // redrawing 191 outlines and the whole walking
-                                    // network for every frame of the gesture.
-                                    builder: (context, matrix, _) =>
-                                        RepaintBoundary(
-                                          child: CustomPaint(
-                                            size: Size(
-                                              constraints.maxWidth,
-                                              constraints.maxHeight,
-                                            ),
-                                            painter: CampusMapPainter(
-                                              features: mapFeatures,
-                                              boundsFeatures: all,
-                                              selectedId: _selectedId,
-                                              scheme: Theme.of(context)
-                                                  .colorScheme,
-                                              zoom: matrix.getMaxScaleOnAxis(),
-                                              paths: _paths,
-                                              onSelect: (feature) => setState(
-                                                () => _selectedId = feature.id,
+                                      child: GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onDoubleTap: () => _zoomBy(1.5),
+                                        onTapUp: (details) {
+                                          _mapFocus.requestFocus();
+                                          final projection =
+                                              CampusMapProjection(
+                                                mapFeatures,
+                                                Size(
+                                                  constraints.maxWidth,
+                                                  constraints.maxHeight,
+                                                ),
+                                                boundsFeatures: all,
+                                              );
+                                          final hit = projection.nearest(
+                                            details.localPosition,
+                                            zoom: _transform.value
+                                                .getMaxScaleOnAxis(),
+                                          );
+                                          if (hit != null) {
+                                            setState(
+                                              () => _selectedId = hit.id,
+                                            );
+                                          }
+                                        },
+                                        // Repaints as the viewer scales, which is what
+                                        // lets labels and the scale bar hold a constant
+                                        // on-screen size instead of growing with the map.
+                                        child: ValueListenableBuilder<Matrix4>(
+                                          valueListenable: _transform,
+                                          // Its own layer, so a pan is the compositor
+                                          // moving a finished raster rather than Skia
+                                          // redrawing 191 outlines and the whole walking
+                                          // network for every frame of the gesture.
+                                          builder: (context, matrix, _) =>
+                                              RepaintBoundary(
+                                                child: CustomPaint(
+                                                  size: Size(
+                                                    constraints.maxWidth,
+                                                    constraints.maxHeight,
+                                                  ),
+                                                  painter: CampusMapPainter(
+                                                    features: mapFeatures,
+                                                    boundsFeatures: all,
+                                                    selectedId: _selectedId,
+                                                    scheme: Theme.of(context)
+                                                        .colorScheme,
+                                                    zoom: matrix
+                                                        .getMaxScaleOnAxis(),
+                                                    paths: _paths,
+                                                    onSelect: (feature) =>
+                                                        setState(
+                                                          () => _selectedId =
+                                                              feature.id,
+                                                        ),
+                                                  ),
+                                                ),
                                               ),
-                                            ),
-                                          ),
                                         ),
-                                  ),
-                                ),
+                                      ),
+                                    ),
                               ),
                             ),
                           ),
@@ -358,13 +369,12 @@ class _CampusMapViewState extends State<CampusMapView> {
           ),
           const SizedBox(height: 10),
           SizedBox(
-            height: MediaQuery.textScalerOf(context).scale(
-              selected == null &&
-                      selectedBuilding == null &&
-                      selectedEvent == null
-                  ? 102
-                  : 146,
-            ),
+            height:
+                selected == null &&
+                    selectedBuilding == null &&
+                    selectedEvent == null
+                ? 92
+                : 146,
             child: _showEvents
                 ? selectedEvent == null
                       ? _EventStrip(
@@ -734,15 +744,12 @@ class _MapSearchDelegate extends SearchDelegate<CampusMapFeature?> {
 
 class _MapToolbar extends StatelessWidget {
   const _MapToolbar({
-    required this.compact,
     required this.kinds,
     required this.selectedKind,
     required this.onKindChanged,
     required this.onFit,
     required this.onSearch,
   });
-
-  final bool compact;
 
   final Map<String, String> kinds;
   final String? selectedKind;
@@ -772,7 +779,6 @@ class _MapToolbar extends StatelessWidget {
         if (kinds.isNotEmpty)
           PopupMenuButton<String>(
             tooltip: 'Filter map places',
-            icon: compact ? Icon(selectedIcon) : null,
             onSelected: (value) => onKindChanged(value.isEmpty ? null : value),
             itemBuilder: (context) => [
               const PopupMenuItem(
@@ -797,28 +803,26 @@ class _MapToolbar extends StatelessWidget {
                   ),
                 ),
             ],
-            child: compact
-                ? null
-                : Material(
-                    color: scheme.surfaceContainerHigh,
-                    shape: Shapes.pill,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 11,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(selectedIcon, size: 19),
-                          const SizedBox(width: 8),
-                          Text(selectedLabel),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.expand_more_rounded, size: 18),
-                        ],
-                      ),
-                    ),
-                  ),
+            child: Material(
+              color: scheme.surfaceContainerHigh,
+              shape: Shapes.pill,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 11,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(selectedIcon, size: 19),
+                    const SizedBox(width: 8),
+                    Text(selectedLabel),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.expand_more_rounded, size: 18),
+                  ],
+                ),
+              ),
+            ),
           ),
         const SizedBox(width: 8),
         IconButton.filledTonal(
@@ -1581,25 +1585,16 @@ class CampusMapPainter extends CustomPainter {
     _paintBuildingLabels(canvas, geometry.labels, scheme);
     _paintScaleBar(canvas, projection, mapRect, scheme);
 
-    final buckets = geometry.pinsAt(zoom);
+    final buckets = geometry.pinBucketsAt(zoom);
 
     // "All places" is a category chooser, not a heat map. Almost every kind
     // is concentrated in the academic core, so showing all twelve at once
     // creates a misleading knot. The icon cards below provide the overview;
     // spatial markers appear after the reader chooses a category.
-    for (final entry
-        in geometry.categoryOverview
-            ? const <
-                MapEntry<Object, List<({CampusMapFeature feature, Offset at})>>
-              >[]
-            : buckets.entries) {
-      final bucket = entry.value;
-      final center = Offset(
-        bucket.map((item) => item.at.dx).reduce((a, b) => a + b) /
-            bucket.length,
-        bucket.map((item) => item.at.dy).reduce((a, b) => a + b) /
-            bucket.length,
-      );
+    for (final pinBucket
+        in geometry.categoryOverview ? const <_PinBucket>[] : buckets) {
+      final bucket = pinBucket.items;
+      final center = pinBucket.center;
       final selected = bucket.any((item) => item.feature.id == selectedId);
       final eventCount = bucket.fold<int>(0, (total, item) {
         final kind = item.feature.kind;
@@ -1734,6 +1729,11 @@ class CampusMapPainter extends CustomPainter {
 
   /// Only for tests that need a cold build.
   static void resetGeometryCacheForTest() => _geometryCache = null;
+
+  @visibleForTesting
+  Object pinLayoutForTest(Size size) => _geometryFor(
+    CampusMapProjection(features, size, boundsFeatures: boundsFeatures),
+  ).pinBucketsAt(zoom);
 
   _MapGeometry _geometryFor(CampusMapProjection projection) {
     final cached = _geometryCache;
@@ -1942,7 +1942,7 @@ class CampusMapPainter extends CustomPainter {
       oldDelegate.features != features ||
       oldDelegate.boundsFeatures != boundsFeatures ||
       oldDelegate.selectedId != selectedId ||
-      oldDelegate.zoom != zoom;
+      (oldDelegate.zoom * 4).round() != (zoom * 4).round();
 }
 
 /// Names the three outline families.
@@ -1961,6 +1961,9 @@ class CampusMapPainter extends CustomPainter {
 /// Now each layer is a single Path with many subpaths, so the whole walking
 /// network is two draw calls rather than 1824, and the work happens once per
 /// projection rather than once per frame.
+typedef _Pin = ({CampusMapFeature feature, Offset at});
+typedef _PinBucket = ({List<_Pin> items, Offset center});
+
 class _MapGeometry {
   _MapGeometry(this.projection, this.features, this.paths, this.scheme) {
     for (final feature in features) {
@@ -2018,33 +2021,65 @@ class _MapGeometry {
     categoryOverview =
         pointKinds.length > 1 &&
         pointKinds.every((kind) => !kind.startsWith('_event:'));
-  }
-
-  Map<Object, List<({CampusMapFeature feature, Offset at})>> pinsAt(
-    double zoom,
-  ) {
-    final pins = <Object, List<({CampusMapFeature feature, Offset at})>>{};
-    final clusterCell = 46.0 / zoom;
-    final visible = projection.mapRect.inflate(12 / zoom);
     for (final feature in features) {
       if (feature.geometryType != 'Point') continue;
       final anchor = feature.anchor;
       if (anchor == null) continue;
-      final center = projection.project(anchor);
-      if (!visible.contains(center)) continue;
+      pointLocations.add((feature: feature, at: projection.project(anchor)));
+    }
+  }
+
+  List<_PinBucket> pinBucketsAt(double zoom) {
+    final clusterCell = 46.0 / zoom;
+    final visible = projection.mapRect.inflate(12 / zoom);
+    final keys = <Object?>[];
+    for (final point in pointLocations) {
+      final center = point.at;
+      if (!visible.contains(center)) {
+        keys.add(null);
+        continue;
+      }
       // The overview gets one meaningful marker per category. Once a category
       // is selected, nearby individual places use spatial clusters. Event
       // groups keep spatial clustering as well because each group has a
       // synthetic kind of its own.
       final Object key = categoryOverview
-          ? feature.kind
+          ? point.feature.kind
           : (
               (center.dx / clusterCell).floor(),
               (center.dy / clusterCell).floor(),
             );
-      pins.putIfAbsent(key, () => []).add((feature: feature, at: center));
+      keys.add(key);
     }
-    return pins;
+    final oldKeys = _pinKeys;
+    if (oldKeys != null && oldKeys.length == keys.length) {
+      var same = true;
+      for (var i = 0; i < keys.length; i++) {
+        if (oldKeys[i] != keys[i]) {
+          same = false;
+          break;
+        }
+      }
+      if (same) return _pinBuckets!;
+    }
+
+    final groups = <Object, List<_Pin>>{};
+    final sums = <Object, Offset>{};
+    for (var i = 0; i < keys.length; i++) {
+      final key = keys[i];
+      if (key == null) continue;
+      final point = pointLocations[i];
+      groups.putIfAbsent(key, () => []).add(point);
+      sums[key] = (sums[key] ?? Offset.zero) + point.at;
+    }
+    _pinKeys = keys;
+    return _pinBuckets = [
+      for (final entry in groups.entries)
+        (
+          items: entry.value,
+          center: sums[entry.key]! / entry.value.length.toDouble(),
+        ),
+    ];
   }
 
   /// Labels are measured at this size and scaled when drawn.
@@ -2060,6 +2095,9 @@ class _MapGeometry {
     ({TextPainter halo, TextPainter painter, Rect bounds, double area})
   >
   labels = [];
+  final List<_Pin> pointLocations = [];
+  List<Object?>? _pinKeys;
+  List<_PinBucket>? _pinBuckets;
   late final Set<String> pointKinds;
   late final bool categoryOverview;
   late final Path foot;
