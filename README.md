@@ -75,12 +75,21 @@ TIGERHUB_SRC=~/projects/tigerhub scripts/dev install --launcher
 ```
 
 Installs `~/.local/bin/tigerhub` (a copy of `scripts/tigerhub-launch`), the
-desktop entry and the icons, all under `$HOME`. Each launch compares the git
-HEAD and the contents of `client/` in `TIGERHUB_SRC` against the last build and
-runs `scripts/dev build` only when they differ. If the build fails it starts the
-previous build and sends a notification; the log is
-`~/.local/state/tigerhub/build.log`. It never fetches or pulls. Set
-`TIGERHUB_NO_REBUILD=1` in the environment (or the `Exec=` line) to skip the check.
+desktop entry and the icons, all under `$HOME`. The source path is the main
+checkout (found from any worktree) and is stored in
+`~/.local/state/tigerhub/src`. Each launch compares the git HEAD and the
+contents of `client/` there against the last build and runs `scripts/dev build`
+only when they differ, one build at a time (`flock`). It never fetches or pulls.
+
+After every good build the bundle is also copied to
+`~/.local/state/tigerhub/previous`. If a build fails, that copy is put back and
+started, with a notification; the log is `~/.local/state/tigerhub/build.log`.
+If the main checkout, `flock` or git is unusable, no rebuild is attempted, the
+existing build starts, and the reason goes to `launcher.log` in the same
+directory. With no build at all it cannot start.
+
+Set `TIGERHUB_NO_REBUILD=1` in the environment (or the `Exec=` line) to skip
+the check.
 
 ## Getting it as one file
 

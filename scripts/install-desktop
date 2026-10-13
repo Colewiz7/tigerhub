@@ -50,9 +50,16 @@ fi
 
 mkdir -p "$(dirname "$LAUNCHER")"
 if [ "${1:-}" = "--launcher" ]; then
-  # a copy, not a symlink, so it survives deleting this checkout. builds from TIGERHUB_SRC
+  # builds from the main checkout, never a worktree that can be deleted
+  COMMON="$(cd "$ROOT" && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd)" || COMMON=""
+  SRC="${TIGERHUB_SRC:-$(dirname "$COMMON")}"
+  [ -n "$COMMON" ] || [ -n "${TIGERHUB_SRC:-}" ] || { echo "cannot find the main checkout. Set TIGERHUB_SRC" >&2; exit 1; }
+  [ -x "$SRC/scripts/dev" ] && [ -d "$SRC/.git" ] || { echo "not a main TigerHub checkout: $SRC" >&2; exit 1; }
+  STATE="${XDG_STATE_HOME:-$HOME/.local/state}/tigerhub"
+  mkdir -p "$STATE"
+  printf '%s\n' "$SRC" > "$STATE/src"
   rm -f "$LAUNCHER"
-  sed "s|@SRC@|${TIGERHUB_SRC:-$ROOT}|" "$ROOT/scripts/tigerhub-launch" > "$LAUNCHER"
+  cp "$ROOT/scripts/tigerhub-launch" "$LAUNCHER"
   chmod +x "$LAUNCHER"
 else
   ln -sfn "$TARGET" "$LAUNCHER"
@@ -75,4 +82,8 @@ command -v gtk-update-icon-cache >/dev/null && gtk-update-icon-cache -qtf "${ICO
 echo "installed $ID.desktop and icons under $HOME/.local/share"
 echo "remove with: scripts/install-desktop --uninstall"
 
-echo "launcher entry -> $LAUNCHER -> $TARGET"
+if [ "${1:-}" = "--launcher" ]; then
+  echo "launcher $LAUNCHER builds from $SRC"
+else
+  echo "launcher entry -> $LAUNCHER -> $TARGET"
+fi
