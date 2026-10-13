@@ -435,3 +435,16 @@ should not wait.
 - First run with no release yet still has to build before it can start.
 - Not started. Raised by the owner 2026-10-13; review as local tooling (one
   pass).
+
+## A+B: items from the 2026-10-13 scallop review  *(logged, no code)*
+
+- Dining card title breaks mid-word at 2x text on a 390-wide screen ("Dinin" /
+  "g"). The title row is squeezed by the badge and the drag handle.
+- Dining subtitle uses "•" (bullet); the spec says to join a status word to its
+  detail with "·" (middle dot).
+- Golden harness: load the real Rubik and icon fonts, and fail on any overflow.
+  Remove the overflow assertion at `map_screen_golden_test.dart:689-693` and the
+  swallowed overflow in the phase 2 item E 2x goldens, then regenerate all
+  goldens. Known 2x overflows to fix at the same time: `empty_state.dart`, the
+  scope `DropdownButtonFormField`, the map toolbar and the map card strip.
+- Map: the compass button overlaps the legend strip.
