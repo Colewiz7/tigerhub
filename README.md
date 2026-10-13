@@ -75,31 +75,25 @@ TIGERHUB_SRC=~/projects/tigerhub scripts/dev install --launcher
 ```
 
 Installs `~/.local/bin/tigerhub` (a copy of `scripts/tigerhub-launch`), the
-desktop entry and the icons, all under `$HOME`. The source path is the main
-checkout (found from any worktree) and is stored in
-`~/.local/state/tigerhub/src`. Each launch compares the git HEAD and the
-contents of `client/` there against the last build and runs `scripts/dev build`
-only when they differ, one build at a time (`flock`). It never fetches or pulls.
+desktop entry and the icons, all under `$HOME`. The source is the main checkout
+(found from any worktree), stored in `~/.local/state/tigerhub/src`.
 
-A rebuild counts as done only when the new bundle has also been copied to
-`~/.local/state/tigerhub/previous` (copied aside, then swapped in, so it is
-always a complete copy). Only then is the stamp updated. If that backup copy
-fails, the working bundle is kept, the stamp is not updated, and the next
-launch retries.
+The app always runs from `~/.local/state/tigerhub/current`, a symlink to a
+complete, checked copy of a build in `releases/`. Each launch compares the git
+HEAD and the contents of `client/` against the last build. If they differ it
+runs `scripts/dev build` under a lock, copies the result into a new release,
+and only then switches `current` and records the new state. The newest two
+releases are kept. It never fetches or pulls.
 
-If a build fails and a `previous` copy exists, it is put back and started, with
-a notification; otherwise nothing is deleted and whatever bundle exists starts.
-The log is `~/.local/state/tigerhub/build.log`. If the main checkout, `flock`
-or git is unusable, no rebuild is attempted, the existing build starts, and
-the reason goes to `launcher.log` in the same directory.
+If a build or the copy fails, `current` is untouched and still starts, with a
+notification (log: `build.log` in the state directory). If git, `flock` or the
+checkout is unusable, no rebuild is attempted and `launcher.log` says why. A
+launch during someone else's build starts `current` straight away. With no
+release at all it falls back to the build folder, or refuses to start while a
+build is running.
 
-A second launch during a build says it is waiting. If the wait times out (10
-minutes, `TIGERHUB_LOCK_WAIT` in seconds) it starts `previous` rather than a
-bundle that is being rebuilt, or does not start if there is none. With no
-usable build at all it cannot start.
-
-To skip the check, set `TIGERHUB_NO_REBUILD=1` in the environment or put it in
-the desktop entry as `Exec=env TIGERHUB_NO_REBUILD=1 /home/you/.local/bin/tigerhub`.
+To skip the check, set `TIGERHUB_NO_REBUILD=1` in the environment or in the
+desktop entry as `Exec=env TIGERHUB_NO_REBUILD=1 /home/you/.local/bin/tigerhub`.
 
 ## Getting it as one file
 

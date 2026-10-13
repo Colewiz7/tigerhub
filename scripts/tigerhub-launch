@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
-# Desktop launcher: rebuild the release bundle if the source changed, then start the app.
+# Desktop launcher: build a new release if the source changed, then start the current one.
 # Installed as a copy by scripts/install-desktop --launcher, so it outlives any worktree.
-# The main checkout path is read from the state dir. TIGERHUB_NO_REBUILD=1 skips the rebuild.
+# The app always runs from a complete copy under releases/, never from the build dir.
+# TIGERHUB_NO_REBUILD=1 just starts the current release.
 set -uo pipefail
 
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/tigerhub"
 STAMP="$STATE/build-stamp"
 LOG="$STATE/build.log"
-PREV="$STATE/previous"
+REL="$STATE/releases"
+CUR="$STATE/current"
 
 notify() {
   command -v notify-send >/dev/null && notify-send -a TigerHub -i dev.colewiz.tigerhub "$@" || true
 }
 
-# say why a rebuild was skipped, then carry on with the existing build
+# say why a rebuild was skipped, then carry on with the current release
 skip() {
   printf '%s %s\n' "$(date +%FT%T)" "$1" >> "$STATE/launcher.log"
   notify -u critical "TigerHub not updated" "$1"
@@ -28,64 +30,70 @@ source_state() {
   printf '%s\n%s\n%s\n' "$head" "$diff" "$untracked"
 }
 
-# previous only ever exists as a complete copy: copy aside, then swap in
-keep_previous() {
-  rm -rf "$PREV.tmp"
-  if ! cp -a "$BIN_DIR" "$PREV.tmp" || [ ! -x "$PREV.tmp/tigerhub" ]; then
-    rm -rf "$PREV.tmp"
-    return 1
-  fi
-  rm -rf "$PREV.old"
-  if [ -d "$PREV" ] && ! mv "$PREV" "$PREV.old"; then
-    rm -rf "$PREV.tmp"
-    return 1
-  fi
-  if ! mv "$PREV.tmp" "$PREV"; then
-    [ -d "$PREV.old" ] && mv "$PREV.old" "$PREV"
-    rm -rf "$PREV.tmp"
-    return 1
-  fi
-  rm -rf "$PREV.old"
+verify_bundle() {
+  [ -x "$1/tigerhub" ] && [ -s "$1/tigerhub" ] && [ -d "$1/lib" ] && [ -d "$1/data" ]
 }
 
-# put the verified previous bundle back where the app expects it
-restore_previous() {
-  rm -rf "$BIN_DIR.restore"
-  mkdir -p "$(dirname "$BIN_DIR")"
-  cp -a "$PREV" "$BIN_DIR.restore" && [ -x "$BIN_DIR.restore/tigerhub" ] || { rm -rf "$BIN_DIR.restore"; return 1; }
-  rm -rf "$BIN_DIR"
-  mv "$BIN_DIR.restore" "$BIN_DIR"
+# copy a bundle into releases/, check it, then point current at it
+publish() {
+  local id tmp
+  id="$(date +%s)-$(printf '%s' "$1" | sha256sum | cut -c1-8)"
+  tmp="$REL/$id.tmp"
+  mkdir -p "$REL"
+  rm -rf "$tmp"
+  if ! cp -a "$BIN_DIR" "$tmp" || ! verify_bundle "$tmp" || ! mv -T "$tmp" "$REL/$id"; then
+    rm -rf "$tmp"
+    return 1
+  fi
+  touch "$REL/$id"
+  rm -f "$CUR.tmp"
+  ln -s "$REL/$id" "$CUR.tmp" && mv -T "$CUR.tmp" "$CUR"
+}
+
+# keep the newest two, and never what current points at
+prune() {
+  local live name n=0
+  live="$(readlink -f "$CUR")"
+  for name in $(ls -1t "$REL"); do
+    n=$((n + 1))
+    [ "$n" -gt 2 ] && [ "$REL/$name" != "$live" ] && rm -rf "${REL:?}/$name"
+  done
 }
 
 rebuild_if_changed() {
   local now
-  now="$(source_state)" || { skip "git failed in $SRC, starting the existing build"; return 0; }
-  [ -x "$BIN" ] && [ "$(cat "$STAMP" 2>/dev/null)" = "$now" ] && return 0
-  [ -d "$PREV" ] || [ ! -x "$BIN" ] || keep_previous || skip "could not back up the current build"
-  notify "Updating TigerHub" "Building the latest version, this can take a minute"
-  if "$SRC/scripts/dev" build >"$LOG" 2>&1; then
-    if keep_previous; then
-      printf '%s\n' "$now" >"$STAMP"
-    else
-      skip "built, but the backup copy failed. Will retry next launch"
-    fi
-  elif [ -x "$PREV/tigerhub" ] && restore_previous; then
-    notify -u critical "TigerHub build failed" "Starting the previous build. Log: $LOG"
-  else
-    notify -u critical "TigerHub build failed" "No backup to restore, starting what is there. Log: $LOG"
+  rm -rf "$REL"/*.tmp "$CUR.tmp" "$STATE"/previous "$STATE"/previous.tmp "$STATE"/previous.old
+  now="$(source_state)" || { skip "git failed in $SRC, starting the current release"; return 0; }
+  if [ ! -x "$CUR/tigerhub" ] && verify_bundle "$BIN_DIR"; then
+    publish seed || skip "could not copy the existing build into a release"
   fi
+  [ -x "$CUR/tigerhub" ] && [ "$(cat "$STAMP" 2>/dev/null)" = "$now" ] && return 0
+  notify "Updating TigerHub" "Building the latest version, this can take a minute"
+  if ! "$SRC/scripts/dev" build >"$LOG" 2>&1 9>&-; then
+    skip "build failed, starting the current release. Log: $LOG"
+  elif ! verify_bundle "$BIN_DIR" || ! publish "$now"; then
+    skip "build finished but could not be released, starting the current release"
+  else
+    printf '%s\n' "$now" >"$STAMP"
+    prune
+  fi
+}
+
+# last resort with no release: the source tree build, only if nobody is building
+run_source_build() {
+  if command -v flock >/dev/null && { ! exec 9>"$STATE/lock" || ! flock -n 9; }; then
+    notify -u critical "TigerHub is updating" "No version is ready yet. Try again in a minute"
+    exit 1
+  fi
+  verify_bundle "$BIN_DIR" || return 0
+  notify -u critical "TigerHub" "Running the build folder directly, no release exists"
+  exec "$BIN_DIR/tigerhub" "$@" 9>&-
 }
 
 mkdir -p "$STATE"
 SRC="${TIGERHUB_SRC:-}"
 [ -n "$SRC" ] || { IFS= read -r -d '' SRC < "$STATE/src"; } 2>/dev/null || SRC=""
 BIN_DIR="$SRC/client/build/linux/x64/release/bundle"
-BIN="$BIN_DIR/tigerhub"
-# only previous is safe to run when another launch may still be building
-BUSY=0
-
-# a crash between the two renames in keep_previous
-[ -d "$PREV" ] || [ ! -d "$PREV.old" ] || mv "$PREV.old" "$PREV"
 
 if [ "${TIGERHUB_NO_REBUILD:-}" != 1 ]; then
   git_dir="$(git -C "$SRC" rev-parse --absolute-git-dir 2>/dev/null)"
@@ -96,24 +104,15 @@ if [ "${TIGERHUB_NO_REBUILD:-}" != 1 ]; then
     skip "flock not found, not rebuilding"
   elif ! exec 9>"$STATE/lock"; then
     skip "could not open the build lock, not rebuilding"
+  elif flock -n 9; then
+    rebuild_if_changed
   else
-    if ! flock -n 9; then
-      notify "TigerHub is updating" "Another launch is building, waiting..."
-      if ! flock -w "${TIGERHUB_LOCK_WAIT:-600}" 9; then
-        BUSY=1
-        skip "still building after waiting, starting the previous build"
-      fi
-    fi
-    # second launch waits above, then finds the stamp current
-    [ "$BUSY" = 1 ] || { rebuild_if_changed; flock -u 9; }
+    notify "TigerHub is updating" "Another launch is building, using the current version"
   fi
 fi
 
 exec 9>&-
-if [ "$BUSY" != 1 ] && [ -x "$BIN" ]; then
-  exec "$BIN" "$@"
-elif [ -x "$PREV/tigerhub" ]; then
-  exec "$PREV/tigerhub" "$@"
-fi
+[ -x "$CUR/tigerhub" ] && exec "$CUR/tigerhub" "$@"
+run_source_build "$@"
 notify -u critical "TigerHub cannot start" "No usable build found. Log: $LOG"
 exit 1
