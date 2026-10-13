@@ -92,4 +92,59 @@ void main() {
     expect(find.byType(ScallopedBadge), findsNothing);
     expect(find.text('No visiting chefs today'), findsOneWidget);
   });
+
+  testWidgets('empty chefs content is centered in its dashboard card', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 390,
+            height: 560,
+            child: VisitingChefsCard(
+              result: Result(
+                value: Collection<MenuItem>(data: [], stale: false),
+                state: DataState.ok,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final card = find
+        .descendant(
+          of: find.byType(VisitingChefsCard),
+          matching: find.byType(Material),
+        )
+        .first;
+    final mark = find.byIcon(Icons.room_service_rounded);
+    final body = find
+        .ancestor(
+          of: find.text('No visiting chefs today'),
+          matching: find.byType(Center),
+        )
+        .first;
+    expect(
+      (tester.getCenter(mark).dx - tester.getCenter(card).dx).abs(),
+      lessThan(1),
+    );
+    expect(
+      (tester.getCenter(find.text('No visiting chefs today')).dx -
+              tester.getCenter(card).dx)
+          .abs(),
+      lessThan(1),
+    );
+    final contentCenterY =
+        (tester.getTopLeft(mark).dy +
+            tester.getBottomRight(find.text('No visiting chefs today')).dy) /
+        2;
+    expect((contentCenterY - tester.getCenter(body).dy).abs(), lessThan(8));
+    expect((contentCenterY - tester.getCenter(card).dy).abs(), lessThan(50));
+  });
 }
