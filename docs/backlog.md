@@ -443,8 +443,10 @@ should not wait.
 - Dining subtitle uses "•" (bullet); the spec says to join a status word to its
   detail with "·" (middle dot).
 - Golden harness: load the real Rubik and icon fonts, and fail on any overflow.
-  Remove the overflow assertion at `map_screen_golden_test.dart:689-693` and the
+  Remove the overflow assertion at `map_screen_golden_test.dart:103-108` and the
   swallowed overflow in the phase 2 item E 2x goldens, then regenerate all
   goldens. Known 2x overflows to fix at the same time: `empty_state.dart`, the
   scope `DropdownButtonFormField`, the map toolbar and the map card strip.
 - Map: the compass button overlaps the legend strip.
+- Map: the bottom-left chip's text is flush to the left edge at 1x. Measured on
+  base 5e818fa, so it is existing, not caused by the 20x work.
