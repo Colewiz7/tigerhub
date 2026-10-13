@@ -42,6 +42,24 @@ class CardShell extends StatelessWidget {
   /// mode. They take their own space in the header, never an overlay.
   final Widget? dragHandle;
 
+  /// The hero badge's width, from the spec (88px, capped text scale).
+  static const double _heroWidth = 88;
+
+  /// How many lines the title takes outside edit mode, given the whole header
+  /// [width]: no controls, the glyph, and the hero if there is one.
+  int _titleLines(BuildContext context, double width) {
+    final room =
+        width - (glyph != null ? 22 + 9 : 0) - (hero != null ? 10 + _heroWidth : 0);
+    final painter = TextPainter(
+      text: TextSpan(text: title, style: Theme.of(context).textTheme.titleLarge),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout(maxWidth: room < 0 ? 0 : room);
+    final lines = painter.computeLineMetrics().length;
+    painter.dispose();
+    return lines < 1 ? 1 : lines;
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -61,7 +79,8 @@ class CardShell extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
+            LayoutBuilder(
+              builder: (context, header) => Row(
               crossAxisAlignment: dragHandle == null
                   ? CrossAxisAlignment.center
                   : CrossAxisAlignment.start,
@@ -77,7 +96,21 @@ class CardShell extends StatelessWidget {
                             const SizedBox(width: 9),
                           ],
                           Flexible(
-                            child: Text(title, style: text.titleLarge),
+                            child: Text(
+                              title,
+                              style: text.titleLarge,
+                              // The edit controls narrow the title. It keeps the
+                              // line count it has outside edit mode and
+                              // ellipsizes past that, so edit mode never makes
+                              // the card taller. The card's semantics label
+                              // still carries the full name.
+                              maxLines: dragHandle == null
+                                  ? null
+                                  : _titleLines(context, header.maxWidth),
+                              overflow: dragHandle == null
+                                  ? TextOverflow.clip
+                                  : TextOverflow.ellipsis,
+                            ),
                           ),
                         ],
                       ),
@@ -103,6 +136,7 @@ class CardShell extends StatelessWidget {
                   dragHandle!,
                 ],
               ],
+              ),
             ),
             const SizedBox(height: 12),
             Flexible(
