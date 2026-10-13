@@ -1,51 +1,84 @@
 #!/usr/bin/env bash
 # Desktop launcher: rebuild the release bundle if the source changed, then start the app.
 # Installed as a copy by scripts/install-desktop --launcher, so it outlives any worktree.
-# TIGERHUB_NO_REBUILD=1 skips the rebuild check.
+# The main checkout path is read from the state dir. TIGERHUB_NO_REBUILD=1 skips the rebuild.
 set -uo pipefail
 
-SRC="${TIGERHUB_SRC:-@SRC@}"
-BIN="$SRC/client/build/linux/x64/release/bundle/tigerhub"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/tigerhub"
 STAMP="$STATE/build-stamp"
 LOG="$STATE/build.log"
+PREV="$STATE/previous"
 
 notify() {
   command -v notify-send >/dev/null && notify-send -a TigerHub -i dev.colewiz.tigerhub "$@" || true
 }
 
+# say why a rebuild was skipped, then carry on with the existing build
+skip() {
+  printf '%s %s\n' "$(date +%FT%T)" "$1" >> "$STATE/launcher.log"
+  notify -u critical "TigerHub not updated" "$1"
+}
+
 # head plus a hash of tracked diffs and untracked files under client/
 source_state() {
-  git -C "$SRC" rev-parse HEAD
-  git -C "$SRC" diff HEAD -- client | sha256sum
-  git -C "$SRC" ls-files -o --exclude-standard -z -- client | (cd "$SRC" && xargs -0 -r sha256sum) | sha256sum
+  local head diff untracked
+  head="$(git -C "$SRC" rev-parse HEAD)" || return 1
+  diff="$(git -C "$SRC" diff HEAD -- client | sha256sum)" || return 1
+  untracked="$(git -C "$SRC" ls-files -o --exclude-standard -z -- client | (cd "$SRC" && xargs -0 -r sha256sum) | sha256sum)" || return 1
+  printf '%s\n%s\n%s\n' "$head" "$diff" "$untracked"
+}
+
+# last good bundle, so a failed build cant take the app away
+keep_previous() {
+  rm -rf "$PREV.new"
+  cp -a "$SRC/client/build/linux/x64/release/bundle" "$PREV.new" || return 0
+  rm -rf "$PREV"
+  mv "$PREV.new" "$PREV"
 }
 
 rebuild_if_changed() {
   local now
-  now="$(source_state)" || return 0
+  now="$(source_state)" || { skip "git failed in $SRC, starting the existing build"; return 0; }
   [ -x "$BIN" ] && [ "$(cat "$STAMP" 2>/dev/null)" = "$now" ] && return 0
+  [ -d "$PREV" ] || { [ -x "$BIN" ] && keep_previous; }
   notify "Updating TigerHub" "Building the latest version, this can take a minute"
   if "$SRC/scripts/dev" build >"$LOG" 2>&1; then
     printf '%s\n' "$now" >"$STAMP"
+    keep_previous
   else
     notify -u critical "TigerHub build failed" "Starting the previous build. Log: $LOG"
+    rm -rf "$BIN_DIR"
+    [ -d "$PREV" ] && mkdir -p "$(dirname "$BIN_DIR")" && cp -a "$PREV" "$BIN_DIR"
   fi
 }
 
 mkdir -p "$STATE"
+SRC="${TIGERHUB_SRC:-}"
+[ -n "$SRC" ] || { IFS= read -r SRC < "$STATE/src"; } 2>/dev/null || SRC=""
+BIN_DIR="$SRC/client/build/linux/x64/release/bundle"
+BIN="$BIN_DIR/tigerhub"
 
-if [ "${TIGERHUB_NO_REBUILD:-}" != 1 ] && [ -d "$SRC/.git" ]; then
-  # second launch waits here, then finds the stamp current
-  exec 9>"$STATE/lock"
-  flock 9
-  rebuild_if_changed
-  flock -u 9
+if [ "${TIGERHUB_NO_REBUILD:-}" != 1 ]; then
+  git_dir="$(git -C "$SRC" rev-parse --absolute-git-dir 2>/dev/null)"
+  common_dir="$(cd "$SRC" 2>/dev/null && cd "$(git rev-parse --git-common-dir 2>/dev/null)" 2>/dev/null && pwd -P)"
+  if [ -z "$SRC" ] || [ -z "$git_dir" ] || [ "$git_dir" != "$common_dir" ]; then
+    skip "no main checkout at '$SRC', run scripts/install-desktop --launcher"
+  elif ! command -v flock >/dev/null; then
+    skip "flock not found, not rebuilding"
+  elif ! exec 9>"$STATE/lock" || ! flock -w 600 9; then
+    skip "could not take the build lock, not rebuilding"
+  else
+    # second launch waits here, then finds the stamp current
+    rebuild_if_changed
+    flock -u 9
+  fi
 fi
 
-if [ ! -x "$BIN" ]; then
-  notify -u critical "TigerHub cannot start" "No build found at $BIN. Log: $LOG"
-  exit 1
-fi
 exec 9>&-
-exec "$BIN" "$@"
+if [ -x "$BIN" ]; then
+  exec "$BIN" "$@"
+elif [ -x "$PREV/tigerhub" ]; then
+  exec "$PREV/tigerhub" "$@"
+fi
+notify -u critical "TigerHub cannot start" "No build found. Log: $LOG"
+exit 1
