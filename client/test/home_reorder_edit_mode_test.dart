@@ -211,6 +211,61 @@ void main() {
     expect(draggable(tester), isFalse);
   });
 
+  testWidgets('with reduce motion the handle appears with no fade', (
+    tester,
+  ) async {
+    await pumpHome(tester);
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(reduceMotion: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pump();
+
+    await scrollTo(tester, bottom: true);
+    await tester.tap(find.text('Customize'));
+    await tester.pump();
+    await scrollTo(tester, bottom: false);
+
+    final fades = find.ancestor(
+      of: find.byIcon(Icons.drag_indicator_rounded),
+      matching: find.byType(AnimatedOpacity),
+    );
+    final durations = tester
+        .widgetList<AnimatedOpacity>(fades)
+        .map((w) => w.duration);
+    expect(durations, isNotEmpty);
+    expect(durations.every((d) => d == Duration.zero), isTrue);
+    expect(handleOpacities(tester).every((o) => o == 1), isTrue);
+    expect(tester.hasRunningAnimations, isFalse);
+  });
+
+  testWidgets('without reduce motion the handle fades in', (tester) async {
+    await pumpHome(tester);
+    await toggleCustomize(tester);
+
+    final fades = find.ancestor(
+      of: find.byIcon(Icons.drag_indicator_rounded),
+      matching: find.byType(AnimatedOpacity),
+    );
+    expect(
+      tester
+          .widgetList<AnimatedOpacity>(fades)
+          .every((w) => w.duration > Duration.zero),
+      isTrue,
+    );
+  });
+
+  testWidgets('customize mode on and off are announced', (tester) async {
+    final spoken = announcements(tester);
+    await pumpHome(tester);
+
+    await toggleCustomize(tester);
+    expect(spoken.last, 'Customize mode on. Select a card to edit it.');
+
+    await toggleCustomize(tester);
+    expect(spoken.last, 'Customize mode off');
+    expect(spoken, hasLength(2));
+  });
+
   testWidgets('move actions only exist in edit mode', (tester) async {
     final handle = tester.ensureSemantics();
     await pumpHome(tester, height: 2800);
@@ -413,4 +468,85 @@ void main() {
       }
     }
   }
+
+  // These save a changed dashboard that leaks into later tests (the goldens
+  // above are recorded with the earlier drag tests' leftovers), so they stay
+  // after the goldens.
+  testWidgets('a drag reorder announces the new order', (tester) async {
+    final spoken = announcements(tester);
+    await pumpHome(tester, height: 2800);
+    await toggleCustomize(tester);
+    spoken.clear();
+
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byIcon(Icons.drag_indicator_rounded).first),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    await gesture.moveBy(const Offset(0, 20));
+    await tester.pump(const Duration(milliseconds: 100));
+    for (var step = 1; step <= 40; step++) {
+      await gesture.moveBy(const Offset(0, 20));
+      await tester.pump(const Duration(milliseconds: 30));
+    }
+    await tester.pump(const Duration(milliseconds: 500));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(spoken, ['Dashboard order updated']);
+  });
+
+  testWidgets('removing and re-adding a card is announced', (tester) async {
+    final handle = tester.ensureSemantics();
+    final spoken = announcements(tester);
+    await pumpHome(tester, height: 2800);
+    await toggleCustomize(tester);
+
+    final first = cardLabels(tester)[0];
+    await tester.tap(find.byIcon(Icons.close_rounded).first);
+    await tester.pumpAndSettle();
+    expect(spoken.last, '$first removed');
+
+    await scrollTo(tester, bottom: true);
+    await tester.tap(
+      find
+          .descendant(
+            of: find.ancestor(
+              of: find.text('ADD A CARD'),
+              matching: find.byType(Column),
+            ),
+            matching: find.byType(InkWell),
+          )
+          .last,
+    );
+    await tester.pumpAndSettle();
+    expect(spoken.last, '$first added');
+    handle.dispose();
+  });
+
+  testWidgets('resizing the selected card is announced', (tester) async {
+    final spoken = announcements(tester);
+    await pumpHome(tester, height: 2800);
+    await toggleCustomize(tester);
+
+    // earlier tests leave the order shuffled, so find a card with a spare size
+    final chip = find.byType(ChoiceChip);
+    var unselected = -1;
+    for (var i = 0; i < 4 && unselected < 0; i++) {
+      await scrollTo(tester, bottom: false);
+      position(tester).jumpTo(300.0 * i);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Customize card').at(i));
+      await tester.pumpAndSettle();
+      await scrollTo(tester, bottom: true);
+      unselected = tester
+          .widgetList<ChoiceChip>(chip)
+          .toList()
+          .indexWhere((c) => !c.selected);
+    }
+    expect(unselected, isNonNegative);
+    await tester.tap(chip.at(unselected));
+    await tester.pumpAndSettle();
+
+    expect(spoken.last, matches(RegExp(r' resized to \w+$')));
+  });
 }
