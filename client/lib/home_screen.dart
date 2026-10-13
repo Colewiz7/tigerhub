@@ -24,6 +24,7 @@ import 'models/api_models.dart';
 import 'services/api.dart';
 import 'services/dashboard.dart';
 import 'theme/tokens.dart';
+import 'widgets/card_shell.dart' show editControlsWidth;
 
 /// The icon each module type shows in the card library and the hidden chips.
 /// The name comes from `moduleLabels` beside the type itself, so the library
@@ -1034,15 +1035,17 @@ class EditControls extends StatelessWidget {
   final VoidCallback onRemove;
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      _DragHandle(onActivate: onInspect),
-      const SizedBox(width: 6),
-      _InspectButton(selected: selected, onTap: onInspect),
-      const SizedBox(width: 6),
-      _RemoveButton(onTap: onRemove),
-    ],
+  Widget build(BuildContext context) => SizedBox(
+    width: editControlsWidth,
+    child: Row(
+      children: [
+        _DragHandle(onActivate: onInspect),
+        const SizedBox(width: 6),
+        _InspectButton(selected: selected, onTap: onInspect),
+        const SizedBox(width: 6),
+        _RemoveButton(onTap: onRemove),
+      ],
+    ),
   );
 }
 

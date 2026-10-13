@@ -12,6 +12,13 @@ import '../theme/tokens.dart';
 import 'freshness.dart';
 import 'glyph.dart';
 
+/// Width of the edit controls row: handle, Inspect and Remove at 32 each with
+/// 6 between. The title's line budget depends on it.
+const double editControlsWidth = 32 * 3 + 6 * 2;
+
+/// Room a hero leaves the title in edit mode before the hero scales down.
+const double _minEditTitleWidth = 48;
+
 class CardShell extends StatelessWidget {
   const CardShell({
     super.key,
@@ -42,14 +49,12 @@ class CardShell extends StatelessWidget {
   /// mode. They take their own space in the header, never an overlay.
   final Widget? dragHandle;
 
-  /// The hero badge's width, from the spec (88px, capped text scale).
-  static const double _heroWidth = 88;
-
-  /// How many lines the title takes outside edit mode, given the whole header
-  /// [width]: no controls, the glyph, and the hero if there is one.
-  int _titleLines(BuildContext context, double width) {
-    final room =
-        width - (glyph != null ? 22 + 9 : 0) - (hero != null ? 10 + _heroWidth : 0);
+  /// How many lines the title takes outside edit mode. [editWidth] is the room
+  /// the title column has in edit mode, after the real hero and the controls
+  /// have taken theirs, so adding the controls' slot back gives the room it has
+  /// outside edit mode, whatever the hero is.
+  int _titleLines(BuildContext context, double editWidth) {
+    final room = editWidth + 10 + editControlsWidth - (glyph != null ? 22 + 9 : 0);
     final painter = TextPainter(
       text: TextSpan(text: title, style: Theme.of(context).textTheme.titleLarge),
       textDirection: Directionality.of(context),
@@ -81,57 +86,73 @@ class CardShell extends StatelessWidget {
           children: [
             LayoutBuilder(
               builder: (context, header) => Row(
-              crossAxisAlignment: dragHandle == null
-                  ? CrossAxisAlignment.center
-                  : CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // Expanded, so the title wraps or ellipsizes before it can
+                // reach the hero or the edit controls on its right.
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          if (glyph != null) ...[
-                            Glyph(glyph!, size: 22),
-                            const SizedBox(width: 9),
-                          ],
-                          Flexible(
-                            child: Text(
-                              title,
-                              style: text.titleLarge,
-                              // The edit controls narrow the title. It keeps the
-                              // line count it has outside edit mode and
-                              // ellipsizes past that, so edit mode never makes
-                              // the card taller. The card's semantics label
-                              // still carries the full name.
-                              maxLines: dragHandle == null
-                                  ? null
-                                  : _titleLines(context, header.maxWidth),
-                              overflow: dragHandle == null
-                                  ? TextOverflow.clip
-                                  : TextOverflow.ellipsis,
+                  child: LayoutBuilder(
+                    builder: (context, titleBox) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            if (glyph != null) ...[
+                              Glyph(glyph!, size: 22),
+                              const SizedBox(width: 9),
+                            ],
+                            Flexible(
+                              child: Text(
+                                title,
+                                style: text.titleLarge,
+                                // The edit controls take room beside the
+                                // hero, so the title keeps the line count it
+                                // has outside edit mode and ellipsizes past
+                                // that. Edit mode then never makes the header,
+                                // or the card, taller. The ellipsis is only
+                                // visual: the Text still holds the full title.
+                                maxLines: dragHandle == null
+                                    ? null
+                                    : _titleLines(context, titleBox.maxWidth),
+                                overflow: dragHandle == null
+                                    ? TextOverflow.clip
+                                    : TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      FreshnessLine(state: state, fetchedAt: fetchedAt),
-                    ],
+                          ],
+                        ),
+                        FreshnessLine(state: state, fetchedAt: fetchedAt),
+                      ],
+                    ),
                   ),
                 ),
-                // The title column is Expanded, so it wraps or ellipsizes
-                // before it can reach anything on this side. In edit mode the
-                // controls sit above the hero rather than beside it, which
-                // keeps the title's share of the width.
-                if (dragHandle != null && hero != null) ...[
+                // The hero keeps its slot, and the controls sit after it in
+                // the same row band, so nothing here can overlap.
+                // Wrapped the same way in both modes, so toggling edit mode
+                // does not rebuild the hero and replay its entrance. Only in
+                // edit mode is it capped, and only a very wide hero (a text
+                // one at large text) ever scales down, so it never overflows
+                // the row or hides.
+                if (hero != null) ...[
                   const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [dragHandle!, const SizedBox(height: 6), hero!],
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: dragHandle == null
+                          ? double.infinity
+                          : (header.maxWidth -
+                                    20 -
+                                    editControlsWidth -
+                                    _minEditTitleWidth)
+                                .clamp(0, double.infinity),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: hero!,
+                    ),
                   ),
-                ] else if (hero != null) ...[
-                  const SizedBox(width: 10),
-                  hero!,
-                ] else if (dragHandle != null) ...[
+                ],
+                if (dragHandle != null) ...[
                   const SizedBox(width: 10),
                   dragHandle!,
                 ],
