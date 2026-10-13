@@ -135,7 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Edit mode reveals the remove buttons and the add row.
   bool _editing = false;
   String? _selectedId;
-  String _announcement = '';
   Result<Collection<RecreationFacility>> _recreation = const Result(
     value: null,
     state: DataState.priming,
@@ -223,8 +222,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _order = _order.where((c) => c != id).toList();
       _hidden = [..._hidden, id];
       if (_selectedId == id) _selectedId = null;
-      _announcement = '${moduleLabels[removed?.type] ?? 'Card'} removed';
     });
+    _announce('${moduleLabels[removed?.type] ?? 'Card'} removed');
     _persist();
   }
 
@@ -233,8 +232,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _hidden = _hidden.where((c) => c != id).toList();
       _order = [..._order, id];
-      _announcement = '${moduleLabels[added?.type] ?? 'Card'} added';
     });
+    _announce('${moduleLabels[added?.type] ?? 'Card'} added');
     _persist();
   }
 
@@ -255,25 +254,26 @@ class _HomeScreenState extends State<HomeScreen> {
       _instances = [..._instances, card];
       _order = [..._order, card.id];
       _selectedId = card.id;
-      _announcement = '${moduleLabels[type]} added, position ${_order.length}';
     });
+    _announce('${moduleLabels[type]} added, position ${_order.length}');
     await _persist();
   }
 
   Future<void> _updateCard(CardInstance updated) async {
     final previous = _instance(updated.id);
+    String? spoken;
     setState(() {
       _instances = [
         for (final card in _instances)
           if (card.id == updated.id) updated else card,
       ];
       if (previous?.size != updated.size) {
-        _announcement =
-            '${moduleLabels[updated.type]} resized to ${updated.size.id}';
+        spoken = '${moduleLabels[updated.type]} resized to ${updated.size.id}';
       } else if (previous?.scope != updated.scope) {
-        _announcement = '${moduleLabels[updated.type]} scope updated';
+        spoken = '${moduleLabels[updated.type]} scope updated';
       }
     });
+    if (spoken != null) _announce(spoken!);
     await _persist();
   }
 
@@ -286,16 +286,21 @@ class _HomeScreenState extends State<HomeScreen> {
       final moved = next.removeAt(from);
       next.insert(to, moved);
       _order = next;
-      _announcement =
-          '${moduleLabels[_instance(id)?.type] ?? 'Card'} moved to position ${to + 1}';
     });
-    // the live region below is zero size, so the tree drops it
-    SemanticsService.sendAnnouncement(
-      View.of(context),
-      _announcement,
-      Directionality.of(context),
+    _announce(
+      '${moduleLabels[_instance(id)?.type] ?? 'Card'} moved to position ${to + 1}',
     );
     _persist();
+  }
+
+  /// Speaks [message] to screen readers. A zero size live region is dropped
+  /// from the semantics tree, so every announcement goes through here.
+  void _announce(String message) {
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
   }
 
   List<({String key, String name})> get _organizers {
@@ -511,8 +516,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     onReorder: (reorderedListFunction) {
                       setState(() {
                         _order = reorderedListFunction(_order);
-                        _announcement = 'Dashboard order updated';
                       });
+                      _announce('Dashboard order updated');
                       HapticFeedback.lightImpact();
                       _persist();
                     },
@@ -527,13 +532,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   editing: _editing,
                   hidden: _hidden,
                   cards: {for (final c in _instances) c.id: c},
-                  onToggle: () => setState(() {
-                    _editing = !_editing;
-                    _announcement = _editing
-                        ? 'Customize mode on. Select a card to edit it.'
-                        : 'Customize mode off';
-                    if (!_editing) _selectedId = null;
-                  }),
+                  onToggle: () {
+                    setState(() {
+                      _editing = !_editing;
+                      if (!_editing) _selectedId = null;
+                    });
+                    _announce(
+                      _editing
+                          ? 'Customize mode on. Select a card to edit it.'
+                          : 'Customize mode off',
+                    );
+                  },
                   onAdd: _addCard,
                   onAddModule: _addModule,
                   selected: _selectedId == null
@@ -544,13 +553,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   facilities: _facilities,
                   onUpdate: _updateCard,
                   onMove: (delta) => _moveCard(_selectedId!, delta),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Semantics(
-                  liveRegion: true,
-                  label: _announcement,
-                  child: const SizedBox.shrink(),
                 ),
               ),
               const SliverToBoxAdapter(child: _Colophon()),
