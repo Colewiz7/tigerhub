@@ -418,3 +418,20 @@ own location, not the post office's. Check that before designing the sort.
 `recreation_campus_date_test.dart` catches the old `toLocal()` bug only on
 devices west of UTC (fails under Los Angeles, passes under Tokyo), so run it
 under America/Los_Angeles.
+
+## Desktop launcher: build in the background  *(2026-10-13)*
+
+Today `scripts/tigerhub-launch` blocks: when the source changed, the first
+launch notifies, runs `scripts/dev build` and only then starts the app, so the
+launch can take a minute or more. TigerHub is a quick-check tool, so the launch
+should not wait.
+
+- Start `current` immediately.
+- Build in the background (detached, under the existing build lock), publish the
+  new release with the same verified copy and atomic `current` switch, and use
+  it on the next launch.
+- Keep the failure rules: a failed build leaves `current` alone and writes the
+  log; notify once when the update is ready or failed.
+- First run with no release yet still has to build before it can start.
+- Not started. Raised by the owner 2026-10-13; review as local tooling (one
+  pass).
