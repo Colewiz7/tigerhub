@@ -1,0 +1,147 @@
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/sources/campus_places.dart';
+import 'package:tigerhub/models/api_models.dart';
+import 'package:tigerhub/screens/map_screen.dart';
+import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/widgets/campus_map.dart';
+
+class _MapBackend implements Backend {
+  @override
+  Future<Map<String, dynamic>> fetch(
+    String path, [
+    Map<String, String>? q,
+  ]) async {
+    if (path == '/campus/map') {
+      return {
+        'data': parseCampusMapFeatures(
+          File('test/fixtures/maps_category_35.data').readAsStringSync(),
+        ),
+        'stale': false,
+        'last_updated': null,
+      };
+    }
+    return {'data': <dynamic>[], 'stale': false, 'last_updated': null};
+  }
+
+  @override
+  void close() {}
+}
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() async {
+    await (FontLoader(
+      'Rubik',
+    )..addFont(rootBundle.load('assets/fonts/Rubik.ttf'))).load();
+    await (FontLoader(
+      'MaterialIcons',
+    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
+  });
+
+  setUp(() {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+  });
+
+  for (final size in [const Size(390, 844), const Size(430, 932)]) {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      for (final textScale in [1.0, 2.0]) {
+        testWidgets(
+          'map screen ${size.width.toInt()}x${size.height.toInt()} ${brightness.name} ${textScale}x',
+          (tester) async {
+            tester.view.devicePixelRatio = 1;
+            tester.view.physicalSize = size;
+            addTearDown(tester.view.reset);
+            await tester.pumpWidget(
+              MaterialApp(
+                theme: AppTheme.from(
+                  ColorScheme.fromSeed(
+                    seedColor: const Color(0xFFF76902),
+                    brightness: brightness,
+                  ),
+                ),
+                home: MediaQuery(
+                  data: MediaQueryData(
+                    size: size,
+                    textScaler: TextScaler.linear(textScale),
+                  ),
+                  child: Scaffold(
+                    body: MapScreen(api: ApiClient(backend: _MapBackend())),
+                  ),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+            await expectLater(
+              find.byType(Scaffold),
+              matchesGoldenFile(
+                'goldens/map_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_text${textScale.toInt()}.png',
+              ),
+            );
+          },
+        );
+      }
+    }
+  }
+
+  testWidgets('map screen 390x844 light at 20x', (tester) async {
+    const size = Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = size;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.from(
+          ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+        ),
+        home: Scaffold(
+          body: MapScreen(api: ApiClient(backend: _MapBackend())),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final features = parseCampusMapFeatures(
+      File('test/fixtures/maps_category_35.data').readAsStringSync(),
+    ).map(CampusMapFeature.fromJson).toList();
+    final feature = features.firstWhere(
+      (feature) =>
+          feature.geometryType == 'Point' && !feature.kind.startsWith('_'),
+    );
+    await tester.tap(find.byTooltip('Filter map places'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(feature.kindName).last);
+    await tester.pumpAndSettle();
+    final viewer = tester.widget<InteractiveViewer>(
+      find.byType(InteractiveViewer),
+    );
+    final viewport = tester.getSize(find.byType(InteractiveViewer));
+    final center = viewport.center(Offset.zero);
+    final projection = CampusMapProjection(
+      features,
+      viewport,
+      boundsFeatures: features,
+    );
+    final pin = projection.project(feature.anchor!);
+    viewer.transformationController!.value = Matrix4.identity()
+      ..setEntry(0, 0, 20)
+      ..setEntry(1, 1, 20)
+      ..setEntry(0, 3, center.dx - pin.dx * 20)
+      ..setEntry(1, 3, center.dy - pin.dy * 20);
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    await expectLater(
+      find.byType(Scaffold),
+      matchesGoldenFile('goldens/map_390x844_light_20x.png'),
+    );
+  });
+}
