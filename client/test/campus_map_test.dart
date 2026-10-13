@@ -385,6 +385,14 @@ void main() {
     final controller = viewer.transformationController!;
 
     expect(viewer.maxScale, 20);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.remove_rounded),
+          )
+          .onPressed,
+      isNull,
+    );
     for (var i = 0; i < 10; i++) {
       await tester.tap(find.byTooltip('Zoom in'));
       await tester.pump();
@@ -400,6 +408,30 @@ void main() {
           .onPressed,
       isNull,
     );
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom out'));
+      await tester.pump();
+    }
+    expect(controller.value.getMaxScaleOnAxis(), 1);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.remove_rounded),
+          )
+          .onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('zoom keeps the viewer gesture child widget', (tester) async {
+    await tester.pumpWidget(app());
+    final gesture = find.byWidgetPredicate(
+      (widget) => widget is GestureDetector && widget.onDoubleTap != null,
+    );
+    final before = tester.widget<GestureDetector>(gesture);
+    await tester.tap(find.byTooltip('Zoom in'));
+    await tester.pump();
+    expect(identical(tester.widget<GestureDetector>(gesture), before), isTrue);
   });
 
   testWidgets('pan margin stays 80 screen pixels from 1x through 20x', (
@@ -536,16 +568,22 @@ void main() {
     expect(selected, west);
   });
 
-  test('pin semantics keep a screen sized target at 20x', () {
-    final painter = CampusMapPainter(
+  test('pin semantics keep a 48 point screen target from 1x to 20x', () {
+    CampusMapPainter at(double zoom) => CampusMapPainter(
       features: const [west],
       selectedId: null,
       scheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
-      zoom: 20,
+      zoom: zoom,
     );
 
-    final pin = painter.semanticsBuilder(const Size(800, 500)).single;
-    expect(pin.rect.width * 20, closeTo(44, 0.01));
+    expect(
+      at(1).semanticsBuilder(const Size(800, 500)).single.rect.width,
+      closeTo(48, 0.01),
+    );
+    expect(
+      at(20).semanticsBuilder(const Size(800, 500)).single.rect.width * 20,
+      closeTo(48, 0.01),
+    );
   });
 
   test('pin semantics rebuild only after a quarter step of zoom', () {
