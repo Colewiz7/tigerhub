@@ -1,16 +1,20 @@
 /// Edit mode on cards that have a hero.
 ///
-/// The edit controls share the header row with the title and the hero. The
-/// hero keeps its slot, the title keeps its normal line count and ellipsizes,
-/// and edit mode never makes a card taller or moves the gap after it.
+/// The edit controls share the card header with the title and the hero. The
+/// header is always the height it has outside edit mode, so edit mode never
+/// makes a card taller or shorter or moves the gap after it.
 ///
 /// Covered: the real DiningCard (88px scalloped badge hero) and the real
 /// ScopedEventsCard (variable width text hero) on their own at the card widths
-/// of a 390 and a 430 wide phone at 1x and 2x text, plus the whole dashboard
-/// with a dining hero at 390x844 and 430x932 at 1x. Not covered: the
-/// dashboard at 2x text, which overflows inside the empty state cards of
-/// empty_state.dart whatever this change does, and the dashboard with a
-/// ScopedEventsCard, which needs a saved dashboard layout.
+/// of a 320, 390 and 430 wide phone at 1x and 2x text, asserting the header
+/// height is exactly equal, the badge keeps its size, the hero element is not
+/// recreated, and nothing overlaps; plus the whole dashboard with a dining
+/// hero and with a scoped events text hero at 390x844 and 430x932 at 1x,
+/// asserting card 1 and the gap are equal. Not covered: the dashboard at 2x
+/// text, which overflows inside the empty state cards of empty_state.dart
+/// whatever this change does; the text hero at 320 wide and 2x text (see
+/// below); and the hero element surviving at dashboard level, because the
+/// grid rebuilds the whole card when edit mode starts.
 library;
 
 import 'package:flutter/material.dart';
@@ -23,6 +27,7 @@ import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/home_screen.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/dashboard.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart';
@@ -196,11 +201,19 @@ void main() {
   };
 
   for (final card in cards.entries) {
-    for (final width in [390.0, 430.0]) {
+    for (final width in [320.0, 390.0, 430.0]) {
       for (final scale in [1.0, 2.0]) {
+        // Left out: the text hero at 320 wide and 2x text. In the test font
+        // the hero is 225px of a 240px header, so outside edit mode the title
+        // is left 15px, less than its own 31px glyph, and the normal layout
+        // overflows by 26px before edit mode is involved. Normal mode is not part
+        // of this change, so the case is left out rather than suppressed.
+        if (card.key.startsWith('scoped') && width == 320 && scale == 2) {
+          continue;
+        }
         testWidgets(
           '${card.key} at $width wide, text ${scale}x: edit mode keeps the '
-          'header height and nothing overlaps',
+          'header height exactly and nothing overlaps',
           (tester) async {
             phoneView(tester, width: width, height: 4000, scale: scale);
             final shell = find.byType(CardShell);
@@ -208,17 +221,25 @@ void main() {
             await pumpCard(tester, width, card.value.build(null));
             expect(card.value.hero, findsOneWidget);
             final normal = contentTop(tester, shell);
+            final normalHero = tester.getSize(card.value.hero);
+            final heroElement = tester.element(card.value.hero);
 
             await pumpCard(tester, width, card.value.build(edit()));
-            // Never taller. Exactly equal unless the hero is so wide that it
-            // scales down to make room, which the test font's very wide
-            // glyphs only do for the text hero at 2x: there the title has so
-            // little room outside edit mode that it wraps to a line a letter.
-            final exact = card.key.startsWith('dining') || scale == 1;
-            if (exact) {
-              expect(contentTop(tester, shell), normal);
-            } else {
-              expect(contentTop(tester, shell), lessThanOrEqualTo(normal));
+            final edited = contentTop(tester, shell);
+            expect(edited, normal);
+
+            // The hero is the same element, so toggling edit mode does not
+            // recreate it and replay its entrance.
+            expect(
+              identical(tester.element(card.value.hero), heroElement),
+              isTrue,
+            );
+            // Never hidden, and a badge never shrinks below its size.
+            final heroSize = tester.getSize(card.value.hero);
+            expect(heroSize.width, greaterThan(0));
+            expect(heroSize.height, greaterThan(0));
+            if (card.key.startsWith('dining')) {
+              expect(heroSize, normalHero);
             }
 
             expectNoOverlap(
@@ -259,70 +280,94 @@ void main() {
     handle.dispose();
   });
 
-  for (final view in const [Size(390, 844), Size(430, 932)]) {
-    testWidgets(
-      'dashboard with a dining hero at ${view.width.toInt()}x'
-      '${view.height.toInt()}, 1x: edit mode keeps card 1 and the gap',
-      (tester) async {
-        phoneView(
-          tester,
-          width: view.width,
-          height: view.height,
-          scale: 1,
-          ratio: 3,
-        );
-        await tester.pumpWidget(
-          MaterialApp(
-            theme: _theme(),
-            home: Scaffold(
-              body: HomeScreen(
-                api: ApiClient(backend: _EmptyBackend()),
-                dining: _dining,
-                events: _result<CampusEvent>(const []),
-                chefs: _result<MenuItem>(const []),
-                areas: _result<HousingArea>(const []),
-                onRefresh: () async {},
-                onGoToTab: (_) {},
+  for (final scoped in [false, true]) {
+    for (final view in const [Size(390, 844), Size(430, 932)]) {
+      testWidgets(
+        'dashboard with a ${scoped ? 'scoped events text' : 'dining'} hero at '
+        '${view.width.toInt()}x${view.height.toInt()}, 1x: edit mode keeps '
+        'card 1 and the gap',
+        (tester) async {
+          phoneView(
+            tester,
+            width: view.width,
+            height: view.height,
+            scale: 1,
+            ratio: 3,
+          );
+          if (scoped) {
+            // Card 1 is a club's events card, whose hero is the text
+            // "2 events"; the dining card follows it.
+            await DashboardStore.save(const [
+              CardInstance(
+                id: 'club-1',
+                type: ModuleType.clubEvents,
+                scope: 'swe',
+              ),
+              CardInstance(id: 'dining-0', type: ModuleType.diningStatus),
+            ]);
+          }
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: _theme(),
+              home: Scaffold(
+                body: HomeScreen(
+                  api: ApiClient(backend: _EmptyBackend()),
+                  dining: _dining,
+                  events: scoped ? _events : _result<CampusEvent>(const []),
+                  chefs: _result<MenuItem>(const []),
+                  areas: _result<HousingArea>(const []),
+                  onRefresh: () async {},
+                  onGoToTab: (_) {},
+                ),
               ),
             ),
-          ),
-        );
-        await tester.pumpAndSettle();
+          );
+          await tester.pumpAndSettle();
 
-        expect(find.byType(ScallopedBadge), findsOneWidget);
-        ({double height, double gap}) measure() {
-          final first = tester.getRect(find.byType(CardShell).at(0));
-          final second = tester.getRect(find.byType(CardShell).at(1));
-          return (height: first.height, gap: second.top - first.bottom);
-        }
+          final hero = scoped
+              ? find.descendant(
+                  of: find.byType(CardShell).first,
+                  matching: find.text('2 events'),
+                )
+              : find.byType(ScallopedBadge);
+          expect(hero, findsOneWidget);
+          ({double height, double gap}) measure() {
+            final first = tester.getRect(find.byType(CardShell).at(0));
+            final second = tester.getRect(find.byType(CardShell).at(1));
+            return (height: first.height, gap: second.top - first.bottom);
+          }
 
-        final normal = measure();
+          final normal = measure();
 
-        final position = tester
-            .state<ScrollableState>(find.byType(Scrollable).first)
-            .position;
-        position.jumpTo(position.maxScrollExtent);
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Customize'));
-        await tester.pumpAndSettle();
-        position.jumpTo(0);
-        await tester.pumpAndSettle();
+          final position = tester
+              .state<ScrollableState>(find.byType(Scrollable).first)
+              .position;
+          position.jumpTo(position.maxScrollExtent);
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Customize'));
+          await tester.pumpAndSettle();
+          position.jumpTo(0);
+          await tester.pumpAndSettle();
 
-        final edited = measure();
-        expect(edited.height, normal.height);
-        expect(edited.gap, normal.gap);
-        expectNoOverlap(
-          tester,
-          shell: find.byType(CardShell).first,
-          title: find
-              .descendant(
-                of: find.byType(CardShell).first,
-                matching: find.byType(Text),
-              )
-              .first,
-          hero: find.byType(ScallopedBadge),
-        );
-      },
-    );
+          final edited = measure();
+          // Not asserted here: that the hero element survives. The grid
+          // rebuilds the whole card when edit mode starts, so that only holds
+          // for the header, which the card level tests above cover.
+          expect(edited.height, normal.height);
+          expect(edited.gap, normal.gap);
+          expectNoOverlap(
+            tester,
+            shell: find.byType(CardShell).first,
+            title: find
+                .descendant(
+                  of: find.byType(CardShell).first,
+                  matching: find.byType(Text),
+                )
+                .first,
+            hero: hero,
+          );
+        },
+      );
+    }
   }
 }
