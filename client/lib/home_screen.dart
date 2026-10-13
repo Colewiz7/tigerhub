@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_reorderable_grid_view/widgets/widgets.dart';
 
 import 'cards/dining_card.dart';
@@ -288,6 +289,12 @@ class _HomeScreenState extends State<HomeScreen> {
       _announcement =
           '${moduleLabels[_instance(id)?.type] ?? 'Card'} moved to position ${to + 1}';
     });
+    // the live region below is zero size, so the tree drops it
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      _announcement,
+      Directionality.of(context),
+    );
     _persist();
   }
 
@@ -429,6 +436,14 @@ class _HomeScreenState extends State<HomeScreen> {
               key: ValueKey(_order[index]),
               container: true,
               sortKey: OrdinalSortKey(index.toDouble()),
+              customSemanticsActions: {
+                if (_editing && index > 0)
+                  const CustomSemanticsAction(label: 'Move earlier'): () =>
+                      _moveCard(_order[index], -1),
+                if (_editing && index < _order.length - 1)
+                  const CustomSemanticsAction(label: 'Move later'): () =>
+                      _moveCard(_order[index], 1),
+              },
               label: dashboardCardSemanticsLabel(
                 _instance(_order[index]),
                 index + 1,
@@ -449,31 +464,28 @@ class _HomeScreenState extends State<HomeScreen> {
                     _cardGutter * 2,
                 child: Padding(
                   padding: const EdgeInsets.all(_cardGutter),
-                  child: _HoverCard(
-                    builder: (hovered) => Stack(
-                      children: [
-                        _cardFor(_order[index], hovered || _editing),
-                        if (_editing)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: Row(
-                              children: [
-                                _InspectButton(
-                                  selected: _selectedId == _order[index],
-                                  onTap: () => setState(
-                                    () => _selectedId = _order[index],
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                _RemoveButton(
-                                  onTap: () => _removeCard(_order[index]),
-                                ),
-                              ],
-                            ),
+                  child: Stack(
+                    children: [
+                      _cardFor(_order[index], _editing),
+                      if (_editing)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Row(
+                            children: [
+                              _InspectButton(
+                                selected: _selectedId == _order[index],
+                                onTap: () =>
+                                    setState(() => _selectedId = _order[index]),
+                              ),
+                              const SizedBox(width: 6),
+                              _RemoveButton(
+                                onTap: () => _removeCard(_order[index]),
+                              ),
+                            ],
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -494,12 +506,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     // scrolling, so the package must find that itself. Passing
                     // the outer controller here is what broke dragging.
                     enableScrollingWhileDragging: false,
+                    enableDraggable: _editing,
                     longPressDelay: const Duration(milliseconds: 180),
                     onReorder: (reorderedListFunction) {
                       setState(() {
                         _order = reorderedListFunction(_order);
                         _announcement = 'Dashboard order updated';
                       });
+                      HapticFeedback.lightImpact();
                       _persist();
                     },
                     builder: (wrapped) =>
@@ -994,31 +1008,6 @@ class _InspectButton extends StatelessWidget {
   }
 }
 
-/// Reveals the drag handle on hover, so it is not permanent visual noise.
-class _HoverCard extends StatefulWidget {
-  const _HoverCard({required this.builder});
-
-  final Widget Function(bool hovered) builder;
-
-  @override
-  State<_HoverCard> createState() => _HoverCardState();
-}
-
-class _HoverCardState extends State<_HoverCard> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final mouseConnected =
-        RendererBinding.instance.mouseTracker.mouseIsConnected;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: widget.builder(_hovered || !mouseConnected),
-    );
-  }
-}
-
 class _Colophon extends StatelessWidget {
   const _Colophon();
 
@@ -1043,7 +1032,8 @@ class _DragHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        (MediaQuery.maybeOf(context)?.disableAnimations ?? false) ||
+        View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
     return Padding(
       padding: const EdgeInsets.only(left: 8),
       // The space is always reserved, so revealing the handle never shifts
