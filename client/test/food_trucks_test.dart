@@ -201,6 +201,91 @@ void main() {
         expect(parseFoodTrucksHtml('<!-- $token -->$emptyPage', oct14)!['trucks'], isEmpty);
       });
 
+      // junk placed at the end of the schedule, after the real wrapper
+      String afterWrapper(String junk) {
+        final cut = emptyPage.lastIndexOf('<', emptyPage.indexOf('id="all-participating-trucks"'));
+        return emptyPage.substring(0, cut) + junk + emptyPage.substring(cut);
+      }
+
+      String beforeWrapper(String junk) {
+        final heading = RegExp(r'<h2[^>]*>\s*Current Schedule\s*</h2>').firstMatch(emptyPage)!;
+        return emptyPage.substring(0, heading.end) + junk + emptyPage.substring(heading.end);
+      }
+
+      const wrapper = '<div class="$token"></div>';
+
+      test('unterminated comment hiding a wrapper after visible text', () {
+        expect(parseFoodTrucksHtml(withJunk('No trucks scheduled <!-- <div class="$token">'), oct14), isNull);
+      });
+
+      test('unterminated comment before or after the real wrapper', () {
+        expect(parseFoodTrucksHtml(beforeWrapper('<!-- '), oct14), isNull);
+        expect(parseFoodTrucksHtml(afterWrapper('<!-- tail'), oct14), isNull);
+      });
+
+      test('unclosed script after visible text or a real wrapper', () {
+        expect(parseFoodTrucksHtml(withJunk('No trucks scheduled <script> <div class="$token">'), oct14), isNull);
+        expect(parseFoodTrucksHtml(afterWrapper('<script>var a = 1;'), oct14), isNull);
+        expect(parseFoodTrucksHtml(afterWrapper('<style>.a {'), oct14), isNull);
+      });
+
+      test('closed comment, script and style around a real wrapper are fine', () {
+        final tidy = beforeWrapper('<!-- note --><script>var a = "<b>";</script><style>.a {}</style>');
+        expect(parseFoodTrucksHtml(tidy, oct14)!['trucks'], isEmpty);
+      });
+
+      test('CDATA is not understood', () {
+        expect(parseFoodTrucksHtml(withJunk('<![CDATA[ <div class="$token"></div> ]]>'), oct14), isNull);
+        expect(parseFoodTrucksHtml(afterWrapper('<![CDATA[ x ]]>'), oct14), isNull);
+      });
+
+      test('a wrapper inside template or noscript is inert', () {
+        expect(parseFoodTrucksHtml(withJunk('<template>$wrapper</template>'), oct14), isNull);
+        expect(parseFoodTrucksHtml(withJunk('<noscript>$wrapper</noscript>'), oct14), isNull);
+        expect(parseFoodTrucksHtml(afterWrapper('<template><p>x</p></template>'), oct14), isNull);
+        expect(parseFoodTrucksHtml(afterWrapper('<noscript>x</noscript>'), oct14), isNull);
+      });
+
+      test('iframe, object, svg and other unknown elements fail closed', () {
+        for (final junk in ['<iframe></iframe>', '<object></object>', '<svg></svg>', '<img src="x">', '<a href="x"></a>', '<x-slot></x-slot>']) {
+          expect(parseFoodTrucksHtml(afterWrapper(junk), oct14), isNull, reason: junk);
+        }
+      });
+
+      test('duplicate class attributes: the first one wins, in both orders', () {
+        expect(parseFoodTrucksHtml(withJunk('<div class="other" CLASS="$token"></div>'), oct14), isNull);
+        expect(parseFoodTrucksHtml(withJunk('<div class="$token" class="other"></div>'), oct14)!['trucks'], isEmpty);
+        expect(parseFoodTrucksHtml(withJunk('<div CLASS="$token" class="other"></div>'), oct14)!['trucks'], isEmpty);
+      });
+
+      test('quoting and unquoted values are read', () {
+        expect(parseFoodTrucksHtml(withJunk("<div class='a $token b'></div>"), oct14)!['trucks'], isEmpty);
+        expect(parseFoodTrucksHtml(withJunk('<div class=$token></div>'), oct14)!['trucks'], isEmpty);
+        expect(parseFoodTrucksHtml(withJunk('<div class="$token'), oct14), isNull);
+      });
+
+      test('a wrapper missing its close tag is a failure', () {
+        // the page slice ends in ancestor close tags, so these run on the bare scanner
+        expect(isEmptySchedule('<div class="$token">', false), isFalse);
+        expect(isEmptySchedule('<div class="$token"><div></div>', false), isFalse);
+        expect(isEmptySchedule('<div class="$token"><span></div>', false), isFalse);
+        expect(isEmptySchedule('<div class="$token"></div>', false), isTrue);
+        expect(parseFoodTrucksHtml(withJunk('<div class="$token"><span></div>'), oct14), isNull);
+      });
+
+      test('a synthetic empty wrapper, with and without a note, is empty', () {
+        expect(parseFoodTrucksHtml(withJunk(wrapper), oct14)!['trucks'], isEmpty);
+        expect(
+          parseFoodTrucksHtml(withJunk('<div class="$token"><p>No trucks scheduled</p></div>'), oct14)!['trucks'],
+          isEmpty,
+        );
+      });
+
+      test('text outside the wrapper still counts', () {
+        expect(parseFoodTrucksHtml(withJunk('Bubble Waffle Bus $wrapper'), oct14), isNull);
+        expect(parseFoodTrucksHtml(withJunk('$wrapper Bubble Waffle Bus'), oct14), isNull);
+      });
+
       test('real wrapper, empty, is empty', () {
         expect(parseFoodTrucksHtml(emptyPage, oct14)!['trucks'], isEmpty);
       });
