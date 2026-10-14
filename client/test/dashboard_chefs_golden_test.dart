@@ -54,11 +54,10 @@ void main() {
               seedColor: const Color(0xFFF76902),
               brightness: brightness,
             );
-            final theme = AppTheme.from(scheme);
             await tester.pumpWidget(
               MaterialApp(
                 debugShowCheckedModeBanner: false,
-                theme: goldenTheme(theme),
+                theme: AppTheme.from(scheme),
                 home: MediaQuery(
                   data: MediaQueryData(
                     size: size,

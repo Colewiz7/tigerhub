@@ -33,49 +33,6 @@ Future<void> _loadFonts() async {
   }
 }
 
-/// MASKS A REAL APP DEFECT. Delete this function when the theme is fixed.
-///
-/// AppTheme.from (lib/theme/app_theme.dart) sets fontFamily: 'Rubik' on the
-/// base ThemeData, then replaces the text theme with seven styles that carry
-/// no fontFamily and leaves the other eight slots null. In the shipping app
-/// that means themed text falls through to the platform font and Rubik does
-/// not render. This function forces Rubik onto all 15 slots so goldens show
-/// real glyphs; without it they show Ahem blocks. It therefore makes the
-/// goldens look better than the app is.
-///
-/// The last test in golden_harness_test.dart fails when EITHER
-///  - any of the seven styles AppTheme.from defines (displayLarge,
-///    displayMedium, titleLarge, titleMedium, bodyMedium, bodySmall,
-///    labelSmall) has a non-null fontFamily, or
-///  - any of bodyMedium, titleLarge, labelLarge, bodyLarge, headlineSmall, or
-///    the default text style under a Scaffold, resolves a non-null fontFamily.
-/// Either means the defect is fixed (fully or partly). Then delete
-/// goldenTheme(), _withRubik, every goldenTheme( call in the golden tests and
-/// that sentinel test, and regenerate the goldens.
-ThemeData goldenTheme(ThemeData theme) =>
-    theme.copyWith(textTheme: _withRubik(theme.textTheme));
-
-TextTheme _withRubik(TextTheme t) {
-  TextStyle rubik(TextStyle? s) => (s ?? const TextStyle()).copyWith(fontFamily: 'Rubik');
-  return TextTheme(
-    displayLarge: rubik(t.displayLarge),
-    displayMedium: rubik(t.displayMedium),
-    displaySmall: rubik(t.displaySmall),
-    headlineLarge: rubik(t.headlineLarge),
-    headlineMedium: rubik(t.headlineMedium),
-    headlineSmall: rubik(t.headlineSmall),
-    titleLarge: rubik(t.titleLarge),
-    titleMedium: rubik(t.titleMedium),
-    titleSmall: rubik(t.titleSmall),
-    bodyLarge: rubik(t.bodyLarge),
-    bodyMedium: rubik(t.bodyMedium),
-    bodySmall: rubik(t.bodySmall),
-    labelLarge: rubik(t.labelLarge),
-    labelMedium: rubik(t.labelMedium),
-    labelSmall: rubik(t.labelSmall),
-  );
-}
-
 /// One overflow report: how far, which edge, the source line of the widget
 /// that overflowed, and which render object it was (to tell one instance from
 /// the same instance reported again on a later layout).

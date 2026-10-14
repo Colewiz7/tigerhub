@@ -72,12 +72,10 @@ void main() {
             await _loadPaths(tester);
             await tester.pumpWidget(
               MaterialApp(
-                theme: goldenTheme(
-                  AppTheme.from(
-                    ColorScheme.fromSeed(
-                      seedColor: const Color(0xFFF76902),
-                      brightness: brightness,
-                    ),
+                theme: AppTheme.from(
+                  ColorScheme.fromSeed(
+                    seedColor: const Color(0xFFF76902),
+                    brightness: brightness,
                   ),
                 ),
                 home: MediaQuery(
@@ -113,10 +111,8 @@ void main() {
     await _loadPaths(tester);
     await tester.pumpWidget(
       MaterialApp(
-        theme: goldenTheme(
-          AppTheme.from(
-            ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
-          ),
+        theme: AppTheme.from(
+          ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
         ),
         home: Scaffold(
           body: MapScreen(api: ApiClient(backend: _MapBackend())),

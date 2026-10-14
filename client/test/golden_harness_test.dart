@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tigerhub/theme/app_theme.dart';
 
 import 'golden_harness.dart';
 import 'known_overflows.dart';
@@ -210,55 +209,5 @@ void main() {
         reason: 'a list entry of one cannot absorb two overflows',
       );
     });
-  });
-
-  testWidgets('sentinel: the app theme still carries no fontFamily, so goldenTheme is needed',
-      (tester) async {
-    final theme = AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)));
-    final t = theme.textTheme;
-    late BuildContext context;
-    await tester.pumpWidget(MaterialApp(
-      theme: theme,
-      home: Scaffold(
-        body: Builder(builder: (c) {
-          context = c;
-          return const SizedBox();
-        }),
-      ),
-    ));
-    final resolved = Theme.of(context).textTheme;
-
-    // The seven styles AppTheme.from builds.
-    final defined = {
-      'displayLarge': t.displayLarge,
-      'displayMedium': t.displayMedium,
-      'titleLarge': t.titleLarge,
-      'titleMedium': t.titleMedium,
-      'bodyMedium': t.bodyMedium,
-      'bodySmall': t.bodySmall,
-      'labelSmall': t.labelSmall,
-    };
-    // What Text widgets and Material widgets actually read.
-    final used = {
-      'bodyMedium': resolved.bodyMedium,
-      'titleLarge': resolved.titleLarge,
-      'labelLarge': resolved.labelLarge,
-      'bodyLarge': resolved.bodyLarge,
-      'headlineSmall': resolved.headlineSmall,
-      'default text style': DefaultTextStyle.of(context).style,
-    };
-    final fixed = [
-      for (final e in defined.entries)
-        if (e.value?.fontFamily != null) 'AppTheme.from defines ${e.key} with ${e.value!.fontFamily}',
-      for (final e in used.entries)
-        if (e.value?.fontFamily != null) '${e.key} resolves to ${e.value!.fontFamily}',
-    ];
-    expect(
-      fixed,
-      isEmpty,
-      reason: 'The app theme now carries fontFamily, fully or partly, so the defect '
-          'goldenTheme() masks is fixed. Delete goldenTheme(), _withRubik, every '
-          'goldenTheme( call in the golden tests and this test, then regenerate the goldens.',
-    );
   });
 }

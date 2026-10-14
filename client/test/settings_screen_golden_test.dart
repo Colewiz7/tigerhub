@@ -16,12 +16,11 @@ void main() {
 
     final scheme = SchemeController();
     addTearDown(scheme.dispose);
-    final theme = AppTheme.from(SchemeController.builtIn(brightness));
     await tester.pumpWidget(Builder(
       builder: (context) => MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
         child: MaterialApp(
-          theme: goldenTheme(theme),
+          theme: AppTheme.from(SchemeController.builtIn(brightness)),
           home: Scaffold(
             body: SettingsScreen(
               scheme: scheme,
