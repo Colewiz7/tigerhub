@@ -55,8 +55,6 @@ void _expectPaintedPaths(WidgetTester tester) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpGoldenFonts('map_screen_golden_test.dart');
-
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();

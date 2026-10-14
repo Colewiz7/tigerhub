@@ -33,19 +33,6 @@ Future<void> _loadFonts() async {
   }
 }
 
-/// Call once from main() of any file that takes goldens, naming that file
-/// (its basename, as in known_overflows.dart).
-void setUpGoldenFonts(String file) {
-  TestWidgetsFlutterBinding.ensureInitialized();
-  setUpAll(loadGoldenFonts);
-  tearDownAll(() {
-    final stale = staleKnownEntries(file, _registered, knownOverflows);
-    if (stale.isNotEmpty) {
-      fail('known_overflows.dart lists tests that $file does not define: ${stale.join(', ')}');
-    }
-  });
-}
-
 /// MASKS A REAL APP DEFECT. Delete this function when the theme is fixed.
 ///
 /// AppTheme.from (lib/theme/app_theme.dart) sets fontFamily: 'Rubik' on the
@@ -56,9 +43,15 @@ void setUpGoldenFonts(String file) {
 /// real glyphs; without it they show Ahem blocks. It therefore makes the
 /// goldens look better than the app is.
 ///
-/// golden_harness_test.dart asserts the defect is still present. The day the
-/// theme is fixed that test fails: delete this function, every call to it, and
-/// that test, then regenerate the goldens.
+/// The last test in golden_harness_test.dart fails when EITHER
+///  - any of the seven styles AppTheme.from defines (displayLarge,
+///    displayMedium, titleLarge, titleMedium, bodyMedium, bodySmall,
+///    labelSmall) has a non-null fontFamily, or
+///  - any of bodyMedium, titleLarge, labelLarge, bodyLarge, headlineSmall, or
+///    the default text style under a Scaffold, resolves a non-null fontFamily.
+/// Either means the defect is fixed (fully or partly). Then delete
+/// goldenTheme(), _withRubik, every goldenTheme( call in the golden tests and
+/// that sentinel test, and regenerate the goldens.
 ThemeData goldenTheme(ThemeData theme) =>
     theme.copyWith(textTheme: _withRubik(theme.textTheme));
 
@@ -119,16 +112,75 @@ class Overflow {
 ///
 /// Known overflows are expected to occur: if a listed one stops happening the
 /// test fails too, so whoever fixes it also deletes the entry.
+///
+/// The first call from a test file also registers, for that file, the font
+/// loading and the end-of-file check that every test named in the known list
+/// for the file was defined, so neither can be forgotten. The file is taken
+/// from the call site and the known list is looked up by (file, description).
 void goldenWidgets(String description, Future<void> Function(WidgetTester tester) body) {
-  _registered.add(description);
+  final file = callerFile(StackTrace.current.toString());
+  _registerFile(file);
+  _registered[file]!.add(description);
   testWidgets(description, (tester) async {
     final seen = await captureOverflows(() => body(tester));
-    final problems = overflowProblems(seen, knownOverflows[description]?.overflows ?? const []);
+    final problems = overflowProblems(seen, knownFor(file, description)?.overflows ?? const []);
     if (problems.isNotEmpty) fail('$description\n${problems.join('\n')}');
   });
 }
 
-final _registered = <String>{};
+/// The known-list entry for this test in this file, never one with the same
+/// description in another file.
+KnownOverflow? knownFor(
+  String file,
+  String description, {
+  Map<(String, String), KnownOverflow> known = knownOverflows,
+}) =>
+    known[(file, description)];
+
+final _registered = <String, Set<String>>{};
+
+/// Test files that have called goldenWidgets, for the harness's own test.
+Set<String> get goldenFilesRegistered => _registered.keys.toSet();
+
+void _registerFile(String file) {
+  if (_registered.containsKey(file)) return;
+  _registered[file] = {};
+  setUpAll(loadGoldenFonts);
+  tearDownAll(() {
+    final stale = staleKnownEntries(file, _registered[file]!, knownOverflows);
+    if (stale.isNotEmpty) {
+      fail('known_overflows.dart lists tests that $file does not define: ${stale.join(', ')}');
+    }
+  });
+}
+
+/// Basename of the first stack frame outside this file.
+String callerFile(String stackTrace) {
+  for (final line in stackTrace.split('\n')) {
+    final match = RegExp(r'([\w]+\.dart):\d+').firstMatch(line);
+    if (match != null && match.group(1) != 'golden_harness.dart') return match.group(1)!;
+  }
+  return 'unknown';
+}
+
+/// Problems with how a test file takes goldens: any test that is not a
+/// goldenWidgets but uses a golden matcher would skip the font loading, the
+/// theme check and the overflow check. Pure so it can be tested on strings.
+List<String> goldenUseProblems(String source) {
+  final starts = RegExp(r'\b(testWidgets|goldenWidgets)\(').allMatches(source).toList();
+  final problems = <String>[];
+  for (var i = 0; i < starts.length; i++) {
+    final end = i + 1 < starts.length ? starts[i + 1].start : source.length;
+    final segment = source.substring(starts[i].start, end);
+    final isGolden = RegExp(r'matchesGoldenFile\(|matchesReferenceImage\(').hasMatch(segment) ||
+        RegExp(r"expectLater\([^;]*\.png'").hasMatch(segment);
+    if (isGolden && starts[i].group(1) == 'testWidgets') {
+      final line = '\n'.allMatches(source.substring(0, starts[i].start)).length + 1;
+      problems.add('line $line: a golden is taken in plain testWidgets, use goldenWidgets');
+    }
+  }
+  return problems;
+}
 
 /// Runs [body] with every overflow report diverted into the returned list,
 /// one entry per distinct render object, instead of failing or printing.
@@ -193,9 +245,9 @@ List<String> overflowProblems(List<Overflow> seen, List<ExpectedOverflow> expect
 List<String> staleKnownEntries(
   String file,
   Set<String> registered,
-  Map<String, KnownOverflow> known,
+  Map<(String, String), KnownOverflow> known,
 ) =>
     [
-      for (final e in known.entries)
-        if (e.value.file == file && !registered.contains(e.key)) e.key,
+      for (final key in known.keys)
+        if (key.$1 == file && !registered.contains(key.$2)) key.$2,
     ];

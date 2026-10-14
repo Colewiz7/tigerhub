@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/theme/app_theme.dart';
@@ -73,9 +75,9 @@ void main() {
 
   group('staleKnownEntries', () {
     const known = {
-      'present': KnownOverflow('a_test.dart', [_strip], 'fix'),
-      'renamed away': KnownOverflow('a_test.dart', [_strip], 'fix'),
-      'other file': KnownOverflow('b_test.dart', [_strip], 'fix'),
+      ('a_test.dart', 'present'): KnownOverflow([_strip], 'fix'),
+      ('a_test.dart', 'renamed away'): KnownOverflow([_strip], 'fix'),
+      ('b_test.dart', 'other file'): KnownOverflow([_strip], 'fix'),
     };
 
     test('names a listed test the file no longer defines', () {
@@ -88,6 +90,85 @@ void main() {
         isEmpty,
       );
     });
+  });
+
+  group('knownFor', () {
+    const known = {
+      ('a_test.dart', 'same name'): KnownOverflow([_strip], 'fix'),
+    };
+
+    test('finds the entry for its own file', () {
+      expect(knownFor('a_test.dart', 'same name', known: known), isNotNull);
+    });
+
+    test('a same-named test in another file gets no entry, so its overflow fails', () {
+      final entry = knownFor('b_test.dart', 'same name', known: known);
+      expect(entry, isNull);
+      expect(overflowProblems([_seen()], entry?.overflows ?? const []), isNotEmpty);
+    });
+  });
+
+  group('callerFile', () {
+    test('skips the harness frames and names the calling test file', () {
+      const trace = '#0      goldenWidgets (file:///x/client/test/golden_harness.dart:122:3)\n'
+          '#1      main (file:///x/client/test/map_screen_golden_test.dart:70:9)\n';
+      expect(callerFile(trace), 'map_screen_golden_test.dart');
+    });
+  });
+
+  group('goldenUseProblems', () {
+    test('a golden in plain testWidgets is a violation', () {
+      const source = '''
+void main() {
+  testWidgets('a', (tester) async {
+    await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/a.png'));
+  });
+}
+''';
+      final problems = goldenUseProblems(source);
+      expect(problems, hasLength(1));
+      expect(problems.single, contains('line 2'));
+    });
+
+    test('a png compared through expectLater in plain testWidgets is a violation', () {
+      const source = "testWidgets('a', (t) async { await expectLater(x, y('goldens/a.png')); });";
+      expect(goldenUseProblems(source), hasLength(1));
+    });
+
+    test('goldenWidgets is fine, and a plain test beside it is not blamed', () {
+      const source = '''
+void main() {
+  goldenWidgets('a', (tester) async {
+    await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/a.png'));
+  });
+  testWidgets('plain', (tester) async {
+    expect(find.text('x'), findsNothing);
+  });
+}
+''';
+      expect(goldenUseProblems(source), isEmpty);
+    });
+
+    test('the real test files obey it', () {
+      final problems = <String>[];
+      for (final file in Directory('test').listSync().whereType<File>()) {
+        final name = file.uri.pathSegments.last;
+        // This file holds the violating fixtures above as string literals.
+        if (!name.endsWith('_test.dart') || name == 'golden_harness_test.dart') continue;
+        for (final problem in goldenUseProblems(file.readAsStringSync())) {
+          problems.add('$name $problem');
+        }
+      }
+      expect(problems, isEmpty);
+    });
+  });
+
+  goldenWidgets('the harness registers the file that calls it', (tester) async {
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  test('goldenWidgets registered its calling file by itself', () {
+    expect(goldenFilesRegistered, contains('golden_harness_test.dart'));
   });
 
   group('captureOverflows', () {
@@ -131,21 +212,53 @@ void main() {
     });
   });
 
-  test('the app theme still lacks fontFamily, so goldenTheme is still needed', () {
-    final t = AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902))).textTheme;
-    final slots = [
-      t.displayLarge, t.displayMedium, t.displaySmall,
-      t.headlineLarge, t.headlineMedium, t.headlineSmall,
-      t.titleLarge, t.titleMedium, t.titleSmall,
-      t.bodyLarge, t.bodyMedium, t.bodySmall,
-      t.labelLarge, t.labelMedium, t.labelSmall,
+  testWidgets('sentinel: the app theme still carries no fontFamily, so goldenTheme is needed',
+      (tester) async {
+    final theme = AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)));
+    final t = theme.textTheme;
+    late BuildContext context;
+    await tester.pumpWidget(MaterialApp(
+      theme: theme,
+      home: Scaffold(
+        body: Builder(builder: (c) {
+          context = c;
+          return const SizedBox();
+        }),
+      ),
+    ));
+    final resolved = Theme.of(context).textTheme;
+
+    // The seven styles AppTheme.from builds.
+    final defined = {
+      'displayLarge': t.displayLarge,
+      'displayMedium': t.displayMedium,
+      'titleLarge': t.titleLarge,
+      'titleMedium': t.titleMedium,
+      'bodyMedium': t.bodyMedium,
+      'bodySmall': t.bodySmall,
+      'labelSmall': t.labelSmall,
+    };
+    // What Text widgets and Material widgets actually read.
+    final used = {
+      'bodyMedium': resolved.bodyMedium,
+      'titleLarge': resolved.titleLarge,
+      'labelLarge': resolved.labelLarge,
+      'bodyLarge': resolved.bodyLarge,
+      'headlineSmall': resolved.headlineSmall,
+      'default text style': DefaultTextStyle.of(context).style,
+    };
+    final fixed = [
+      for (final e in defined.entries)
+        if (e.value?.fontFamily != null) 'AppTheme.from defines ${e.key} with ${e.value!.fontFamily}',
+      for (final e in used.entries)
+        if (e.value?.fontFamily != null) '${e.key} resolves to ${e.value!.fontFamily}',
     ];
     expect(
-      slots.any((s) => s?.fontFamily == null),
-      isTrue,
-      reason: 'AppTheme text slots now carry fontFamily: the defect goldenTheme() '
-          'masks is fixed. Delete goldenTheme() and its calls in the golden tests, '
-          'delete this test, and regenerate the goldens.',
+      fixed,
+      isEmpty,
+      reason: 'The app theme now carries fontFamily, fully or partly, so the defect '
+          'goldenTheme() masks is fixed. Delete goldenTheme(), _withRubik, every '
+          'goldenTheme( call in the golden tests and this test, then regenerate the goldens.',
     );
   });
 }
