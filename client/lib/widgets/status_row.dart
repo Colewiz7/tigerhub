@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../theme/tokens.dart';
+import 'context_actions.dart';
 
 /// How prominent a row is. Dimmed rows recede without disappearing.
 enum RowEmphasis { normal, dimmed }
@@ -28,6 +29,7 @@ class StatusRow extends StatelessWidget {
     this.onTap,
     this.semanticHint,
     this.dense = false,
+    this.actions = const [],
   });
 
   /// The dashboard's condensed row on phones (under 600pt): 52 tall with a 4
@@ -55,6 +57,9 @@ class StatusRow extends StatelessWidget {
   final RowEmphasis emphasis;
   final VoidCallback? onTap;
   final String? semanticHint;
+
+  /// Right-click, long-press and keyboard menu. Empty means no menu.
+  final List<MenuAction> actions;
 
   /// The height BoundedList should budget, including the gap beneath.
   ///
@@ -87,7 +92,14 @@ class StatusRow extends StatelessWidget {
   static const double badgeSize = 42;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ContextActions(
+        actions: actions,
+        focusable: onTap == null,
+        child: _row(context),
+      );
+
+  Widget _row(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final dimmed = emphasis == RowEmphasis.dimmed;

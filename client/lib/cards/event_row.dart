@@ -9,8 +9,11 @@ import 'package:flutter/material.dart';
 
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
+import '../services/open_link.dart';
+import '../services/preferences.dart';
 import '../theme/semantic.dart';
 import '../theme/tokens.dart';
+import '../widgets/context_actions.dart';
 import '../widgets/event_details_sheet.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
@@ -58,6 +61,28 @@ class EventRow extends StatelessWidget {
 
   /// Injectable so the past/future split is testable.
   final DateTime? now;
+
+  List<MenuAction> _actions(String when) {
+    final link = event.url?.isNotEmpty == true ? Uri.tryParse(event.url!) : null;
+    final key = event.organizerKey;
+    final muted = key != null && Preferences.instance.mutedOrganizers.contains(key);
+    return [
+      MenuAction.copy(event.title, label: 'Copy title'),
+      MenuAction.copy(eventShareText(event, when), label: 'Copy details'),
+      if (link != null)
+        MenuAction(
+          label: 'Open page',
+          icon: Icons.open_in_new_rounded,
+          onSelected: (context) => openOrCopy(context, link, label: 'Event link', copyText: event.url),
+        ),
+      if (key != null)
+        MenuAction(
+          label: muted ? 'Unmute organizer' : 'Mute organizer',
+          icon: muted ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+          onSelected: (_) => Preferences.instance.setMuted(key, !muted),
+        ),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +135,7 @@ class EventRow extends StatelessWidget {
       emphasis: isPast ? RowEmphasis.dimmed : RowEmphasis.normal,
       semanticHint: 'Opens event details',
       onTap: () => showEventDetailsSheet(context, event),
+      actions: _actions(when),
       trailing: condensed
           ? (isPast ? ended : null)
           : Column(
