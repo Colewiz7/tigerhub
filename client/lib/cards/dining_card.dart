@@ -142,7 +142,7 @@ class DiningCard extends StatelessWidget {
       // this card exists to answer, which is what is open right now.
       hero: locations.isEmpty
           ? null
-          : ScallopedBadge(value: '$openNow', label: 'OPEN NOW', size: 88),
+          : ScallopedBadge(value: '$openNow', label: 'OPEN', size: 88),
       child: switch ((result.isPriming, locations.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
         (_, true) => const EmptyState(
