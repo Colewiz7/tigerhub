@@ -19,6 +19,7 @@ import 'empty_state.dart';
 import 'freshness.dart';
 
 const double _maxMapZoom = 20;
+const double _mapPanMargin = 80;
 
 class CampusMapView extends StatefulWidget {
   const CampusMapView({super.key, required this.result, this.events});
@@ -68,13 +69,17 @@ class _CampusMapViewState extends State<CampusMapView> {
         : _viewportSize.center(Offset.zero);
     final translatedX = focus.dx - applied * (focus.dx - matrix.entry(0, 3));
     final translatedY = focus.dy - applied * (focus.dy - matrix.entry(1, 3));
-    final minX = _viewportSize.width * (1 - target) - 80;
-    final minY = _viewportSize.height * (1 - target) - 80;
-    _transform.value = Matrix4.identity()
-      ..setEntry(0, 0, target)
-      ..setEntry(1, 1, target)
-      ..setEntry(0, 3, translatedX.clamp(minX, 80.0))
-      ..setEntry(1, 3, translatedY.clamp(minY, 80.0));
+    _transform.value = _clampedTransform(target, translatedX, translatedY);
+  }
+
+  Matrix4 _clampedTransform(double scale, double tx, double ty) {
+    final minX = _viewportSize.width * (1 - scale) - _mapPanMargin;
+    final minY = _viewportSize.height * (1 - scale) - _mapPanMargin;
+    return Matrix4.identity()
+      ..setEntry(0, 0, scale)
+      ..setEntry(1, 1, scale)
+      ..setEntry(0, 3, tx.clamp(minX, _mapPanMargin))
+      ..setEntry(1, 3, ty.clamp(minY, _mapPanMargin));
   }
 
   KeyEventResult _handleMapKey(FocusNode node, KeyEvent event) {
@@ -125,11 +130,11 @@ class _CampusMapViewState extends State<CampusMapView> {
       if (anchor == null) return;
       final point = projection.project(anchor);
       const scale = 2.4;
-      _transform.value = Matrix4.identity()
-        ..setEntry(0, 0, scale)
-        ..setEntry(1, 1, scale)
-        ..setEntry(0, 3, _viewportSize.width / 2 - point.dx * scale)
-        ..setEntry(1, 3, _viewportSize.height / 2 - point.dy * scale);
+      _transform.value = _clampedTransform(
+        scale,
+        _viewportSize.width / 2 - point.dx * scale,
+        _viewportSize.height / 2 - point.dy * scale,
+      );
     });
   }
 
@@ -269,7 +274,8 @@ class _CampusMapViewState extends State<CampusMapView> {
                                       minScale: 1,
                                       maxScale: _maxMapZoom,
                                       boundaryMargin: EdgeInsets.all(
-                                        80 / matrix.getMaxScaleOnAxis(),
+                                        _mapPanMargin /
+                                            matrix.getMaxScaleOnAxis(),
                                       ),
                                       child: child!,
                                     ),
