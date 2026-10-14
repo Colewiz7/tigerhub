@@ -161,6 +161,57 @@ void main() {
       expect(parseFoodTrucksHtml(bare, oct14), isNull);
     });
 
+    group('wrapper name must be a real element class', () {
+      const token = 'paragraph--type--embed-view';
+
+      // no real wrapper left, only the given junk right after the heading
+      String withJunk(String junk) {
+        final bare = emptyPage.replaceAll(token, 'paragraph--type--other');
+        final heading = RegExp(r'<h2[^>]*>\s*Current Schedule\s*</h2>').firstMatch(bare)!;
+        return bare.substring(0, heading.end) + junk + bare.substring(heading.end);
+      }
+
+      test('only inside an HTML comment', () {
+        expect(parseFoodTrucksHtml(withJunk('<!-- $token -->'), oct14), isNull);
+      });
+
+      test('only inside a script', () {
+        expect(parseFoodTrucksHtml(withJunk('<script>var c = "$token";</script>'), oct14), isNull);
+      });
+
+      test('only inside a style', () {
+        expect(parseFoodTrucksHtml(withJunk('<style>.$token {}</style>'), oct14), isNull);
+      });
+
+      test('only inside another attribute value', () {
+        expect(parseFoodTrucksHtml(withJunk('<div data-x="class=\'$token\'"></div>'), oct14), isNull);
+        expect(parseFoodTrucksHtml(withJunk('<div title="$token"></div>'), oct14), isNull);
+        expect(parseFoodTrucksHtml(withJunk('<div data-class="$token"></div>'), oct14), isNull);
+      });
+
+      test('only as text', () {
+        expect(parseFoodTrucksHtml(withJunk('<p>$token</p>'), oct14), isNull);
+      });
+
+      test('only as part of a longer class token', () {
+        expect(parseFoodTrucksHtml(withJunk('<div class="x-$token-2"></div>'), oct14), isNull);
+      });
+
+      test('a real wrapper alongside the junk still counts', () {
+        expect(parseFoodTrucksHtml('<!-- $token -->$emptyPage', oct14)!['trucks'], isEmpty);
+      });
+
+      test('real wrapper, empty, is empty', () {
+        expect(parseFoodTrucksHtml(emptyPage, oct14)!['trucks'], isEmpty);
+      });
+
+      test('real wrapper with a note is empty', () {
+        final noted = emptyPage.replaceFirst('$token paragraph--view-mode--default">', '$token paragraph--view-mode--default"><p>No food trucks scheduled.</p>');
+        expect(noted, isNot(emptyPage));
+        expect(parseFoodTrucksHtml(noted, oct14)!['trucks'], isEmpty);
+      });
+    });
+
     test('mutation: slot date class renamed, heading and container kept', () {
       expect(parseFoodTrucksHtml(page.replaceAll('h5 mb-3', 'h5 mb-4'), oct14), isNull);
     });
