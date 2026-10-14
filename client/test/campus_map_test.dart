@@ -451,6 +451,35 @@ void main() {
     expect(viewer().boundaryMargin.left * 20, closeTo(80, 0.01));
   });
 
+  testWidgets('searching an edge place does not snap on a tiny scroll', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    await tester.tap(find.byTooltip('Search campus places (Ctrl+F)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'West fountain');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'West fountain'));
+    await tester.pumpAndSettle();
+
+    final viewer = find.byType(InteractiveViewer);
+    final controller = tester
+        .widget<InteractiveViewer>(viewer)
+        .transformationController!;
+    expect(controller.value.getMaxScaleOnAxis(), 2.4);
+    final center = tester.getSize(viewer).center(Offset.zero);
+    final before = controller.toScene(center);
+    await tester.sendEventToBinding(
+      PointerScrollEvent(
+        position: tester.getTopLeft(viewer) + center,
+        scrollDelta: const Offset(0, -1),
+      ),
+    );
+    await tester.pump();
+
+    expect((controller.toScene(center) - before).distance, lessThan(2));
+  });
+
   testWidgets('scroll zoom keeps its focal point through 20x', (tester) async {
     await tester.pumpWidget(app());
     final viewer = find.byType(InteractiveViewer);
