@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
@@ -9,6 +8,8 @@ import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/dashboard.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+
+import 'golden_harness.dart';
 
 class _DashboardBackend implements Backend {
   @override
@@ -22,14 +23,7 @@ class _DashboardBackend implements Backend {
 }
 
 void main() {
-  setUpAll(() async {
-    await (FontLoader(
-      'GoldenRubik',
-    )..addFont(rootBundle.load('assets/fonts/Rubik.ttf'))).load();
-    await (FontLoader(
-      'MaterialIcons',
-    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
-  });
+  setUpGoldenFonts();
 
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
@@ -39,7 +33,7 @@ void main() {
   for (final size in [const Size(390, 844), const Size(430, 932)]) {
     for (final brightness in [Brightness.light, Brightness.dark]) {
       for (final scale in [1.0, 2.0]) {
-        testWidgets(
+        goldenWidgets(
           'dashboard chefs ${size.width.toInt()}x${size.height.toInt()} ${brightness.name} ${scale}x',
           (tester) async {
             tester.view.devicePixelRatio = 1;
@@ -66,9 +60,7 @@ void main() {
             await tester.pumpWidget(
               MaterialApp(
                 debugShowCheckedModeBanner: false,
-                theme: theme.copyWith(
-                  textTheme: theme.textTheme.apply(fontFamily: 'GoldenRubik'),
-                ),
+                theme: goldenTheme(theme),
                 home: MediaQuery(
                   data: MediaQueryData(
                     size: size,
