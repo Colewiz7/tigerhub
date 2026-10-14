@@ -683,6 +683,46 @@ void main() {
       );
     });
 
+    test('a 200 with unrecognisable pages is a failed attempt, not an update',
+        () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      var now = DateTime.utc(2026, 10, 14, 16);
+      final start = now;
+      const garbage = '<html><body>Redesigned</body></html>';
+      final pages = {
+        tcUrl: http.Response(fixture('tc_dining_all_empty_menus.json'), 200),
+        ritMenusUrl: http.Response(garbage, 200),
+        ritVisitingChefsUrl: http.Response(garbage, 200),
+      };
+      backend = build(pages, clock: () => now);
+
+      final first = await backend!.fetch('/dining/visiting-chefs');
+      expect(first['availability'], availabilityUnavailable);
+      expect(first['last_updated'], isNull);
+      expect(hits[ritMenusUrl], 1);
+
+      // Not a hammer: nothing more inside five minutes, however often asked.
+      for (final minutes in [0, 1, 2, 4]) {
+        now = start.add(Duration(minutes: minutes));
+        await backend!.refreshNow();
+        await backend!.fetch('/dining/visiting-chefs');
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(hits[ritMenusUrl], 1);
+
+      // Not a lockout: five minutes on it is tried again, and when the site
+      // is readable again it recovers, with a real time.
+      pages[ritMenusUrl] = http.Response(fixture('rit_dining_menus.html'), 200);
+      pages[ritVisitingChefsUrl] =
+          http.Response(fixture('rit_visiting_chefs.html'), 200);
+      now = start.add(const Duration(minutes: 5, seconds: 1));
+      await backend!.refreshNow();
+      expect(hits[ritMenusUrl], 2);
+      final back = await backend!.fetch('/dining/visiting-chefs');
+      expect(back['availability'], availabilityAvailable);
+      expect(back['last_updated'], isNotNull);
+    });
+
     test('a first run outage has no last updated time', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
       backend = build({

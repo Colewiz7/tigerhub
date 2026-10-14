@@ -212,7 +212,9 @@ class _ChefList extends StatelessWidget {
         final heights = [
           for (final chef in chefs) _rowHeight(context, chef, width) + _gap,
         ];
-        final footer = _MoreChefs.height;
+        final footer = _MoreChefs.heightFor(
+          _text(context, '+99 more', text.bodySmall, width, 1),
+        );
 
         var shown = chefs.length;
         if (available.isFinite) {
@@ -225,6 +227,9 @@ class _ChefList extends StatelessWidget {
               used += h;
               shown++;
             }
+            // Never none: a card of only "+3 more" says nothing. If the first
+            // chef does not quite fit with the pill, the card scrolls.
+            if (shown == 0) shown = 1;
           }
         }
         final hidden = chefs.length - shown;
@@ -363,62 +368,102 @@ class _ChefRow extends StatelessWidget {
 ///
 /// The pill is drawn at its own size and answers taps across a 48px band, so
 /// the hit area is full without the pill growing.
-class _MoreChefs extends StatelessWidget {
+class _MoreChefs extends StatefulWidget {
   const _MoreChefs({required this.hidden, this.onTap});
 
   final int hidden;
   final VoidCallback? onTap;
 
-  static const double height = 48;
+  /// The shortest the footer gets: the 48px touch band.
+  static const double minHeight = 48;
+
+  /// Room the focus ring takes around the pill, always reserved so focusing
+  /// never moves anything: a 2px offset and a 2px ring.
+  static const double ring = 4;
+
+  /// The footer's height from its own text, which grows with the text scale.
+  static double heightFor(double textHeight) =>
+      (textHeight + 12 + ring * 2).clamp(minHeight, double.infinity);
+
+  @override
+  State<_MoreChefs> createState() => _MoreChefsState();
+}
+
+class _MoreChefsState extends State<_MoreChefs> {
+  bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final muted = scheme.onSurfaceVariant;
+    final hidden = widget.hidden;
+    // The ring is for the keyboard. A tap focuses the pill too, and a ring
+    // after every tap would be noise.
+    final ring =
+        _focused &&
+        FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
+
     return Align(
       alignment: Alignment.centerLeft,
       child: Semantics(
         button: true,
-        onTap: onTap,
+        onTap: widget.onTap,
         label: 'Show $hidden more ${hidden == 1 ? 'chef' : 'chefs'}',
         excludeSemantics: true,
         child: Material(
           type: MaterialType.transparency,
           child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(height / 2),
-            child: SizedBox(
-              height: height,
+            onTap: widget.onTap,
+            onFocusChange: (focused) => setState(() => _focused = focused),
+            borderRadius: BorderRadius.circular(_MoreChefs.minHeight / 2),
+            focusColor: Colors.transparent,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: _MoreChefs.minHeight),
               child: Center(
                 widthFactor: 1,
+                // 2px primary ring, 2px off the pill, per the focus-ring token.
                 child: DecoratedBox(
+                  key: const ValueKey('focus-ring'),
                   decoration: ShapeDecoration(
-                    color: scheme.surfaceContainerHigh,
-                    shape: Shapes.pill,
+                    shape: StadiumBorder(
+                      side: BorderSide(
+                        width: 2,
+                        color: ring ? scheme.primary : Colors.transparent,
+                      ),
+                    ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 6,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '+$hidden more',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: muted,
-                                fontVariations: Weights.medium,
-                              ),
+                    padding: const EdgeInsets.all(2),
+                    child: DecoratedBox(
+                      decoration: ShapeDecoration(
+                        color: scheme.surfaceContainerHigh,
+                        shape: Shapes.pill,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 13,
+                          vertical: 6,
                         ),
-                        const SizedBox(width: 3),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          size: 15,
-                          color: muted,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '+$hidden more',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: muted,
+                                    fontVariations: Weights.medium,
+                                  ),
+                            ),
+                            const SizedBox(width: 3),
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 15,
+                              color: muted,
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -444,9 +489,12 @@ Future<void> _showAllChefs(BuildContext context, List<MenuItem> chefs) {
     elevation: 0,
     backgroundColor: scheme.surfaceContainerLow,
     barrierColor: scheme.surfaceContainerLowest.withValues(alpha: 0.6),
-    shape: const RoundedRectangleBorder(
+    // Under 600pt the spec's project override wins: card radius 24, not 30.
+    shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
-        top: Radius.circular(Shapes.cardRadius),
+        top: Radius.circular(
+          MediaQuery.sizeOf(context).width < 600 ? 24 : Shapes.cardRadius,
+        ),
       ),
     ),
     builder: (context) => _ChefsSheet(chefs: chefs),

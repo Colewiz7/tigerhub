@@ -214,7 +214,8 @@ Map<String, Map<String, dynamic>> parseChefSchedule(String html) {
 /// Both pages, each tolerated failing on its own. Whichever part fails keeps
 /// the previous snapshot's copy, so cached chefs still show, but is marked
 /// failed (`today_ok`, `schedule_ok`) so that copy cannot confirm a quiet day.
-/// `today_at` and `schedule_at` are when each part last really succeeded.
+/// `today_at` and `schedule_at` are when each part last really succeeded,
+/// which needs a page that parsed, not just an HTTP 200.
 ///
 /// Never throws: a total failure is recorded in the snapshot too, because
 /// leaving the old snapshot untouched would leave its "ok" flags standing.
@@ -233,16 +234,26 @@ Future<Map<String, dynamic>> scrapeRitChefs(
 
   try {
     final parsed = parseTodayChefs(await http.getText(ritMenusUrl));
-    todayPart = {'date': today, 'found': parsed.found, 'chefs': parsed.chefs};
-    todayAt = CampusTime.format(now);
-    todayOk = true;
+    // A 200 is not a read. Only a page whose chef block was recognised, with
+    // chefs or as an empty block, counts. Anything else keeps the previous
+    // copy and time, and is flagged failed like a network error, so it is
+    // retried after five minutes and never advances "last updated".
+    if (parsed.found) {
+      todayPart = {'date': today, 'found': true, 'chefs': parsed.chefs};
+      todayAt = CampusTime.format(now);
+      todayOk = true;
+    }
   } on UpstreamError {
     // Kept as previous, flagged failed below.
   }
   try {
-    schedule = parseChefSchedule(await http.getText(ritVisitingChefsUrl));
-    scheduleAt = CampusTime.format(now);
-    scheduleOk = true;
+    final parsed = parseChefSchedule(await http.getText(ritVisitingChefsUrl));
+    // Usable means at least one day was read as chefs or an explicit empty.
+    if (parsed.values.any((day) => day['unknown'] != true)) {
+      schedule = parsed;
+      scheduleAt = CampusTime.format(now);
+      scheduleOk = true;
+    }
   } on UpstreamError {
     // Kept as previous, flagged failed below.
   }
