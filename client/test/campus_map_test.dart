@@ -451,6 +451,114 @@ void main() {
     expect(viewer().boundaryMargin.left * 20, closeTo(80, 0.01));
   });
 
+  testWidgets('scroll zoom keeps its focal point through 20x', (tester) async {
+    await tester.pumpWidget(app());
+    final viewer = find.byType(InteractiveViewer);
+    final controller = tester
+        .widget<InteractiveViewer>(viewer)
+        .transformationController!;
+    final focal = tester.getTopLeft(viewer) + const Offset(250, 180);
+    final localFocal = focal - tester.getTopLeft(viewer);
+    final scenePoint = controller.toScene(localFocal);
+
+    for (var i = 0; i < 9; i++) {
+      await tester.sendEventToBinding(
+        PointerScrollEvent(position: focal, scrollDelta: const Offset(0, -80)),
+      );
+      await tester.pump();
+      expect(
+        (controller.toScene(localFocal) - scenePoint).distance,
+        lessThan(2),
+        reason: 'scroll step $i at ${controller.value.getMaxScaleOnAxis()}x',
+      );
+    }
+    expect(controller.value.getMaxScaleOnAxis(), 20);
+  });
+
+  testWidgets(
+    'button and double tap zoom keep the viewport center through 20x',
+    (tester) async {
+      await tester.pumpWidget(app());
+      final viewer = find.byType(InteractiveViewer);
+      final controller = tester
+          .widget<InteractiveViewer>(viewer)
+          .transformationController!;
+      final center = tester.getSize(viewer).center(Offset.zero);
+      final scenePoint = controller.toScene(center);
+
+      for (var i = 0; i < 4; i++) {
+        await tester.tap(find.byTooltip('Zoom in'));
+        await tester.pump();
+        expect((controller.toScene(center) - scenePoint).distance, lessThan(2));
+      }
+      for (var i = 0; i < 4; i++) {
+        await tester.tapAt(tester.getTopLeft(viewer) + center);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tapAt(tester.getTopLeft(viewer) + center);
+        await tester.pump(const Duration(milliseconds: 400));
+        expect((controller.toScene(center) - scenePoint).distance, lessThan(2));
+      }
+      expect(controller.value.getMaxScaleOnAxis(), 20);
+    },
+  );
+
+  testWidgets('trackpad pinch keeps its focal point through 20x', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    final viewer = find.byType(InteractiveViewer);
+    final controller = tester
+        .widget<InteractiveViewer>(viewer)
+        .transformationController!;
+    final focal = tester.getTopLeft(viewer) + const Offset(250, 180);
+    final localFocal = focal - tester.getTopLeft(viewer);
+    final scenePoint = controller.toScene(localFocal);
+
+    for (var i = 0; i < 9; i++) {
+      await tester.sendEventToBinding(
+        PointerScaleEvent(position: focal, scale: 1.5),
+      );
+      await tester.pump();
+      expect(
+        (controller.toScene(localFocal) - scenePoint).distance,
+        lessThan(2),
+        reason: 'pinch step $i at ${controller.value.getMaxScaleOnAxis()}x',
+      );
+    }
+    expect(controller.value.getMaxScaleOnAxis(), 20);
+  });
+
+  testWidgets('zooming out from a panned corner does not snap on scroll', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    final viewer = find.byType(InteractiveViewer);
+    final controller = tester
+        .widget<InteractiveViewer>(viewer)
+        .transformationController!;
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom in'));
+      await tester.pump();
+    }
+    await tester.drag(viewer, const Offset(-4000, -4000));
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom out'));
+      await tester.pump();
+    }
+
+    final center = tester.getSize(viewer).center(Offset.zero);
+    final before = controller.toScene(center);
+    await tester.sendEventToBinding(
+      PointerScrollEvent(
+        position: tester.getTopLeft(viewer) + center,
+        scrollDelta: const Offset(0, -1),
+      ),
+    );
+    await tester.pump();
+    expect((controller.toScene(center) - before).distance, lessThan(2));
+  });
+
   testWidgets('double tap and keyboard zoom can pass 5x', (tester) async {
     await tester.pumpWidget(app());
     final controller = tester
