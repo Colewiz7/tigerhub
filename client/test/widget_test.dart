@@ -784,7 +784,7 @@ void _screenshotReview() {
           ),
         );
         expect(find.text('6'), findsOneWidget);
-        expect(find.text('OPEN NOW'), findsOneWidget);
+        expect(find.text('OPEN'), findsOneWidget);
         // The unrelated location's number must not be the hero.
         expect(find.text('165'), findsNothing);
       },
@@ -1234,7 +1234,7 @@ void _quickWins() {
         MaterialApp(
           theme: AppTheme.from(_fallbackScheme()),
           home: const Scaffold(
-            body: ScallopedBadge(value: '13', label: 'OPEN NOW'),
+            body: ScallopedBadge(value: '13', label: 'OPEN'),
           ),
         ),
       );

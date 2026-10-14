@@ -107,11 +107,11 @@ void main() {
   });
 
   testWidgets(
-    'open now removes closed locations and reports the result count',
+    'open filter removes closed locations and reports the result count',
     (tester) async {
       await pumpDining(tester, const []);
 
-      await tester.tap(find.text('Open now'));
+      await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
       expect(find.text('1 place'), findsOneWidget);
@@ -150,7 +150,7 @@ void main() {
     await pumpDining(tester, const [], size: const Size(360, 700));
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Open now'), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
     expect(find.text('2 places'), findsOneWidget);
   });
 
