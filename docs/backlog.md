@@ -17,7 +17,14 @@ Order matters; later items assume earlier ones.
 3. Per source terms, robots and official feed audit (guideline 5.2.2), as its
    own PR, before any submission. The owner is sending RIT the permission
    email and brand project request answers; record the send date and any reply
-   in docs/notes.md section 12 when told.
+   in docs/notes.md section 12 when told. Sources the audit must cover include
+   the two added for visiting chefs on 2026-10-14:
+   - rit.edu `/dining/menus` and `/dining/visiting-chefs` (HTML, read every 30
+     minutes). `rit.edu/disclaimer` says personal, noncommercial use,
+     `robots.txt` does not disallow `/dining`. Terms of Use page not yet read.
+   - FD MealPlanner (`locations.fdmealplanner.com` and
+     `apiservicelocatorstenantrit.fdmealplanner.com`, dishes). `robots.txt`
+     returns 404. Terms of Use page not yet read.
 4. Privacy policy and support pages, hosted on GitHub Pages from this repo
    (owner decision 2026-10-08; privacy.colewiz.dev CNAME possible later). Drafts
    are not written yet. Do not publish or enable Pages until the owner approves the
