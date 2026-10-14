@@ -23,7 +23,7 @@ class _DashboardBackend implements Backend {
 }
 
 void main() {
-  setUpGoldenFonts();
+  setUpGoldenFonts('dashboard_chefs_golden_test.dart');
 
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =

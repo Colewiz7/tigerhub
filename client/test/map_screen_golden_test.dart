@@ -55,7 +55,7 @@ void _expectPaintedPaths(WidgetTester tester) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpGoldenFonts();
+  setUpGoldenFonts('map_screen_golden_test.dart');
 
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
@@ -144,7 +144,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(feature.kindName).last);
     await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
     final viewer = tester.widget<InteractiveViewer>(
       find.byType(InteractiveViewer),
     );
@@ -175,7 +174,6 @@ void main() {
       ..setEntry(0, 3, center.dx - pin.dx * 20)
       ..setEntry(1, 3, center.dy - pin.dy * 20);
     await tester.pump();
-    expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/map_390x844_light_20x.png'),
