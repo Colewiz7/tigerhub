@@ -5,6 +5,7 @@ import 'config.dart';
 import 'services/api.dart';
 import 'theme/app_theme.dart';
 import 'theme/dynamic_theme.dart';
+import 'widgets/phone_frame.dart';
 
 void main() => runApp(const TigerHubApp());
 
@@ -18,6 +19,7 @@ class TigerHubApp extends StatefulWidget {
 class _TigerHubAppState extends State<TigerHubApp> {
   final _api = ApiClient();
   late final SchemeController _scheme;
+  final _phone = PhoneMode.fromEnvironment();
 
   @override
   void initState() {
@@ -55,6 +57,7 @@ class _TigerHubAppState extends State<TigerHubApp> {
                   : SchemeController.builtIn(Brightness.dark),
             ),
             themeMode: ThemeMode.system,
+            builder: phoneModeBuilder(_phone),
             home: AppShell(api: _api, scheme: _scheme),
           );
         },

@@ -55,6 +55,16 @@ scripts/dev package   # single-file AppImage in dist/
 
 `scripts/dev package` produces one executable AppImage of about 11 MB that needs nothing installed beyond the usual desktop libraries.
 
+Phone mode is dev only. It shows the app in a centered phone sized box with a matching MediaQuery, so desktop layouts match a phone. The OS window is not resized. Release builds ignore it.
+
+```sh
+TIGERHUB_PHONE=1 scripts/dev app --dev                       # 390x844
+TIGERHUB_PHONE=430x932 scripts/dev app --dev                 # another size
+TIGERHUB_PHONE=1 TIGERHUB_TEXT_SCALE=2.0 scripts/dev app --dev
+```
+
+Unset, empty, `0` or `false` is off, and a bad `WxH` falls back to 390x844. `TIGERHUB_TEXT_SCALE` (above 0, up to 4) only applies in phone mode.
+
 ## Layout
 
 - `client/` is the Flutter app. `lib/data/sources/` has one scraper per upstream, and `lib/data/local_backend.dart` routes a request to a source and holds the cadence.
