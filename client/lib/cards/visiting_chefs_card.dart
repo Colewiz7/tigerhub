@@ -50,7 +50,16 @@ class VisitingChefsCard extends StatelessWidget {
             ),
       child: switch ((result.isPriming, all.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading today'),
-        (_, true) => const EmptyState(kind: EmptyKind.noVisitingChefs),
+        (_, true) => LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: const Center(
+                child: EmptyState(kind: EmptyKind.noVisitingChefs),
+              ),
+            ),
+          ),
+        ),
         _ => BoundedList(
           // Not capped for a compact card. A compact card is already a shorter
           // box (58% of the row height), and BoundedList measures the box it
