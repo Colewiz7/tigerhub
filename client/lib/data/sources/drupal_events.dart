@@ -32,6 +32,12 @@ const List<String> drupalFields = [
   'changed',
 ];
 
+// rodeo event pages 404, so point at the real schedule page
+const Map<String, String> deadAliasTargets = {
+  '/events/food-truck-rodeo-schedule': 'https://www.rit.edu/dining/food-trucks',
+  '/events/food-truck-rodeo-schedule-0': 'https://www.rit.edu/dining/food-trucks',
+};
+
 const int drupalPageLimit = 50;
 
 /// Backstop so a pagination bug cannot loop forever.
@@ -141,7 +147,7 @@ List<Map<String, dynamic>> parseDrupal(List<dynamic> records) {
       'organizer_key': 'RIT',
       'event_type': attrs['field_event_type'],
       'url': (link is Map<String, dynamic> ? link['uri'] : null) ??
-          (alias == null ? null : 'https://www.rit.edu$alias'),
+          (alias == null ? null : deadAliasTargets[alias] ?? 'https://www.rit.edu$alias'),
       'starts_at': startsAt,
       'ends_at': endsAt,
       'all_day': allDay,
