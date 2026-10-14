@@ -68,11 +68,13 @@ class _CampusMapViewState extends State<CampusMapView> {
         : _viewportSize.center(Offset.zero);
     final translatedX = focus.dx - applied * (focus.dx - matrix.entry(0, 3));
     final translatedY = focus.dy - applied * (focus.dy - matrix.entry(1, 3));
+    final minX = _viewportSize.width * (1 - target) - 80;
+    final minY = _viewportSize.height * (1 - target) - 80;
     _transform.value = Matrix4.identity()
       ..setEntry(0, 0, target)
       ..setEntry(1, 1, target)
-      ..setEntry(0, 3, translatedX)
-      ..setEntry(1, 3, translatedY);
+      ..setEntry(0, 3, translatedX.clamp(minX, 80.0))
+      ..setEntry(1, 3, translatedY.clamp(minY, 80.0));
   }
 
   KeyEventResult _handleMapKey(FocusNode node, KeyEvent event) {
