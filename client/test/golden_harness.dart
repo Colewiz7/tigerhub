@@ -33,20 +33,32 @@ Future<void> _loadFonts() async {
   }
 }
 
-/// Call once from main() of any file that takes goldens.
-void setUpGoldenFonts() {
+/// Call once from main() of any file that takes goldens, naming that file
+/// (its basename, as in known_overflows.dart).
+void setUpGoldenFonts(String file) {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(loadGoldenFonts);
+  tearDownAll(() {
+    final stale = staleKnownEntries(file, _registered, knownOverflows);
+    if (stale.isNotEmpty) {
+      fail('known_overflows.dart lists tests that $file does not define: ${stale.join(', ')}');
+    }
+  });
 }
 
-/// The app theme with Rubik forced onto every text style.
+/// MASKS A REAL APP DEFECT. Delete this function when the theme is fixed.
 ///
-/// AppTheme.from sets fontFamily on the base ThemeData and then replaces the
-/// text theme with seven styles that carry no family and leave the other
-/// eight slots null, so in the app today those styles fall through to the
-/// platform font and Rubik never renders (see the A+B harness report). Without
-/// this a golden shows Ahem blocks. Once the app theme carries the family
-/// itself, this becomes a no-op and can be dropped.
+/// AppTheme.from (lib/theme/app_theme.dart) sets fontFamily: 'Rubik' on the
+/// base ThemeData, then replaces the text theme with seven styles that carry
+/// no fontFamily and leaves the other eight slots null. In the shipping app
+/// that means themed text falls through to the platform font and Rubik does
+/// not render. This function forces Rubik onto all 15 slots so goldens show
+/// real glyphs; without it they show Ahem blocks. It therefore makes the
+/// goldens look better than the app is.
+///
+/// golden_harness_test.dart asserts the defect is still present. The day the
+/// theme is fixed that test fails: delete this function, every call to it, and
+/// that test, then regenerate the goldens.
 ThemeData goldenTheme(ThemeData theme) =>
     theme.copyWith(textTheme: _withRubik(theme.textTheme));
 
@@ -71,15 +83,20 @@ TextTheme _withRubik(TextTheme t) {
   );
 }
 
-/// One overflow report: how far, and the lib/ source line that built it.
+/// One overflow report: how far, which edge, the source line of the widget
+/// that overflowed, and which render object it was (to tell one instance from
+/// the same instance reported again on a later layout).
 class Overflow {
-  const Overflow(this.pixels, this.where);
+  const Overflow(this.pixels, this.side, this.where, this.instance);
 
   final double pixels;
+  final String side;
   final String where;
+  final String instance;
 
-  static final _size = RegExp(r'overflowed by ([\d.]+) pixels');
-  static final _source = RegExp(r'lib/[\w/]+\.dart:\d+');
+  static final _size = RegExp(r'overflowed by ([\d.]+) pixels on the (\w+)');
+  static final _source = RegExp(r'(?<=/)(?:lib|test)/[\w/]+\.dart:\d+');
+  static final _instance = RegExp(r'Render\w+#[0-9a-f]+');
 
   static Overflow? tryParse(FlutterErrorDetails details) {
     final text = details.exceptionAsString();
@@ -88,12 +105,14 @@ class Overflow {
     final full = '$text\n${details.toString(minLevel: DiagnosticLevel.debug)}';
     return Overflow(
       double.parse(size.group(1)!),
+      size.group(2)!,
       _source.firstMatch(full)?.group(0) ?? 'unknown',
+      _instance.firstMatch(full)?.group(0) ?? '',
     );
   }
 
   @override
-  String toString() => '${pixels}px at $where';
+  String toString() => '${pixels}px on the $side at $where';
 }
 
 /// A testWidgets that fails on any overflow the known list does not name.
@@ -101,51 +120,82 @@ class Overflow {
 /// Known overflows are expected to occur: if a listed one stops happening the
 /// test fails too, so whoever fixes it also deletes the entry.
 void goldenWidgets(String description, Future<void> Function(WidgetTester tester) body) {
+  _registered.add(description);
   testWidgets(description, (tester) async {
-    final seen = <Overflow>[];
-    final previous = FlutterError.onError;
-    FlutterError.onError = (details) {
-      final overflow = Overflow.tryParse(details);
-      if (overflow == null) {
-        previous?.call(details);
-      } else {
-        seen.add(overflow);
-      }
-    };
-    try {
-      await body(tester);
-    } finally {
-      FlutterError.onError = previous;
-    }
-    _checkOverflows(description, seen);
+    final seen = await captureOverflows(() => body(tester));
+    final problems = overflowProblems(seen, knownOverflows[description]?.overflows ?? const []);
+    if (problems.isNotEmpty) fail('$description\n${problems.join('\n')}');
   });
 }
+
+final _registered = <String>{};
+
+/// Runs [body] with every overflow report diverted into the returned list,
+/// one entry per distinct render object, instead of failing or printing.
+/// Any other framework error still goes to the test binding.
+Future<List<Overflow>> captureOverflows(Future<void> Function() body) async {
+  final seen = <Overflow>[];
+  final previous = FlutterError.onError;
+  FlutterError.onError = (details) {
+    final overflow = Overflow.tryParse(details);
+    if (overflow == null) {
+      previous?.call(details);
+    } else if (!seen.any((o) => _sameInstance(o, overflow))) {
+      seen.add(overflow);
+    }
+  };
+  try {
+    await body();
+  } finally {
+    FlutterError.onError = previous;
+  }
+  return seen;
+}
+
+bool _sameInstance(Overflow a, Overflow b) =>
+    a.instance.isNotEmpty &&
+    a.instance == b.instance &&
+    a.side == b.side &&
+    a.where == b.where &&
+    (a.pixels - b.pixels).abs() <= _tolerance;
 
 /// Within this the same overflow measured on another platform still matches.
 const _tolerance = 0.5;
 
-void _checkOverflows(String description, List<Overflow> seen) {
-  final known = knownOverflows[description];
-  final expected = known?.pixels ?? const <double>[];
-  final unexpected = <Overflow>[];
-  final matched = <double>{};
-  for (final overflow in seen) {
-    final hit = expected.where((px) => (px - overflow.pixels).abs() <= _tolerance);
-    if (hit.isEmpty) {
-      if (!unexpected.any((u) => u.pixels == overflow.pixels && u.where == overflow.where)) {
-        unexpected.add(overflow);
-      }
-    } else {
-      matched.add(hit.first);
+/// Compares what overflowed with what the known list says should. Each
+/// expected entry must match exactly its listed count of overflows at the same
+/// source line, edge and size; anything left over is unexpected. Empty means
+/// the test agrees with the list.
+List<String> overflowProblems(List<Overflow> seen, List<ExpectedOverflow> expected) {
+  final remaining = [...seen];
+  final problems = <String>[];
+  for (final entry in expected) {
+    final hits = remaining
+        .where((o) =>
+            o.where == entry.where &&
+            o.side == entry.side &&
+            (o.pixels - entry.pixels).abs() <= _tolerance)
+        .toList();
+    remaining.removeWhere(hits.contains);
+    if (hits.length != entry.count) {
+      problems.add('known_overflows.dart expects ${entry.count} overflow(s) of $entry but the '
+          'test produced ${hits.length}. If a fix landed, delete or lower the entry.');
     }
   }
-  final missing = expected.where((px) => !matched.contains(px)).toList();
-  final problems = [
-    if (unexpected.isNotEmpty)
-      'Unexpected layout overflow, not in known_overflows.dart: ${unexpected.join('; ')}',
-    if (missing.isNotEmpty)
-      'known_overflows.dart lists ${missing.join(', ')}px for "$description" but it no longer '
-          'overflows by that. Fix landed? Delete the entry.',
-  ];
-  if (problems.isNotEmpty) fail(problems.join('\n'));
+  for (final extra in remaining) {
+    problems.add('Unexpected layout overflow, not in known_overflows.dart: $extra');
+  }
+  return problems;
 }
+
+/// Known-list tests of [file] that are not in [registered]: an entry naming a
+/// test that no longer exists would otherwise sit in the list forever.
+List<String> staleKnownEntries(
+  String file,
+  Set<String> registered,
+  Map<String, KnownOverflow> known,
+) =>
+    [
+      for (final e in known.entries)
+        if (e.value.file == file && !registered.contains(e.key)) e.key,
+    ];

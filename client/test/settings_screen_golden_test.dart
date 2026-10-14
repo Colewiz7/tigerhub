@@ -9,7 +9,7 @@ import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'golden_harness.dart';
 
 void main() {
-  setUpGoldenFonts();
+  setUpGoldenFonts('settings_screen_golden_test.dart');
 
   Future<void> pumpSettings(WidgetTester tester, Size size, Brightness brightness, double scale) async {
     tester.view.devicePixelRatio = 1;

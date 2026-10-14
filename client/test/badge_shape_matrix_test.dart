@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'golden_harness.dart';
 
 void main() {
-  setUpGoldenFonts();
+  setUpGoldenFonts('badge_shape_matrix_test.dart');
 
   goldenWidgets('badge shape matrix', (tester) async {
     await tester.binding.setSurfaceSize(const Size(520, 500));
