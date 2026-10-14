@@ -158,10 +158,11 @@ List<Map<String, dynamic>> parseDrupal(List<dynamic> records) {
 }
 
 /// Follow links.next until exhausted, returning raw JSON:API records.
-Future<List<dynamic>> fetchDrupal(Upstream http) async {
+Future<List<dynamic>> fetchDrupal(Upstream http, {String? title}) async {
   final fields = drupalFields.join(',');
   String? url = '$drupalBaseUrl?page%5Blimit%5D=$drupalPageLimit'
-      '&fields%5Bnode--event%5D=${Uri.encodeQueryComponent(fields)}';
+      '&fields%5Bnode--event%5D=${Uri.encodeQueryComponent(fields)}'
+      '${title == null ? '' : '&filter%5Btitle%5D=${Uri.encodeQueryComponent(title)}'}';
 
   final records = <dynamic>[];
 

@@ -691,6 +691,9 @@ Caveat, unverified: the sibling field `field_student_club_closed` is `1` on many
 - The page says trucks run "typically August through October and April". The season rule is read from that sentence, with `{4, 8, 9, 10}` as the default.
 - Years are inferred as the nearest date to the campus date, never the device clock.
 - Three states: trucks, empty (hidden off season, one "No food trucks scheduled" line in season), unavailable (hidden). Heading present with no slots is empty. Heading missing is a parse failure, which falls back to the Drupal "Food Truck Rodeo Schedule" events, and if those are missing too the state is unavailable.
+- Empty needs positive evidence: the view wrapper with no slot markup and no visible text beyond a short "No ... trucks/scheduled" note. Anything else unreadable is a parse failure. The empty wording on the real page is unverified.
+- Fallback runs on a parse failure or a fetch error, using the cached Drupal events or one title filtered Drupal request when that cache is cold. Unavailable is stored only when both sources were read and had nothing. A fetch error with nothing from the other side rethrows, so the previous snapshot stays.
+- Every fetch, scheduled or manual, waits 6 hours after a clean read and 5 minutes after a fallback, unavailable or failed one (`FoodTruckPacer`).
 - No conditional fetch: the server answers 200 to `If-None-Match` and `If-Modified-Since`, and its ETag is a per request timestamp. `Cache-Control: max-age=300`.
 - Drupal Rodeo event pages (`/events/food-truck-rodeo-schedule` and `-0`) return 404, so the parse maps them to the dining page.
 - **Terms audit (5.2.2), paused.** The per source list is not being worked on right now. When it resumes it must include `rit.edu/dining` (this food trucks page) and the link-outs `ondemand.rit.edu` and `tigerspend.rit.edu` (opened in the browser, never fetched).

@@ -11,17 +11,22 @@ import 'package:tigerhub/data/local_backend.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/data/sources/drupal_events.dart';
 import 'package:tigerhub/data/sources/food_trucks.dart';
+import 'package:tigerhub/data/static_config.dart';
+import 'package:tigerhub/data/store.dart';
 import 'package:tigerhub/data/upstream.dart';
 
 void main() {
   final page = File('test/fixtures/food_trucks.html').readAsStringSync();
   final oct14 = DateTime(2026, 10, 14);
 
-  // empty schedule: keep the heading and container, drop every slot
+  const colStart = '<div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-5">';
+
+  // empty schedule: keep the heading and view wrapper, drop the six slots
   final emptyPage = () {
-    final heading = RegExp(r'<h2[^>]*>\s*Current Schedule\s*</h2>').firstMatch(page)!;
-    final to = page.indexOf('id="all-participating-trucks"');
-    return '${page.substring(0, heading.end)}<div class="row"></div><a ${page.substring(to)}';
+    final from = page.indexOf(colStart);
+    final lastLink = page.lastIndexOf('Visit Website</a>', page.indexOf('id="all-participating-trucks"'));
+    final to = page.indexOf('</div>', page.indexOf('</div>', lastLink) + 1) + '</div>'.length;
+    return page.substring(0, from) + page.substring(to);
   }();
 
   final noStructure = page
@@ -46,7 +51,30 @@ void main() {
         maxRetries: 1,
       );
 
-  setUp(() => RitClock.pin(DateTime.utc(2026, 10, 14, 16)));
+  final drupalJson = File('test/fixtures/drupal_truck.json').readAsStringSync();
+  const noEvents = '{"data":[],"links":{}}';
+
+  // a string body is a 200, null is a dead network
+  Upstream routed({String? pageBody, String? drupalBody, List<Uri>? log}) => Upstream(
+    client: MockClient((request) async {
+      log?.add(request.url);
+      final body = request.url.path.contains('jsonapi') ? drupalBody : pageBody;
+      if (body == null) throw const SocketException('offline');
+      return http.Response.bytes(
+        utf8.encode(body),
+        200,
+        headers: {'content-type': 'text/html; charset=utf-8'},
+      );
+    }),
+    maxRetries: 1,
+  );
+
+  int pageHits(List<Uri> log) => log.where((u) => u.path == '/dining/food-trucks').length;
+
+  setUp(() {
+    RitClock.pin(DateTime.utc(2026, 10, 14, 16));
+    foodTruckPacer.reset();
+  });
   tearDown(RitClock.reset);
 
   group('parse', () {
@@ -110,6 +138,77 @@ void main() {
       final broken = page.replaceAll('font-weight-medium h4', 'renamed');
       expect(parseFoodTrucksHtml(broken, oct14), isNull);
     });
+
+    test('an explicit short no-trucks note in the view is empty', () {
+      final noted = emptyPage.replaceFirst(
+        'paragraph--type--embed-view paragraph--view-mode--default">',
+        'paragraph--type--embed-view paragraph--view-mode--default"><p>No food trucks scheduled.</p>',
+      );
+      expect(noted, isNot(emptyPage));
+      expect(parseFoodTrucksHtml(noted, oct14)!['trucks'], isEmpty);
+    });
+
+    test('other text in an otherwise empty view is not proof of empty', () {
+      final chatty = emptyPage.replaceFirst(
+        'paragraph--type--embed-view paragraph--view-mode--default">',
+        'paragraph--type--embed-view paragraph--view-mode--default"><p>Bubble Waffle Bus, Friday</p>',
+      );
+      expect(parseFoodTrucksHtml(chatty, oct14), isNull);
+    });
+
+    test('the view wrapper gone is a failure, not empty', () {
+      final bare = emptyPage.replaceAll('paragraph--type--embed-view', 'paragraph--type--other');
+      expect(parseFoodTrucksHtml(bare, oct14), isNull);
+    });
+
+    test('mutation: slot date class renamed, heading and container kept', () {
+      expect(parseFoodTrucksHtml(page.replaceAll('h5 mb-3', 'h5 mb-4'), oct14), isNull);
+    });
+
+    test('mutation: truck name class renamed', () {
+      expect(parseFoodTrucksHtml(page.replaceAll('font-weight-medium h4', 'h4 fw'), oct14), isNull);
+    });
+
+    test('mutation: slot markup restructured into other tags', () {
+      final moved = page
+          .replaceAll('<div class="h5 mb-3">', '<p class="when">')
+          .replaceAll(colStart, '<section class="slot">');
+      expect(parseFoodTrucksHtml(moved, oct14), isNull);
+
+      final table = page.replaceAll(colStart, '<table><tr><td>').replaceAll('font-weight-medium h4', 'cell');
+      expect(parseFoodTrucksHtml(table, oct14), isNull);
+    });
+
+    test('mutation: date text present but no truck names', () {
+      final nameless = page.replaceAll(RegExp(r'<div class="font-weight-medium h4[^"]*">.*?</div>', dotAll: true), '');
+      expect(parseFoodTrucksHtml(nameless, oct14), isNull);
+    });
+
+    test('mutation: truck names present but dates unreadable', () {
+      final dateless = page.replaceAll(RegExp(r'(Friday|Saturday), Oct \d+'), 'To be announced');
+      expect(parseFoodTrucksHtml(dateless, oct14), isNull);
+    });
+
+    test('a display:none slot is left out', () {
+      final hidden = page.replaceFirst(colStart, '<div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-5" style="display: none">');
+      final trucks = (parseFoodTrucksHtml(hidden, oct14)!['trucks'] as List).cast<Map<String, dynamic>>();
+
+      expect(trucks, hasLength(5));
+      expect(trucks.map((t) => t['name']), isNot(contains('Bubble Waffle Bus')));
+    });
+
+    test('every slot hidden is a failure, not empty', () {
+      final hidden = page.replaceAll(colStart, '<div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-5" style="display:none">');
+      expect(parseFoodTrucksHtml(hidden, oct14), isNull);
+    });
+
+    test('identical slots collapse to one', () {
+      final first = page.indexOf(colStart);
+      final second = page.indexOf(colStart, first + 1);
+      final doubled = page.substring(0, second) + page.substring(first, second) + page.substring(second);
+
+      expect((parseFoodTrucksHtml(doubled, oct14)!['trucks'] as List), hasLength(6));
+    });
   });
 
   group('season', () {
@@ -152,6 +251,51 @@ void main() {
 
     test('feb 29 resolves to a leap year or nothing', () {
       expect(inferTruckDate(2, 29, DateTime(2027, 12, 1)), DateTime.utc(2028, 2, 29));
+    });
+
+    test('Dec 31 and Jan 1 resolve across the year boundary both ways', () {
+      expect(inferTruckDate(1, 1, DateTime(2026, 12, 31)), DateTime.utc(2027, 1, 1));
+      expect(inferTruckDate(12, 31, DateTime(2027, 1, 1)), DateTime.utc(2026, 12, 31));
+      expect(inferTruckDate(12, 31, DateTime(2026, 12, 31)), DateTime.utc(2026, 12, 31));
+      expect(inferTruckDate(1, 1, DateTime(2027, 1, 1)), DateTime.utc(2027, 1, 1));
+    });
+
+    test('exactly 6 months ahead is in the window', () {
+      expect(inferTruckDate(4, 14, DateTime(2026, 10, 14)), DateTime.utc(2027, 4, 14));
+    });
+
+    test('exactly 6 months back is in the window', () {
+      expect(inferTruckDate(10, 14, DateTime(2027, 4, 14)), DateTime.utc(2026, 10, 14));
+    });
+
+    test('one day past 6 months on one side, the other side takes it', () {
+      expect(inferTruckDate(4, 15, DateTime(2026, 10, 14)), DateTime.utc(2026, 4, 15));
+      expect(inferTruckDate(10, 13, DateTime(2027, 4, 14)), DateTime.utc(2027, 10, 13));
+      expect(inferTruckDate(4, 13, DateTime(2026, 10, 14)), DateTime.utc(2027, 4, 13));
+    });
+
+    test('month end clamps when the window edge has no such day', () {
+      expect(inferTruckDate(2, 28, DateTime(2026, 8, 31)), DateTime.utc(2027, 2, 28));
+      expect(inferTruckDate(8, 31, DateTime(2027, 2, 28)), DateTime.utc(2026, 8, 31));
+    });
+
+    test('feb 29 farther than 6 months from any leap day is rejected', () {
+      expect(inferTruckDate(2, 29, DateTime(2026, 10, 14)), isNull);
+      expect(inferTruckDate(2, 29, DateTime(2027, 8, 1)), isNull);
+      expect(inferTruckDate(2, 29, DateTime(2028, 1, 10)), DateTime.utc(2028, 2, 29));
+      expect(inferTruckDate(2, 29, DateTime(2027, 12, 1)), DateTime.utc(2028, 2, 29));
+    });
+
+    test('an impossible date is rejected, not coerced', () {
+      expect(inferTruckDate(2, 30, DateTime(2026, 10, 14)), isNull);
+      expect(inferTruckDate(4, 31, DateTime(2026, 10, 14)), isNull);
+    });
+
+    test('a slot the window rejects is dropped from the parse', () {
+      final leap = page.replaceAll('Oct 16', 'Feb 29');
+      final parsed = parseFoodTrucksHtml(leap, DateTime(2026, 10, 14))!;
+
+      expect((parsed['trucks'] as List).map((t) => t['date']).toSet(), {'2026-10-17'});
     });
 
     test('parsed slots roll over with the campus date', () {
@@ -239,21 +383,235 @@ void main() {
       expect(trucks.first['starts_at'], '2026-10-16T17:00:00-04:00');
     });
 
-    test('both failing is unavailable', () async {
-      final result = await scrapeFoodTrucks(upstreamReturning(noStructure), () async => null);
+    test('parse failure with a cold drupal cache fetches the rodeo events', () async {
+      final log = <Uri>[];
+      final result = await scrapeFoodTrucks(
+        routed(pageBody: noStructure, drupalBody: drupalJson, log: log),
+        () async => null,
+      );
+
+      expect(result['origin'], 'drupal');
+      expect(result['trucks'], hasLength(2));
+      final drupal = log.singleWhere((u) => u.path.contains('jsonapi'));
+      expect(drupal.queryParameters['filter[title]'], rodeoTitle);
+    });
+
+    test('a warm drupal cache is used without another request', () async {
+      final log = <Uri>[];
+      final result = await scrapeFoodTrucks(
+        routed(pageBody: noStructure, drupalBody: null, log: log),
+        () async => rodeoSnapshot(),
+      );
+
+      expect(result['origin'], 'drupal');
+      expect(log.where((u) => u.path.contains('jsonapi')), isEmpty);
+    });
+
+    test('network error on the page with a cold cache still uses the fallback', () async {
+      final result = await scrapeFoodTrucks(
+        routed(pageBody: null, drupalBody: drupalJson),
+        () async => null,
+      );
+
+      expect(result['origin'], 'drupal');
+      expect(result['trucks'], hasLength(2));
+    });
+
+    test('network error on the page with a warm cache uses the fallback', () async {
+      final result = await scrapeFoodTrucks(
+        routed(pageBody: null, drupalBody: null),
+        () async => rodeoSnapshot(),
+      );
+      expect(result['origin'], 'drupal');
+    });
+
+    test('both failing by parse is a stored unavailable', () async {
+      final result = await scrapeFoodTrucks(
+        routed(pageBody: noStructure, drupalBody: noEvents),
+        () async => null,
+      );
+
       expect(result['origin'], 'none');
       expect(foodTruckView(result, oct14).state, FoodTruckState.unavailable);
 
-      final noRodeo = await scrapeFoodTrucks(upstreamReturning(noStructure), () async => {'events': []});
-      expect(noRodeo['origin'], 'none');
+      foodTruckPacer.reset();
+      final warm = await scrapeFoodTrucks(
+        routed(pageBody: noStructure, drupalBody: noEvents),
+        () async => {'events': []},
+      );
+      expect(warm['origin'], 'none');
     });
 
-    test('a network error rethrows so the old snapshot stays', () async {
-      final offline = Upstream(
-        client: MockClient((_) async => throw const SocketException('offline')),
-        maxRetries: 1,
+    test('both failing by network rethrows so the old snapshot stays', () async {
+      expect(
+        scrapeFoodTrucks(routed(pageBody: null, drupalBody: null), () async => null),
+        throwsA(isA<UpstreamError>()),
       );
-      expect(scrapeFoodTrucks(offline, () async => rodeoSnapshot()), throwsA(isA<UpstreamError>()));
+    });
+
+    test('a fetch error on one side with nothing from the other rethrows', () async {
+      expect(
+        scrapeFoodTrucks(routed(pageBody: noStructure, drupalBody: null), () async => null),
+        throwsA(isA<UpstreamError>()),
+      );
+      foodTruckPacer.reset();
+      expect(
+        scrapeFoodTrucks(routed(pageBody: null, drupalBody: noEvents), () async => null),
+        throwsA(isA<UpstreamError>()),
+      );
+    });
+
+    test('a past rodeo event is not a fallback', () async {
+      final past = rodeoSnapshot();
+      RitClock.pin(DateTime.utc(2026, 10, 20, 16));
+      final result = await scrapeFoodTrucks(
+        routed(pageBody: noStructure, drupalBody: noEvents),
+        () async => past,
+      );
+      expect(result['origin'], 'none');
+    });
+
+    test('the registered source falls back on a cold cache end to end', () async {
+      StaticConfig.overrideForTesting({});
+      final result = await LocalBackend.sources[foodTrucksSource]!.scrape(
+        ScrapeContext(
+          http: routed(pageBody: noStructure, drupalBody: drupalJson),
+          previous: null,
+          save: (_) async {},
+          snapshotOf: (_) async => null,
+          config: StaticConfig.instance,
+        ),
+      );
+      expect(result['origin'], 'drupal');
+    });
+  });
+
+  group('pacing', () {
+    late DateTime clock;
+    late FoodTruckPacer pacer;
+    late List<Uri> log;
+
+    setUp(() {
+      clock = DateTime.utc(2026, 10, 14, 12);
+      pacer = FoodTruckPacer(clock: () => clock);
+      log = [];
+    });
+
+    Future<Map<String, dynamic>> run({String? pageBody, Map<String, dynamic>? previous, String? drupalBody}) =>
+        scrapeFoodTrucks(
+          routed(pageBody: pageBody, drupalBody: drupalBody, log: log),
+          () async => null,
+          previous: previous,
+          pacer: pacer,
+        );
+
+    Future<bool> fetches({String? pageBody, Map<String, dynamic>? previous}) async {
+      final before = pageHits(log);
+      try {
+        await run(pageBody: pageBody, previous: previous);
+      } on UpstreamError {
+        // refused or failed, the hit count says which
+      }
+      return pageHits(log) > before;
+    }
+
+    test('after a clean read nothing fetches until 6 hours', () async {
+      final first = await run(pageBody: page);
+      expect(first['fetched_at'], clock.toIso8601String());
+
+      for (final wait in [const Duration(minutes: 1), const Duration(hours: 5, minutes: 59)]) {
+        clock = DateTime.utc(2026, 10, 14, 12).add(wait);
+        expect(await fetches(pageBody: page, previous: first), isFalse, reason: '$wait');
+      }
+
+      clock = DateTime.utc(2026, 10, 14, 12, 0).add(const Duration(hours: 6, minutes: 1));
+      expect(await fetches(pageBody: page, previous: first), isTrue);
+    });
+
+    test('after a network failure the retry waits 5 minutes', () async {
+      expect(await fetches(pageBody: null), isTrue);
+
+      clock = clock.add(const Duration(minutes: 1));
+      expect(await fetches(pageBody: page), isFalse);
+      clock = clock.add(const Duration(minutes: 3, seconds: 59));
+      expect(await fetches(pageBody: page), isFalse);
+      clock = clock.add(const Duration(seconds: 2));
+      expect(await fetches(pageBody: page), isTrue);
+    });
+
+    test('a stored unavailable or fallback result retries after 5 minutes too', () async {
+      final unavailable = await run(pageBody: noStructure, drupalBody: noEvents);
+      expect(unavailable['origin'], 'none');
+
+      clock = clock.add(const Duration(minutes: 1));
+      expect(await fetches(pageBody: page, previous: unavailable), isFalse);
+      clock = clock.add(const Duration(minutes: 4, seconds: 1));
+      expect(await fetches(pageBody: page, previous: unavailable), isTrue);
+    });
+
+    test('a restart keeps the spacing through the stored fetched_at', () async {
+      final stored = {'origin': 'html', 'fetched_at': clock.subtract(const Duration(hours: 5)).toIso8601String()};
+      expect(await fetches(pageBody: page, previous: stored), isFalse);
+
+      final old = {'origin': 'html', 'fetched_at': clock.subtract(const Duration(hours: 7)).toIso8601String()};
+      expect(await fetches(pageBody: page, previous: old), isTrue);
+    });
+
+    test('a snapshot without fetched_at, from the first version, does not block', () async {
+      expect(await fetches(pageBody: page, previous: {'origin': 'html'}), isTrue);
+    });
+  });
+
+  group('manual refresh', () {
+    late Directory dir;
+    late List<Uri> log;
+    late LocalBackend backend;
+    late JsonStore store;
+
+    setUp(() {
+      // without it every scrape throws before any request, which reads as zero fetches
+      StaticConfig.overrideForTesting({});
+      dir = Directory.systemTemp.createTempSync('food-trucks');
+      store = JsonStore.overrideForTesting(dir);
+      log = [];
+    });
+
+    tearDown(() => dir.deleteSync(recursive: true));
+
+    Future<int> refreshAfter(Duration age, {String origin = 'html'}) async {
+      final stamp = DateTime.now().subtract(age);
+      await store.write(foodTrucksSource, {
+        'trucks': <Map<String, dynamic>>[],
+        'roster': <Map<String, dynamic>>[],
+        'origin': origin,
+        'fetched_at': stamp.toUtc().toIso8601String(),
+      });
+      File('${dir.path}/${JsonStore.fileNameFor(foodTrucksSource)}').setLastModifiedSync(stamp);
+      log.clear();
+      // fresh backend each time, the in memory snapshot would hide the new file
+      backend = LocalBackend(
+        upstream: routed(pageBody: page, drupalBody: noEvents, log: log),
+        store: store,
+      );
+      await backend.refreshNow();
+      return pageHits(log);
+    }
+
+    test('pull to refresh does not refetch inside 6 hours', () async {
+      expect(await refreshAfter(const Duration(minutes: 2)), 0);
+    });
+
+    test('still held at 5h59', () async {
+      expect(await refreshAfter(const Duration(hours: 5, minutes: 59)), 0);
+    });
+
+    test('fetches at 6h01', () async {
+      expect(await refreshAfter(const Duration(hours: 6, minutes: 1)), 1);
+    });
+
+    test('after a failed read it waits 5 minutes, not 6 hours and not 1', () async {
+      expect(await refreshAfter(const Duration(minutes: 2), origin: 'none'), 0);
+      expect(await refreshAfter(const Duration(minutes: 5, seconds: 1), origin: 'none'), 1);
     });
   });
 
@@ -265,7 +623,9 @@ void main() {
       expect(sent!.url.toString(), foodTrucksUrl);
       expect(sent!.headers['User-Agent'], userAgent);
       expect(sent!.headers['User-Agent'], contains(contact));
-      expect(sent!.headers.keys.map((k) => k.toLowerCase()), isNot(contains('if-none-match')));
+      final sentHeaders = sent!.headers.keys.map((k) => k.toLowerCase());
+      expect(sentHeaders, isNot(contains('if-none-match')));
+      expect(sentHeaders, isNot(contains('if-modified-since')));
     });
 
     test('cached six hours and registered as a source', () {

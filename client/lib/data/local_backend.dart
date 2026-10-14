@@ -169,6 +169,7 @@ class LocalBackend implements Backend {
       scrape: (ctx) => scrapeFoodTrucks(
         ctx.http,
         () => ctx.snapshotOf(drupalSource),
+        previous: ctx.previous,
       ),
     ),
     occupancySource: SourceSpec(

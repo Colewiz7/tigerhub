@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../campus_time.dart';
 import '../upstream.dart';
+import 'drupal_events.dart';
 import 'recreation.dart' show textOf;
 
 const String foodTrucksSource = 'food_trucks';
@@ -58,15 +59,32 @@ bool isFoodTruckSeason(DateTime campusDate, Iterable<int> months) =>
 String _ymd(DateTime d) =>
     '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-// nearest of last, this and next year to the campus date
+DateTime _shiftMonths(DateTime d, int months) {
+  final index = d.year * 12 + d.month - 1 + months;
+  final year = index ~/ 12;
+  final month = index % 12 + 1;
+  final last = DateTime.utc(year, month + 1, 0).day;
+  return DateTime.utc(year, month, d.day > last ? last : d.day);
+}
+
+// nearest occurrence within 6 months either side, both ends inclusive
+// a tie in days goes to the future one, null when nothing is in the window
 DateTime? inferTruckDate(int month, int day, DateTime campusDate) {
   final today = DateTime.utc(campusDate.year, campusDate.month, campusDate.day);
+  final from = _shiftMonths(today, -6);
+  final to = _shiftMonths(today, 6);
   DateTime? best;
   for (final year in [today.year - 1, today.year, today.year + 1]) {
     final candidate = DateTime.utc(year, month, day);
     if (candidate.month != month) continue;
-    if (best == null ||
-        candidate.difference(today).abs() < best.difference(today).abs()) {
+    if (candidate.isBefore(from) || candidate.isAfter(to)) continue;
+    if (best == null) {
+      best = candidate;
+      continue;
+    }
+    final gap = candidate.difference(today).abs();
+    final bestGap = best.difference(today).abs();
+    if (gap < bestGap || (gap == bestGap && candidate.isAfter(best))) {
       best = candidate;
     }
   }
@@ -146,6 +164,23 @@ String? _clean(String? raw) {
   return value.isEmpty ? null : value;
 }
 
+final RegExp _hiddenRe = RegExp(r'display\s*:\s*none', caseSensitive: false);
+final RegExp _noiseRe = RegExp(
+  r'<script.*?</script>|<style.*?</style>|<!--.*?-->',
+  dotAll: true,
+  caseSensitive: false,
+);
+final RegExp _noTrucksRe = RegExp(r'^no\b.*(truck|schedul)', caseSensitive: false);
+
+// the view wrapper with no slots, and no visible text bar a short "no ..." note
+bool isEmptySchedule(String schedule, bool sawSlotMarkers) {
+  if (sawSlotMarkers) return false;
+  if (!schedule.contains('paragraph--type--embed-view')) return false;
+  final text = textOf(schedule.replaceAll(_noiseRe, ''));
+  if (text.isEmpty) return true;
+  return text.length <= 120 && _noTrucksRe.hasMatch(text);
+}
+
 // null means the page structure is not what we expect
 Map<String, dynamic>? parseFoodTrucksHtml(String html, DateTime campusDate) {
   final heading = _headingRe.firstMatch(html);
@@ -154,14 +189,23 @@ Map<String, dynamic>? parseFoodTrucksHtml(String html, DateTime campusDate) {
   final rosterAt = html.indexOf(_rosterAnchorRe, heading.end);
   final schedule = html.substring(
     heading.end,
-    rosterAt < 0 ? html.length : rosterAt,
+    // stop before the anchor tag itself, not halfway through it
+    rosterAt < 0 ? html.length : html.lastIndexOf('<', rosterAt),
   );
 
   final marks = _dateRe.allMatches(schedule).toList();
   final trucks = <Map<String, dynamic>>[];
+  final seen = <String>{};
   for (var i = 0; i < marks.length; i++) {
     final end = i + 1 < marks.length ? marks[i + 1].start : schedule.length;
     final block = schedule.substring(marks[i].end, end);
+
+    final before = schedule.substring(i == 0 ? 0 : marks[i - 1].end, marks[i].start);
+    final column = before.lastIndexOf('<div class="col-');
+    if (column >= 0) {
+      final tag = before.substring(column, before.indexOf('>', column) + 1);
+      if (_hiddenRe.hasMatch(tag)) continue;
+    }
 
     final label = _slotDateRe.firstMatch(textOf(marks[i].group(1)!));
     final month = label == null ? null : _monthOf(label.group(1)!);
@@ -177,6 +221,9 @@ Map<String, dynamic>? parseFoodTrucksHtml(String html, DateTime campusDate) {
     // blurb sits between the name and the clock
     final afterName = block.substring(_nameRe.firstMatch(block)!.end);
 
+    final location = place == null ? null : _clean(place.group(3));
+    if (!seen.add('$name|${_ymd(day)}|$timeText|$location')) continue;
+
     trucks.add({
       'name': name,
       'blurb': _clean(_blurbRe.firstMatch(afterName)?.group(1)),
@@ -184,15 +231,15 @@ Map<String, dynamic>? parseFoodTrucksHtml(String html, DateTime campusDate) {
       'time_text': timeText,
       'starts_at': startsAt,
       'ends_at': endsAt,
-      'location': place == null ? null : _clean(place.group(3)),
+      'location': location,
       'location_url': place?.group(1),
       'website': _siteRe.firstMatch(block)?.group(1),
       'origin': 'html',
     });
   }
 
-  // date markers present but none readable is a changed page, not an empty one
-  if (marks.isNotEmpty && trucks.isEmpty) return null;
+  // empty needs positive evidence, anything unreadable is a changed page
+  if (trucks.isEmpty && !isEmptySchedule(schedule, marks.isNotEmpty)) return null;
 
   final roster = <Map<String, dynamic>>[];
   final rosterHtml = rosterAt < 0 ? '' : html.substring(rosterAt);
@@ -225,10 +272,12 @@ List<Map<String, dynamic>> rodeoTrucksFrom(
     if (event['title'] != rodeoTitle) continue;
     final startsAt = DateTime.tryParse(event['starts_at'] as String? ?? '');
     if (startsAt == null) continue;
+    final date = CampusTime.formatDate(startsAt);
+    if (date.compareTo(_ymd(campusDate)) < 0) continue;
     out.add({
       'name': 'Food Truck Rodeo',
       'blurb': null,
-      'date': CampusTime.formatDate(startsAt),
+      'date': date,
       'time_text': null,
       'starts_at': event['starts_at'],
       'ends_at': event['ends_at'],
@@ -248,30 +297,121 @@ Map<String, dynamic> unavailableFoodTrucks() => {
   'origin': 'none',
 };
 
-Future<Map<String, dynamic>> scrapeFoodTrucks(
+// spacing for every fetch, scheduled or manual: 6 hours after a clean read,
+// 5 minutes after anything else. a clean read is stored with its fetched_at
+// so a restart keeps the spacing, failures are only remembered in memory.
+class FoodTruckPacer {
+  FoodTruckPacer({DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
+
+  final DateTime Function() _clock;
+  DateTime? _attemptAt;
+  bool _clean = true;
+
+  DateTime now() => _clock();
+
+  bool due(Map<String, dynamic>? previous) {
+    var at = _attemptAt;
+    var clean = _clean;
+    final stored = DateTime.tryParse(previous?['fetched_at'] as String? ?? '');
+    if (stored != null && (at == null || stored.isAfter(at))) {
+      at = stored;
+      clean = previous?['origin'] == 'html';
+    }
+    if (at == null) return true;
+    return _clock().difference(at) >= (clean ? foodTrucksCadence : foodTruckRetry);
+  }
+
+  void record({required bool clean}) {
+    _attemptAt = _clock();
+    _clean = clean;
+  }
+
+  @visibleForTesting
+  void reset() {
+    _attemptAt = null;
+    _clean = true;
+  }
+}
+
+const Duration foodTruckRetry = Duration(minutes: 5);
+
+final FoodTruckPacer foodTruckPacer = FoodTruckPacer();
+
+// cached drupal events first, then one small title filtered fetch
+Future<List<Map<String, dynamic>>> _rodeoTrucks(
   Upstream http,
   Future<Map<String, dynamic>?> Function() drupalSnapshot,
+  DateTime campusDate,
 ) async {
+  final cached = rodeoTrucksFrom(await drupalSnapshot(), campusDate);
+  if (cached.isNotEmpty) return cached;
+  final records = await fetchDrupal(http, title: rodeoTitle);
+  return rodeoTrucksFrom({'events': parseDrupal(records)}, campusDate);
+}
+
+// stored unavailable only when both sources were read and neither had trucks
+// a fetch error on either side rethrows so the previous snapshot stays
+Future<Map<String, dynamic>> scrapeFoodTrucks(
+  Upstream http,
+  Future<Map<String, dynamic>?> Function() drupalSnapshot, {
+  Map<String, dynamic>? previous,
+  FoodTruckPacer? pacer,
+}) async {
+  final gate = pacer ?? foodTruckPacer;
+  if (!gate.due(previous)) throw UpstreamError('food_trucks: not due yet');
+
   final campusDate = CampusTime.wallDate();
-  // a network error rethrows so the previous snapshot stays
-  final html = await http.getText(foodTrucksUrl);
+  Map<String, dynamic> stamped(Map<String, dynamic> body) => {
+    ...body,
+    'fetched_at': gate.now().toUtc().toIso8601String(),
+  };
 
-  final parsed = parseFoodTrucksHtml(html, campusDate);
-  if (parsed != null) return parsed;
-  debugPrint('food_trucks: page structure not recognised, trying drupal');
+  var primaryFetchFailed = false;
+  Map<String, dynamic>? parsed;
+  try {
+    final html = await http.getText(foodTrucksUrl);
+    try {
+      parsed = parseFoodTrucksHtml(html, campusDate);
+    } catch (error) {
+      debugPrint('food_trucks: parser threw $error');
+    }
+  } catch (error) {
+    primaryFetchFailed = true;
+    debugPrint('food_trucks: page fetch failed: $error');
+  }
 
-  final fallback = rodeoTrucksFrom(await drupalSnapshot(), campusDate);
-  if (fallback.isNotEmpty) {
-    return {
-      'trucks': fallback,
+  if (parsed != null) {
+    gate.record(clean: true);
+    return stamped(parsed);
+  }
+  if (!primaryFetchFailed) {
+    debugPrint('food_trucks: page structure not recognised, trying drupal');
+  }
+
+  var fallbackFetchFailed = false;
+  var rodeo = <Map<String, dynamic>>[];
+  try {
+    rodeo = await _rodeoTrucks(http, drupalSnapshot, campusDate);
+  } catch (error) {
+    fallbackFetchFailed = true;
+    debugPrint('food_trucks: drupal fallback fetch failed: $error');
+  }
+  gate.record(clean: false);
+
+  if (rodeo.isNotEmpty) {
+    return stamped({
+      'trucks': rodeo,
       'roster': <Map<String, dynamic>>[],
       'season_months': defaultFoodTruckSeasonMonths.toList()..sort(),
       'origin': 'drupal',
-    };
+    });
+  }
+  if (primaryFetchFailed || fallbackFetchFailed) {
+    throw UpstreamError('food_trucks: could not read a source');
   }
 
   debugPrint('food_trucks: html and drupal fallback both failed, unavailable');
-  return unavailableFoodTrucks();
+  return stamped(unavailableFoodTrucks());
 }
 
 // what the ui reads, computed against the campus date at read time
