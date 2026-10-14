@@ -19,7 +19,6 @@ import 'screens/dining_screen.dart';
 import 'screens/events_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'services/cache.dart';
-import 'services/dashboard.dart';
 import 'services/subscriptions.dart';
 import 'services/preferences.dart';
 import 'services/api.dart';
@@ -51,13 +50,6 @@ class _AppShellState extends State<AppShell>
   int _index = 0;
   bool _showSettings = false;
   bool _animateTabChange = true;
-
-  // Mirrored here so Settings and the Today grid stay in step.
-  // Instance ids, not the old string ids, and derived from one place so this
-  // cannot drift from what the store hands back.
-  List<String> _cards = [for (final c in defaultDashboard) c.id];
-  List<String> _hiddenCards = const [];
-  List<CardInstance> _dashboard = defaultDashboard;
 
   Result<Collection<DiningLocation>> _dining = const Result(
     value: null,
@@ -100,7 +92,6 @@ class _AppShellState extends State<AppShell>
     // Housekeeping, not on the critical path: nothing waits on it and a
     // failure is swallowed.
     unawaited(ResponseCache.instance.prune());
-    _restoreCards();
     _refresh();
     _ticker = Timer.periodic(_tick, (_) => _refresh());
     WidgetsBinding.instance.addObserver(this);
@@ -126,44 +117,6 @@ class _AppShellState extends State<AppShell>
 
   void _onPreferences() {
     if (mounted) setState(() {});
-  }
-
-  /// Reads through the same store the Today grid writes.
-  ///
-  /// These used to be two independent readers and writers of the same two
-  /// preference keys, which is how the shell and the grid could disagree about
-  /// what was hidden.
-  Future<void> _restoreCards() async {
-    final loaded = await DashboardStore.load();
-    if (!mounted) return;
-    setState(() {
-      _cards = [
-        for (final c in loaded)
-          if (!c.hidden) c.id,
-      ];
-      _hiddenCards = [
-        for (final c in loaded)
-          if (c.hidden) c.id,
-      ];
-      _dashboard = loaded;
-    });
-  }
-
-  Future<void> _setCards(List<String> order, List<String> hidden) async {
-    final byId = {for (final card in _dashboard) card.id: card};
-    final rebuilt = <CardInstance>[
-      for (final id in order)
-        if (byId[id] != null) byId[id]!.copyWith(hidden: false),
-      for (final card in _dashboard)
-        if (!order.contains(card.id)) card.copyWith(hidden: true),
-    ];
-
-    setState(() {
-      _cards = order;
-      _hiddenCards = hidden;
-      _dashboard = rebuilt;
-    });
-    await DashboardStore.save(rebuilt);
   }
 
   final _subscriptions = Subscriptions();
@@ -286,9 +239,6 @@ class _AppShellState extends State<AppShell>
                         ? SettingsScreen(
                             scheme: widget.scheme,
                             events: _events,
-                            cards: _cards,
-                            hiddenCards: _hiddenCards,
-                            onCardsChanged: _setCards,
                           )
                         : _TabStack(
                             index: _index,
