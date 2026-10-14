@@ -33,6 +33,10 @@ class VisitingChefsCard extends StatelessWidget {
 
   final Result<Collection<MenuItem>> result;
   final Widget? dragHandle;
+
+  /// Not used by this card any more. It went to the Dining tab, which lists
+  /// TigerCenter specials and has none of these chefs, so "+N more" now opens
+  /// a sheet of all of them instead. Kept so existing callers still compile.
   final VoidCallback? onShowAll;
   @override
   Widget build(BuildContext context) {
@@ -55,7 +59,10 @@ class VisitingChefsCard extends StatelessWidget {
       glyph: GlyphKind.visitingChef,
       title: 'Visiting Chefs',
       state: result.state,
-      fetchedAt: result.fetchedAt,
+      // The age of the chefs themselves, not of the request. ApiClient stamps
+      // every response with the moment it arrived, which put "updated just
+      // now" over a first run outage that had never held any chefs.
+      fetchedAt: value?.lastUpdated,
       dragHandle: dragHandle,
       // This feed is already scoped to today, so its count is honest and
       // immediately useful. The individual chef name remains the hero of each
@@ -91,7 +98,6 @@ class VisitingChefsCard extends StatelessWidget {
         _ => _ChefList(
           chefs: all,
           summary: badgeFits ? null : summary,
-          onShowAll: onShowAll,
         ),
       },
     );
@@ -145,13 +151,12 @@ class VisitingChefsCard extends StatelessWidget {
 /// the first row and the pill cannot fit, the list scrolls rather than
 /// overflowing.
 class _ChefList extends StatelessWidget {
-  const _ChefList({required this.chefs, this.summary, this.onShowAll});
+  const _ChefList({required this.chefs, this.summary});
 
   final List<MenuItem> chefs;
 
   /// The count in words, when the badge is not shown.
   final String? summary;
-  final VoidCallback? onShowAll;
 
   static const double _gap = 8;
   static const double _badge = 42;
@@ -207,7 +212,7 @@ class _ChefList extends StatelessWidget {
         final heights = [
           for (final chef in chefs) _rowHeight(context, chef, width) + _gap,
         ];
-        final footer = _text(context, '+99 more', text.bodySmall, width, 1) + 12;
+        final footer = _MoreChefs.height;
 
         var shown = chefs.length;
         if (available.isFinite) {
@@ -243,7 +248,11 @@ class _ChefList extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: _gap),
                   child: _ChefRow(chef: chefs[i]),
                 ),
-              if (hidden > 0) _MoreChefs(hidden: hidden, onTap: onShowAll),
+              if (hidden > 0)
+                _MoreChefs(
+                  hidden: hidden,
+                  onTap: () => _showAllChefs(context, chefs),
+                ),
             ],
           ),
         );
@@ -255,20 +264,29 @@ class _ChefList extends StatelessWidget {
 /// One chef: a badge, the name, then the time and the location, each allowed
 /// two lines.
 class _ChefRow extends StatelessWidget {
-  const _ChefRow({required this.chef});
+  const _ChefRow({required this.chef, this.showCuisine = false});
 
   final MenuItem chef;
+
+  /// The card has no room for the cuisine. The sheet that lists every chef does.
+  final bool showCuisine;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final window = VisitingChefsCard._window(chef);
+    final cuisine = showCuisine ? chef.cuisine : null;
 
     return Semantics(
       container: true,
       excludeSemantics: true,
-      label: [chef.name, ?window, chef.locationName].join(', '),
+      label: [
+        chef.name,
+        ?window,
+        if (chef.locationName.isNotEmpty) chef.locationName,
+        ?cuisine,
+      ].join(', '),
       child: Material(
         elevation: 0,
         color: scheme.surfaceContainerHigh,
@@ -320,6 +338,15 @@ class _ChefRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
+                    if (cuisine != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        cuisine,
+                        style: text.bodySmall,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -332,12 +359,17 @@ class _ChefRow extends StatelessWidget {
 }
 
 /// "+2 more", for the chefs the box had no room for. Says "more", not "chefs",
-/// so one left over never reads "+1 chefs".
+/// so one left over never reads "+1 chefs". Opens the sheet of every chef.
+///
+/// The pill is drawn at its own size and answers taps across a 48px band, so
+/// the hit area is full without the pill growing.
 class _MoreChefs extends StatelessWidget {
   const _MoreChefs({required this.hidden, this.onTap});
 
   final int hidden;
   final VoidCallback? onTap;
+
+  static const double height = 48;
 
   @override
   Widget build(BuildContext context) {
@@ -346,38 +378,144 @@ class _MoreChefs extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Semantics(
-        button: onTap != null,
-        enabled: onTap != null,
-        label: '$hidden more ${hidden == 1 ? 'chef' : 'chefs'}',
+        button: true,
+        onTap: onTap,
+        label: 'Show $hidden more ${hidden == 1 ? 'chef' : 'chefs'}',
         excludeSemantics: true,
         child: Material(
-          elevation: 0,
-          color: scheme.surfaceContainerHigh,
-          shape: Shapes.pill,
-          clipBehavior: Clip.antiAlias,
+          type: MaterialType.transparency,
           child: InkWell(
             onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '+$hidden more',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: muted,
-                      fontVariations: Weights.medium,
+            borderRadius: BorderRadius.circular(height / 2),
+            child: SizedBox(
+              height: height,
+              child: Center(
+                widthFactor: 1,
+                child: DecoratedBox(
+                  decoration: ShapeDecoration(
+                    color: scheme.surfaceContainerHigh,
+                    shape: Shapes.pill,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 13,
+                      vertical: 6,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '+$hidden more',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: muted,
+                                fontVariations: Weights.medium,
+                              ),
+                        ),
+                        const SizedBox(width: 3),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 15,
+                          color: muted,
+                        ),
+                      ],
                     ),
                   ),
-                  if (onTap != null) ...[
-                    const SizedBox(width: 3),
-                    Icon(Icons.chevron_right_rounded, size: 15, color: muted),
-                  ],
-                ],
+                ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Every chef, in a modal bottom sheet. A sheet rather than an inline expand
+/// because the card has a fixed box in a grid of cards, and growing it would
+/// push the rest of the home screen about. Esc, the scrim and the close button
+/// all dismiss it.
+Future<void> _showAllChefs(BuildContext context, List<MenuItem> chefs) {
+  final scheme = Theme.of(context).colorScheme;
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    elevation: 0,
+    backgroundColor: scheme.surfaceContainerLow,
+    barrierColor: scheme.surfaceContainerLowest.withValues(alpha: 0.6),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(Shapes.cardRadius),
+      ),
+    ),
+    builder: (context) => _ChefsSheet(chefs: chefs),
+  );
+}
+
+class _ChefsSheet extends StatelessWidget {
+  const _ChefsSheet({required this.chefs});
+
+  final List<MenuItem> chefs;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Insets.cardPadding,
+              16,
+              12,
+              8,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Semantics(
+                    header: true,
+                    child: Text(
+                      '${chefs.length} visiting '
+                      '${chefs.length == 1 ? 'chef' : 'chefs'} today',
+                      style: text.titleLarge,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Close',
+                  constraints: const BoxConstraints.tightFor(
+                    width: 48,
+                    height: 48,
+                  ),
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+          ),
+          Flexible(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(
+                Insets.cardPadding,
+                4,
+                Insets.cardPadding,
+                Insets.cardPadding,
+              ),
+              shrinkWrap: true,
+              itemCount: chefs.length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) =>
+                  _ChefRow(chef: chefs[index], showCuisine: true),
+            ),
+          ),
+        ],
       ),
     );
   }

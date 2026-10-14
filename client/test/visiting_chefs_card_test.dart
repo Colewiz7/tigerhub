@@ -16,14 +16,32 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/cards/visiting_chefs_card.dart';
+import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart';
 
-final DateTime _checked = DateTime.now().subtract(const Duration(minutes: 5));
+class _FixedBackend implements Backend {
+  const _FixedBackend(this.body);
+
+  final Map<String, dynamic> body;
+
+  @override
+  Future<Map<String, dynamic>> fetch(
+    String path, [
+    Map<String, String>? query,
+  ]) async => body;
+
+  @override
+  void close() {}
+}
+
+final DateTime _checked =DateTime.now().subtract(const Duration(minutes: 5));
 
 final _chefs = [
   MenuItem(
@@ -334,6 +352,211 @@ void main() {
       expect(find.text('No visiting chefs today'), findsNothing);
       expect(find.text('Updated 5m ago'), findsOneWidget);
       expect(find.text('RIT dining menus'), findsOneWidget);
+    });
+  });
+
+  group('+N more', () {
+    // Eight chefs in a compact card at 1x: only some fit, so the pill shows.
+    final many = [
+      for (var i = 0; i < 8; i++)
+        MenuItem(
+          id: i,
+          name: 'Chef $i',
+          locationName: 'RITZ',
+          cuisine: 'Cuisine $i',
+          startsAt: DateTime.parse('2026-10-14T11:00:00-04:00'),
+          endsAt: DateTime.parse('2026-10-14T14:00:00-04:00'),
+        ),
+    ];
+
+    Future<void> pumpMany(WidgetTester tester) => _pump(
+      tester,
+      result: Result(
+        value: ChefCollection(data: many, stale: false),
+        state: DataState.ok,
+      ),
+      size: const Size(390, 844),
+      brightness: Brightness.light,
+      scale: 1,
+      height: 325,
+    );
+
+    final pill = find.textContaining(RegExp(r'^\+\d+ more$'));
+    final sheet = find.byType(BottomSheet);
+
+    testWidgets('is a 48px touch target', (tester) async {
+      await pumpMany(tester);
+      expect(pill, findsOneWidget);
+      final band = find.ancestor(of: pill, matching: find.byType(InkWell));
+      expect(tester.getSize(band.first).height, greaterThanOrEqualTo(48));
+      expect(tester.getSize(band.first).width, greaterThanOrEqualTo(48));
+    });
+
+    testWidgets('opens a sheet with every chef, and the close button closes it', (
+      tester,
+    ) async {
+      await pumpMany(tester);
+      expect(find.text('Chef 7'), findsNothing,
+          reason: 'the card alone cannot show them all');
+
+      await tester.tap(pill);
+      await tester.pumpAndSettle();
+      expect(sheet, findsOneWidget);
+      // The sheet scrolls, so each is reached by scrolling, as a person would.
+      for (var i = 0; i < 8; i++) {
+        final chef = find.descendant(of: sheet, matching: find.text('Chef $i'));
+        await tester.scrollUntilVisible(
+          chef,
+          80,
+          scrollable: find.descendant(
+            of: sheet,
+            matching: find.byType(Scrollable),
+          ),
+        );
+        expect(chef, findsOneWidget, reason: 'Chef $i should be in the sheet');
+      }
+      expect(
+        find.descendant(of: sheet, matching: find.text('Cuisine 7')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: sheet, matching: find.text('8 visiting chefs today')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      expect(sheet, findsNothing);
+    });
+
+    for (final (mode, scale) in [(Brightness.light, 1.0), (Brightness.dark, 2.0)]) {
+      final name = 'sheet_390x844_${mode.name}_${scale.toInt()}x';
+      testWidgets('golden $name', skip: !Platform.isLinux, (tester) async {
+        await _pump(
+          tester,
+          result: Result(
+            value: ChefCollection(data: many, stale: false),
+            state: DataState.ok,
+          ),
+          size: const Size(390, 844),
+          brightness: mode,
+          scale: scale,
+          height: 325,
+        );
+        await tester.tap(pill);
+        await tester.pumpAndSettle();
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('goldens/visiting_chefs/$name.png'),
+        );
+      });
+    }
+
+    testWidgets('works from the keyboard and Esc dismisses', (tester) async {
+      await pumpMany(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(sheet, findsOneWidget);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+      expect(sheet, findsNothing);
+    });
+
+    testWidgets('is announced as a button that says what it does', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpMany(tester);
+      final node = find.bySemanticsLabel(RegExp(r'^Show \d+ more chefs$'));
+      expect(node, findsOneWidget);
+      expect(
+        tester.getSemantics(node),
+        isSemantics(isButton: true, hasTapAction: true),
+      );
+
+      await tester.tap(pill);
+      await tester.pumpAndSettle();
+      // The sheet's rows read as one node each, with the cuisine.
+      await tester.scrollUntilVisible(
+        find.text('Chef 7'),
+        80,
+        scrollable: find.descendant(of: sheet, matching: find.byType(Scrollable)),
+      );
+      expect(
+        find.bySemanticsLabel('Chef 7, 11 AM to 2 PM, RITZ, Cuisine 7'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+  });
+
+  group('through the real ApiClient', () {
+    setUp(() {
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.empty();
+    });
+
+    Future<Result<Collection<MenuItem>>> load(
+      Map<String, dynamic> body,
+    ) async {
+      final api = ApiClient(backend: _FixedBackend(body));
+      return (await api.visitingChefs().toList()).last;
+    }
+
+    testWidgets('a first run outage does not say updated just now', (
+      tester,
+    ) async {
+      // What LocalBackend sends when nothing ever held chefs: stale, no time.
+      final result = (await tester.runAsync(
+        () => load({
+          'data': <dynamic>[],
+          'stale': true,
+          'last_updated': null,
+          'availability': 'unavailable',
+          'next': null,
+        }),
+      ))!;
+      // The path really does stamp the response with now and call it stale.
+      expect(result.state, DataState.stale);
+      expect(result.fetchedAt, isNotNull);
+
+      await _pump(
+        tester,
+        result: result,
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 1,
+      );
+      expect(find.text('Menus unavailable'), findsOneWidget);
+      expect(find.text('Never updated'), findsOneWidget);
+      expect(find.textContaining('updated just now'), findsNothing);
+    });
+
+    testWidgets('a real source time is the age shown in the header', (
+      tester,
+    ) async {
+      final at = DateTime.now().subtract(const Duration(minutes: 40)).toUtc();
+      final result = (await tester.runAsync(
+        () => load({
+          'data': <dynamic>[],
+          'stale': true,
+          'last_updated': at.toIso8601String(),
+          'availability': 'unavailable',
+        }),
+      ))!;
+      await _pump(
+        tester,
+        result: result,
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 1,
+      );
+      expect(find.text('updated 40m ago'), findsOneWidget);
+      expect(find.text('Updated 40m ago'), findsOneWidget);
+      expect(find.textContaining('just now'), findsNothing);
     });
   });
 
