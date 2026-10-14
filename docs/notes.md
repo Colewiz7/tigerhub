@@ -837,3 +837,12 @@ Recorded by Claude as arbiter. These are settled unless the owner reopens them.
    out of scope. CI keeps a debug APK building.
 9. **Not submitting until** the owner decides about asking RIT for written
    permission, and the per source terms audit (5.2.2) has its own PR.
+
+## Campus safety contact verification, 2026-10-14
+
+- [RIT Public Safety](https://www.rit.edu/publicsafety/) lists emergency calls
+  at 585-475-3333, general calls at 585-475-2853, and text at 585-205-8333.
+  The text number was already in the Campus list, but its action used `tel:`;
+  it now uses `sms:`.
+- [RIT Information and Technology Services support](https://www.rit.edu/its/support)
+  labels 585-475-5000 as the RIT Service Center call number.
