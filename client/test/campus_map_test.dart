@@ -1,4 +1,7 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/data/campus_paths.dart';
@@ -374,6 +377,302 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
   });
 
+  testWidgets('zoom controls reach 20x and stop there', (tester) async {
+    await tester.pumpWidget(app());
+    final viewer = tester.widget<InteractiveViewer>(
+      find.byType(InteractiveViewer),
+    );
+    final controller = viewer.transformationController!;
+
+    expect(viewer.maxScale, 20);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.remove_rounded),
+          )
+          .onPressed,
+      isNull,
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom in'));
+      await tester.pump();
+    }
+
+    expect(controller.value.getMaxScaleOnAxis(), 20);
+    expect(find.text('20×'), findsOneWidget);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.add_rounded),
+          )
+          .onPressed,
+      isNull,
+    );
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom out'));
+      await tester.pump();
+    }
+    expect(controller.value.getMaxScaleOnAxis(), 1);
+    expect(
+      tester
+          .widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.remove_rounded),
+          )
+          .onPressed,
+      isNull,
+    );
+  });
+
+  testWidgets('zoom keeps the viewer gesture child widget', (tester) async {
+    await tester.pumpWidget(app());
+    final gesture = find.byWidgetPredicate(
+      (widget) => widget is GestureDetector && widget.onDoubleTap != null,
+    );
+    final before = tester.widget<GestureDetector>(gesture);
+    await tester.tap(find.byTooltip('Zoom in'));
+    await tester.pump();
+    expect(identical(tester.widget<GestureDetector>(gesture), before), isTrue);
+  });
+
+  testWidgets('pan margin stays 80 screen pixels from 1x through 20x', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    InteractiveViewer viewer() =>
+        tester.widget<InteractiveViewer>(find.byType(InteractiveViewer));
+    expect(viewer().boundaryMargin.left, 80);
+
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom in'));
+      await tester.pump();
+    }
+
+    expect(viewer().transformationController!.value.getMaxScaleOnAxis(), 20);
+    expect(viewer().boundaryMargin.left * 20, closeTo(80, 0.01));
+  });
+
+  testWidgets('searching an edge place does not snap on a tiny scroll', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    await tester.tap(find.byTooltip('Search campus places (Ctrl+F)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'West fountain');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, 'West fountain'));
+    await tester.pumpAndSettle();
+
+    final viewer = find.byType(InteractiveViewer);
+    final controller = tester
+        .widget<InteractiveViewer>(viewer)
+        .transformationController!;
+    expect(controller.value.getMaxScaleOnAxis(), 2.4);
+    final center = tester.getSize(viewer).center(Offset.zero);
+    final before = controller.toScene(center);
+    await tester.sendEventToBinding(
+      PointerScrollEvent(
+        position: tester.getTopLeft(viewer) + center,
+        scrollDelta: const Offset(0, -1),
+      ),
+    );
+    await tester.pump();
+
+    expect((controller.toScene(center) - before).distance, lessThan(2));
+  });
+
+  testWidgets('scroll zoom keeps its focal point through 20x', (tester) async {
+    await tester.pumpWidget(app());
+    final viewer = find.byType(InteractiveViewer);
+    final controller = tester
+        .widget<InteractiveViewer>(viewer)
+        .transformationController!;
+    final focal = tester.getTopLeft(viewer) + const Offset(250, 180);
+    final localFocal = focal - tester.getTopLeft(viewer);
+    final scenePoint = controller.toScene(localFocal);
+
+    for (var i = 0; i < 9; i++) {
+      await tester.sendEventToBinding(
+        PointerScrollEvent(position: focal, scrollDelta: const Offset(0, -80)),
+      );
+      await tester.pump();
+      expect(
+        (controller.toScene(localFocal) - scenePoint).distance,
+        lessThan(2),
+        reason: 'scroll step $i at ${controller.value.getMaxScaleOnAxis()}x',
+      );
+    }
+    expect(controller.value.getMaxScaleOnAxis(), 20);
+  });
+
+  testWidgets(
+    'button and double tap zoom keep the viewport center through 20x',
+    (tester) async {
+      await tester.pumpWidget(app());
+      final viewer = find.byType(InteractiveViewer);
+      final controller = tester
+          .widget<InteractiveViewer>(viewer)
+          .transformationController!;
+      final center = tester.getSize(viewer).center(Offset.zero);
+      final scenePoint = controller.toScene(center);
+
+      for (var i = 0; i < 4; i++) {
+        await tester.tap(find.byTooltip('Zoom in'));
+        await tester.pump();
+        expect((controller.toScene(center) - scenePoint).distance, lessThan(2));
+      }
+      for (var i = 0; i < 4; i++) {
+        await tester.tapAt(tester.getTopLeft(viewer) + center);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tapAt(tester.getTopLeft(viewer) + center);
+        await tester.pump(const Duration(milliseconds: 400));
+        expect((controller.toScene(center) - scenePoint).distance, lessThan(2));
+      }
+      expect(controller.value.getMaxScaleOnAxis(), 20);
+    },
+  );
+
+  testWidgets('trackpad pinch keeps its focal point through 20x', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    final viewer = find.byType(InteractiveViewer);
+    final controller = tester
+        .widget<InteractiveViewer>(viewer)
+        .transformationController!;
+    final focal = tester.getTopLeft(viewer) + const Offset(250, 180);
+    final localFocal = focal - tester.getTopLeft(viewer);
+    final scenePoint = controller.toScene(localFocal);
+
+    for (var i = 0; i < 9; i++) {
+      await tester.sendEventToBinding(
+        PointerScaleEvent(position: focal, scale: 1.5),
+      );
+      await tester.pump();
+      expect(
+        (controller.toScene(localFocal) - scenePoint).distance,
+        lessThan(2),
+        reason: 'pinch step $i at ${controller.value.getMaxScaleOnAxis()}x',
+      );
+    }
+    expect(controller.value.getMaxScaleOnAxis(), 20);
+  });
+
+  testWidgets('zooming out from a panned corner does not snap on scroll', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    final viewer = find.byType(InteractiveViewer);
+    final controller = tester
+        .widget<InteractiveViewer>(viewer)
+        .transformationController!;
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom in'));
+      await tester.pump();
+    }
+    await tester.drag(viewer, const Offset(-4000, -4000));
+    await tester.pumpAndSettle();
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom out'));
+      await tester.pump();
+    }
+
+    final center = tester.getSize(viewer).center(Offset.zero);
+    final before = controller.toScene(center);
+    await tester.sendEventToBinding(
+      PointerScrollEvent(
+        position: tester.getTopLeft(viewer) + center,
+        scrollDelta: const Offset(0, -1),
+      ),
+    );
+    await tester.pump();
+    expect((controller.toScene(center) - before).distance, lessThan(2));
+  });
+
+  testWidgets('double tap and keyboard zoom can pass 5x', (tester) async {
+    await tester.pumpWidget(app());
+    final controller = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!;
+
+    for (var i = 0; i < 4; i++) {
+      await tester.tap(find.byType(InteractiveViewer));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.byType(InteractiveViewer));
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+    expect(controller.value.getMaxScaleOnAxis(), greaterThan(5));
+
+    final mapFocus = tester.widget<Focus>(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Focus && widget.focusNode?.debugLabel == 'Campus map',
+      ),
+    );
+    mapFocus.focusNode!.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.equal);
+    await tester.pump();
+    expect(controller.value.getMaxScaleOnAxis(), greaterThan(7));
+  });
+
+  test('map tap radius stays near a pin at 20x', () {
+    final projection = CampusMapProjection(const [
+      west,
+      east,
+    ], const Size(800, 600));
+    final pin = projection.project(west.anchor!);
+
+    expect(projection.nearest(pin + const Offset(1, 0), zoom: 20), west);
+    expect(projection.nearest(pin + const Offset(2, 0), zoom: 20), isNull);
+    expect(projection.nearest(pin + const Offset(27, 0)), west);
+    expect(projection.nearest(pin + const Offset(28, 0)), isNull);
+  });
+
+  testWidgets('tap hit testing uses the live 20x transform', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.tap(find.text('Water fountains'));
+    await tester.pumpAndSettle();
+    final controller = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!;
+    for (var i = 0; i < 10; i++) {
+      await tester.tap(find.byTooltip('Zoom in'));
+      await tester.pump();
+    }
+    expect(controller.value.getMaxScaleOnAxis(), 20);
+
+    final viewer = find.byType(InteractiveViewer);
+    final size = tester.getSize(viewer);
+    final pin = CampusMapProjection(const [
+      west,
+      east,
+    ], size).project(west.anchor!);
+    final detector = tester.widget<GestureDetector>(
+      find.descendant(
+        of: viewer,
+        matching: find.byWidgetPredicate(
+          (widget) => widget is GestureDetector && widget.onTapUp != null,
+        ),
+      ),
+    );
+    detector.onTapUp!(
+      TapUpDetails(
+        localPosition: pin + const Offset(2, 0),
+        kind: PointerDeviceKind.touch,
+      ),
+    );
+    await tester.pump();
+    expect(find.byTooltip('Close details'), findsNothing);
+    detector.onTapUp!(
+      TapUpDetails(
+        localPosition: pin + const Offset(1, 0),
+        kind: PointerDeviceKind.touch,
+      ),
+    );
+    await tester.pump();
+    expect(find.byTooltip('Close details'), findsOneWidget);
+  });
+
   testWidgets('selecting the list shows useful place details', (tester) async {
     await tester.pumpWidget(app());
     await tester.tap(find.text('Defibrillators'));
@@ -404,6 +703,93 @@ void main() {
 
     westPin.properties.onTap!();
     expect(selected, west);
+  });
+
+  test('pin semantics keep a 48 point screen target from 1x to 20x', () {
+    CampusMapPainter at(double zoom) => CampusMapPainter(
+      features: const [west],
+      selectedId: null,
+      scheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+      zoom: zoom,
+    );
+
+    expect(
+      at(1).semanticsBuilder(const Size(800, 500)).single.rect.width,
+      closeTo(48, 0.01),
+    );
+    expect(
+      at(20).semanticsBuilder(const Size(800, 500)).single.rect.width * 20,
+      closeTo(48, 0.01),
+    );
+  });
+
+  test('pin semantics rebuild only after a quarter step of zoom', () {
+    CampusMapPainter at(double zoom) => CampusMapPainter(
+      features: const [west],
+      selectedId: null,
+      scheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+      zoom: zoom,
+    );
+
+    expect(at(20).shouldRebuildSemantics(at(20.01)), isFalse);
+    expect(at(20).shouldRebuildSemantics(at(19.7)), isTrue);
+  });
+
+  test('cached pin paint matches a fresh layout at 1x and 20x', () async {
+    const nearby = CampusMapFeature(
+      id: 4,
+      kind: 'water',
+      kindName: 'Water fountains',
+      name: 'Nearby fountain',
+      geometryType: 'Point',
+      coordinates: [
+        [GeoCoordinate(-77.6796, 43.08)],
+      ],
+    );
+    final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFF76902));
+    const size = Size(240, 160);
+    final cachedPainter = CampusMapPainter(
+      features: const [west, nearby],
+      boundsFeatures: const [west, east],
+      selectedId: null,
+      scheme: scheme,
+      zoom: 20,
+    );
+    expect(
+      identical(
+        cachedPainter.pinLayoutForTest(size),
+        cachedPainter.pinLayoutForTest(size),
+      ),
+      isTrue,
+    );
+    Future<List<int>> pixels(double zoom) async {
+      final recorder = ui.PictureRecorder();
+      final painter = CampusMapPainter(
+        features: const [west, nearby],
+        boundsFeatures: const [west, east],
+        selectedId: null,
+        scheme: scheme,
+        zoom: zoom,
+      );
+      painter.paint(Canvas(recorder), size);
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(240, 160);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      image.dispose();
+      picture.dispose();
+      return bytes!.buffer.asUint8List();
+    }
+
+    final first = await pixels(1);
+    expect(await pixels(1), orderedEquals(first));
+    CampusMapPainter.resetGeometryCacheForTest();
+    expect(await pixels(1), orderedEquals(first));
+
+    final close = await pixels(20);
+    expect(close, isNot(orderedEquals(first)));
+    expect(await pixels(20), orderedEquals(close));
+    CampusMapPainter.resetGeometryCacheForTest();
+    expect(await pixels(20), orderedEquals(close));
   });
 
   testWidgets('priming uses the shared skeleton', (tester) async {
