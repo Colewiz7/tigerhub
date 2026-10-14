@@ -33,7 +33,7 @@ void main() {
 
     expect(find.byType(ScallopedBadge), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
-    expect(find.text('CHEFS TODAY'), findsOneWidget);
+    expect(find.text('CHEFS'), findsOneWidget);
   });
 
   testWidgets('the chefs card fills the box it is given', (tester) async {
