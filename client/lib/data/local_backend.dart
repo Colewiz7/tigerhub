@@ -33,6 +33,7 @@ import 'sources/fd_menus.dart';
 import 'sources/makerspace.dart';
 import 'sources/maps_occupancy.dart';
 import 'sources/recreation.dart';
+import 'sources/rit_chefs.dart';
 import 'sources/tigercenter.dart';
 import 'static_config.dart';
 import 'store.dart';
@@ -129,6 +130,13 @@ class LocalBackend implements Backend {
       name: 'tigercenter_dining',
       cadence: const Duration(minutes: 60),
       scrape: (ctx) => scrapeDining(ctx.http),
+    ),
+    ritChefsSource: SourceSpec(
+      name: ritChefsSource,
+      // Two small pages. Half an hour is as often as anyone needs a chef
+      // list refreshed and as often as this should ask rit.edu.
+      cadence: const Duration(minutes: 30),
+      scrape: (ctx) => scrapeRitChefs(ctx.http, previous: ctx.previous),
     ),
     campusGroupsSource: SourceSpec(
       name: campusGroupsSource,
@@ -320,10 +328,10 @@ class LocalBackend implements Backend {
       case '/dining':
         return _dining(query);
       case '/dining/visiting-chefs':
-        return _menuCategory(visitingChef);
+        return _visitingChefs();
       case '/dining/specials':
         // Everything on today's menu, not a category called "Special".
-        return _menuCategory(null);
+        return _specials();
       case '/events':
         return _events(query);
       case '/events/organizers':
@@ -394,12 +402,52 @@ class LocalBackend implements Backend {
     return _envelope('tigercenter_dining', data, fetchedAt);
   }
 
-  Future<Map<String, dynamic>> _menuCategory(String? category) async {
+  /// Everything TigerCenter publishes for today. No other source has specials,
+  /// so when every `menus[]` is empty this says unavailable rather than
+  /// pretending it is a quiet day.
+  Future<Map<String, dynamic>> _specials() async {
     final (snapshot, fetchedAt) = await _snapshot('tigercenter_dining');
     final data = snapshot == null
         ? const <Map<String, dynamic>>[]
-        : menuItemsWithCategory(snapshot, category);
-    return _envelope('tigercenter_dining', data, fetchedAt);
+        : menuItemsWithCategory(snapshot, null);
+    return {
+      ..._envelope('tigercenter_dining', data, fetchedAt),
+      'availability': data.isNotEmpty
+          ? availabilityAvailable
+          : tigerCenterMenusEmpty(snapshot)
+          ? availabilityUnavailable
+          : availabilityEmpty,
+    };
+  }
+
+  /// Visiting chefs from rit.edu and TigerCenter, merged (see
+  /// `visitingChefsView`). Freshness is the newest of the two snapshots, and
+  /// stale only when both are.
+  Future<Map<String, dynamic>> _visitingChefs() async {
+    final (tigerCenter, tcAt) = await _snapshot('tigercenter_dining');
+    final (rit, ritAt) = await _snapshot(ritChefsSource);
+
+    final view = visitingChefsView(
+      tigerCenter: tigerCenter,
+      rit: rit,
+      now: CampusTime.nowUtc(),
+    );
+
+    final stamps = <(String, DateTime)>[
+      if (tcAt != null) ('tigercenter_dining', tcAt),
+      if (ritAt != null) (ritChefsSource, ritAt),
+    ]..sort((a, b) => b.$2.compareTo(a.$2));
+    final newest = stamps.isEmpty ? null : stamps.first;
+
+    return {
+      ..._envelope(
+        newest?.$1 ?? ritChefsSource,
+        view['items'] as List<dynamic>,
+        newest?.$2,
+      ),
+      'availability': view['availability'],
+      'next': view['next'],
+    };
   }
 
   /// Every event from all three feeds, with the freshness of the merged view.
