@@ -151,6 +151,11 @@ String? _clock(String token) {
       'end': text.end,
     });
   }
+  // Chef markup is present but none of it matched. That is the page changing
+  // under the parser, which must not read as a quiet day.
+  if (chefs.isEmpty && (section.contains('chefid') || section.contains('<li'))) {
+    return (found: false, chefs: const []);
+  }
   return (found: true, chefs: chefs);
 }
 
@@ -191,8 +196,13 @@ Map<String, Map<String, dynamic>> parseChefSchedule(String html) {
         if (name.isNotEmpty) chefs.add({'name': name, 'location_name': location});
       }
     }
+    // Empty is only ever what the page says, `p.no-visiting-chefs`. A day with
+    // neither that marker nor a parsed chef is a block the parser could not
+    // read, and it is kept as `unknown` so it cannot confirm a quiet day.
+    final marked = RegExp(r'class="[^"]*\bno-visiting-chefs\b').hasMatch(body);
     out[day['date'] as String] = {
-      'empty': chefs.isEmpty,
+      'empty': chefs.isEmpty && marked,
+      'unknown': chefs.isEmpty && !marked,
       'chefs': chefs,
     };
   }
@@ -202,31 +212,78 @@ Map<String, Map<String, dynamic>> parseChefSchedule(String html) {
 // --- scrape ------------------------------------------------------------
 
 /// Both pages, each tolerated failing on its own. Whichever part fails keeps
-/// the previous snapshot's copy, and only both failing is an error, so a
-/// single page changing shape does not take the other down with it.
+/// the previous snapshot's copy, so cached chefs still show, but is marked
+/// failed (`today_ok`, `schedule_ok`) so that copy cannot confirm a quiet day.
+/// `today_at` and `schedule_at` are when each part last really succeeded.
+///
+/// Never throws: a total failure is recorded in the snapshot too, because
+/// leaving the old snapshot untouched would leave its "ok" flags standing.
 Future<Map<String, dynamic>> scrapeRitChefs(
   Upstream http, {
   Map<String, dynamic>? previous,
 }) async {
-  final today = CampusTime.formatDate(CampusTime.nowUtc());
+  final now = CampusTime.nowUtc();
+  final today = CampusTime.formatDate(now);
   Map<String, dynamic>? todayPart = previous?['today'] as Map<String, dynamic>?;
   Map<String, dynamic>? schedule = previous?['schedule'] as Map<String, dynamic>?;
-  var failures = 0;
+  var todayAt = previous?['today_at'];
+  var scheduleAt = previous?['schedule_at'];
+  var todayOk = false;
+  var scheduleOk = false;
 
   try {
     final parsed = parseTodayChefs(await http.getText(ritMenusUrl));
     todayPart = {'date': today, 'found': parsed.found, 'chefs': parsed.chefs};
+    todayAt = CampusTime.format(now);
+    todayOk = true;
   } on UpstreamError {
-    failures++;
+    // Kept as previous, flagged failed below.
   }
   try {
     schedule = parseChefSchedule(await http.getText(ritVisitingChefsUrl));
+    scheduleAt = CampusTime.format(now);
+    scheduleOk = true;
   } on UpstreamError {
-    failures++;
+    // Kept as previous, flagged failed below.
   }
 
-  if (failures == 2) throw UpstreamError('rit.edu chefs pages unreachable');
-  return {'service_date': today, 'today': todayPart, 'schedule': schedule};
+  return {
+    'service_date': today,
+    'today': todayPart,
+    'schedule': schedule,
+    'today_ok': todayOk,
+    'schedule_ok': scheduleOk,
+    'today_at': todayAt,
+    'schedule_at': scheduleAt,
+  };
+}
+
+/// Whether the last scrape failed to read either page. Such a snapshot is
+/// retried sooner than its cadence and may be pulled at the global floor.
+bool ritChefsFailed(Map<String, dynamic> snapshot) =>
+    snapshot['today_ok'] == false || snapshot['schedule_ok'] == false;
+
+DateTime? _stamp(Object? raw) =>
+    raw is String ? DateTime.tryParse(raw)?.toUtc() : null;
+
+/// When this feed last held real chef information. A TigerCenter snapshot
+/// whose every `menus[]` is empty is not that, so a first run outage reports
+/// null rather than the moment the failed fetch happened.
+DateTime? chefsLastUpdated({
+  required Map<String, dynamic>? tigerCenter,
+  required DateTime? tigerCenterAt,
+  required Map<String, dynamic>? rit,
+  required DateTime now,
+}) {
+  final stamps = <DateTime>[
+    ?_stamp(rit?['today_at']),
+    ?_stamp(rit?['schedule_at']),
+    if (tigerCenterAt != null &&
+        tigerCenter?['service_date'] == CampusTime.formatDate(now) &&
+        !tigerCenterMenusEmpty(tigerCenter))
+      tigerCenterAt.toUtc(),
+  ]..sort();
+  return stamps.isEmpty ? null : stamps.last;
 }
 
 // --- projection --------------------------------------------------------
@@ -262,9 +319,12 @@ bool tigerCenterMenusEmpty(Map<String, dynamic>? snapshot) {
 /// Today's visiting chefs from both sources, and how sure we are.
 ///
 ///  - **available**: at least one chef.
-///  - **empty**: a source that is working says there are none.
-///  - **unavailable**: TigerCenter has no menus anywhere and rit.edu could not
-///    be read for today. Showing "no visiting chefs" there would be a guess.
+///  - **empty**: a source whose last read succeeded says there are none, by an
+///    explicit marker or a parsed page.
+///  - **unavailable**: nothing that is currently working can say. TigerCenter
+///    has no menus for today, and rit.edu is unread, unreadable, failed on its
+///    last attempt, or from another day. Showing "no visiting chefs" there
+///    would be a guess.
 ///
 /// rit.edu `/dining/menus` wins for today because it has the times. The
 /// schedule page fills in when that block is missing or empty, and TigerCenter
@@ -285,11 +345,20 @@ Map<String, dynamic> visitingChefsView({
   }
 
   final menusPart = rit?['today'] as Map<String, dynamic>?;
+  // Cached chefs keep showing whatever happened since, but only a source
+  // whose last attempt succeeded may say "none today".
   final menusToday = menusPart != null &&
       menusPart['date'] == today &&
       menusPart['found'] == true;
+  final menusConfirms = menusToday && rit?['today_ok'] != false;
   final schedule = rit?['schedule'] as Map<String, dynamic>?;
-  final scheduleToday = schedule?[today] as Map<String, dynamic>?;
+  var scheduleToday = schedule?[today] as Map<String, dynamic>?;
+  // A day block the parser could not read says nothing, either way.
+  if (scheduleToday?['unknown'] == true) scheduleToday = null;
+  final scheduleConfirms = scheduleToday != null && rit?['schedule_ok'] != false;
+
+  // TigerCenter's snapshot is a day's payload. Yesterday's chef is not today's.
+  final tcToday = tigerCenter?['service_date'] == today ? tigerCenter : null;
 
   final items = <Map<String, dynamic>>[];
   var nextId = 1000000;
@@ -337,7 +406,7 @@ Map<String, dynamic> visitingChefsView({
   final seen = {
     for (final i in items) key(i['location_id'], i['location_name'], i['name']),
   };
-  for (final tc in menuItemsWithCategory(tigerCenter ?? const {}, visitingChef)) {
+  for (final tc in menuItemsWithCategory(tcToday ?? const {}, visitingChef)) {
     if (!seen.add(key(tc['location_id'], tc['location_name'], tc['name']))) {
       continue;
     }
@@ -348,8 +417,7 @@ Map<String, dynamic> visitingChefsView({
     return {'items': items, 'availability': availabilityAvailable};
   }
 
-  final ritKnowsToday = menusToday || scheduleToday != null;
-  if (!tigerCenterMenusEmpty(tigerCenter) || ritKnowsToday) {
+  if (!tigerCenterMenusEmpty(tcToday) || menusConfirms || scheduleConfirms) {
     return {
       'items': items,
       'availability': availabilityEmpty,

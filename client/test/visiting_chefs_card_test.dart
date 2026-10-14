@@ -13,6 +13,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/cards/visiting_chefs_card.dart';
@@ -20,6 +21,7 @@ import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/widgets/scalloped_badge.dart';
 
 final DateTime _checked = DateTime.now().subtract(const Duration(minutes: 5));
 
@@ -175,8 +177,8 @@ void main() {
     ) async {
       await pumpState(tester, 'available');
       expect(find.text('KO-BQ'), findsOneWidget);
-      expect(find.textContaining('11:00 AM to 2:00 PM'), findsOneWidget);
-      expect(find.textContaining('4:00 PM to 7:00 PM'), findsOneWidget);
+      expect(find.text('11 AM to 2 PM'), findsOneWidget);
+      expect(find.text('4 PM to 7 PM'), findsOneWidget);
       // No time published, so none is shown and none is invented.
       expect(find.text('Kitchen at Brick City'), findsOneWidget);
       expect(find.text('Menus unavailable'), findsNothing);
@@ -226,6 +228,106 @@ void main() {
       expect(find.text('Next: Tomorrow · KO-BQ at RITZ'), findsOneWidget);
     });
 
+    testWidgets('the time and location are shown whole, not ellipsised', (
+      tester,
+    ) async {
+      await pumpState(tester, 'available');
+      for (final scale in [1.0, 2.0]) {
+        await _pump(
+          tester,
+          result: _states['available']!,
+          size: const Size(390, 844),
+          brightness: Brightness.light,
+          scale: scale,
+        );
+        for (final text in ['11 AM to 2 PM', 'The Cafe & Market at Crossroads']) {
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.text(text),
+          );
+          expect(paragraph.didExceedMaxLines, isFalse, reason: '$text at $scale');
+        }
+      }
+    });
+
+    testWidgets('the badge caption is one word', (tester) async {
+      await pumpState(tester, 'available');
+      expect(find.text('CHEFS'), findsOneWidget);
+      expect(find.text('CHEFS TODAY'), findsNothing);
+    });
+
+    testWidgets('at large text the count moves out of the header', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        result: _states['available']!,
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 2,
+      );
+      expect(find.byType(ScallopedBadge), findsNothing);
+      expect(find.text('3 chefs today'), findsOneWidget);
+    });
+
+    testWidgets('chefs that do not fit are counted as "+N more"', (
+      tester,
+    ) async {
+      final many = [
+        for (var i = 0; i < 6; i++)
+          MenuItem(id: i, name: 'Chef $i', locationName: 'RITZ'),
+      ];
+      await _pump(
+        tester,
+        result: Result(
+          value: ChefCollection(data: many, stale: false),
+          state: DataState.ok,
+        ),
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 2,
+      );
+      expect(find.textContaining(RegExp(r'^\+\d+ more$')), findsOneWidget);
+      expect(find.textContaining('chefs'), findsOneWidget,
+          reason: 'only the "6 chefs today" line, never "+N chefs"');
+
+      await _pump(
+        tester,
+        result: Result(
+          value: ChefCollection(data: many.take(3).toList(), stale: false),
+          state: DataState.ok,
+        ),
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 2,
+        height: 520,
+      );
+      expect(find.text('+1 chefs'), findsNothing);
+    });
+
+    testWidgets('a first run outage says Never updated, not just now', (
+      tester,
+    ) async {
+      // The fetch that failed just ran, so the result's own time is now.
+      await _pump(
+        tester,
+        result: Result(
+          value: const ChefCollection(
+            data: [],
+            stale: false,
+            availability: Availability.unavailable,
+          ),
+          state: DataState.ok,
+          fetchedAt: DateTime.now(),
+        ),
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 1,
+      );
+      expect(find.text('Menus unavailable'), findsOneWidget);
+      expect(find.text('Never updated'), findsOneWidget);
+      expect(find.textContaining('just now'), findsNothing);
+    });
+
     testWidgets('unavailable is not the empty state', (tester) async {
       await pumpState(tester, 'unavailable');
       expect(find.text('Menus unavailable'), findsOneWidget);
@@ -239,11 +341,6 @@ void main() {
   // that draws an overflow stripe, so pumping is the assertion.
   for (final scale in [1.0, 2.0]) {
     for (final state in _states.keys) {
-      // Known and not from this change: at 2x a compact card's header (title,
-      // badge) plus the list's "+N more" footer is taller than the card, and
-      // rows are fixed height, so the chef rows cannot be the cause. It lives
-      // in card_shell.dart / bounded_list.dart, owned by other branches.
-      if (scale == 2.0 && state == 'available') continue;
       testWidgets('$state fits a compact card at ${scale}x', (tester) async {
         await _pump(
           tester,

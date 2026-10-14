@@ -43,10 +43,14 @@ Map<String, dynamic> ritSnapshot({
   String? menusHtml,
   String? scheduleHtml,
   String date = '2026-10-14',
+  bool todayOk = true,
+  bool scheduleOk = true,
 }) {
   final menus = menusHtml == null ? null : parseTodayChefs(menusHtml);
   return {
     'service_date': date,
+    'today_ok': todayOk,
+    'schedule_ok': scheduleOk,
     'today': menus == null
         ? null
         : {'date': date, 'found': menus.found, 'chefs': menus.chefs},
@@ -299,6 +303,114 @@ void main() {
     });
   });
 
+  group('review blockers', () {
+    test('yesterday\'s TigerCenter chef is not today\'s (day rollover)', () {
+      final yesterday = tigerCenter(withChef: true)
+        ..['service_date'] = '2026-10-13';
+      final view = visitingChefsView(
+        tigerCenter: yesterday,
+        rit: null,
+        now: today,
+      );
+      expect(view['items'], isEmpty);
+      expect(view['availability'], availabilityUnavailable,
+          reason: 'a day old payload cannot confirm today either');
+
+      final sameDay = visitingChefsView(
+        tigerCenter: tigerCenter(withChef: true),
+        rit: null,
+        now: today,
+      );
+      expect((sameDay['items'] as List).length, 1);
+    });
+
+    test('cached chefs still show when both reads failed, but empty does not',
+        () {
+      final cachedChefs = visitingChefsView(
+        tigerCenter: tigerCenter(),
+        rit: ritSnapshot(
+          menusHtml: fixture('rit_dining_menus.html'),
+          todayOk: false,
+          scheduleOk: false,
+        ),
+        now: today,
+      );
+      expect(cachedChefs['availability'], availabilityAvailable);
+
+      final cachedEmpty = visitingChefsView(
+        tigerCenter: tigerCenter(),
+        rit: ritSnapshot(
+          scheduleHtml: fixture('rit_visiting_chefs.html'),
+          menusHtml: "<h2>Today's Visiting Chefs</h2><script></script>",
+          todayOk: false,
+          scheduleOk: false,
+        ),
+        now: DateTime.utc(2026, 10, 17, 16),
+      );
+      expect(cachedEmpty['availability'], availabilityUnavailable);
+    });
+
+    test('a day block the parser cannot read is unknown, not empty', () {
+      const html = '''
+<div class="daily-visiting-chefs" id="day-2026-10-14">
+  <h3>Today's Visiting Chefs</h3>
+  <section><b>RITZ</b><ol><li>KO-BQ</li></ol></section>
+</div>
+<div class="daily-visiting-chefs" id="day-2026-10-15">
+  <h3>Visiting Chefs for Thu, Oct 15</h3>
+  <p class="no-visiting-chefs">Come visit again</p>
+</div>''';
+      final days = parseChefSchedule(html);
+      expect(days['2026-10-14']!['unknown'], isTrue);
+      expect(days['2026-10-14']!['empty'], isFalse);
+      expect(days['2026-10-15']!['empty'], isTrue);
+      expect(days['2026-10-15']!['unknown'], isFalse);
+
+      final view = visitingChefsView(
+        tigerCenter: tigerCenter(),
+        rit: {
+          'service_date': '2026-10-14',
+          'today': null,
+          'schedule': days,
+        },
+        now: today,
+      );
+      expect(view['availability'], availabilityUnavailable);
+    });
+
+    test('chef markup that stops matching under the heading is not found', () {
+      final parsed = parseTodayChefs(
+        '<h2>Today\'s Visiting Chefs</h2><ul><li><a chefid="x">?</a></li></ul>'
+        '<script></script>',
+      );
+      expect(parsed.found, isFalse);
+    });
+
+    test('the live fixture days still read as confirmed empty and chefs', () {
+      final days = parseChefSchedule(fixture('rit_visiting_chefs.html'));
+      expect(days.values.where((d) => d['unknown'] == true), isEmpty);
+    });
+
+    test('last updated is null when no source ever held chefs', () {
+      expect(
+        chefsLastUpdated(
+          tigerCenter: tigerCenter(),
+          tigerCenterAt: DateTime.utc(2026, 10, 14, 15),
+          rit: null,
+          now: today,
+        ),
+        isNull,
+      );
+      final stamp = chefsLastUpdated(
+        tigerCenter: tigerCenter(),
+        tigerCenterAt: null,
+        rit: {'today_at': '2026-10-14T11:00:00-04:00'},
+        now: today,
+      );
+      expect(stamp, DateTime.utc(2026, 10, 14, 15));
+    });
+  });
+
   group('category match', () {
     final snapshot = <String, dynamic>{
       'service_date': '2026-10-14',
@@ -368,7 +480,10 @@ void main() {
     LocalBackend? backend;
     late Map<String, int> hits;
 
-    LocalBackend build(Map<String, http.Response> pages) {
+    LocalBackend build(
+      Map<String, http.Response> pages, {
+      DateTime Function()? clock,
+    }) {
       final dir = temp = Directory.systemTemp.createTempSync('tigerhub-chefs');
       JsonStore.overrideForTesting(dir);
       hits = {};
@@ -382,6 +497,7 @@ void main() {
           maxRetries: 1,
         ),
         store: JsonStore.overrideForTestingInstance,
+        clock: clock,
       );
     }
 
@@ -424,6 +540,94 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(hits[ritMenusUrl], 1);
       expect(hits[ritVisitingChefsUrl], 1);
+    });
+
+    Map<String, http.Response> livePages({String? menus}) => {
+      tcUrl: http.Response(fixture('tc_dining_all_empty_menus.json'), 200),
+      ritMenusUrl: http.Response(menus ?? fixture('rit_dining_menus.html'), 200),
+      ritVisitingChefsUrl:
+          http.Response(fixture('rit_visiting_chefs.html'), 200),
+    };
+
+    test('pull to refresh keeps rit.edu to thirty minutes, then refetches',
+        () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      var now = DateTime.utc(2026, 10, 14, 16);
+      final start = now;
+      backend = build(livePages(), clock: () => now);
+
+      await backend!.fetch('/dining/visiting-chefs');
+      expect(hits[ritMenusUrl], 1);
+      expect(hits[tcUrl], 1);
+
+      // Pulling again and again inside half an hour, past the global one
+      // minute floor, still never reaches rit.edu.
+      for (final minutes in [0, 2, 5, 12, 29]) {
+        now = start.add(Duration(minutes: minutes));
+        await backend!.refreshNow();
+      }
+      expect(hits[ritMenusUrl], 1, reason: 'inside thirty minutes');
+      expect(hits[ritVisitingChefsUrl], 1);
+      expect(hits[tcUrl], greaterThan(1),
+          reason: 'other sources keep the one minute floor');
+
+      now = start.add(const Duration(minutes: 31));
+      await backend!.refreshNow();
+      expect(hits[ritMenusUrl], 2, reason: 'a pull after thirty minutes');
+      expect(hits[ritVisitingChefsUrl], 2);
+
+      // And an ordinary read does not refetch inside the next thirty.
+      now = start.add(const Duration(minutes: 40));
+      await backend!.fetch('/dining/visiting-chefs');
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(hits[ritMenusUrl], 2);
+    });
+
+    test('a failed refresh cannot confirm a quiet day, and is retried soon',
+        () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      // Saturday 10-17 is a day the schedule marks as having no chefs.
+      RitClock.pin(DateTime.utc(2026, 10, 17, 16));
+      var now = DateTime.utc(2026, 10, 17, 16);
+      final start = now;
+      final pages = livePages(
+        menus: "<h2>Today's Visiting Chefs</h2><script></script>",
+      );
+      backend = build(pages, clock: () => now);
+
+      final quiet = await backend!.fetch('/dining/visiting-chefs');
+      expect(quiet['availability'], availabilityEmpty);
+
+      // Both rit.edu pages go down. The cached empty day must not be repeated
+      // as an answer.
+      pages.remove(ritMenusUrl);
+      pages.remove(ritVisitingChefsUrl);
+      now = start.add(const Duration(minutes: 31));
+      await backend!.refreshNow();
+      final down = await backend!.fetch('/dining/visiting-chefs');
+      expect(down['availability'], availabilityUnavailable);
+
+      // A failed snapshot is retried after five minutes, not another thirty.
+      pages.addAll(livePages(
+        menus: "<h2>Today's Visiting Chefs</h2><script></script>",
+      ));
+      final before = hits[ritMenusUrl]!;
+      now = start.add(const Duration(minutes: 33));
+      await backend!.refreshNow();
+      expect(hits[ritMenusUrl], before + 1,
+          reason: 'a failed attempt is pulled at the one minute floor');
+      final back = await backend!.fetch('/dining/visiting-chefs');
+      expect(back['availability'], availabilityEmpty);
+    });
+
+    test('a first run outage has no last updated time', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      backend = build({
+        tcUrl: http.Response(fixture('tc_dining_all_empty_menus.json'), 200),
+      });
+      final chefs = await backend!.fetch('/dining/visiting-chefs');
+      expect(chefs['availability'], availabilityUnavailable);
+      expect(chefs['last_updated'], isNull);
     });
 
     test('both sources down is unavailable, not empty', () async {

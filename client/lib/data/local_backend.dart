@@ -82,10 +82,35 @@ class SourceSpec {
     required this.cadence,
     required this.scrape,
     this.fingerprint,
+    this.manualFloor,
+    this.failed,
+    this.retryAfter = const Duration(minutes: 5),
   });
 
   final String name;
   final Duration cadence;
+
+  /// The shortest gap between two pull-to-refresh fetches of this source, when
+  /// [LocalBackend.manualRefreshFloor] is too short for what it asks of
+  /// upstream. A person pulling repeatedly must not get around the cadence.
+  final Duration? manualFloor;
+
+  /// Whether a stored snapshot records a failed last attempt. A failed source
+  /// is retried after [retryAfter] and may be pulled at the global floor,
+  /// because nothing was fetched that the cadence is protecting.
+  final bool Function(Map<String, dynamic> snapshot)? failed;
+  final Duration retryAfter;
+
+  bool _failedIn(Map<String, dynamic>? snapshot) =>
+      snapshot != null && (failed?.call(snapshot) ?? false);
+
+  Duration cadenceFor(Map<String, dynamic>? snapshot) =>
+      _failedIn(snapshot) ? retryAfter : cadence;
+
+  Duration manualFloorFor(Map<String, dynamic>? snapshot) =>
+      _failedIn(snapshot)
+      ? LocalBackend.manualRefreshFloor
+      : manualFloor ?? LocalBackend.manualRefreshFloor;
   final Future<Map<String, dynamic>> Function(ScrapeContext) scrape;
 
   /// What this source asks upstream for, when that is something the app
@@ -105,10 +130,15 @@ class SourceSpec {
 const int staleGraceMultiplier = 3;
 
 class LocalBackend implements Backend {
-  LocalBackend({Upstream? upstream, this._store})
-    : _http = upstream ?? Upstream();
+  LocalBackend({Upstream? upstream, this._store, DateTime Function()? clock})
+    : _http = upstream ?? Upstream(),
+      _now = clock ?? DateTime.now;
 
   final Upstream _http;
+
+  /// Wall time for cadence decisions. Injected in tests so a thirty minute
+  /// gap does not take thirty minutes.
+  final DateTime Function() _now;
 
   /// Late bound, because opening the store needs an await a constructor
   /// cannot do. Injected directly in tests.
@@ -136,6 +166,10 @@ class LocalBackend implements Backend {
       // Two small pages. Half an hour is as often as anyone needs a chef
       // list refreshed and as often as this should ask rit.edu.
       cadence: const Duration(minutes: 30),
+      // Pull to refresh respects the same thirty minutes. rit.edu is a
+      // website, not an API, and holding the gesture must not hammer it.
+      manualFloor: const Duration(minutes: 30),
+      failed: ritChefsFailed,
       scrape: (ctx) => scrapeRitChefs(ctx.http, previous: ctx.previous),
     ),
     campusGroupsSource: SourceSpec(
@@ -191,11 +225,10 @@ class LocalBackend implements Backend {
       final stale =
           spec.fingerprint != null &&
           await store.fingerprintOf(name) != spec.fingerprint;
-      final held = _memory[name];
-      final age = held?.$2 ?? await store.fetchedAt(name);
+      final held = await _cachedRead(name);
       if (!stale &&
-          age != null &&
-          DateTime.now().difference(age) < spec.cadence) {
+          held != null &&
+          _now().difference(held.$2) < spec.cadenceFor(held.$1)) {
         return;
       }
     }
@@ -205,7 +238,7 @@ class LocalBackend implements Backend {
 
     Future<void> persist(Map<String, dynamic> payload) async {
       await store.write(name, payload, fingerprint: spec.fingerprint);
-      _memory[name] = (payload, DateTime.now());
+      _memory[name] = (payload, _now());
     }
 
     final future = () async {
@@ -265,13 +298,13 @@ class LocalBackend implements Backend {
   /// nothing at all while showing a spinner that said otherwise. A control
   /// that cannot do the thing it depicts is worse than no control.
   Future<void> refreshNow() async {
-    final store = await _openStore();
     await Future.wait([
       for (final name in sources.keys)
         () async {
-          final age = await store.fetchedAt(name);
-          if (age != null &&
-              DateTime.now().difference(age) < manualRefreshFloor) {
+          final held = await _cachedRead(name);
+          if (held != null &&
+              _now().difference(held.$2) <
+                  sources[name]!.manualFloorFor(held.$1)) {
             return;
           }
           await _refreshIfDue(name, force: true);
@@ -301,8 +334,7 @@ class LocalBackend implements Backend {
     if (fetchedAt == null) return true;
     final spec = sources[name];
     if (spec == null) return false;
-    return DateTime.now().difference(fetchedAt) >
-        spec.cadence * staleGraceMultiplier;
+    return _now().difference(fetchedAt) > spec.cadence * staleGraceMultiplier;
   }
 
   Map<String, dynamic> _envelope(
@@ -425,7 +457,7 @@ class LocalBackend implements Backend {
   /// stale only when both are.
   Future<Map<String, dynamic>> _visitingChefs() async {
     final (tigerCenter, tcAt) = await _snapshot('tigercenter_dining');
-    final (rit, ritAt) = await _snapshot(ritChefsSource);
+    final (rit, _) = await _snapshot(ritChefsSource);
 
     final view = visitingChefsView(
       tigerCenter: tigerCenter,
@@ -433,18 +465,17 @@ class LocalBackend implements Backend {
       now: CampusTime.nowUtc(),
     );
 
-    final stamps = <(String, DateTime)>[
-      if (tcAt != null) ('tigercenter_dining', tcAt),
-      if (ritAt != null) (ritChefsSource, ritAt),
-    ]..sort((a, b) => b.$2.compareTo(a.$2));
-    final newest = stamps.isEmpty ? null : stamps.first;
+    // When chefs were last really known, not when a fetch last ran. A failed
+    // first run has no such time, and the card says so.
+    final known = chefsLastUpdated(
+      tigerCenter: tigerCenter,
+      tigerCenterAt: tcAt,
+      rit: rit,
+      now: CampusTime.nowUtc(),
+    );
 
     return {
-      ..._envelope(
-        newest?.$1 ?? ritChefsSource,
-        view['items'] as List<dynamic>,
-        newest?.$2,
-      ),
+      ..._envelope(ritChefsSource, view['items'] as List<dynamic>, known),
       'availability': view['availability'],
       'next': view['next'],
     };
