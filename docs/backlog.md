@@ -418,3 +418,20 @@ own location, not the post office's. Check that before designing the sort.
 `recreation_campus_date_test.dart` catches the old `toLocal()` bug only on
 devices west of UTC (fails under Los Angeles, passes under Tokyo), so run it
 under America/Los_Angeles.
+
+## Dining screen: food trucks, order online, check balance
+
+Data layer is in (`sources/food_trucks.dart`, docs/notes.md 7.11). The UI phase
+is not built.
+
+- A food trucks group on the Dining screen, from `foodTruckView`. Trucks show
+  by date. Empty in season shows one line, "No food trucks scheduled". Empty off
+  season and unavailable hide the group.
+- One "Order online" link to `https://ondemand.rit.edu/`. No per location
+  mobile order marker exists in the dining listing (checked 2026-10-14), so it
+  goes once in the Dining header beside "Check balance". No per location
+  guessing.
+- "Check balance" is a link-out to `https://tigerspend.rit.edu/`. Never ask for
+  or store credentials.
+- Source terms audit (item 3, paused): add `rit.edu/dining` (food trucks page)
+  and the `ondemand.rit.edu` and `tigerspend.rit.edu` link-outs to the list.
