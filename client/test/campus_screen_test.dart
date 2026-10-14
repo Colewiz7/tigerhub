@@ -158,6 +158,13 @@ void main() {
     );
   });
 
+  testWidgets('Campus includes quick links', (tester) async {
+    await pumpCampus(tester);
+    await tester.tap(find.text('Quick links'));
+    await tester.pumpAndSettle();
+    expect(find.text('Tiger Spend'), findsOneWidget);
+  });
+
   testWidgets('find on campus lists a kind with a real label', (tester) async {
     await pumpCampus(tester);
 
