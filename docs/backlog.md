@@ -425,8 +425,8 @@ Data layer is in (`sources/food_trucks.dart`, docs/notes.md 7.11). The UI phase
 is not built.
 
 - A food trucks group on the Dining screen, from `foodTruckView`. Trucks show
-  by date. Empty in season shows one line, "No food trucks scheduled". Empty off
-  season and unavailable hide the group.
+  by date. There is no "none scheduled" line: zero trucks is unknown, so
+  unavailable hides the group (in season or not).
 - One "Order online" link to `https://ondemand.rit.edu/`. No per location
   mobile order marker exists in the dining listing (checked 2026-10-14), so it
   goes once in the Dining header beside "Check balance". No per location

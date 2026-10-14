@@ -21,7 +21,7 @@ const Set<int> defaultFoodTruckSeasonMonths = {4, 8, 9, 10};
 
 const String rodeoTitle = 'Food Truck Rodeo Schedule';
 
-enum FoodTruckState { trucks, empty, unavailable }
+enum FoodTruckState { trucks, unavailable }
 
 const Map<String, int> _months = {
   'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
@@ -165,145 +165,8 @@ String? _clean(String? raw) {
 }
 
 final RegExp _hiddenRe = RegExp(r'display\s*:\s*none', caseSensitive: false);
-final RegExp _noTrucksRe = RegExp(r'^no\b.*(truck|schedul)', caseSensitive: false);
-
-const String _wrapperClass = 'paragraph--type--embed-view';
-
-// the only elements an empty schedule is allowed to contain
-const Set<String> _plainTags = {
-  'div', 'span', 'p', 'section', 'article', 'ul', 'ol', 'li', 'br',
-  'strong', 'em', 'b', 'i', 'small',
-};
-const Set<String> _rawTextTags = {'script', 'style'};
-
-final RegExp _tagNameRe = RegExp(r'[a-zA-Z][a-zA-Z0-9:-]*');
-final RegExp _attrNameRe = RegExp(r'''[^\s=/>"'<`]+''');
-final RegExp _unquotedRe = RegExp(r'''[^\s>"'<=`]+''');
-
-bool _space(String c) => c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f';
-
-// attributes of one start tag, first occurrence of a name wins, null if unreadable
-(int, Map<String, String>)? _readTag(String s, int from) {
-  final attrs = <String, String>{};
-  var j = from;
-  while (true) {
-    while (j < s.length && _space(s[j])) {
-      j++;
-    }
-    if (j >= s.length) return null;
-    if (s[j] == '>') return (j + 1, attrs);
-    if (s[j] == '/') return j + 1 < s.length && s[j + 1] == '>' ? (j + 2, attrs) : null;
-
-    final name = _attrNameRe.matchAsPrefix(s, j);
-    if (name == null) return null;
-    j = name.end;
-
-    var k = j;
-    while (k < s.length && _space(s[k])) {
-      k++;
-    }
-    var value = '';
-    if (k < s.length && s[k] == '=') {
-      k++;
-      while (k < s.length && _space(s[k])) {
-        k++;
-      }
-      if (k >= s.length) return null;
-      if (s[k] == '"' || s[k] == "'") {
-        final close = s.indexOf(s[k], k + 1);
-        if (close < 0) return null;
-        value = s.substring(k + 1, close);
-        j = close + 1;
-      } else {
-        final bare = _unquotedRe.matchAsPrefix(s, k);
-        if (bare == null) return null;
-        value = bare.group(0)!;
-        j = bare.end;
-      }
-    }
-    attrs.putIfAbsent(name.group(0)!.toLowerCase(), () => value);
-  }
-}
-
-// empty only when everything is understood: a real, closed view wrapper, no slot
-// markers, and no visible text bar a short "no ..." note. anything the scanner
-// does not understand counts as not empty, which sends the page to the fallback.
-bool isEmptySchedule(String schedule, bool sawSlotMarkers) {
-  if (sawSlotMarkers) return false;
-
-  final lower = schedule.toLowerCase();
-  final text = StringBuffer();
-  final open = <String>[];
-  var wrapperSeen = false;
-  var wrapperDone = false;
-  var i = 0;
-
-  while (i < schedule.length) {
-    final lt = schedule.indexOf('<', i);
-    text.write(schedule.substring(i, lt < 0 ? schedule.length : lt));
-    if (lt < 0) break;
-    i = lt;
-
-    if (schedule.startsWith('<!--', i)) {
-      final close = schedule.indexOf('-->', i + 4);
-      if (close < 0) return false;
-      i = close + 3;
-      continue;
-    }
-
-    if (schedule.startsWith('</', i)) {
-      final name = _tagNameRe.matchAsPrefix(schedule, i + 2);
-      if (name == null) return false;
-      var j = name.end;
-      while (j < schedule.length && _space(schedule[j])) {
-        j++;
-      }
-      if (j >= schedule.length || schedule[j] != '>') return false;
-      final tag = name.group(0)!.toLowerCase();
-      if (!_plainTags.contains(tag)) return false;
-      if (open.isNotEmpty) {
-        if (open.last != tag) return false;
-        open.removeLast();
-        if (open.isEmpty) wrapperDone = true;
-      }
-      i = j + 1;
-      continue;
-    }
-
-    final name = _tagNameRe.matchAsPrefix(schedule, i + 1);
-    if (name == null) return false;
-    final tag = name.group(0)!.toLowerCase();
-    final read = _readTag(schedule, name.end);
-    if (read == null) return false;
-    final (after, attrs) = read;
-
-    if (_rawTextTags.contains(tag)) {
-      final close = lower.indexOf('</$tag', after);
-      if (close < 0) return false;
-      final end = schedule.indexOf('>', close);
-      if (end < 0) return false;
-      i = end + 1;
-      continue;
-    }
-    if (!_plainTags.contains(tag)) return false;
-    i = after;
-    if (tag == 'br') continue;
-
-    if (wrapperSeen && !wrapperDone) {
-      open.add(tag);
-    } else if (!wrapperSeen && (attrs['class'] ?? '').split(RegExp(r'\s+')).contains(_wrapperClass)) {
-      wrapperSeen = true;
-      open.add(tag);
-    }
-  }
-
-  if (!wrapperSeen || !wrapperDone) return false;
-  final visible = textOf(text.toString());
-  if (visible.isEmpty) return true;
-  return visible.length <= 120 && _noTrucksRe.hasMatch(visible);
-}
-
-// null means the page structure is not what we expect
+// null means the page structure is not what we expect, and so does a page with
+// no readable trucks: zero trucks is never "empty", only unknown
 Map<String, dynamic>? parseFoodTrucksHtml(String html, DateTime campusDate) {
   final heading = _headingRe.firstMatch(html);
   if (heading == null || !html.contains('id="current-schedule"')) return null;
@@ -360,8 +223,7 @@ Map<String, dynamic>? parseFoodTrucksHtml(String html, DateTime campusDate) {
     });
   }
 
-  // empty needs positive evidence, anything unreadable is a changed page
-  if (trucks.isEmpty && !isEmptySchedule(schedule, marks.isNotEmpty)) return null;
+  if (trucks.isEmpty) return null;
 
   final roster = <Map<String, dynamic>>[];
   final rosterHtml = rosterAt < 0 ? '' : html.substring(rosterAt);
@@ -552,12 +414,8 @@ class FoodTruckView {
   final List<Map<String, dynamic>> roster;
   final String origin;
 
-  // empty and off season hides the group, empty and in season shows one line
-  bool get hidden => switch (state) {
-    FoodTruckState.unavailable => true,
-    FoodTruckState.empty => !inSeason,
-    FoodTruckState.trucks => false,
-  };
+  // no trucks to show, for any reason, hides the group
+  bool get hidden => state == FoodTruckState.unavailable;
 }
 
 FoodTruckView foodTruckView(Map<String, dynamic>? snapshot, DateTime campusDate) {
@@ -595,11 +453,12 @@ FoodTruckView foodTruckView(Map<String, dynamic>? snapshot, DateTime campusDate)
           .compareTo((b['starts_at'] ?? b['date']) as String),
     );
 
+  // every stored truck already past is unknown, not "none scheduled"
   return FoodTruckView(
-    state: upcoming.isEmpty ? FoodTruckState.empty : FoodTruckState.trucks,
+    state: upcoming.isEmpty ? FoodTruckState.unavailable : FoodTruckState.trucks,
     inSeason: inSeason,
     trucks: upcoming,
     roster: roster,
-    origin: origin,
+    origin: upcoming.isEmpty ? 'none' : origin,
   );
 }
