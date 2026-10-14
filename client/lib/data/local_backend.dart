@@ -96,8 +96,9 @@ class SourceSpec {
   final Duration? manualFloor;
 
   /// Whether a stored snapshot records a failed last attempt. A failed source
-  /// is retried after [retryAfter] and may be pulled at the global floor,
-  /// because nothing was fetched that the cadence is protecting.
+  /// is retried after [retryAfter], and pull to refresh waits that long too.
+  /// The one minute global floor would let a person hold the gesture and hit a
+  /// struggling site every minute.
   final bool Function(Map<String, dynamic> snapshot)? failed;
   final Duration retryAfter;
 
@@ -109,7 +110,7 @@ class SourceSpec {
 
   Duration manualFloorFor(Map<String, dynamic>? snapshot) =>
       _failedIn(snapshot)
-      ? LocalBackend.manualRefreshFloor
+      ? retryAfter
       : manualFloor ?? LocalBackend.manualRefreshFloor;
   final Future<Map<String, dynamic>> Function(ScrapeContext) scrape;
 

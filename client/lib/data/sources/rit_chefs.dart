@@ -258,10 +258,11 @@ Future<Map<String, dynamic>> scrapeRitChefs(
   };
 }
 
-/// Whether the last scrape failed to read either page. Such a snapshot is
-/// retried sooner than its cadence and may be pulled at the global floor.
+/// Whether this snapshot is not a clean read of both pages: the last attempt
+/// failed, or it predates the `*_ok` fields. Such a snapshot is retried after
+/// five minutes instead of thirty, and pull to refresh waits the same five.
 bool ritChefsFailed(Map<String, dynamic> snapshot) =>
-    snapshot['today_ok'] == false || snapshot['schedule_ok'] == false;
+    snapshot['today_ok'] != true || snapshot['schedule_ok'] != true;
 
 DateTime? _stamp(Object? raw) =>
     raw is String ? DateTime.tryParse(raw)?.toUtc() : null;
@@ -350,12 +351,19 @@ Map<String, dynamic> visitingChefsView({
   final menusToday = menusPart != null &&
       menusPart['date'] == today &&
       menusPart['found'] == true;
-  final menusConfirms = menusToday && rit?['today_ok'] != false;
+  //
+  // Confirmation is opt in: snapshots stored before these fields existed lack
+  // them, and one of those once marked an unparsed day as empty. They still
+  // show their chefs, and `ritChefsFailed` has them refetched.
+  final menusConfirms = menusToday && rit?['today_ok'] == true;
   final schedule = rit?['schedule'] as Map<String, dynamic>?;
   var scheduleToday = schedule?[today] as Map<String, dynamic>?;
   // A day block the parser could not read says nothing, either way.
   if (scheduleToday?['unknown'] == true) scheduleToday = null;
-  final scheduleConfirms = scheduleToday != null && rit?['schedule_ok'] != false;
+  final scheduleConfirms =
+      scheduleToday != null &&
+      scheduleToday['unknown'] == false &&
+      rit?['schedule_ok'] == true;
 
   // TigerCenter's snapshot is a day's payload. Yesterday's chef is not today's.
   final tcToday = tigerCenter?['service_date'] == today ? tigerCenter : null;

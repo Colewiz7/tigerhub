@@ -239,14 +239,53 @@ void main() {
         rit: {
           'service_date': '2026-10-14',
           'today': null,
+          'today_ok': true,
+          'schedule_ok': true,
           'schedule': {
-            '2026-10-14': {'empty': true, 'chefs': <dynamic>[]},
+            '2026-10-14': {
+              'empty': true,
+              'unknown': false,
+              'chefs': <dynamic>[],
+            },
           },
         },
         now: today,
       );
       expect(none['availability'], availabilityEmpty);
       expect(none['next'], isNull);
+    });
+
+    test('a snapshot in the old format cannot confirm an empty day', () {
+      // What cc11c39 stored: no today_ok, schedule_ok or unknown, and an
+      // unparsed day marked empty.
+      final old = {
+        'service_date': '2026-10-14',
+        'today': {'date': '2026-10-14', 'found': true, 'chefs': <dynamic>[]},
+        'schedule': {
+          '2026-10-14': {'empty': true, 'chefs': <dynamic>[]},
+        },
+      };
+      final view = visitingChefsView(
+        tigerCenter: tigerCenter(),
+        rit: old,
+        now: today,
+      );
+      expect(view['availability'], availabilityUnavailable);
+
+      // Its chefs still show, though.
+      final withChefs = visitingChefsView(
+        tigerCenter: tigerCenter(),
+        rit: {
+          ...old,
+          'today': {
+            'date': '2026-10-14',
+            'found': true,
+            'chefs': parseTodayChefs(fixture('rit_dining_menus.html')).chefs,
+          },
+        },
+        now: today,
+      );
+      expect(withChefs['availability'], availabilityAvailable);
     });
 
     test('TigerCenter publishing menus but no chef is a real empty day', () {
@@ -612,12 +651,36 @@ void main() {
         menus: "<h2>Today's Visiting Chefs</h2><script></script>",
       ));
       final before = hits[ritMenusUrl]!;
-      now = start.add(const Duration(minutes: 33));
+      // Repeated pulls and reads inside five minutes of the failure never
+      // reach rit.edu, not even at the global one minute floor.
+      for (final minutes in [32, 33, 34, 35]) {
+        now = start.add(Duration(minutes: minutes));
+        await backend!.refreshNow();
+        await backend!.fetch('/dining/visiting-chefs');
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(hits[ritMenusUrl], before,
+          reason: 'inside five minutes of a failed attempt');
+
+      now = start.add(const Duration(minutes: 36, seconds: 1));
       await backend!.refreshNow();
       expect(hits[ritMenusUrl], before + 1,
-          reason: 'a failed attempt is pulled at the one minute floor');
+          reason: 'one request once the five minutes are up');
       final back = await backend!.fetch('/dining/visiting-chefs');
       expect(back['availability'], availabilityEmpty);
+    });
+
+    test('a snapshot stored before the ok fields existed is refetched sooner',
+        () {
+      expect(ritChefsFailed({'service_date': '2026-10-14'}), isTrue);
+      expect(
+        ritChefsFailed({'today_ok': true, 'schedule_ok': true}),
+        isFalse,
+      );
+      expect(
+        ritChefsFailed({'today_ok': true, 'schedule_ok': false}),
+        isTrue,
+      );
     });
 
     test('a first run outage has no last updated time', () async {
