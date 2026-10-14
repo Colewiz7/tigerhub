@@ -16,23 +16,16 @@ import 'about_section.dart';
 import 'appearance_section.dart';
 import 'dining_section.dart';
 import 'events_section.dart';
-import 'home_section.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
     super.key,
     required this.scheme,
     required this.events,
-    required this.cards,
-    required this.hiddenCards,
-    required this.onCardsChanged,
   });
 
   final SchemeController scheme;
   final Result<Collection<CampusEvent>> events;
-  final List<String> cards;
-  final List<String> hiddenCards;
-  final void Function(List<String> order, List<String> hidden) onCardsChanged;
 
   @override
   Widget build(BuildContext context) => SectionScaffold(
@@ -58,17 +51,6 @@ class SettingsScreen extends StatelessWidget {
             subtitle: 'Theme source, palette',
             icon: Icons.palette_rounded,
             builder: (context) => AppearanceSection(scheme: scheme),
-          ),
-          SectionSpec(
-            id: 'home',
-            title: 'Home screen',
-            subtitle: 'Card order and visibility',
-            icon: Icons.grid_view_rounded,
-            builder: (context) => HomeSection(
-              cards: cards,
-              hidden: hiddenCards,
-              onChanged: onCardsChanged,
-            ),
           ),
           SectionSpec(
             id: 'about',
