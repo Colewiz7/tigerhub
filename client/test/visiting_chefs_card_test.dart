@@ -19,7 +19,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/cards/visiting_chefs_card.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/store.dart';
+import 'package:tigerhub/data/upstream.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
@@ -443,12 +447,63 @@ void main() {
           scale: scale,
           height: 325,
         );
+        // At 2x in a compact card the pill is below the fold of the card.
+        await tester.ensureVisible(pill);
         await tester.tap(pill);
         await tester.pumpAndSettle();
         await expectLater(
           find.byType(MaterialApp),
           matchesGoldenFile('goldens/visiting_chefs/$name.png'),
         );
+      });
+    }
+
+    testWidgets('shows a 2px primary focus ring for the keyboard only', (
+      tester,
+    ) async {
+      await pumpMany(tester);
+      final scheme = Theme.of(tester.element(pill)).colorScheme;
+      StadiumBorder ring() => (tester
+              .widget<DecoratedBox>(find.byKey(const ValueKey('focus-ring')))
+              .decoration as ShapeDecoration)
+          .shape as StadiumBorder;
+
+      expect(ring().side.color, Colors.transparent);
+      expect(ring().side.width, 2, reason: 'reserved so focus never shifts it');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(ring().side.color, scheme.primary);
+      expect(ring().side.width, 2);
+
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+      expect(ring().side.color, Colors.transparent,
+          reason: 'focus has moved on');
+    });
+
+    for (final (width, radius) in [(390.0, 24.0), (700.0, 30.0)]) {
+      testWidgets('the sheet uses the ${radius.toInt()}px card radius at '
+          '${width.toInt()}pt', (tester) async {
+        await _pump(
+          tester,
+          result: Result(
+            value: ChefCollection(data: many, stale: false),
+            state: DataState.ok,
+          ),
+          size: Size(width, 900),
+          brightness: Brightness.light,
+          scale: 1,
+          height: 325,
+        );
+        await tester.tap(pill);
+        await tester.pumpAndSettle();
+        final shape = tester.widget<BottomSheet>(sheet).shape!
+            as RoundedRectangleBorder;
+        final corners = shape.borderRadius as BorderRadius;
+        expect(corners.topLeft.x, radius);
+        expect(corners.topRight.x, radius);
+        expect(corners.bottomLeft.x, 0);
       });
     }
 
@@ -533,6 +588,45 @@ void main() {
       expect(find.text('Menus unavailable'), findsOneWidget);
       expect(find.text('Never updated'), findsOneWidget);
       expect(find.textContaining('updated just now'), findsNothing);
+    });
+
+    testWidgets('rit.edu answering 200 with unrecognisable pages is unavailable '
+        'and never updated', (tester) async {
+      final dir = Directory.systemTemp.createTempSync('tigerhub-garbage');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      JsonStore.overrideForTesting(dir);
+      final tc = File('test/fixtures/tc_dining_all_empty_menus.json')
+          .readAsStringSync();
+      final backend = LocalBackend(
+        upstream: Upstream(
+          client: MockClient((request) async {
+            if (request.url.host == 'tigercenter.rit.edu') {
+              return http.Response(tc, 200);
+            }
+            return http.Response('<html><body>Redesigned!</body></html>', 200);
+          }),
+          maxRetries: 1,
+        ),
+        store: JsonStore.overrideForTestingInstance,
+      );
+      addTearDown(backend.close);
+
+      final result = (await tester.runAsync(
+        () async => (await ApiClient(backend: backend).visitingChefs().toList())
+            .last,
+      ))!;
+      await _pump(
+        tester,
+        result: result,
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 1,
+      );
+      expect(find.text('Menus unavailable'), findsOneWidget);
+      expect(find.text('Never updated'), findsOneWidget);
+      expect(find.textContaining('just now'), findsNothing,
+          reason: 'neither the header nor the detail may claim an update');
+      expect(find.text('No visiting chefs today'), findsNothing);
     });
 
     testWidgets('a real source time is the age shown in the header', (
