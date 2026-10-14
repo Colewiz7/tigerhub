@@ -243,7 +243,7 @@ class _DiningFilters extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               FilterChip(
-                label: const Text('Open now'),
+                label: const Text('Open'),
                 avatar: const Icon(Icons.schedule_rounded, size: 17),
                 selected: openOnly,
                 onSelected: onOpenChanged,
