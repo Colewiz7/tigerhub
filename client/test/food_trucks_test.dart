@@ -121,12 +121,8 @@ void main() {
       expect(roster.map((r) => r['name']), contains('Bento Stop ROC'));
     });
 
-    test('heading and container with no slots is empty, not a failure', () {
-      final parsed = parseFoodTrucksHtml(emptyPage, oct14);
-
-      expect(parsed, isNotNull);
-      expect(parsed!['trucks'], isEmpty);
-      expect(parsed['roster'], isNotEmpty);
+    test('heading and container with no slots is unknown, never empty', () {
+      expect(parseFoodTrucksHtml(emptyPage, oct14), isNull);
     });
 
     test('missing container is a parse failure', () {
@@ -139,162 +135,21 @@ void main() {
       expect(parseFoodTrucksHtml(broken, oct14), isNull);
     });
 
-    test('an explicit short no-trucks note in the view is empty', () {
+    test('a "no trucks" note in the view is still unknown, never empty', () {
       final noted = emptyPage.replaceFirst(
         'paragraph--type--embed-view paragraph--view-mode--default">',
         'paragraph--type--embed-view paragraph--view-mode--default"><p>No food trucks scheduled.</p>',
       );
       expect(noted, isNot(emptyPage));
-      expect(parseFoodTrucksHtml(noted, oct14)!['trucks'], isEmpty);
+      expect(parseFoodTrucksHtml(noted, oct14), isNull);
     });
 
-    test('other text in an otherwise empty view is not proof of empty', () {
-      final chatty = emptyPage.replaceFirst(
-        'paragraph--type--embed-view paragraph--view-mode--default">',
-        'paragraph--type--embed-view paragraph--view-mode--default"><p>Bubble Waffle Bus, Friday</p>',
-      );
-      expect(parseFoodTrucksHtml(chatty, oct14), isNull);
-    });
-
-    test('the view wrapper gone is a failure, not empty', () {
-      final bare = emptyPage.replaceAll('paragraph--type--embed-view', 'paragraph--type--other');
-      expect(parseFoodTrucksHtml(bare, oct14), isNull);
-    });
-
-    group('wrapper name must be a real element class', () {
-      const token = 'paragraph--type--embed-view';
-
-      // no real wrapper left, only the given junk right after the heading
-      String withJunk(String junk) {
-        final bare = emptyPage.replaceAll(token, 'paragraph--type--other');
-        final heading = RegExp(r'<h2[^>]*>\s*Current Schedule\s*</h2>').firstMatch(bare)!;
-        return bare.substring(0, heading.end) + junk + bare.substring(heading.end);
-      }
-
-      test('only inside an HTML comment', () {
-        expect(parseFoodTrucksHtml(withJunk('<!-- $token -->'), oct14), isNull);
-      });
-
-      test('only inside a script', () {
-        expect(parseFoodTrucksHtml(withJunk('<script>var c = "$token";</script>'), oct14), isNull);
-      });
-
-      test('only inside a style', () {
-        expect(parseFoodTrucksHtml(withJunk('<style>.$token {}</style>'), oct14), isNull);
-      });
-
-      test('only inside another attribute value', () {
-        expect(parseFoodTrucksHtml(withJunk('<div data-x="class=\'$token\'"></div>'), oct14), isNull);
-        expect(parseFoodTrucksHtml(withJunk('<div title="$token"></div>'), oct14), isNull);
-        expect(parseFoodTrucksHtml(withJunk('<div data-class="$token"></div>'), oct14), isNull);
-      });
-
-      test('only as text', () {
-        expect(parseFoodTrucksHtml(withJunk('<p>$token</p>'), oct14), isNull);
-      });
-
-      test('only as part of a longer class token', () {
-        expect(parseFoodTrucksHtml(withJunk('<div class="x-$token-2"></div>'), oct14), isNull);
-      });
-
-      test('a real wrapper alongside the junk still counts', () {
-        expect(parseFoodTrucksHtml('<!-- $token -->$emptyPage', oct14)!['trucks'], isEmpty);
-      });
-
-      // junk placed at the end of the schedule, after the real wrapper
-      String afterWrapper(String junk) {
-        final cut = emptyPage.lastIndexOf('<', emptyPage.indexOf('id="all-participating-trucks"'));
-        return emptyPage.substring(0, cut) + junk + emptyPage.substring(cut);
-      }
-
-      String beforeWrapper(String junk) {
+    test('hiding or garbling the markup around zero trucks is the same unknown', () {
+      for (final junk in ['<!-- ', '<script>var a = 1;', '<![CDATA[ x ]]>', '<iframe></iframe>']) {
         final heading = RegExp(r'<h2[^>]*>\s*Current Schedule\s*</h2>').firstMatch(emptyPage)!;
-        return emptyPage.substring(0, heading.end) + junk + emptyPage.substring(heading.end);
+        final garbled = emptyPage.substring(0, heading.end) + junk + emptyPage.substring(heading.end);
+        expect(parseFoodTrucksHtml(garbled, oct14), isNull, reason: junk);
       }
-
-      const wrapper = '<div class="$token"></div>';
-
-      test('unterminated comment hiding a wrapper after visible text', () {
-        expect(parseFoodTrucksHtml(withJunk('No trucks scheduled <!-- <div class="$token">'), oct14), isNull);
-      });
-
-      test('unterminated comment before or after the real wrapper', () {
-        expect(parseFoodTrucksHtml(beforeWrapper('<!-- '), oct14), isNull);
-        expect(parseFoodTrucksHtml(afterWrapper('<!-- tail'), oct14), isNull);
-      });
-
-      test('unclosed script after visible text or a real wrapper', () {
-        expect(parseFoodTrucksHtml(withJunk('No trucks scheduled <script> <div class="$token">'), oct14), isNull);
-        expect(parseFoodTrucksHtml(afterWrapper('<script>var a = 1;'), oct14), isNull);
-        expect(parseFoodTrucksHtml(afterWrapper('<style>.a {'), oct14), isNull);
-      });
-
-      test('closed comment, script and style around a real wrapper are fine', () {
-        final tidy = beforeWrapper('<!-- note --><script>var a = "<b>";</script><style>.a {}</style>');
-        expect(parseFoodTrucksHtml(tidy, oct14)!['trucks'], isEmpty);
-      });
-
-      test('CDATA is not understood', () {
-        expect(parseFoodTrucksHtml(withJunk('<![CDATA[ <div class="$token"></div> ]]>'), oct14), isNull);
-        expect(parseFoodTrucksHtml(afterWrapper('<![CDATA[ x ]]>'), oct14), isNull);
-      });
-
-      test('a wrapper inside template or noscript is inert', () {
-        expect(parseFoodTrucksHtml(withJunk('<template>$wrapper</template>'), oct14), isNull);
-        expect(parseFoodTrucksHtml(withJunk('<noscript>$wrapper</noscript>'), oct14), isNull);
-        expect(parseFoodTrucksHtml(afterWrapper('<template><p>x</p></template>'), oct14), isNull);
-        expect(parseFoodTrucksHtml(afterWrapper('<noscript>x</noscript>'), oct14), isNull);
-      });
-
-      test('iframe, object, svg and other unknown elements fail closed', () {
-        for (final junk in ['<iframe></iframe>', '<object></object>', '<svg></svg>', '<img src="x">', '<a href="x"></a>', '<x-slot></x-slot>']) {
-          expect(parseFoodTrucksHtml(afterWrapper(junk), oct14), isNull, reason: junk);
-        }
-      });
-
-      test('duplicate class attributes: the first one wins, in both orders', () {
-        expect(parseFoodTrucksHtml(withJunk('<div class="other" CLASS="$token"></div>'), oct14), isNull);
-        expect(parseFoodTrucksHtml(withJunk('<div class="$token" class="other"></div>'), oct14)!['trucks'], isEmpty);
-        expect(parseFoodTrucksHtml(withJunk('<div CLASS="$token" class="other"></div>'), oct14)!['trucks'], isEmpty);
-      });
-
-      test('quoting and unquoted values are read', () {
-        expect(parseFoodTrucksHtml(withJunk("<div class='a $token b'></div>"), oct14)!['trucks'], isEmpty);
-        expect(parseFoodTrucksHtml(withJunk('<div class=$token></div>'), oct14)!['trucks'], isEmpty);
-        expect(parseFoodTrucksHtml(withJunk('<div class="$token'), oct14), isNull);
-      });
-
-      test('a wrapper missing its close tag is a failure', () {
-        // the page slice ends in ancestor close tags, so these run on the bare scanner
-        expect(isEmptySchedule('<div class="$token">', false), isFalse);
-        expect(isEmptySchedule('<div class="$token"><div></div>', false), isFalse);
-        expect(isEmptySchedule('<div class="$token"><span></div>', false), isFalse);
-        expect(isEmptySchedule('<div class="$token"></div>', false), isTrue);
-        expect(parseFoodTrucksHtml(withJunk('<div class="$token"><span></div>'), oct14), isNull);
-      });
-
-      test('a synthetic empty wrapper, with and without a note, is empty', () {
-        expect(parseFoodTrucksHtml(withJunk(wrapper), oct14)!['trucks'], isEmpty);
-        expect(
-          parseFoodTrucksHtml(withJunk('<div class="$token"><p>No trucks scheduled</p></div>'), oct14)!['trucks'],
-          isEmpty,
-        );
-      });
-
-      test('text outside the wrapper still counts', () {
-        expect(parseFoodTrucksHtml(withJunk('Bubble Waffle Bus $wrapper'), oct14), isNull);
-        expect(parseFoodTrucksHtml(withJunk('$wrapper Bubble Waffle Bus'), oct14), isNull);
-      });
-
-      test('real wrapper, empty, is empty', () {
-        expect(parseFoodTrucksHtml(emptyPage, oct14)!['trucks'], isEmpty);
-      });
-
-      test('real wrapper with a note is empty', () {
-        final noted = emptyPage.replaceFirst('$token paragraph--view-mode--default">', '$token paragraph--view-mode--default"><p>No food trucks scheduled.</p>');
-        expect(noted, isNot(emptyPage));
-        expect(parseFoodTrucksHtml(noted, oct14)!['trucks'], isEmpty);
-      });
     });
 
     test('mutation: slot date class renamed, heading and container kept', () {
@@ -459,21 +314,8 @@ void main() {
       expect(view.trucks, hasLength(6));
     });
 
-    test('empty in season shows a line', () {
-      final view = foodTruckView(parseFoodTrucksHtml(emptyPage, oct14), oct14);
-
-      expect(view.state, FoodTruckState.empty);
-      expect(view.inSeason, isTrue);
-      expect(view.hidden, isFalse);
-    });
-
-    test('empty off season hides the group', () {
-      final january = DateTime(2027, 1, 20);
-      final view = foodTruckView(parseFoodTrucksHtml(emptyPage, january), january);
-
-      expect(view.state, FoodTruckState.empty);
-      expect(view.inSeason, isFalse);
-      expect(view.hidden, isTrue);
+    test('there are only two states, trucks and unavailable', () {
+      expect(FoodTruckState.values, [FoodTruckState.trucks, FoodTruckState.unavailable]);
     });
 
     test('unavailable is its own state and hides', () {
@@ -488,7 +330,14 @@ void main() {
       final view = foodTruckView(parseFoodTrucksHtml(page, oct14), DateTime(2026, 10, 17));
 
       expect(view.trucks, hasLength(3));
-      expect(foodTruckView(parseFoodTrucksHtml(page, oct14), DateTime(2026, 10, 18)).state, FoodTruckState.empty);
+    });
+
+    test('a snapshot with every slot past is unavailable, not "none scheduled"', () {
+      final view = foodTruckView(parseFoodTrucksHtml(page, oct14), DateTime(2026, 10, 18));
+
+      expect(view.state, FoodTruckState.unavailable);
+      expect(view.hidden, isTrue);
+      expect(view.trucks, isEmpty);
     });
 
     test('off season snapshot with trucks still shows them', () {
@@ -505,6 +354,67 @@ void main() {
       final result = await scrapeFoodTrucks(upstreamReturning(page), () async => null);
       expect(result['origin'], 'html');
       expect(result['trucks'], hasLength(6));
+    });
+
+    test('zero parsed trucks and the fallback has events: trucks from the events', () async {
+      final result = await scrapeFoodTrucks(
+        routed(pageBody: emptyPage, drupalBody: drupalJson),
+        () async => null,
+      );
+
+      expect(result['origin'], 'drupal');
+      expect(result['trucks'], hasLength(2));
+      expect(foodTruckView(result, oct14).state, FoodTruckState.trucks);
+    });
+
+    test('zero parsed trucks and an empty fallback: unavailable, hidden', () async {
+      final result = await scrapeFoodTrucks(
+        routed(pageBody: emptyPage, drupalBody: noEvents),
+        () async => null,
+      );
+
+      expect(result['origin'], 'none');
+      final view = foodTruckView(result, oct14);
+      expect(view.state, FoodTruckState.unavailable);
+      expect(view.hidden, isTrue);
+    });
+
+    test('a page that says no trucks is not believed either', () async {
+      final noted = emptyPage.replaceFirst(
+        'paragraph--type--embed-view paragraph--view-mode--default">',
+        'paragraph--type--embed-view paragraph--view-mode--default"><p>No food trucks scheduled.</p>',
+      );
+      final result = await scrapeFoodTrucks(
+        routed(pageBody: noted, drupalBody: noEvents),
+        () async => {'events': []},
+      );
+
+      expect(result['origin'], 'none');
+    });
+
+    test('network errors on both sides keep the prior snapshot', () async {
+      final prior = {
+        ...parseFoodTrucksHtml(page, oct14)!,
+        'fetched_at': DateTime.utc(2026, 10, 14, 9).toIso8601String(),
+      };
+      // fetched_at is long past, so the pacer lets the attempt through and the
+      // rethrow is what leaves the stored snapshot alone
+      await expectLater(
+        scrapeFoodTrucks(
+          routed(pageBody: null, drupalBody: null),
+          () async => null,
+          previous: prior,
+        ),
+        throwsA(isA<UpstreamError>()),
+      );
+      expect(prior['trucks'], hasLength(6));
+    });
+
+    test('network error on the page with an empty fallback keeps the prior snapshot', () async {
+      await expectLater(
+        scrapeFoodTrucks(routed(pageBody: null, drupalBody: noEvents), () async => null),
+        throwsA(isA<UpstreamError>()),
+      );
     });
 
     test('parse failure falls back to drupal rodeo events', () async {
