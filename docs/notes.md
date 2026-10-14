@@ -848,11 +848,16 @@ The destinations in `client/lib/data/quick_links.dart` were checked on
 2026-10-14 with a small number of GET requests identified as TigerHub. These
 RIT pages identify the services and their destinations:
 
+`lastVerified` lives in the Dart data file instead of `assets/config` JSON so the static links load synchronously without an asset read.
+
 | Link | RIT source |
 | --- | --- |
 | Tiger Spend | [RIT Dining payment types](https://www.rit.edu/dining/payment-types) |
-| SIS, myCourses, eServices, Service Center | [RIT Student Information System](https://www.rit.edu/infocenter/) |
+| SIS | [RIT Student Information System](https://www.rit.edu/infocenter/) |
+| myCourses | [RIT Center for Teaching and Learning](https://www.rit.edu/teaching/mycourses) |
+| eServices | [RIT eServices](https://www.rit.edu/eservices/) |
 | Tiger Chat | [RIT Center on Access Technology](https://www.rit.edu/accesstechnology/tigerchat) |
+| Service Center | [RIT eServices support link](https://www.rit.edu/eservices/) |
 | FMS requests | [RIT Facilities Requests](https://www.rit.edu/facilitiesmanagement/request-service) |
 
 Reserve was omitted. RIT's [Campus Life spaces page](https://www.rit.edu/campuslife/spaces)

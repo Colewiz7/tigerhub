@@ -162,7 +162,9 @@ void main() {
     await pumpCampus(tester);
     await tester.tap(find.text('Quick links'));
     await tester.pumpAndSettle();
-    expect(find.text('Tiger Spend'), findsOneWidget);
+    for (final label in ['Tiger Spend', 'SIS', 'myCourses', 'eServices', 'Tiger Chat', 'Service Center', 'FMS requests']) {
+      expect(find.text(label), findsOneWidget);
+    }
   });
 
   testWidgets('find on campus lists a kind with a real label', (tester) async {

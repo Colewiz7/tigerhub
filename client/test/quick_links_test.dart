@@ -23,6 +23,16 @@ class _Launcher extends MethodChannelUrlLauncher with MockPlatformInterfaceMixin
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  const expectedLinks = <({String label, String url})>[
+    (label: 'Tiger Spend', url: 'https://tigerspend.rit.edu/'),
+    (label: 'SIS', url: 'https://campus.ps.rit.edu/'),
+    (label: 'myCourses', url: 'https://mycourses.rit.edu/'),
+    (label: 'eServices', url: 'https://eservices.rit.edu/'),
+    (label: 'Tiger Chat', url: 'https://tigerchat.app/'),
+    (label: 'Service Center', url: 'https://help.rit.edu/'),
+    (label: 'FMS requests', url: 'https://www.rit.edu/facilitiesmanagement/request-service'),
+  ];
+
   setUpAll(() async {
     await (FontLoader('Rubik')..addFont(rootBundle.load('assets/fonts/Rubik.ttf'))).load();
     await (FontLoader('MaterialIcons')..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
@@ -44,6 +54,12 @@ void main() {
   }
 
   testWidgets('every quick link renders, has semantics and opens externally', (tester) async {
+    expect(quickLinks, hasLength(7));
+    expect(quickLinks.map((link) => (label: link.label, url: link.url)).toList(), expectedLinks);
+    for (final link in quickLinks) {
+      final parsed = DateTime.tryParse(link.lastVerified);
+      expect(parsed?.toIso8601String().substring(0, 10), link.lastVerified);
+    }
     final launcher = _Launcher();
     final previous = UrlLauncherPlatform.instance;
     UrlLauncherPlatform.instance = launcher;
@@ -55,13 +71,13 @@ void main() {
       await tester.ensureVisible(row);
       await tester.pumpAndSettle();
       expect(row, findsOneWidget);
-      expect(find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.label == '${link.label}, ${Uri.parse(link.url).host}' && widget.properties.hint == 'Opens externally'), findsOneWidget);
+      expect(find.byWidgetPredicate((widget) => widget is Semantics && widget.properties.label == '${link.label}, ${link.subtitle ?? Uri.parse(link.url).host}' && widget.properties.hint == 'Opens externally'), findsOneWidget);
       expect(tester.getSize(row).height - 8, greaterThanOrEqualTo(48));
       await tester.tap(row);
       await tester.pump();
     }
 
-    expect(launcher.opened, quickLinks.map((link) => link.url).toList());
+    expect(launcher.opened, expectedLinks.map((link) => link.url).toList());
     expect(launcher.modes, everyElement(PreferredLaunchMode.externalApplication));
     expect(tester.takeException(), isNull);
   });
