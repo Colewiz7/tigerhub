@@ -172,11 +172,31 @@ final RegExp _noiseRe = RegExp(
 );
 final RegExp _noTrucksRe = RegExp(r'^no\b.*(truck|schedul)', caseSensitive: false);
 
+final RegExp _startTagRe = RegExp(
+  r'''<[a-zA-Z][\w:-]*((?:\s+[^\s=/>"']+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>"']+))?)*)\s*/?>''',
+);
+final RegExp _attrRe = RegExp(
+  r'''([^\s=/>"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>"']+)))?''',
+);
+
+// true only when a real element start tag carries the class token
+bool hasClassToken(String html, String token) {
+  for (final tag in _startTagRe.allMatches(html)) {
+    for (final attr in _attrRe.allMatches(tag.group(1)!)) {
+      if (attr.group(1)!.toLowerCase() != 'class') continue;
+      final value = attr.group(2) ?? attr.group(3) ?? attr.group(4) ?? '';
+      if (value.split(RegExp(r'\s+')).contains(token)) return true;
+    }
+  }
+  return false;
+}
+
 // the view wrapper with no slots, and no visible text bar a short "no ..." note
 bool isEmptySchedule(String schedule, bool sawSlotMarkers) {
   if (sawSlotMarkers) return false;
-  if (!schedule.contains('paragraph--type--embed-view')) return false;
-  final text = textOf(schedule.replaceAll(_noiseRe, ''));
+  final live = schedule.replaceAll(_noiseRe, '');
+  if (!hasClassToken(live, 'paragraph--type--embed-view')) return false;
+  final text = textOf(live);
   if (text.isEmpty) return true;
   return text.length <= 120 && _noTrucksRe.hasMatch(text);
 }
