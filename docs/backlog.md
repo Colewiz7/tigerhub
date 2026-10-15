@@ -418,3 +418,25 @@ own location, not the post office's. Check that before designing the sort.
 `recreation_campus_date_test.dart` catches the old `toLocal()` bug only on
 devices west of UTC (fails under Los Angeles, passes under Tokyo), so run it
 under America/Los_Angeles.
+
+## A+B layout list (added 2026-10-14)
+
+Open items for the A+B layout pass. Remove an item when it is fixed.
+
+- **Map strip overflow at 2x text.** 24 px twice at `campus_map.dart:900`.
+  Remove its entry in `known_overflows.dart` when fixed.
+- **Light map card strip contrast.** Check titles against WCAG AA 4.5:1.
+- **"Zoom in for walking paths" chip.** Clipped on the left edge at 1x.
+- **"500 m" scale label.** Hidden by the bottom overlay at 2x text.
+- **Hero header edge case from E.** At 320 px wide and 2x text, a scoped
+  events text hero leaves the title about 15 px. Check against base 5e818fa.
+- **E edit-mode title is squeezed.** With real Rubik the title column is
+  narrow: it ellipsizes at 1x and breaks mid-word at 2x ("Visiti/ng C").
+  The goldens now lock this in. Fix the header split, then regenerate.
+- **Empty state off-center at 1x.** Dining, Events and Mailing Address
+  cards sit left in normal mode. Only Chefs is centered.
+- **Dark golden background.** The shot helper doesn't paint the scaffold, so
+  dark goldens have a white page. Fix in the harness.
+- **Edit bar at 2x.** "Add module" pill is shorter than "Done", and pill
+  icons don't scale with text.
+- **Map text.** Compass over the legend, bottom-left chip text flush left.
