@@ -437,7 +437,7 @@ on a 440x956 device.
   target (the block is 48 tall: Flutter only hit-tests inside layout bounds).
 - [x] Fonts: card title 22, row title 17, row subtitle 14, letterSpacing 0.
 - [x] Gap between cards 10. Card height is its content, no fixed cell on a
-  phone. Dining with 4 rows is 332.
+  phone. Dining with 4 rows is 344 (332 before the 48pt footer).
 - [x] Masthead 48 with a 32 tall logo.
 - [ ] Masthead collapses on scroll.
 - [ ] Tab bar 121 to 83 including the safe area. Labels sentence case, 11pt, no
