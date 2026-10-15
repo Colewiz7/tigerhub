@@ -63,6 +63,25 @@ class EmptyState extends StatelessWidget {
 
     final markSize = compact ? 58.0 : 76.0;
 
+    // Fills the room it is given and centers in it, both ways. A card's
+    // content column is left aligned, so without this the mark and sentence
+    // sat at the left edge, and in a tall cell at the top. With no bounded
+    // width or height (a list, a scroll view) it just takes its own size.
+    return LayoutBuilder(
+      builder: (context, box) => SizedBox(
+        width: box.maxWidth.isFinite ? box.maxWidth : null,
+        height: box.maxHeight.isFinite ? box.maxHeight : null,
+        child: Center(child: _body(context, text, scheme, markSize)),
+      ),
+    );
+  }
+
+  Widget _body(
+    BuildContext context,
+    TextTheme text,
+    ColorScheme scheme,
+    double markSize,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
       child: Column(
