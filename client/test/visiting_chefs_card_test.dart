@@ -482,6 +482,26 @@ void main() {
           reason: 'focus has moved on');
     });
 
+    testWidgets('the focus ring sits 2px outside the pill, with a real gap', (
+      tester,
+    ) async {
+      await pumpMany(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      final pillRect = tester.getRect(find.byKey(const ValueKey('more-pill')));
+      final ringRect = tester.getRect(find.byKey(const ValueKey('focus-ring')));
+
+      // A border paints inside its box: the outer 2px is the ring, and the
+      // 2px between it and the pill is the offset.
+      expect(ringRect, pillRect.inflate(4),
+          reason: 'ring outer edge = pill + 2px offset + 2px width');
+      expect(ringRect.deflate(2), pillRect.inflate(2),
+          reason: 'the ring starts 2px clear of the pill');
+      expect(ringRect.height, lessThanOrEqualTo(48),
+          reason: 'the ring stays inside the 48px touch band');
+    });
+
     for (final (width, radius) in [(390.0, 24.0), (700.0, 30.0)]) {
       testWidgets('the sheet uses the ${radius.toInt()}px card radius at '
           '${width.toInt()}pt', (tester) async {
@@ -628,6 +648,64 @@ void main() {
           reason: 'neither the header nor the detail may claim an update');
       expect(find.text('No visiting chefs today'), findsNothing);
     });
+
+    // The heading survives, the chef markup under it does not. This used to
+    // be accepted as a quiet day and to advance "last updated".
+    const restructured = {
+      'div': '<div><a href="/x"><p class="h5">RITZ</p></a>'
+          '<div data-id="26-1"><em>KO-BQ: 11:00 am - 2:00 pm</em></div></div>',
+      'article': '<article><h3>RITZ</h3><article>KO-BQ</article></article>',
+      'table': '<table><tr><td>RITZ</td><td>KO-BQ</td></tr></table>',
+      'renamed attribute': '<a data-chef="26-1"><em>KO-BQ: 11:00 am - 2:00 pm'
+          '</em></a>',
+    };
+    for (final entry in restructured.entries) {
+      testWidgets('a kept heading over ${entry.key} chef markup is unavailable '
+          'and never updated', (tester) async {
+        final dir = Directory.systemTemp.createTempSync('tigerhub-restyled');
+        addTearDown(() => dir.deleteSync(recursive: true));
+        JsonStore.overrideForTesting(dir);
+        final tc = File('test/fixtures/tc_dining_all_empty_menus.json')
+            .readAsStringSync();
+        final backend = LocalBackend(
+          upstream: Upstream(
+            client: MockClient((request) async {
+              if (request.url.host == 'tigercenter.rit.edu') {
+                return http.Response(tc, 200);
+              }
+              if (request.url.path.endsWith('/dining/menus')) {
+                return http.Response(
+                  '<h2>Today\'s Visiting Chefs</h2>${entry.value}<script></script>',
+                  200,
+                );
+              }
+              // The schedule page is unreadable too, so nothing else can
+              // vouch for a quiet day.
+              return http.Response('<html><body>Redesigned!</body></html>', 200);
+            }),
+            maxRetries: 1,
+          ),
+          store: JsonStore.overrideForTestingInstance,
+        );
+        addTearDown(backend.close);
+
+        final result = (await tester.runAsync(
+          () async =>
+              (await ApiClient(backend: backend).visitingChefs().toList()).last,
+        ))!;
+        await _pump(
+          tester,
+          result: result,
+          size: const Size(390, 844),
+          brightness: Brightness.light,
+          scale: 1,
+        );
+        expect(find.text('Menus unavailable'), findsOneWidget);
+        expect(find.text('Never updated'), findsOneWidget);
+        expect(find.textContaining('just now'), findsNothing);
+        expect(find.text('No visiting chefs today'), findsNothing);
+      });
+    }
 
     testWidgets('a real source time is the age shown in the header', (
       tester,

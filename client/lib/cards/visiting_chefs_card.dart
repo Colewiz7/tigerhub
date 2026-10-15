@@ -422,6 +422,9 @@ class _MoreChefsState extends State<_MoreChefs> {
               child: Center(
                 widthFactor: 1,
                 // 2px primary ring, 2px off the pill, per the focus-ring token.
+                // A border paints inside its own box, so the box is the pill
+                // plus the 2px offset plus the 2px ring: the outer 2px is the
+                // ring and the 2px inside it is the gap.
                 child: DecoratedBox(
                   key: const ValueKey('focus-ring'),
                   decoration: ShapeDecoration(
@@ -433,8 +436,9 @@ class _MoreChefsState extends State<_MoreChefs> {
                     ),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(2),
+                    padding: const EdgeInsets.all(_MoreChefs.ring),
                     child: DecoratedBox(
+                      key: const ValueKey('more-pill'),
                       decoration: ShapeDecoration(
                         color: scheme.surfaceContainerHigh,
                         shape: Shapes.pill,

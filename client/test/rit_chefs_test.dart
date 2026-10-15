@@ -23,6 +23,19 @@ import 'package:tigerhub/models/api_models.dart';
 
 String fixture(String name) => File('test/fixtures/$name').readAsStringSync();
 
+/// A /dining/menus whose locations list no chefs, in the structure populated
+/// days use. The live fixture with every chef removed, not a bare heading.
+const String emptyMenusHtml = '''
+<h2><i class="fa fa-id-badge"></i> Today's Visiting Chefs</h2>
+<div>
+  <a href="/dining/location/ritz" class="link-with-icon see-more">
+    <p class="h5 mt-0 mb-1">RITZ</p>
+  </a>
+  <ul>
+  </ul>
+</div>
+<script></script>''';
+
 /// Noon on 2026-10-14 in Rochester (EDT), the day the fixtures describe.
 final DateTime today = DateTime.utc(2026, 10, 14, 16);
 
@@ -113,12 +126,48 @@ void main() {
           isFalse);
     });
 
-    test('the heading with no chefs is found and empty', () {
-      final quiet = parseTodayChefs(
-        '<h2><i></i> Today\'s Visiting Chefs</h2><div></div><script></script>',
-      );
+    test('location blocks with empty lists are a confirmed empty day', () {
+      final quiet = parseTodayChefs(emptyMenusHtml);
       expect(quiet.found, isTrue);
       expect(quiet.chefs, isEmpty);
+    });
+
+    test('RIT\'s no-visiting-chefs marker is a confirmed empty day', () {
+      final quiet = parseTodayChefs(
+        '<h2>Today\'s Visiting Chefs</h2>'
+        '<p class="no-visiting-chefs">Back soon</p><script></script>',
+      );
+      expect(quiet.found, isTrue);
+    });
+
+    test('the heading alone is not evidence of a quiet day', () {
+      for (final html in [
+        '<h2><i></i> Today\'s Visiting Chefs</h2><div></div><script></script>',
+        '<h2>Today\'s Visiting Chefs</h2>',
+      ]) {
+        expect(parseTodayChefs(html).found, isFalse, reason: html);
+      }
+    });
+
+    test('a heading over restructured chef markup is unrecognised', () {
+      const renamed = {
+        'div': '<div><a href="/x"><p class="h5">RITZ</p></a>'
+            '<div class="chef" data-id="26-1"><em>KO-BQ: 11:00 am - 2:00 pm</em>'
+            '</div></div>',
+        'article': '<article><h3>RITZ</h3><article>KO-BQ</article></article>',
+        'table': '<table><tr><td>RITZ</td><td>KO-BQ</td></tr></table>',
+        'attribute': '<div><a href="/x"><p class="h5">RITZ</p></a><ul>'
+            '<div data-chef="26-1">KO-BQ</div></ul></div>',
+        'other attribute': '<a data-chef="26-1"><em>KO-BQ: 11:00 am - 2:00 pm'
+            '</em></a>',
+      };
+      for (final entry in renamed.entries) {
+        final parsed = parseTodayChefs(
+          '<h2>Today\'s Visiting Chefs</h2>${entry.value}<script></script>',
+        );
+        expect(parsed.found, isFalse, reason: entry.key);
+        expect(parsed.chefs, isEmpty, reason: entry.key);
+      }
     });
   });
 
@@ -206,7 +255,7 @@ void main() {
       final view = visitingChefsView(
         tigerCenter: tigerCenter(),
         rit: ritSnapshot(
-          menusHtml: "<h2>Today's Visiting Chefs</h2><script></script>",
+          menusHtml: emptyMenusHtml,
         ),
         now: today,
       );
@@ -380,7 +429,7 @@ void main() {
         tigerCenter: tigerCenter(),
         rit: ritSnapshot(
           scheduleHtml: fixture('rit_visiting_chefs.html'),
-          menusHtml: "<h2>Today's Visiting Chefs</h2><script></script>",
+          menusHtml: emptyMenusHtml,
           todayOk: false,
           scheduleOk: false,
         ),
@@ -630,7 +679,7 @@ void main() {
       var now = DateTime.utc(2026, 10, 17, 16);
       final start = now;
       final pages = livePages(
-        menus: "<h2>Today's Visiting Chefs</h2><script></script>",
+        menus: emptyMenusHtml,
       );
       backend = build(pages, clock: () => now);
 
@@ -648,7 +697,7 @@ void main() {
 
       // A failed snapshot is retried after five minutes, not another thirty.
       pages.addAll(livePages(
-        menus: "<h2>Today's Visiting Chefs</h2><script></script>",
+        menus: emptyMenusHtml,
       ));
       final before = hits[ritMenusUrl]!;
       // Repeated pulls and reads inside five minutes of the failure never
@@ -762,7 +811,7 @@ void main() {
       backend = build({
         tcUrl: http.Response(fixture('tc_dining_all_empty_menus.json'), 200),
         ritMenusUrl: http.Response(
-          "<h2>Today's Visiting Chefs</h2><script></script>",
+          emptyMenusHtml,
           200,
         ),
         ritVisitingChefsUrl:

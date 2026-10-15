@@ -151,12 +151,35 @@ String? _clock(String token) {
       'end': text.end,
     });
   }
-  // Chef markup is present but none of it matched. That is the page changing
-  // under the parser, which must not read as a quiet day.
-  if (chefs.isEmpty && (section.contains('chefid') || section.contains('<li'))) {
+  if (chefs.isNotEmpty) return (found: true, chefs: chefs);
+
+  // No chefs. The heading alone proves nothing: a page that keeps it and
+  // restructures everything under it looks exactly like this. A quiet day
+  // needs positive evidence, and chef markup that is present but did not
+  // match is the page changing under the parser, never a quiet day.
+  if (section.contains('chefid') || section.contains('<li')) {
     return (found: false, chefs: const []);
   }
-  return (found: true, chefs: chefs);
+  return (found: _confirmsNoChefs(section), chefs: const []);
+}
+
+final RegExp _emptyMarkerRe = RegExp(r'class="[^"]*\bno-visiting-chefs\b');
+
+/// A location block exactly as populated days have it: the linked `p.h5`
+/// name, then the `ul` that would hold the chefs.
+final RegExp _locationBlockRe = RegExp(
+  r'<a[^>]*>\s*<p class="h5[^"]*">.*?</p>\s*</a>\s*<ul[^>]*>(.*?)</ul>',
+  dotAll: true,
+);
+
+/// Whether a section with no chefs says so on purpose: RIT's own
+/// `no-visiting-chefs` marker, or at least one location block of the
+/// structure populated days use, every one of whose lists is empty.
+bool _confirmsNoChefs(String section) {
+  if (_emptyMarkerRe.hasMatch(section)) return true;
+  final blocks = _locationBlockRe.allMatches(section).toList();
+  return blocks.isNotEmpty &&
+      blocks.every((b) => b.group(1)!.trim().isEmpty);
 }
 
 final RegExp _dayRe = RegExp(
