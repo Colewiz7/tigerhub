@@ -482,6 +482,34 @@ void main() {
           reason: 'focus has moved on');
     });
 
+    testWidgets('the ring\'s reserved room does not push the pill inward', (
+      tester,
+    ) async {
+      await pumpMany(tester);
+      final pillLeft = tester
+          .getRect(find.byKey(const ValueKey('more-pill')))
+          .left;
+      // A row is 12px of padding, then the badge. The icon's box fills the
+      // 42px badge, so its left edge is the badge's.
+      final rowLeft =
+          tester.getRect(find.byIcon(Icons.restaurant_menu_rounded).first).left -
+          12;
+      expect(pillLeft, rowLeft, reason: 'pill and rows share a left edge');
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(
+        tester.getRect(find.byKey(const ValueKey('more-pill'))).left,
+        rowLeft,
+        reason: 'focusing moves nothing',
+      );
+      expect(
+        tester.getRect(find.byKey(const ValueKey('focus-ring'))).left,
+        rowLeft - 4,
+        reason: 'the ring spills into the card padding instead',
+      );
+    });
+
     testWidgets('the focus ring sits 2px outside the pill, with a real gap', (
       tester,
     ) async {
@@ -658,6 +686,15 @@ void main() {
       'table': '<table><tr><td>RITZ</td><td>KO-BQ</td></tr></table>',
       'renamed attribute': '<a data-chef="26-1"><em>KO-BQ: 11:00 am - 2:00 pm'
           '</em></a>',
+      // Nothing under the heading at all: not a quiet day, just no evidence.
+      'no': '',
+      'commented out': '<!-- <li><a chefid="26-1"><em>KO-BQ: 11:00 am - 2:00 pm'
+          '</em></a></li> -->',
+      'mixed empty and restructured':
+          '<div><a href="/x"><p class="h5">RITZ</p></a><ul></ul></div>'
+          '<div><a href="/y"><p class="h5">Gracie\'s</p></a>'
+          '<section>KO-BQ</section></div>',
+      'RIT empty marker on /menus': '<p class="no-visiting-chefs">None</p>',
     };
     for (final entry in restructured.entries) {
       testWidgets('a kept heading over ${entry.key} chef markup is unavailable '
@@ -706,6 +743,56 @@ void main() {
         expect(find.text('No visiting chefs today'), findsNothing);
       });
     }
+
+    testWidgets('the schedule page positively listing today empty is a quiet day '
+        'even when /menus shows nothing', (tester) async {
+      final dir = Directory.systemTemp.createTempSync('tigerhub-quiet');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      JsonStore.overrideForTesting(dir);
+      final tc = File('test/fixtures/tc_dining_all_empty_menus.json')
+          .readAsStringSync();
+      final backend = LocalBackend(
+        upstream: Upstream(
+          client: MockClient((request) async {
+            if (request.url.host == 'tigercenter.rit.edu') {
+              return http.Response(tc, 200);
+            }
+            if (request.url.path.endsWith('/dining/menus')) {
+              return http.Response(
+                '<h2>Today\'s Visiting Chefs</h2><script></script>',
+                200,
+              );
+            }
+            return http.Response(
+              '<div class="daily-visiting-chefs" id="day-2026-10-14">'
+              '<h3>Today</h3><p class="no-visiting-chefs">None</p></div>'
+              '<div class="daily-visiting-chefs" id="day-2026-10-15">'
+              '<h3>Thu</h3><span>RITZ</span><ul><li><em>KO-BQ</em></li></ul>'
+              '</div>',
+              200,
+            );
+          }),
+          maxRetries: 1,
+        ),
+        store: JsonStore.overrideForTestingInstance,
+      );
+      addTearDown(backend.close);
+
+      final result = (await tester.runAsync(
+        () async =>
+            (await ApiClient(backend: backend).visitingChefs().toList()).last,
+      ))!;
+      await _pump(
+        tester,
+        result: result,
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 1,
+      );
+      expect(find.text('No visiting chefs today'), findsOneWidget);
+      expect(find.text('Menus unavailable'), findsNothing);
+      expect(find.text('Next: Tomorrow · KO-BQ at RITZ'), findsOneWidget);
+    });
 
     testWidgets('a real source time is the age shown in the header', (
       tester,

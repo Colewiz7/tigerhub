@@ -41,6 +41,10 @@ const String availabilityUnavailable = 'unavailable';
 
 // --- parsing -----------------------------------------------------------
 
+/// Chefs commented out of the page are not on the page.
+String _withoutComments(String html) =>
+    html.replaceAll(RegExp(r'<!--.*?-->', dotAll: true), '');
+
 final RegExp _chefAnchorRe = RegExp(
   r'chefid="(\d+)-(\d+)"[^>]*>\s*<em>(.*?)</em>',
   dotAll: true,
@@ -87,10 +91,11 @@ String? _clock(String token) {
 
 /// What the "Today's Visiting Chefs" block of `/dining/menus` says.
 ///
-/// [found] is false when the heading is not on the page at all, which means
-/// the structure changed or the page is not the dining page. That is different
-/// from found with no chefs, which is a quiet day.
-({bool found, List<Map<String, dynamic>> chefs}) parseTodayChefs(String html) {
+/// [found] means at least one chef was parsed, and nothing else. No chefs,
+/// whether the heading is missing, the markup changed or the day is genuinely
+/// quiet, is not found: this page can say who is cooking, never that nobody is.
+({bool found, List<Map<String, dynamic>> chefs}) parseTodayChefs(String source) {
+  final html = _withoutComments(source);
   final heading = RegExp(
     r"<h2[^>]*>(?:(?!</h2>).)*Today(?:'|&#0?39;|’)s Visiting Chefs",
     dotAll: true,
@@ -151,35 +156,11 @@ String? _clock(String token) {
       'end': text.end,
     });
   }
-  if (chefs.isNotEmpty) return (found: true, chefs: chefs);
-
-  // No chefs. The heading alone proves nothing: a page that keeps it and
-  // restructures everything under it looks exactly like this. A quiet day
-  // needs positive evidence, and chef markup that is present but did not
-  // match is the page changing under the parser, never a quiet day.
-  if (section.contains('chefid') || section.contains('<li')) {
-    return (found: false, chefs: const []);
-  }
-  return (found: _confirmsNoChefs(section), chefs: const []);
-}
-
-final RegExp _emptyMarkerRe = RegExp(r'class="[^"]*\bno-visiting-chefs\b');
-
-/// A location block exactly as populated days have it: the linked `p.h5`
-/// name, then the `ul` that would hold the chefs.
-final RegExp _locationBlockRe = RegExp(
-  r'<a[^>]*>\s*<p class="h5[^"]*">.*?</p>\s*</a>\s*<ul[^>]*>(.*?)</ul>',
-  dotAll: true,
-);
-
-/// Whether a section with no chefs says so on purpose: RIT's own
-/// `no-visiting-chefs` marker, or at least one location block of the
-/// structure populated days use, every one of whose lists is empty.
-bool _confirmsNoChefs(String section) {
-  if (_emptyMarkerRe.hasMatch(section)) return true;
-  final blocks = _locationBlockRe.allMatches(section).toList();
-  return blocks.isNotEmpty &&
-      blocks.every((b) => b.group(1)!.trim().isEmpty);
+  // Zero chefs is unknown, whatever the page looks like around the heading.
+  // This page is never read as a quiet day: a changed layout, a comment, a
+  // bare heading and a real quiet day all look alike from here, so only the
+  // schedule page may say "none today".
+  return (found: chefs.isNotEmpty, chefs: chefs);
 }
 
 final RegExp _dayRe = RegExp(
@@ -191,7 +172,8 @@ final RegExp _dayRe = RegExp(
 /// All fourteen are in the markup and the page hides all but one with inline
 /// style, so visibility is ignored. A day with `p.no-visiting-chefs` or no
 /// chefs is an empty day, which is still a day the page has spoken for.
-Map<String, Map<String, dynamic>> parseChefSchedule(String html) {
+Map<String, Map<String, dynamic>> parseChefSchedule(String source) {
+  final html = _withoutComments(source);
   final days = <Map<String, dynamic>>[];
   final starts = _dayRe.allMatches(html).toList();
   for (var i = 0; i < starts.length; i++) {
@@ -257,10 +239,10 @@ Future<Map<String, dynamic>> scrapeRitChefs(
 
   try {
     final parsed = parseTodayChefs(await http.getText(ritMenusUrl));
-    // A 200 is not a read. Only a page whose chef block was recognised, with
-    // chefs or as an empty block, counts. Anything else keeps the previous
-    // copy and time, and is flagged failed like a network error, so it is
-    // retried after five minutes and never advances "last updated".
+    // A 200 is not a read. Only a page that yielded chefs counts. Anything
+    // else, including a real quiet day, keeps the previous copy and time and
+    // is flagged failed like a network error, so it is retried after five
+    // minutes and never advances "last updated".
     if (parsed.found) {
       todayPart = {'date': today, 'found': true, 'chefs': parsed.chefs};
       todayAt = CampusTime.format(now);
@@ -380,22 +362,23 @@ Map<String, dynamic> visitingChefsView({
   }
 
   final menusPart = rit?['today'] as Map<String, dynamic>?;
-  // Cached chefs keep showing whatever happened since, but only a source
-  // whose last attempt succeeded may say "none today".
+  // Cached chefs keep showing whatever happened since. /menus can only ever
+  // add chefs here; it never says "none today".
   final menusToday = menusPart != null &&
       menusPart['date'] == today &&
       menusPart['found'] == true;
-  //
-  // Confirmation is opt in: snapshots stored before these fields existed lack
-  // them, and one of those once marked an unparsed day as empty. They still
-  // show their chefs, and `ritChefsFailed` has them refetched.
-  final menusConfirms = menusToday && rit?['today_ok'] == true;
+  // Confirming a quiet day is opt in: snapshots stored before the ok/unknown
+  // fields existed lack them, and one of those once marked an unparsed day as
+  // empty. They still show their chefs, and `ritChefsFailed` has them refetched.
   final schedule = rit?['schedule'] as Map<String, dynamic>?;
   var scheduleToday = schedule?[today] as Map<String, dynamic>?;
   // A day block the parser could not read says nothing, either way.
   if (scheduleToday?['unknown'] == true) scheduleToday = null;
+  // The one place a quiet day comes from rit.edu: the schedule page lists
+  // today's block and positively marks it empty, on a read that succeeded.
   final scheduleConfirms =
       scheduleToday != null &&
+      scheduleToday['empty'] == true &&
       scheduleToday['unknown'] == false &&
       rit?['schedule_ok'] == true;
 
@@ -459,7 +442,7 @@ Map<String, dynamic> visitingChefsView({
     return {'items': items, 'availability': availabilityAvailable};
   }
 
-  if (!tigerCenterMenusEmpty(tcToday) || menusConfirms || scheduleConfirms) {
+  if (!tigerCenterMenusEmpty(tcToday) || scheduleConfirms) {
     return {
       'items': items,
       'availability': availabilityEmpty,

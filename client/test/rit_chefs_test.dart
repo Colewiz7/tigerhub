@@ -126,27 +126,37 @@ void main() {
           isFalse);
     });
 
-    test('location blocks with empty lists are a confirmed empty day', () {
-      final quiet = parseTodayChefs(emptyMenusHtml);
-      expect(quiet.found, isTrue);
-      expect(quiet.chefs, isEmpty);
-    });
-
-    test('RIT\'s no-visiting-chefs marker is a confirmed empty day', () {
-      final quiet = parseTodayChefs(
-        '<h2>Today\'s Visiting Chefs</h2>'
-        '<p class="no-visiting-chefs">Back soon</p><script></script>',
-      );
-      expect(quiet.found, isTrue);
-    });
-
-    test('the heading alone is not evidence of a quiet day', () {
-      for (final html in [
-        '<h2><i></i> Today\'s Visiting Chefs</h2><div></div><script></script>',
-        '<h2>Today\'s Visiting Chefs</h2>',
-      ]) {
-        expect(parseTodayChefs(html).found, isFalse, reason: html);
+    test('/menus never says a day is empty, however empty it looks', () {
+      // Zero parsed chefs is unknown. Every page below used to be accepted as
+      // a quiet day by one detection rule or another.
+      final pages = {
+        'empty location blocks': emptyMenusHtml,
+        'RIT empty marker': '<h2>Today\'s Visiting Chefs</h2>'
+            '<p class="no-visiting-chefs">Back soon</p><script></script>',
+        'bare heading': '<h2><i></i> Today\'s Visiting Chefs</h2><div></div>'
+            '<script></script>',
+        'heading only': '<h2>Today\'s Visiting Chefs</h2>',
+        'commented out chefs': '<h2>Today\'s Visiting Chefs</h2>'
+            '<!-- <li><a chefid="x-1"> --><div></div><script></script>',
+        'mixed: empty block beside restructured markup':
+            '<h2>Today\'s Visiting Chefs</h2>'
+            '<div><a href="/x"><p class="h5">RITZ</p></a><ul></ul></div>'
+            '<div><a href="/y"><p class="h5">Gracie\'s</p></a>'
+            '<section>KO-BQ</section></div><script></script>',
+      };
+      for (final entry in pages.entries) {
+        final parsed = parseTodayChefs(entry.value);
+        expect(parsed.found, isFalse, reason: entry.key);
+        expect(parsed.chefs, isEmpty, reason: entry.key);
       }
+    });
+
+    test('a populated page beside a broken block still returns its chefs', () {
+      final parsed = parseTodayChefs(
+        '${fixture('rit_dining_menus.html')}<!-- <li> -->',
+      );
+      expect(parsed.found, isTrue);
+      expect(parsed.chefs.length, 5);
     });
 
     test('a heading over restructured chef markup is unrecognised', () {
@@ -251,15 +261,64 @@ void main() {
       expect(view['availability'], availabilityUnavailable);
     });
 
-    test('a valid rit.edu page with no chefs is a real empty day', () {
-      final view = visitingChefsView(
+    test('a /menus page with no chefs is unavailable on its own', () {
+      for (final html in [
+        emptyMenusHtml,
+        "<h2>Today's Visiting Chefs</h2>",
+        '<h2>Today\'s Visiting Chefs</h2><p class="no-visiting-chefs">x</p>',
+      ]) {
+        final view = visitingChefsView(
+          tigerCenter: tigerCenter(),
+          rit: ritSnapshot(menusHtml: html),
+          now: today,
+        );
+        expect(view['availability'], availabilityUnavailable, reason: html);
+      }
+    });
+
+    test('only the schedule page positively listing today empty is a quiet day',
+        () {
+      const day = '2026-10-14';
+      String block(String inner) =>
+          '<div class="daily-visiting-chefs" id="day-$day">$inner</div>';
+      final cases = {
+        'p.no-visiting-chefs': (
+          block('<h3>Today</h3><p class="no-visiting-chefs">None</p>'),
+          availabilityEmpty,
+        ),
+        // A block that is there but says nothing either way.
+        'empty block, no marker': (
+          block('<h3>Today</h3>'),
+          availabilityUnavailable,
+        ),
+        'renamed marker': (
+          block('<h3>Today</h3><p class="no-chefs-today">None</p>'),
+          availabilityUnavailable,
+        ),
+        'commented chefs': (
+          block('<!-- <span>RITZ</span><ul><li><em>KO-BQ</em></li></ul> -->'),
+          availabilityUnavailable,
+        ),
+      };
+      for (final entry in cases.entries) {
+        final view = visitingChefsView(
+          tigerCenter: tigerCenter(),
+          rit: ritSnapshot(scheduleHtml: entry.value.$1),
+          now: today,
+        );
+        expect(view['availability'], entry.value.$2, reason: entry.key);
+      }
+
+      // And with no block for today at all.
+      final other = visitingChefsView(
         tigerCenter: tigerCenter(),
         rit: ritSnapshot(
-          menusHtml: emptyMenusHtml,
+          scheduleHtml: '<div class="daily-visiting-chefs" id="day-2026-10-15">'
+              '<p class="no-visiting-chefs">x</p></div>',
         ),
         now: today,
       );
-      expect(view['availability'], availabilityEmpty);
+      expect(other['availability'], availabilityUnavailable);
     });
 
     test('a p.no-visiting-chefs day is empty and names the next chef', () {

@@ -51,7 +51,8 @@ class VisitingChefsCard extends StatelessWidget {
     // The badge and a two line title share one row, and at large text the
     // title no longer fits beside it and breaks mid word. Past this scale the
     // count moves into words beneath the title, which the spec asks for anyway.
-    final badgeFits = MediaQuery.textScalerOf(context).scale(1) < _badgeScaleMax;
+    final badgeFits =
+        MediaQuery.textScalerOf(context).scale(1) < _badgeScaleMax;
     final summary = '${all.length} ${all.length == 1 ? 'chef' : 'chefs'} today';
 
     return CardShell(
@@ -78,27 +79,23 @@ class VisitingChefsCard extends StatelessWidget {
             ),
       child: switch ((result.isPriming, all.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading today'),
-        (_, true) when availability == Availability.unavailable =>
-          _Scrolls(
-            EmptyState(
-              kind: EmptyKind.sourceDown,
-              title: 'Menus unavailable',
-              detail: updated == null
-                  ? 'Never updated'
-                  : 'Updated ${formatAge(updated)}',
-              action: const _DiningLink(),
-            ),
+        (_, true) when availability == Availability.unavailable => _Scrolls(
+          EmptyState(
+            kind: EmptyKind.sourceDown,
+            title: 'Menus unavailable',
+            detail: updated == null
+                ? 'Never updated'
+                : 'Updated ${formatAge(updated)}',
+            action: const _DiningLink(),
           ),
+        ),
         (_, true) => _Scrolls(
           EmptyState(
             kind: EmptyKind.noVisitingChefs,
             detail: next == null ? null : _nextLine(next),
           ),
         ),
-        _ => _ChefList(
-          chefs: all,
-          summary: badgeFits ? null : summary,
-        ),
+        _ => _ChefList(chefs: all, summary: badgeFits ? null : summary),
       },
     );
   }
@@ -418,54 +415,62 @@ class _MoreChefsState extends State<_MoreChefs> {
             borderRadius: BorderRadius.circular(_MoreChefs.minHeight / 2),
             focusColor: Colors.transparent,
             child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: _MoreChefs.minHeight),
+              constraints: const BoxConstraints(
+                minHeight: _MoreChefs.minHeight,
+              ),
               child: Center(
                 widthFactor: 1,
                 // 2px primary ring, 2px off the pill, per the focus-ring token.
                 // A border paints inside its own box, so the box is the pill
                 // plus the 2px offset plus the 2px ring: the outer 2px is the
-                // ring and the 2px inside it is the gap.
-                child: DecoratedBox(
-                  key: const ValueKey('focus-ring'),
-                  decoration: ShapeDecoration(
-                    shape: StadiumBorder(
-                      side: BorderSide(
-                        width: 2,
-                        color: ring ? scheme.primary : Colors.transparent,
+                // ring and the 2px inside it is the gap. That room is reserved
+                // all round, then pulled back left by its own width so the
+                // pill lines up with the rows above; the ring spills 4px into
+                // the card padding while focused.
+                child: Transform.translate(
+                  offset: const Offset(-_MoreChefs.ring, 0),
+                  child: DecoratedBox(
+                    key: const ValueKey('focus-ring'),
+                    decoration: ShapeDecoration(
+                      shape: StadiumBorder(
+                        side: BorderSide(
+                          width: 2,
+                          color: ring ? scheme.primary : Colors.transparent,
+                        ),
                       ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(_MoreChefs.ring),
-                    child: DecoratedBox(
-                      key: const ValueKey('more-pill'),
-                      decoration: ShapeDecoration(
-                        color: scheme.surfaceContainerHigh,
-                        shape: Shapes.pill,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 13,
-                          vertical: 6,
+                    child: Padding(
+                      padding: const EdgeInsets.all(_MoreChefs.ring),
+                      child: DecoratedBox(
+                        key: const ValueKey('more-pill'),
+                        decoration: ShapeDecoration(
+                          color: scheme.surfaceContainerHigh,
+                          shape: Shapes.pill,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '+$hidden more',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: muted,
-                                    fontVariations: Weights.medium,
-                                  ),
-                            ),
-                            const SizedBox(width: 3),
-                            Icon(
-                              Icons.chevron_right_rounded,
-                              size: 15,
-                              color: muted,
-                            ),
-                          ],
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 13,
+                            vertical: 6,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '+$hidden more',
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: muted,
+                                      fontVariations: Weights.medium,
+                                    ),
+                              ),
+                              const SizedBox(width: 3),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                size: 15,
+                                color: muted,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -522,12 +527,7 @@ class _ChefsSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(
-              Insets.cardPadding,
-              16,
-              12,
-              8,
-            ),
+            padding: const EdgeInsets.fromLTRB(Insets.cardPadding, 16, 12, 8),
             child: Row(
               children: [
                 Expanded(
@@ -601,11 +601,8 @@ class _DiningLink extends StatelessWidget {
       excludeSemantics: true,
       child: InkWell(
         borderRadius: BorderRadius.circular(24),
-        onTap: () => openOrCopy(
-          context,
-          Uri.parse(ritDiningPageUrl),
-          label: 'Link',
-        ),
+        onTap: () =>
+            openOrCopy(context, Uri.parse(ritDiningPageUrl), label: 'Link'),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 48),
           child: Padding(
