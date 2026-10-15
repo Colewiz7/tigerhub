@@ -8,6 +8,8 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:url_launcher_platform_interface/method_channel_url_launcher.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import 'golden_harness.dart';
+
 class _Launcher extends MethodChannelUrlLauncher with MockPlatformInterfaceMixin {
   final opened = <String>[];
   final modes = <PreferredLaunchMode>[];
@@ -86,7 +88,7 @@ void main() {
     for (final brightness in [Brightness.light, Brightness.dark]) {
       for (final scale in [1.0, 2.0]) {
         final name = 'quick_links_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${scale.toInt()}x.png';
-        testWidgets(name, (tester) async {
+        goldenWidgets(name, (tester) async {
           await pumpLinks(tester, size, brightness, scale);
           expect(tester.takeException(), isNull);
           await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
