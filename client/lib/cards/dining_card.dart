@@ -142,7 +142,7 @@ class DiningCard extends StatelessWidget {
       // this card exists to answer, which is what is open right now.
       hero: locations.isEmpty
           ? null
-          : ScallopedBadge(value: '$openNow', label: 'OPEN', size: 88),
+          : CardHero(value: '$openNow', label: 'OPEN'),
       child: switch ((result.isPriming, locations.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
         (_, true) => const EmptyState(
@@ -175,22 +175,33 @@ class _List extends StatelessWidget {
 
     return BoundedList(
       itemCount: limit == null ? sorted.length : sorted.length.clamp(0, limit!),
-      itemHeight: StatusRow.heightFor(context),
+      itemHeight: StatusRow.heightFor(context, dense: true),
+      dense: true,
+      maxRows: phoneRowCap(context),
       noun: 'open',
       // Open rows sort first, so visible capacity is consumed by open
       // locations before closed ones. The footer and the hero badge then count
       // the same population.
       hiddenCountBuilder: (shown) => (openNow - shown).clamp(0, openNow),
       onShowAll: onShowAll,
-      itemBuilder: (context, index) => DiningRow(location: sorted[index]),
+      itemBuilder: (context, index) =>
+          DiningRow(location: sorted[index], dense: true),
     );
   }
 }
 
 class DiningRow extends StatelessWidget {
-  const DiningRow({super.key, required this.location, this.api});
+  const DiningRow({
+    super.key,
+    required this.location,
+    this.api,
+    this.dense = false,
+  });
 
   final DiningLocation location;
+
+  /// The dashboard's condensed phone row.
+  final bool dense;
 
   /// When supplied the row opens a detail sheet. The Today card preview leaves
   /// it null, since tapping there navigates to the Dining tab instead.
@@ -229,6 +240,7 @@ class DiningRow extends StatelessWidget {
 
     final client = api;
     return StatusRow(
+      dense: dense,
       icon: Preferences.instance.isPinned(location.id)
           ? Icons.push_pin_rounded
           : iconForVenue(location.name),

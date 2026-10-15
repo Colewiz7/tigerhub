@@ -29,6 +29,7 @@ import '../widgets/glyph.dart';
 import '../widgets/section_nav.dart';
 import '../widgets/week_grid.dart';
 import '../services/subscriptions.dart';
+import 'quick_links_section.dart';
 
 class CampusScreen extends StatefulWidget {
   const CampusScreen({
@@ -165,6 +166,13 @@ class _CampusScreenState extends State<CampusScreen> {
           subtitle: 'Emergency, text and non-emergency contacts',
           icon: Icons.health_and_safety_rounded,
           builder: (context) => const _SafetySection(),
+        ),
+        SectionSpec(
+          id: 'links',
+          title: 'Quick links',
+          subtitle: 'RIT services in your browser',
+          icon: Icons.open_in_new_rounded,
+          builder: (context) => const QuickLinksSection(),
         ),
         SectionSpec(
           id: 'rec',
