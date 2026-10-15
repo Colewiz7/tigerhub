@@ -14,7 +14,11 @@ import '../config.dart';
 /// gets rather than by window size: it sits in a Row with the settings and
 /// palette buttons, so the window is not the space available.
 class Wordmark extends StatelessWidget {
-  const Wordmark({super.key});
+  const Wordmark({super.key, this.height});
+
+  /// Overrides the art's height (40 wide, 34 compact). The phone masthead
+  /// sets 32 so the whole bar fits in 48.
+  final double? height;
 
   static const double _wideFrom = 230;
 
@@ -38,7 +42,7 @@ class Wordmark extends StatelessWidget {
           // dark currentColor picture alive when the OS switched to light
           // mode, leaving "Hub" almost white on white until restart.
           key: ValueKey(scheme.onSurface),
-          height: wide ? 40 : 34,
+          height: height ?? (wide ? 40 : 34),
           // "Hub" is painted with fill="currentColor" so it can follow the
           // theme. flutter_svg defaults currentColor to black, and the
           // masthead sits on a near-black surface, so without this the second

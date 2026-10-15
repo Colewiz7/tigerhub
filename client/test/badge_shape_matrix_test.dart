@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'golden_harness.dart';
+
 void main() {
-  testWidgets('badge shape matrix', (tester) async {
+  goldenWidgets('badge shape matrix', (tester) async {
     await tester.binding.setSurfaceSize(const Size(520, 500));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 

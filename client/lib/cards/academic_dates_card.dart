@@ -37,12 +37,14 @@ class AcademicDatesCard extends StatelessWidget {
       dragHandle: dragHandle,
       hero: daysAway == null
           ? null
-          : ScallopedBadge(
+          : CardHero(
               value: daysAway == 0 ? 'NOW' : '$daysAway',
               label: daysAway == 0
                   ? 'TODAY'
                   : (daysAway == 1 ? 'DAY TO GO' : 'DAYS TO GO'),
-              size: 88,
+              pill: daysAway == 0
+                  ? 'today'
+                  : (daysAway == 1 ? '1 day to go' : '$daysAway days to go'),
             ),
       child: dates.isEmpty
           ? const EmptyState(
@@ -51,10 +53,13 @@ class AcademicDatesCard extends StatelessWidget {
             )
           : BoundedList(
               itemCount: dates.length,
-              itemHeight: StatusRow.heightFor(context),
+              itemHeight: StatusRow.heightFor(context, dense: true),
+              dense: true,
+              maxRows: phoneRowCap(context),
               noun: 'dates',
               onShowAll: onShowAll,
               itemBuilder: (context, index) => StatusRow(
+                dense: true,
                 icon: index == 0
                     ? Icons.upcoming_rounded
                     : Icons.calendar_today_rounded,
