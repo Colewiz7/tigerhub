@@ -253,8 +253,11 @@ Future<Map<String, dynamic>> scrapeRitChefs(
   }
   try {
     final parsed = parseChefSchedule(await http.getText(ritVisitingChefsUrl));
-    // Usable means at least one day was read as chefs or an explicit empty.
-    if (parsed.values.any((day) => day['unknown'] != true)) {
+    // Usable means today's own block was read, as chefs or an explicit
+    // empty. Another day parsing says nothing about today, so it neither
+    // replaces the snapshot nor advances "last updated".
+    final todayBlock = parsed[today];
+    if (todayBlock != null && todayBlock['unknown'] != true) {
       schedule = parsed;
       scheduleAt = CampusTime.format(now);
       scheduleOk = true;
@@ -442,7 +445,10 @@ Map<String, dynamic> visitingChefsView({
     return {'items': items, 'availability': availabilityAvailable};
   }
 
-  if (!tigerCenterMenusEmpty(tcToday) || scheduleConfirms) {
+  // The only way to a quiet day. TigerCenter publishing menus without a chef
+  // is not enough: that feed is the one that went quiet, and nothing in it
+  // says whether a chef was meant to be there.
+  if (scheduleConfirms) {
     return {
       'items': items,
       'availability': availabilityEmpty,
