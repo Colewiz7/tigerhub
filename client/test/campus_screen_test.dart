@@ -31,6 +31,8 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:url_launcher_platform_interface/method_channel_url_launcher.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import 'golden_harness.dart';
+
 /// Serves the same envelopes LocalBackend does, from captured fixtures, with no
 /// network and no clock dependence.
 class _FixtureBackend implements Backend {
@@ -108,20 +110,46 @@ void main() {
     config = StaticConfig.instance;
   });
 
+  setUpAll(() async {
+    await (FontLoader(
+      'GoldenRubik',
+    )..addFont(rootBundle.load('assets/fonts/Rubik.ttf'))).load();
+    await (FontLoader(
+      'MaterialIcons',
+    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
+  });
+
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
   });
 
-  Future<void> pumpCampus(WidgetTester tester) async {
+  Future<void> pumpCampus(
+    WidgetTester tester, {
+    Size size = const Size(1500, 1000),
+    Brightness brightness = Brightness.light,
+    double textScale = 1,
+  }) async {
     tester.view.devicePixelRatio = 1.0;
-    tester.view.physicalSize = const Size(1500, 1000);
+    tester.view.physicalSize = size;
     addTearDown(tester.view.reset);
 
+    final theme = AppTheme.from(
+      ColorScheme.fromSeed(
+        seedColor: const Color(0xFFF76902),
+        brightness: brightness,
+      ),
+    );
     await tester.pumpWidget(
       MaterialApp(
-        theme: AppTheme.from(
-          ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+        debugShowCheckedModeBanner: false,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
+        theme: theme.copyWith(
+          textTheme: theme.textTheme.apply(fontFamily: 'GoldenRubik'),
         ),
         home: Scaffold(
           body: CampusScreen(
@@ -156,6 +184,15 @@ void main() {
       findsWidgets,
       reason: 'the pool is missing, which is how the shape bug looked',
     );
+  });
+
+  testWidgets('Campus includes quick links', (tester) async {
+    await pumpCampus(tester);
+    await tester.tap(find.text('Quick links'));
+    await tester.pumpAndSettle();
+    for (final label in ['Tiger Spend', 'SIS', 'myCourses', 'eServices', 'Tiger Chat', 'Service Center', 'FMS requests']) {
+      expect(find.text(label), findsOneWidget);
+    }
   });
 
   testWidgets('find on campus lists a kind with a real label', (tester) async {
@@ -198,6 +235,73 @@ void main() {
 
     expect(launcher.launched, ['tel:5854753333']);
   });
+
+  testWidgets('safety text and Service Center use their official actions', (
+    tester,
+  ) async {
+    final launcher = _FakeLauncher(succeeds: true);
+    UrlLauncherPlatform.instance = launcher;
+    await pumpCampus(tester);
+    await tester.tap(find.text('Safety'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Emergency text'), findsOneWidget);
+    expect(find.text('585-205-8333'), findsOneWidget);
+    expect(find.text('RIT Service Center'), findsOneWidget);
+    expect(find.text('585-475-5000'), findsOneWidget);
+
+    expect(
+      find.byWidgetPredicate((widget) {
+        if (widget is! Semantics) return false;
+        final row = widget;
+        return row.properties.label == 'Emergency text, 585-205-8333' &&
+            row.properties.hint == 'Texts 585-205-8333';
+      }),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate((widget) {
+        if (widget is! Semantics) return false;
+        final row = widget;
+        return row.properties.label == 'RIT Service Center, 585-475-5000' &&
+            row.properties.hint == 'Calls 585-475-5000';
+      }),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Emergency text'));
+    await tester.pump();
+    await tester.tap(find.text('RIT Service Center'));
+    await tester.pump();
+    expect(launcher.launched, ['sms:5852058333', 'tel:5854755000']);
+  });
+
+  for (final size in const [Size(390, 844), Size(430, 932)]) {
+    for (final brightness in Brightness.values) {
+      for (final textScale in const [1.0, 2.0]) {
+        goldenWidgets(
+          'campus safety${size.width.toInt()}x${size.height.toInt()} ${brightness.name} ${textScale}x',
+          (tester) async {
+            await pumpCampus(
+              tester,
+              size: size,
+              brightness: brightness,
+              textScale: textScale,
+            );
+            await tester.tap(find.text('Safety'));
+            await tester.pumpAndSettle();
+            expect(tester.takeException(), isNull);
+            await expectLater(
+              find.byType(Scaffold),
+              matchesGoldenFile(
+                'goldens/campus_safety_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${textScale.toInt()}x.png',
+              ),
+            );
+          },
+        );
+      }
+    }
+  }
 
   testWidgets('with no dialer the number is copied instead', (tester) async {
     UrlLauncherPlatform.instance = _FakeLauncher(succeeds: false);
@@ -345,7 +449,8 @@ void main() {
   });
 }
 
-class _FakeLauncher extends MethodChannelUrlLauncher with MockPlatformInterfaceMixin {
+class _FakeLauncher extends MethodChannelUrlLauncher
+    with MockPlatformInterfaceMixin {
   _FakeLauncher({required this.succeeds});
 
   final bool succeeds;

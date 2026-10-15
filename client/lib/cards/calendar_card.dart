@@ -142,10 +142,9 @@ class _CalendarCardState extends State<CalendarCard> {
       // the week, so the number that matches it is the week's.
       hero: events.isEmpty
           ? null
-          : ScallopedBadge(
+          : CardHero(
               value: '${week.fold<int>(0, (n, d) => n + d.events.length)}',
               label: 'THIS WEEK',
-              size: 88,
               filled: week.any((d) => d.events.isNotEmpty),
             ),
       child: switch ((widget.result.isPriming, events.isEmpty)) {
@@ -172,11 +171,14 @@ class _CalendarCardState extends State<CalendarCard> {
                     ? _NothingOn(day: selected)
                     : BoundedList(
                         itemCount: selected.events.length,
-                        itemHeight: StatusRow.heightFor(context) + 4,
+                        itemHeight: StatusRow.heightFor(context, dense: true) +
+                            (Insets.phone(context) ? 0 : 4),
+                        dense: true,
+                        maxRows: phoneRowCap(context, reserved: 1),
                         noun: 'events',
                         onShowAll: widget.onShowAll,
                         itemBuilder: (context, i) =>
-                            EventRow(event: selected.events[i]),
+                            EventRow(event: selected.events[i], dense: true),
                       ),
               ),
           ],

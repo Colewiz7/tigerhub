@@ -29,6 +29,7 @@ import '../widgets/glyph.dart';
 import '../widgets/section_nav.dart';
 import '../widgets/week_grid.dart';
 import '../services/subscriptions.dart';
+import 'quick_links_section.dart';
 
 class CampusScreen extends StatefulWidget {
   const CampusScreen({
@@ -165,6 +166,13 @@ class _CampusScreenState extends State<CampusScreen> {
           subtitle: 'Emergency, text and non-emergency contacts',
           icon: Icons.health_and_safety_rounded,
           builder: (context) => const _SafetySection(),
+        ),
+        SectionSpec(
+          id: 'links',
+          title: 'Quick links',
+          subtitle: 'RIT services in your browser',
+          icon: Icons.open_in_new_rounded,
+          builder: (context) => const QuickLinksSection(),
         ),
         SectionSpec(
           id: 'rec',
@@ -416,12 +424,25 @@ class _SafetySection extends StatelessWidget {
       label: 'Emergency call',
       number: '585-475-3333',
       icon: Icons.emergency_rounded,
+      isText: false,
     ),
-    (label: 'Emergency text', number: '585-205-8333', icon: Icons.sms_rounded),
+    (
+      label: 'Emergency text',
+      number: '585-205-8333',
+      icon: Icons.sms_rounded,
+      isText: true,
+    ),
     (
       label: 'General calls',
       number: '585-475-2853',
       icon: Icons.support_agent_rounded,
+      isText: false,
+    ),
+    (
+      label: 'RIT Service Center',
+      number: '585-475-5000',
+      icon: Icons.support_agent_rounded,
+      isText: false,
     ),
   ];
 
@@ -439,11 +460,16 @@ class _SafetySection extends StatelessWidget {
           icon: contact.icon,
           title: contact.label,
           subtitle: contact.number,
-          trailing: const Icon(Icons.call_rounded, size: 18),
-          semanticHint: 'Calls ${contact.number}',
+          trailing: Icon(
+            contact.isText ? Icons.sms_rounded : Icons.call_rounded,
+            size: 18,
+          ),
+          semanticHint:
+              '${contact.isText ? 'Texts' : 'Calls'} ${contact.number}',
           onTap: () => openOrCopy(
             context,
-            phoneUri(contact.number),
+            phoneUri(contact.number)
+                .replace(scheme: contact.isText ? 'sms' : 'tel'),
             label: '${contact.label} number',
             copyText: contact.number,
           ),
