@@ -6,7 +6,10 @@
 /// hierarchy instead of a single flat run of words.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../theme/tokens.dart';
 
@@ -37,9 +40,6 @@ class StatusRow extends StatelessWidget {
   static const double denseGap = 4;
   static const double denseBadgeSize = 32;
 
-  /// From this text scale a dense row puts its trailing widget under the text
-  /// instead of beside it, so the name keeps the row's width.
-  static const double _stackTrailingFrom = 1.5;
 
   bool _isDense(BuildContext context) => dense && Insets.phone(context);
 
@@ -101,16 +101,9 @@ class StatusRow extends StatelessWidget {
     final subtitleStyle = dense
         ? text.bodySmall?.copyWith(fontSize: 14, height: 1.3, letterSpacing: 0)
         : text.bodySmall;
-    // Dense rows size to their text: a name or status may take two lines before
-    // it is cut, and at large text the trailing pill moves under the text so it
-    // cannot take the width the name needs. 52 stays the height of a row whose
-    // name and status each fit one line.
+    // Dense rows size to their text (see _DenseBody): 52 stays the height of a
+    // row whose name and status each fit one line, grown with the text size.
     final scale = MediaQuery.textScalerOf(context).scale(1);
-    final largeText = scale >= _stackTrailingFrom;
-    final titleLines = dense ? 2 : 1;
-    // The status line wraps only at large text, so a 1x row stays 52 tall.
-    final subtitleLines = dense && largeText ? 2 : 1;
-    final stackTrailing = dense && trailing != null && largeText;
     final minHeight = dense ? denseHeight * scale.clamp(1.0, 2.0) : 0.0;
 
     // A dimmed row keeps its shape but loses contrast, so open and closed are
@@ -163,6 +156,30 @@ class StatusRow extends StatelessWidget {
                     ),
                   ),
                   SizedBox(width: dense ? 10 : 13),
+                  if (dense)
+                    Expanded(
+                      child: Opacity(
+                        opacity: opacity,
+                        child: _DenseBody(
+                          title: Text(
+                            title,
+                            style: titleStyle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: subtitle == null
+                              ? null
+                              : Text(
+                                  subtitle!,
+                                  style: subtitleStyle,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                          trailing: trailing,
+                        ),
+                      ),
+                    )
+                  else
                   Expanded(
                     child: Opacity(
                       opacity: opacity,
@@ -174,7 +191,7 @@ class StatusRow extends StatelessWidget {
                           Text(
                             title,
                             style: titleStyle,
-                            maxLines: titleLines,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (subtitle != null) ...[
@@ -182,19 +199,15 @@ class StatusRow extends StatelessWidget {
                             Text(
                               subtitle!,
                               style: subtitleStyle,
-                              maxLines: subtitleLines,
+                              maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                          if (stackTrailing) ...[
-                            const SizedBox(height: 4),
-                            trailing!,
                           ],
                         ],
                       ),
                     ),
                   ),
-                  if (trailing != null && !stackTrailing) ...[
+                  if (trailing != null && !dense) ...[
                     const SizedBox(width: 10),
                     // Trailing metadata must never consume the title's entire
                     // lane on a narrow screen. Event timestamps exposed this:
@@ -214,6 +227,194 @@ class StatusRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The text of a dense row: name, status and the trailing widget.
+///
+/// The trailing widget (an occupancy pill, an "ENDED" label) sits beside the
+/// text when the name still shows in full there (up to two lines, not cut) and
+/// the status needs no more lines than it does at the full width. Otherwise it
+/// moves under the status. This is measured when the row is laid out, so no
+/// text size is a threshold, and the trailing widget never makes a name
+/// ellipsize that would fit without it.
+class _DenseBody extends MultiChildRenderObjectWidget {
+  _DenseBody({required Widget title, Widget? subtitle, Widget? trailing})
+    : hasSubtitle = subtitle != null,
+      hasTrailing = trailing != null,
+      super(
+        children: [
+          title,
+          subtitle ?? const SizedBox.shrink(),
+          trailing ?? const SizedBox.shrink(),
+        ],
+      );
+
+  final bool hasSubtitle;
+  final bool hasTrailing;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderDenseBody(hasSubtitle: hasSubtitle, hasTrailing: hasTrailing);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderDenseBody renderObject) {
+    renderObject
+      ..hasSubtitle = hasSubtitle
+      ..hasTrailing = hasTrailing;
+  }
+}
+
+class _RenderDenseBody extends RenderBox
+    with
+        ContainerRenderObjectMixin<RenderBox, ContainerBoxParentData<RenderBox>>,
+        RenderBoxContainerDefaultsMixin<
+          RenderBox,
+          ContainerBoxParentData<RenderBox>
+        > {
+  _RenderDenseBody({required bool hasSubtitle, required bool hasTrailing}) {
+    _hasSubtitle = hasSubtitle;
+    _hasTrailing = hasTrailing;
+  }
+
+  /// Between the text and a trailing widget beside it.
+  static const double _gap = 10;
+
+  /// Between the status and a trailing widget under it.
+  static const double _stackGap = 4;
+
+  /// Between the name and the status.
+  static const double _lineGap = 2;
+
+  /// A trailing widget never takes more than this of the row, so a long stamp
+  /// cannot squeeze the text to nothing.
+  static const double _maxTrailing = 132;
+
+
+  late bool _hasSubtitle;
+  bool get hasSubtitle => _hasSubtitle;
+  set hasSubtitle(bool value) {
+    if (value == _hasSubtitle) return;
+    _hasSubtitle = value;
+    markNeedsLayout();
+  }
+
+  late bool _hasTrailing;
+  bool get hasTrailing => _hasTrailing;
+  set hasTrailing(bool value) {
+    if (value == _hasTrailing) return;
+    _hasTrailing = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! MultiChildLayoutParentData) {
+      child.parentData = MultiChildLayoutParentData();
+    }
+  }
+
+  static void _place(RenderBox child, double x, double y) {
+    (child.parentData! as ContainerBoxParentData<RenderBox>).offset = Offset(
+      x,
+      y,
+    );
+  }
+
+  static RenderParagraph? _paragraph(RenderObject node) {
+    if (node is RenderParagraph) return node;
+    RenderParagraph? found;
+    node.visitChildren((child) => found ??= _paragraph(child));
+    return found;
+  }
+
+  @override
+  void performLayout() {
+    final title = firstChild!;
+    final subtitle = childAfter(title)!;
+    final trailing = childAfter(subtitle)!;
+    final w = constraints.maxWidth;
+
+    var trailW = 0.0;
+    var trailH = 0.0;
+    if (hasTrailing) {
+      trailing.layout(
+        BoxConstraints(maxWidth: math.min(_maxTrailing, w)),
+        parentUsesSize: true,
+      );
+      trailW = trailing.size.width;
+      trailH = trailing.size.height;
+    } else {
+      trailing.layout(BoxConstraints.tight(Size.zero));
+    }
+    if (!hasSubtitle) subtitle.layout(BoxConstraints.tight(Size.zero));
+
+    // Lays the name and status (two lines each at most) out in [width]: the
+    // text's height, whether either was cut, and the status's height.
+    ({double height, bool cut, bool statusCut, double statusHeight}) layoutText(
+      double width,
+    ) {
+      title.layout(BoxConstraints(maxWidth: width), parentUsesSize: true);
+      var height = title.size.height;
+      var statusHeight = 0.0;
+      var statusCut = false;
+      if (hasSubtitle) {
+        subtitle.layout(BoxConstraints(maxWidth: width), parentUsesSize: true);
+        statusHeight = subtitle.size.height;
+        statusCut = _paragraph(subtitle)?.didExceedMaxLines ?? false;
+        height += _lineGap + statusHeight;
+      }
+      return (
+        height: height,
+        cut: _paragraph(title)?.didExceedMaxLines ?? false,
+        statusCut: statusCut,
+        statusHeight: statusHeight,
+      );
+    }
+
+    final full = layoutText(w);
+    var text = full;
+    var beside = false;
+    if (hasTrailing) {
+      final narrow = layoutText(math.max(0.0, w - trailW - _gap));
+      // Beside is fine if neither line gives anything up there: the name is
+      // whole (or is cut anyway at the full width, so stacking would not save
+      // it) and the status needs no more lines than it does at the full width.
+      // Otherwise the trailing widget goes under the text, so it never costs a
+      // name or a status its room.
+      beside =
+          (!narrow.cut || full.cut) &&
+          (!narrow.statusCut || full.statusCut) &&
+          narrow.statusHeight <= full.statusHeight + 0.5;
+      text = beside ? narrow : layoutText(w);
+    }
+
+    final titleH = title.size.height;
+    if (beside) {
+      final height = math.max(text.height, trailH);
+      final top = (height - text.height) / 2;
+      _place(title, 0, top);
+      _place(subtitle, 0, top + titleH + _lineGap);
+      _place(trailing, w - trailW, (height - trailH) / 2);
+      size = constraints.constrain(Size(w, height));
+      return;
+    }
+    _place(title, 0, 0);
+    _place(subtitle, 0, titleH + _lineGap);
+    var height = text.height;
+    if (hasTrailing) {
+      _place(trailing, 0, height + _stackGap);
+      height += _stackGap + trailH;
+    }
+    size = constraints.constrain(Size(w, height));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) =>
+      defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }
 
 /// A tinted header that introduces a group of rows.

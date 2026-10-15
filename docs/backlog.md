@@ -469,9 +469,11 @@ on a 440x956 device.
   mode, or shrink the controls.
 - [ ] Occupancy pill: color by crowding (low green, mid amber, high red) with a
   clear label ("100% full" or "Busy"). Never green at 100%.
-- [x] Long names: dashboard rows allow 2 lines before truncating; at 1.5x text
-  the status wraps too and the trailing pill moves under the text. A 1x row is
-  still 52 for normal names.
+- [x] Long names: dashboard rows allow 2 lines for the name and the status. The
+  trailing pill sits beside the text only when both stay whole there; otherwise
+  it drops under the status (measured when the row is laid out, no text size is
+  a threshold). A 1x row is 52 for normal names at 390 and 440 wide; at 320 wide
+  a pill row stacks because the status does not fit beside it.
 - [ ] Row subtitle joins with "·" (middle dot). The source already uses U+00B7
   but it reads as a bullet in Rubik on a device. Check against the spec.
 - [ ] Event rows with no time show "All day" and no empty column.
@@ -481,8 +483,12 @@ on a 440x956 device.
 ### Events
 
 - [ ] "Today" chip shows Oct 16/17/20 events: fix the filter or the label.
-- [ ] Title full width (up to 2 lines). Date and time move to the subtitle
-  ("Fri 5:00 PM · SAU"). A location that is a meeting ID or URL shows "Online".
+- [x] Dashboard event rows say the time once, in the status line, with the
+  place after a dot ("Thu 1 Jan, 10:00 AM · SAU"), and the trailing slot is
+  only "ENDED". The Events tab rows still show it twice.
+- [ ] Title full width (up to 2 lines) on the Events tab. Subtitle format
+  "Fri 5:00 PM · SAU" (short weekday and clock). A location that is a meeting
+  ID or URL shows "Online".
 - [ ] Remove the ✦ and the per-row calendar icon unless meaningful. Report what
   ✦ means (it marks a boosted keyword match, `EventRow.boosted`).
 
