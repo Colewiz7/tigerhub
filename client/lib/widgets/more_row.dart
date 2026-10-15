@@ -11,6 +11,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import 'touch_target.dart';
 
 class MoreRow extends StatelessWidget {
   const MoreRow({
@@ -18,17 +19,63 @@ class MoreRow extends StatelessWidget {
     required this.hidden,
     this.onTap,
     this.noun = 'more',
+    this.dense = false,
   });
 
   final int hidden;
   final VoidCallback? onTap;
   final String noun;
 
+  /// The phone dashboard's footer: one text row, "+10 open ›", with no pill.
+  final bool dense;
+
+  /// The text row's visual height. Its hit region is [TouchTarget.size].
+  static const double denseHeight = 28;
+
   @override
   Widget build(BuildContext context) {
     if (hidden <= 0) return const SizedBox.shrink();
     final scheme = Theme.of(context).colorScheme;
     final muted = scheme.onSurfaceVariant;
+
+    if (dense && Insets.phone(context)) {
+      // A 28 visual row inside a 48 tall hit region.
+      return TouchTarget(
+        alignment: Alignment.centerLeft,
+        onTap: onTap,
+        child: Semantics(
+          button: onTap != null,
+          enabled: onTap != null,
+          label: '$hidden more $noun',
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: Shapes.small,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: denseHeight),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '+$hidden $noun',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: muted,
+                        fontSize: 14,
+                        letterSpacing: 0,
+                        fontVariations: Weights.medium,
+                      ),
+                    ),
+                    if (onTap != null)
+                      Icon(Icons.chevron_right_rounded, size: 18, color: muted),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Align(
       alignment: Alignment.centerLeft,

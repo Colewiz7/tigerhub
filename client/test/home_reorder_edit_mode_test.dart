@@ -22,6 +22,10 @@ import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
+import 'package:tigerhub/widgets/scalloped_badge.dart' show CardHero;
+import 'package:tigerhub/widgets/touch_target.dart';
+
+import 'golden_harness.dart';
 
 class _EmptyBackend implements Backend {
   @override
@@ -73,16 +77,23 @@ void main() {
       MaterialApp(
         theme: _theme(brightness),
         home: Scaffold(
+          // the boundary is captured on its own, without the scaffold behind
+          // it, so it paints the page colour itself or dark shots are white
           body: RepaintBoundary(
             key: const ValueKey('shot'),
-            child: HomeScreen(
-              api: ApiClient(backend: _EmptyBackend()),
-              dining: _empty<DiningLocation>(),
-              events: _empty<CampusEvent>(),
-              chefs: _empty<MenuItem>(),
-              areas: _empty<HousingArea>(),
-              onRefresh: () async {},
-              onGoToTab: (_) {},
+            child: Builder(
+              builder: (context) => ColoredBox(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                child: HomeScreen(
+                  api: ApiClient(backend: _EmptyBackend()),
+                  dining: _empty<DiningLocation>(),
+                  events: _empty<CampusEvent>(),
+                  chefs: _empty<MenuItem>(),
+                  areas: _empty<HousingArea>(),
+                  onRefresh: () async {},
+                  onGoToTab: (_) {},
+                ),
+              ),
             ),
           ),
         ),
@@ -501,42 +512,144 @@ void main() {
     }
   }
 
-  testWidgets('edit mode does not change card 1 or the gap after it', (
+  // The owner-approved phone gap between two stacked cards, in both modes. The
+  // cards are as tall as their content, so the gap is the only thing between
+  // them and it is the token, not a leftover of a fixed height cell.
+  for (final size in const [
+    Size(320, 640),
+    Size(390, 844),
+    Size(430, 932),
+    Size(440, 956),
+    Size(599, 900),
+  ]) {
+    for (final scale in const [1.0, 2.0]) {
+    goldenWidgets(
+      'at ${size.width.toInt()}x${size.height.toInt()}, text ${scale}x, the gap '
+      'between cards is 10 in normal and edit mode, and edit mode keeps card 1',
+      (tester) async {
+        await pumpHome(
+          tester,
+          width: size.width,
+          height: size.height,
+          textScale: scale,
+        );
+        ({double height, List<double> gaps}) measure() {
+          final shells = find.byType(CardShell);
+          final rects = [
+            for (var i = 0; i < 3; i++) tester.getRect(shells.at(i)),
+          ];
+          return (
+            height: rects.first.height,
+            gaps: [
+              for (var i = 0; i < 2; i++) rects[i + 1].top - rects[i].bottom,
+            ],
+          );
+        }
+
+        final normal = measure();
+        expect(normal.gaps, [10.0, 10.0]);
+        await toggleCustomize(tester);
+        final edit = measure();
+
+        expect(edit.gaps, [10.0, 10.0]);
+        expect(edit.height, normal.height);
+      },
+    );
+    }
+  }
+
+  // The edit bar's pills are one widget: equal height at any text size, and
+  // their icons grow with the text.
+  for (final width in const [320.0, 390.0, 440.0]) {
+    for (final scale in const [1.0, 2.0]) {
+      goldenWidgets(
+        'edit bar at ${width.toInt()} wide, text ${scale}x: Done and Add '
+        'module are the same height and their icons scale',
+        (tester) async {
+          await pumpHome(tester, width: width, height: 2800, textScale: scale);
+          await toggleCustomize(tester);
+          await scrollTo(tester, bottom: true);
+
+          Rect pill(String label) => tester.getRect(
+            find
+                .ancestor(
+                  of: find.text(label),
+                  matching: find.byType(Material),
+                )
+                .first,
+          );
+          final done = pill('Done');
+          final add = pill('Add module');
+          expect(add.height, done.height);
+          expect(done.height, greaterThanOrEqualTo(40));
+          // both pills sit on one row or wrap, but never overlap
+          expect(done.overlaps(add), isFalse);
+
+          // the touch target is at least 48 either way, the visual may stay
+          for (final label in ['Done', 'Add module']) {
+            final target = tester.getRect(
+              find.ancestor(
+                of: find.text(label),
+                matching: find.byType(TouchTarget),
+              ),
+            );
+            expect(target.height, greaterThanOrEqualTo(48), reason: label);
+            expect(target.width, greaterThanOrEqualTo(48), reason: label);
+            expect(target.contains(pill(label).center), isTrue);
+          }
+
+          for (final icon in [Icons.check_rounded, Icons.add_rounded]) {
+            expect(
+              tester.getSize(find.byIcon(icon)).height,
+              closeTo(18 * scale, 0.5),
+              reason: '$icon did not scale with text',
+            );
+          }
+        },
+      );
+    }
+  }
+
+  testWidgets('a tap just outside the Customize pill, inside its 48 box, works', (
     tester,
   ) async {
-    await pumpHome(tester);
-    ({double height, double gap}) measure() {
-      final first = tester.getRect(find.byType(CardShell).at(0));
-      final second = tester.getRect(find.byType(CardShell).at(1));
-      return (height: first.height, gap: second.top - first.bottom);
-    }
-
-    final normal = measure();
-    // the gap on base commit 5e818fa, which this change must not move
-    expect(normal.gap, 314);
-    await toggleCustomize(tester);
-    final edit = measure();
-
-    expect(edit.height, normal.height);
-    expect(edit.gap, normal.gap);
+    await pumpHome(tester, height: 2800);
+    await scrollTo(tester, bottom: true);
+    final pill = tester.getRect(
+      find
+          .ancestor(of: find.text('Customize'), matching: find.byType(Material))
+          .first,
+    );
+    expect(pill.height, lessThan(48));
+    // just under the visual pill, where only the hit region answers
+    final margin = (48 - pill.height) / 2;
+    await tester.tapAt(Offset(pill.center.dx, pill.bottom + margin - 0.5));
+    await tester.pumpAndSettle();
+    expect(find.text('Done'), findsOneWidget);
   });
 
-  // Card widths the dashboard gives one column cards: the viewport minus 16 of
-  // page padding and 12 of gutter, at 320, 390, 430 and a tablet.
-  for (final cardWidth in [292.0, 362.0, 402.0, 672.0]) {
+  // Card widths the dashboard gives one column cards: the viewport minus the
+  // phone's 16 page margin on each side, at 320, 390, 430 and a tablet. Real
+  // Rubik, so the title measures as it does on a device.
+  const titles = [
+    'Visiting Chefs',
+    'Mailing Address',
+    'Visiting chefs and a very long module title',
+  ];
+  for (final title in titles) {
+    for (final cardWidth in [288.0, 358.0, 398.0, 672.0]) {
     for (final scale in [1.0, 2.0]) {
       for (final hero in [false, true]) {
-        testWidgets(
-          'card header, ${cardWidth.toInt()} wide, text ${scale}x'
+        goldenWidgets(
+          'card header "$title", ${cardWidth.toInt()} wide, text ${scale}x'
           '${hero ? ', with hero' : ''}: title stops before the controls',
           (tester) async {
             // a phone sized view, so the card padding is the phone's
             tester.view.devicePixelRatio = 1;
-            tester.view.physicalSize = Size(cardWidth + 28, 4000);
+            tester.view.physicalSize = Size(cardWidth + 32, 4000);
             addTearDown(tester.view.reset);
             tester.platformDispatcher.textScaleFactorTestValue = scale;
             addTearDown(tester.platformDispatcher.clearAllTestValues);
-            const title = 'Visiting chefs and a very long module title';
             await tester.pumpWidget(
               MaterialApp(
                 theme: _theme(Brightness.light),
@@ -548,7 +661,7 @@ void main() {
                       child: CardShell(
                         title: title,
                         hero: hero
-                            ? const SizedBox(width: 88, height: 88)
+                            ? const CardHero(value: '3', label: 'OPEN')
                             : null,
                         dragHandle: EditControls(
                           selected: false,
@@ -595,12 +708,69 @@ void main() {
                 );
               }
             }
-            expect(titleRect.right, lessThanOrEqualTo(handle.left));
-            // the long title wrapped rather than running under the controls
-            expect(tester.takeException(), isNull);
+            // beside the controls, the title ends before the handle
+            if (titleRect.bottom > handle.top && titleRect.top < handle.bottom) {
+              expect(titleRect.right, lessThanOrEqualTo(handle.left));
+            }
+
+            // Whole words only: the title is at least as wide as its longest
+            // word, so nothing breaks mid-word, and it is never cut.
+            final paragraph = tester.renderObject<RenderParagraph>(
+              find.text(title),
+            );
+            // (phones only: 600 and wider keeps the base header, which may
+            // ellipsize a title in edit mode to hold the header height)
+            if (cardWidth < 600) {
+              expect(
+                paragraph.getMinIntrinsicWidth(double.infinity),
+                lessThanOrEqualTo(paragraph.size.width + 0.01),
+                reason: 'a word was broken across lines',
+              );
+              expect(tester.widget<Text>(find.text(title)).maxLines, isNull);
+            }
+            // At 1x on a 390 or wider phone the module names fit on one line
+            // beside the controls.
+            if (scale == 1 && !hero && cardWidth >= 358 && title.length < 20) {
+              expect(
+                paragraph.getMaxIntrinsicWidth(double.infinity),
+                lessThanOrEqualTo(paragraph.size.width + 0.01),
+                reason: '"$title" wrapped at 1x',
+              );
+            }
+
+            // Controls beside or under the title, the header is the same
+            // height with the controls gone.
+            final editHeader = tester.getRect(find.byType(CardShell)).height;
+            await tester.pumpWidget(
+              MaterialApp(
+                theme: _theme(Brightness.light),
+                home: Scaffold(
+                  body: Align(
+                    alignment: Alignment.topLeft,
+                    child: SizedBox(
+                      width: cardWidth,
+                      child: CardShell(
+                        title: title,
+                        hero: hero
+                            ? const CardHero(value: '3', label: 'OPEN')
+                            : null,
+                        child: const SizedBox(height: 40),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+            expect(
+              tester.getRect(find.byType(CardShell)).height,
+              editHeader,
+              reason: 'edit mode changed the card height',
+            );
           },
         );
       }
+    }
     }
   }
 
@@ -657,6 +827,7 @@ void main() {
   const sizes = {
     '390x844': Size(390, 844),
     '430x932': Size(430, 932),
+    '440x956': Size(440, 956),
     // tall enough that the cards reach their maximum height and the page,
     // including the Customize or Done bar and the colophon at 2x text, fits
     // with no scrolling
@@ -671,25 +842,7 @@ void main() {
         for (final edit in [false, true]) {
           final mode = edit ? 'edit' : 'normal';
           final name = '${size.key}_${theme.key}_text${scale.key}_$mode';
-          testWidgets('golden $name', (tester) async {
-            // empty_state.dart overflows at 2x text, so keep going and say so
-            final overflows = <String>[];
-            final previous = FlutterError.onError;
-            FlutterError.onError = (details) {
-              if (details.exceptionAsString().contains('overflowed')) {
-                final where = details
-                    .toString()
-                    .split('\n')
-                    .where((l) => l.contains('lib/') && l.contains('.dart:'))
-                    .take(1);
-                overflows.add(
-                  '${details.exceptionAsString().split('\n').first} $where',
-                );
-                return;
-              }
-              previous?.call(details);
-            };
-            addTearDown(() => FlutterError.onError = previous);
+          goldenWidgets('golden $name', (tester) async {
             await pumpHome(
               tester,
               width: size.value.width,
@@ -712,9 +865,6 @@ void main() {
               await shot(tester),
               matchesGoldenFile('goldens/home_reorder_$name.png'),
             );
-            if (overflows.isNotEmpty) {
-              debugPrint('OVERFLOW $name: ${overflows.toSet()}');
-            }
           });
         }
       }
