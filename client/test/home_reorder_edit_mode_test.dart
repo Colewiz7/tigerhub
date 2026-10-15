@@ -75,16 +75,23 @@ void main() {
       MaterialApp(
         theme: _theme(brightness),
         home: Scaffold(
+          // the boundary is captured on its own, without the scaffold behind
+          // it, so it paints the page colour itself or dark shots are white
           body: RepaintBoundary(
             key: const ValueKey('shot'),
-            child: HomeScreen(
-              api: ApiClient(backend: _EmptyBackend()),
-              dining: _empty<DiningLocation>(),
-              events: _empty<CampusEvent>(),
-              chefs: _empty<MenuItem>(),
-              areas: _empty<HousingArea>(),
-              onRefresh: () async {},
-              onGoToTab: (_) {},
+            child: Builder(
+              builder: (context) => ColoredBox(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                child: HomeScreen(
+                  api: ApiClient(backend: _EmptyBackend()),
+                  dining: _empty<DiningLocation>(),
+                  events: _empty<CampusEvent>(),
+                  chefs: _empty<MenuItem>(),
+                  areas: _empty<HousingArea>(),
+                  onRefresh: () async {},
+                  onGoToTab: (_) {},
+                ),
+              ),
             ),
           ),
         ),
