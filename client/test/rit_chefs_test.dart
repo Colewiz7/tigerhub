@@ -396,13 +396,24 @@ void main() {
       expect(withChefs['availability'], availabilityAvailable);
     });
 
-    test('TigerCenter publishing menus but no chef is a real empty day', () {
+    test('TigerCenter menus without a chef do not confirm a quiet day', () {
       final tc = tigerCenter();
       (tc['locations'] as List).first['menus'] = [
         {'id': 1, 'name': 'Soup', 'category': 'Soup'},
       ];
       final view = visitingChefsView(tigerCenter: tc, rit: null, now: today);
-      expect(view['availability'], availabilityEmpty);
+      expect(view['availability'], availabilityUnavailable);
+
+      // Only the schedule page's positive block for today does.
+      final confirmed = visitingChefsView(
+        tigerCenter: tc,
+        rit: ritSnapshot(
+          scheduleHtml: '<div class="daily-visiting-chefs" id="day-2026-10-14">'
+              '<p class="no-visiting-chefs">None</p></div>',
+        ),
+        now: today,
+      );
+      expect(confirmed['availability'], availabilityEmpty);
     });
 
     test('today\'s chefs come from /menus with times on the campus clock', () {
@@ -839,6 +850,26 @@ void main() {
       final chefs = await backend!.fetch('/dining/visiting-chefs');
       expect(chefs['availability'], availabilityUnavailable);
       expect(chefs['last_updated'], isNull);
+    });
+
+    test('another day parsing does not stand in for today', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      // Today's block is there but unreadable, tomorrow's is a clean marker.
+      const schedule =
+          '<div class="daily-visiting-chefs" id="day-2026-10-14">'
+          '<h3>Today</h3><section>garbled</section></div>'
+          '<div class="daily-visiting-chefs" id="day-2026-10-15">'
+          '<h3>Thu</h3><p class="no-visiting-chefs">None</p></div>';
+      backend = build({
+        tcUrl: http.Response(fixture('tc_dining_all_empty_menus.json'), 200),
+        ritMenusUrl: http.Response('<html>Redesigned</html>', 200),
+        ritVisitingChefsUrl: http.Response(schedule, 200),
+      });
+
+      final chefs = await backend!.fetch('/dining/visiting-chefs');
+      expect(chefs['availability'], availabilityUnavailable);
+      expect(chefs['last_updated'], isNull,
+          reason: 'nothing about today was read, so nothing was updated');
     });
 
     test('both sources down is unavailable, not empty', () async {
