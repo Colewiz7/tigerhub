@@ -514,12 +514,24 @@ void main() {
   // The owner-approved phone gap between two stacked cards, in both modes. The
   // cards are as tall as their content, so the gap is the only thing between
   // them and it is the token, not a leftover of a fixed height cell.
-  for (final size in const [Size(390, 844), Size(440, 956)]) {
-    testWidgets(
-      'at ${size.width.toInt()}x${size.height.toInt()} the gap between cards '
-      'is 10 in normal and edit mode, and edit mode keeps card 1',
+  for (final size in const [
+    Size(320, 640),
+    Size(390, 844),
+    Size(430, 932),
+    Size(440, 956),
+    Size(599, 900),
+  ]) {
+    for (final scale in const [1.0, 2.0]) {
+    goldenWidgets(
+      'at ${size.width.toInt()}x${size.height.toInt()}, text ${scale}x, the gap '
+      'between cards is 10 in normal and edit mode, and edit mode keeps card 1',
       (tester) async {
-        await pumpHome(tester, width: size.width, height: size.height);
+        await pumpHome(
+          tester,
+          width: size.width,
+          height: size.height,
+          textScale: scale,
+        );
         ({double height, List<double> gaps}) measure() {
           final shells = find.byType(CardShell);
           final rects = [
@@ -542,6 +554,7 @@ void main() {
         expect(edit.height, normal.height);
       },
     );
+    }
   }
 
   // Card widths the dashboard gives one column cards: the viewport minus the
