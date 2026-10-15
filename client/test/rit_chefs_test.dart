@@ -13,6 +13,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/local_backend.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/data/sources/rit_chefs.dart';
@@ -20,6 +22,8 @@ import 'package:tigerhub/data/sources/tigercenter.dart';
 import 'package:tigerhub/data/store.dart';
 import 'package:tigerhub/data/upstream.dart';
 import 'package:tigerhub/models/api_models.dart';
+import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/cache.dart';
 
 String fixture(String name) => File('test/fixtures/$name').readAsStringSync();
 
@@ -58,12 +62,15 @@ Map<String, dynamic> ritSnapshot({
   String date = '2026-10-14',
   bool todayOk = true,
   bool scheduleOk = true,
+  String? scheduleAt,
 }) {
   final menus = menusHtml == null ? null : parseTodayChefs(menusHtml);
   return {
     'service_date': date,
     'today_ok': todayOk,
     'schedule_ok': scheduleOk,
+    // Noon on the snapshot's own day unless a test says the read was earlier.
+    'schedule_at': scheduleAt ?? '${date}T12:00:00-04:00',
     'today': menus == null
         ? null
         : {'date': date, 'found': menus.found, 'chefs': menus.chefs},
@@ -324,7 +331,10 @@ void main() {
     test('a p.no-visiting-chefs day is empty and names the next chef', () {
       final view = visitingChefsView(
         tigerCenter: tigerCenter(),
-        rit: ritSnapshot(scheduleHtml: fixture('rit_visiting_chefs.html')),
+        rit: ritSnapshot(
+          scheduleHtml: fixture('rit_visiting_chefs.html'),
+          scheduleAt: '2026-10-17T09:00:00-04:00',
+        ),
         now: DateTime.utc(2026, 10, 17, 16),
       );
       expect(view['availability'], availabilityEmpty);
@@ -337,7 +347,10 @@ void main() {
     test('next skips empty days and is null when nothing is upcoming', () {
       final view = visitingChefsView(
         tigerCenter: tigerCenter(),
-        rit: ritSnapshot(scheduleHtml: fixture('rit_visiting_chefs.html')),
+        rit: ritSnapshot(
+          scheduleHtml: fixture('rit_visiting_chefs.html'),
+          scheduleAt: '2026-10-24T09:00:00-04:00',
+        ),
         now: DateTime.utc(2026, 10, 24, 16),
       );
       expect((view['next'] as Map)['date'], '2026-10-25');
@@ -349,6 +362,7 @@ void main() {
           'today': null,
           'today_ok': true,
           'schedule_ok': true,
+          'schedule_at': '2026-10-14T11:00:00-04:00',
           'schedule': {
             '2026-10-14': {
               'empty': true,
@@ -566,6 +580,62 @@ void main() {
         now: today,
       );
       expect(stamp, DateTime.utc(2026, 10, 14, 15));
+    });
+
+    test('a TigerCenter payload with menus but no chef is not an update', () {
+      final soup = tigerCenter();
+      (soup['locations'] as List).first['menus'] = [
+        {'id': 1, 'name': 'Soup', 'category': 'Soup'},
+      ];
+      expect(
+        chefsLastUpdated(
+          tigerCenter: soup,
+          tigerCenterAt: DateTime.utc(2026, 10, 14, 15),
+          rit: null,
+          now: today,
+        ),
+        isNull,
+      );
+      expect(
+        chefsLastUpdated(
+          tigerCenter: tigerCenter(withChef: true),
+          tigerCenterAt: DateTime.utc(2026, 10, 14, 15),
+          rit: null,
+          now: today,
+        ),
+        DateTime.utc(2026, 10, 14, 15),
+      );
+    });
+
+    test('a schedule read from an earlier campus day cannot confirm today', () {
+      const quiet = '<div class="daily-visiting-chefs" id="day-2026-10-15">'
+          '<p class="no-visiting-chefs">None</p></div>';
+      Map<String, dynamic> view(String readAt, DateTime now) =>
+          visitingChefsView(
+            tigerCenter: tigerCenter(),
+            rit: ritSnapshot(scheduleHtml: quiet, scheduleAt: readAt),
+            now: now,
+          );
+      // 00:10 on 10-15 in Rochester. The read was 23:50 the night before.
+      final afterMidnight = DateTime.utc(2026, 10, 15, 4, 10);
+      expect(view('2026-10-14T23:50:00-04:00', afterMidnight)['availability'],
+          availabilityUnavailable);
+      expect(view('2026-10-15T00:05:00-04:00', afterMidnight)['availability'],
+          availabilityEmpty);
+      // The stamp's own offset is irrelevant: 03:30Z on 10-15 is 23:30 on
+      // 10-14 on campus, so it is still the earlier day.
+      expect(view('2026-10-15T03:30:00Z', afterMidnight)['availability'],
+          availabilityUnavailable);
+      // No stamp at all cannot be shown to be from today.
+      final bare = ritSnapshot(scheduleHtml: quiet)..remove('schedule_at');
+      expect(
+        visitingChefsView(
+          tigerCenter: tigerCenter(),
+          rit: bare,
+          now: afterMidnight,
+        )['availability'],
+        availabilityUnavailable,
+      );
     });
   });
 
@@ -911,6 +981,69 @@ void main() {
       final chefs = await backend!.fetch('/dining/visiting-chefs');
       expect(chefs['availability'], availabilityEmpty);
       expect((chefs['next'] as Map)['date'], '2026-10-18');
+    });
+
+    test('a quiet day read before midnight is not confirmed after it',
+        () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      // Both days are marked empty, so only the age of the read can differ.
+      const schedule =
+          '<div class="daily-visiting-chefs" id="day-2026-10-17">'
+          '<p class="no-visiting-chefs">None</p></div>'
+          '<div class="daily-visiting-chefs" id="day-2026-10-18">'
+          '<p class="no-visiting-chefs">None</p></div>';
+      // 23:50 on Saturday 10-17 in Rochester.
+      var now = DateTime.utc(2026, 10, 18, 3, 50);
+      void setClock(DateTime at) {
+        now = at;
+        RitClock.pin(at);
+      }
+
+      setClock(now);
+      backend = build({
+        tcUrl: http.Response(fixture('tc_dining_all_empty_menus.json'), 200),
+        ritMenusUrl: http.Response(emptyMenusHtml, 200),
+        ritVisitingChefsUrl: http.Response(schedule, 200),
+      }, clock: () => now);
+
+      final evening = await backend!.fetch('/dining/visiting-chefs');
+      expect(evening['availability'], availabilityEmpty);
+
+      // 00:10 Sunday, inside the five minute retry floor, so nothing refetches.
+      setClock(DateTime.utc(2026, 10, 18, 4, 10));
+      final morning = await backend!.fetch('/dining/visiting-chefs');
+      expect(morning['availability'], availabilityUnavailable,
+          reason: 'the schedule was last read on the previous service day');
+
+      // A read after midnight confirms Sunday again.
+      setClock(DateTime.utc(2026, 10, 18, 4, 30));
+      await backend!.refreshNow();
+      final reread = await backend!.fetch('/dining/visiting-chefs');
+      expect(reread['availability'], availabilityEmpty);
+    });
+
+    test('through ApiClient, menus without a chef leave Never updated',
+        () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferencesAsyncPlatform.instance =
+          InMemorySharedPreferencesAsync.empty();
+      // TigerCenter serves a soup but no chef, and rit.edu is down.
+      final payload =
+          jsonDecode(fixture('tc_dining_all_empty_menus.json'))
+              as Map<String, dynamic>;
+      (payload['locations'] as List).firstWhere((l) => l['id'] == 21)['menus'] =
+          [
+            {'id': 1, 'name': 'Soup', 'category': 'Soup'},
+          ];
+      backend = build({tcUrl: http.Response(jsonEncode(payload), 200)});
+      final api = ApiClient(backend: backend, cache: ResponseCache.instance);
+
+      final result = await api.visitingChefs().last;
+      final chefs = result.value! as ChefCollection;
+      expect(chefs.availability, Availability.unavailable);
+      expect(chefs.data, isEmpty);
+      expect(chefs.lastUpdated, isNull,
+          reason: 'a TigerCenter payload with only a soup is not chef data');
     });
   });
 }
