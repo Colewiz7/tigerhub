@@ -30,6 +30,7 @@ import 'sources/campus_places.dart';
 import 'sources/campusgroups.dart';
 import 'sources/drupal_events.dart';
 import 'sources/fd_menus.dart';
+import 'sources/food_trucks.dart';
 import 'sources/makerspace.dart';
 import 'sources/maps_occupancy.dart';
 import 'sources/recreation.dart';
@@ -204,6 +205,15 @@ class LocalBackend implements Backend {
       name: recreationSource,
       cadence: const Duration(minutes: 360),
       scrape: (ctx) => scrapeRecreation(ctx.http),
+    ),
+    foodTrucksSource: SourceSpec(
+      name: foodTrucksSource,
+      cadence: foodTrucksCadence,
+      scrape: (ctx) => scrapeFoodTrucks(
+        ctx.http,
+        () => ctx.snapshotOf(drupalSource),
+        previous: ctx.previous,
+      ),
     ),
     occupancySource: SourceSpec(
       name: occupancySource,
