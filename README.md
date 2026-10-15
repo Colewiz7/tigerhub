@@ -100,7 +100,8 @@ builds only on Codemagic: see `codemagic.yaml` and docs/notes.md section 11.
 
 | Source | What it gives | Auth |
 |---|---|---|
-| TigerCenter `dining-all` | dining locations, hours, visiting chefs | none |
+| TigerCenter `dining-all` | dining locations and hours (`menus[]` is empty since 2026-10-14) | none |
+| rit.edu `/dining/menus`, `/dining/visiting-chefs` | visiting chefs, with times (HTML) | none |
 | CampusGroups iCal | student club events | none |
 | RIT Drupal JSON:API | official university events | none |
 | make.rit.edu GraphQL | live SHED equipment availability | none |

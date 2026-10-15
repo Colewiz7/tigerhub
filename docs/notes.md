@@ -373,7 +373,8 @@ Everything below was tested live, not assumed. Sample payloads are in `docs/reco
 
 | Source | Endpoint | Auth | Reliability | Effort |
 |---|---|---|---|---|
-| TigerCenter dining | `GET tigercenter.rit.edu/tigerCenterApi/tc/dining-all?date=YYYY-MM-DD` | **None** | High | **Trivial** |
+| TigerCenter dining | `GET tigercenter.rit.edu/tigerCenterApi/tc/dining-all?date=YYYY-MM-DD` | **None** | High for hours, `menus[]` empty since 2026-10-14 | **Trivial** |
+| rit.edu visiting chefs | `GET www.rit.edu/dining/menus` (today, with times) and `GET www.rit.edu/dining/visiting-chefs` (14 days, names only), HTML | **None** | Medium (markup can change) | Low |
 | CampusGroups events | `GET campusgroups.rit.edu/ical/rit/ical_rit.ics` | None | High | **Trivial** |
 | RIT Drupal events | `GET www.rit.edu/jsonapi/node/event` | **None** | High | **Low** |
 | Makerspace equipment | `POST make.rit.edu/graphql` | **None** | High | **Low** |
@@ -381,6 +382,13 @@ Everything below was tested live, not assumed. Sample payloads are in `docs/reco
 | FD MealPlanner menus | `locations.fdmealplanner.com` + `apiservicelocatorstenantrit.fdmealplanner.com` | None | Medium | Medium |
 | Maps occupancy | `GET maps.rit.edu/details/<mdoId>.data` | None | Medium | **High** (turbo-stream) |
 | Post office / housing | static JSON config in repo | n/a | High | Trivial |
+
+**Per source terms audit (guideline 5.2.2), pending.** Two sources in this table
+were added after the audit list was drawn up and must be in it: rit.edu
+(`/dining/menus`, `/dining/visiting-chefs`) and FD MealPlanner. Facts so far:
+`rit.edu/disclaimer` says personal, noncommercial use, rit.edu `robots.txt`
+does not disallow `/dining`, and the fdmealplanner hosts return 404 for
+`robots.txt`. The Terms of Use pages for both have not been read yet.
 
 ### 7.2 TigerCenter dining (the big win)
 
@@ -417,7 +425,10 @@ menus[]
 
 Key points:
 - Hours are a **recurrence model**, not a daily list: a term long window plus `daysOfWeek` plus dated `exceptions` that override it. The backend must resolve this into concrete per day open/close spans. This is the one piece of real logic in the dining feature.
-- `menus[].category == "Visiting Chef"` means **visiting chefs come free from this endpoint.** Confirmed 4 live entries today across Crossroads, Brick City, and RITZ. No scraping of `rit.edu/dining/menus` required.
+- `menus[].category == "Visiting Chef"` used to mean visiting chefs came free from this endpoint (4 live entries on 2026-08-28). **Since 2026-10-14 every `menus[]` is empty** (24 locations, none populated), so visiting chefs are scraped from rit.edu instead:
+  - `www.rit.edu/dining/menus` is server rendered. Under the "Today's Visiting Chefs" heading each chef is an anchor `a[chefid="<locationId>-<n>"]` whose `<em>` reads `Chef: 11:00 am - 2:00 pm`, with the cuisine in `#<chefid>-chef-holder`. The chefid prefix is the TigerCenter location id. This is the only place times are published.
+  - `www.rit.edu/dining/visiting-chefs` carries 14 `div.daily-visiting-chefs#day-YYYY-MM-DD` blocks (inline `display: none` is ignored), names by location, no times. Locations are matched to TigerCenter by name alone. Empty days use `p.no-visiting-chefs`.
+  - The app reports three states, not two: chefs, none today, and **unavailable** (every `menus[]` empty and rit.edu unreadable for today). Unavailable is not shown as "no visiting chefs". `/dining/specials` has no replacement source and reports unavailable under the same rule. Code: `client/lib/data/sources/rit_chefs.dart`, 30 minute cadence.
 - `mdoId` is the join key to `maps.rit.edu`.
 - 24 locations including Gracie's, Crossroads, Brick City, RITZ, Global Market, Corner Store, and the RIT Food Truck.
 
@@ -570,7 +581,7 @@ Confirmed live, no auth:
 - Meal periods: `https://apiservicelocatorstenantrit.fdmealplanner.com/api/v1/data-locator-webapi/20/mealPeriods?LocationId=<id>`
 - Meals: `.../20/meals?menuId=0&accountId=<id>&locationId=<id>&mealPeriodId=<id>&tenantId=20&monthId=<m>&...`
 - Tenant id for RIT is `20`. Location ids here are **FD's own**, unrelated to TigerCenter `id` or `mdoId`, so a name based mapping table is needed. Expect this to be the fiddliest integration.
-- Lower priority than dining hours: visiting chefs and specials already come from TigerCenter. FD is for full menus and nutrition detail.
+- Lower priority than dining hours: FD is for full menus and nutrition detail. (Visiting chefs came from TigerCenter when this was written, and now come from rit.edu, section 7.2.)
 
 ### 7.8 Reference repos: reuse vs rewrite
 
@@ -578,7 +589,7 @@ Confirmed live, no auth:
 |---|---|---|
 | `NinjaCheetah/TigerDine` | **Read, do not port** | Swift/SwiftUI, useless as code for us, but the single best documentation of which feed powers which feature. Its URL list confirmed `dining-all`, `dining-single`, the FD MealPlanner endpoints, and the (now dead) maps density path. `Shared/Components/TigerCenterParsers.swift` is worth reading for how it resolves the hours recurrence model and splits visiting chef names. Also copy its disclaimer and privacy posture. |
 | `Lontronix/Dining-API` | **Rewrite, do not fork** | BeautifulSoup HTML scraping of the dining website, and the deps are from 2020 (Flask 1.1.2, Werkzeug 1.0.1, Jinja2 2.11.2). All of it is obsolete now that `dining-all` returns clean JSON. Its Dockerfile is the only mildly reusable part and we would write a better one anyway. |
-| `mufasa159/rit-dining` | **Skip entirely** | Scrapes `rit.edu/dining/menus` with aiohttp for visiting chefs. TigerCenter gives us visiting chefs as structured data, so the whole premise is superseded. |
+| `mufasa159/rit-dining` | **Read, do not port** | Scrapes `rit.edu/dining/menus` with aiohttp for visiting chefs. Was skipped while TigerCenter published chefs as structured data. Since 2026-10-14 `menus[]` is empty and this is the source TigerHub now reads (section 7.2), written fresh in Dart with no code reused. |
 
 Net: **no code gets reused.** All three are valuable as documentation and dead ends already mapped. The good news is the recon replaced two HTML scrapers with two clean JSON APIs.
 

@@ -1,4 +1,5 @@
-/// TigerCenter dining: locations, hours, visiting chefs.
+/// TigerCenter dining: locations, hours, and `menus[]` (empty since
+/// 2026-10-14; visiting chefs now come from `rit_chefs.dart`).
 ///
 /// Ported from `backend/app/scrapers/tigercenter.py`.
 ///
@@ -8,8 +9,8 @@
 /// Everything under the TCAuth base (/tigerCenterApi/login_shib/tc/) is login
 /// gated and is deliberately never touched.
 ///
-/// This one payload carries three things: location metadata, the hours
-/// recurrence model, and `menus[]` where category == "Visiting Chef".
+/// This one payload carries location metadata, the hours recurrence model, and
+/// `menus[]`, where category == "Visiting Chef" while it was populated.
 ///
 /// The raw `events` are kept in the snapshot rather than resolved at scrape
 /// time, because "is it open right now" has to be answered against the moment
@@ -139,13 +140,18 @@ Map<String, dynamic> buildDiningLocation(
   };
 }
 
-/// Visiting chefs and specials both come free from this payload, so no scrape
-/// of rit.edu/dining/menus is needed (docs/notes.md 7.2).
+/// Menu items from `menus[]`. Since 2026-10-14 every `menus[]` is empty, so
+/// visiting chefs are read from rit.edu (`sources/rit_chefs.dart`) and this
+/// stays as the source of record if TigerCenter ever publishes again
+/// (docs/notes.md 7.2). Specials have no other source.
 ///
 /// A null [category] returns everything published for the day, which is what
 /// specials are: the server filtered visiting chefs by category and left
 /// specials unfiltered. Filtering specials on a "Special" category would return
 /// nothing, because no such category is published.
+///
+/// A [category] matches when it appears anywhere in the item's category, case
+/// insensitively, so "Visiting Chefs" and "visiting chef" both count.
 List<Map<String, dynamic>> menuItemsWithCategory(
   Map<String, dynamic> snapshot,
   String? category,
@@ -155,7 +161,12 @@ List<Map<String, dynamic>> menuItemsWithCategory(
     final location = raw as Map<String, dynamic>;
     for (final item in location['menus'] as List<dynamic>? ?? const []) {
       if (item is! Map<String, dynamic>) continue;
-      if (category != null && item['category'] != category) continue;
+      if (category != null &&
+          !'${item['category'] ?? ''}'
+              .toLowerCase()
+              .contains(category.toLowerCase())) {
+        continue;
+      }
       out.add({
         'id': item['id'],
         'location_id': location['id'],
