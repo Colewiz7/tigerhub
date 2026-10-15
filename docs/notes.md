@@ -694,6 +694,20 @@ Scope note: `/jsonapi` exposes **225 resource types**, not 61. The 61 figure was
 **Bonus find, a real join key for events.** `node--student_club` has 754 records with `field_student_club_campusgroup_l` pointing at `https://campusgroups.rit.edu/<SLUG>/`. That slug **matches the iCal `X-CG-CATEGORY=club_acronym` value on 60 of 60 distinct acronyms in the feed.** So club acronym from the iCal joins cleanly to an official club name. Use it to render proper organizer names and to power the group/collapse/mute UI.
 Caveat, unverified: the sibling field `field_student_club_closed` is `1` on many clubs that look active (for example `RIT 365 Facilitators`). Its meaning is unknown, possibly closed membership rather than defunct. **Do not filter on it** without checking.
 
+### 7.11 Food trucks (rit.edu/dining/food-trucks), 2026-10-14
+
+`GET www.rit.edu/dining/food-trucks`, server rendered HTML, no auth. Code: `client/lib/data/sources/food_trucks.dart`, 6 hour cadence.
+
+- "Current Schedule" slots: date (`Friday, Oct 16`, no year), truck name (`div.font-weight-medium.h4`), blurb, time (`5pm - 8pm`), a `maps.rit.edu/details/<id>` location link, and `Visit Website`. "All Participating Trucks" is a roster of `article.food-truck-teaser`.
+- The page says trucks run "typically August through October and April". The season rule is read from that sentence, with `{4, 8, 9, 10}` as the default.
+- Years are inferred as the nearest date to the campus date, never the device clock.
+- Two states: trucks, and unavailable (hidden). There is no "empty" state: zero parsed trucks from the page is unknown, never "none scheduled", because an HTML scanner cannot be trusted to prove absence (four review rounds on it). Unknown goes to the Drupal "Food Truck Rodeo Schedule" events, and if those have nothing too the state is unavailable. A stored snapshot whose slots are all past also reads as unavailable.
+- Fallback runs on zero parsed trucks, a parse failure or a fetch error, using the cached Drupal events or one title filtered Drupal request when that cache is cold. Unavailable is stored only when both sources were read and had nothing. A fetch error with nothing from the other side rethrows, so the previous snapshot stays.
+- Every fetch, scheduled or manual, waits 6 hours after a clean read and 5 minutes after a fallback, unavailable or failed one (`FoodTruckPacer`).
+- No conditional fetch: the server answers 200 to `If-None-Match` and `If-Modified-Since`, and its ETag is a per request timestamp. `Cache-Control: max-age=300`.
+- Drupal Rodeo event pages (`/events/food-truck-rodeo-schedule` and `-0`) return 404, so the parse maps them to the dining page.
+- **Terms audit (5.2.2), paused.** The per source list is not being worked on right now. When it resumes it must include `rit.edu/dining` (this food trucks page) and the link-outs `ondemand.rit.edu` and `tigerspend.rit.edu` (opened in the browser, never fetched).
+
 
 ## 8. Decisions (settled 2026-08-28)
 

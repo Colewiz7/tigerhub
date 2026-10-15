@@ -440,6 +440,27 @@ own location, not the post office's. Check that before designing the sort.
 devices west of UTC (fails under Los Angeles, passes under Tokyo), so run it
 under America/Los_Angeles.
 
+## Dining screen: food trucks, order online, check balance
+
+Data layer is in (`sources/food_trucks.dart`, docs/notes.md 7.11). The UI phase
+is not built.
+
+- A food trucks group on the Dining screen, from `foodTruckView`. Trucks show
+  by date. There is no "none scheduled" line: zero trucks is unknown, so
+  unavailable hides the group (in season or not).
+- One "Order online" link to `https://ondemand.rit.edu/`. No per location
+  mobile order marker exists in the dining listing (checked 2026-10-14), so it
+  goes once in the Dining header beside "Check balance". No per location
+  guessing.
+- "Check balance" is a link-out to `https://tigerspend.rit.edu/`. Never ask for
+  or store credentials.
+- Source terms audit (item 3, paused): add `rit.edu/dining` (food trucks page)
+  and the `ondemand.rit.edu` and `tigerspend.rit.edu` link-outs to the list.
+- The `foodTrucksSource` SourceSpec has no `manualFloor` or `failed` fields
+  because `FoodTruckPacer` owns the 6 hour and 5 minute spacing, so a pull to
+  refresh inside the 1 minute global floor enters the scrape and is refused by
+  the pacer.
+
 ## A+B: the full list  *(master list 2026-10-14, status 2026-10-14)*
 
 One list for the A+B layout pass: the owner's master queue plus every item
