@@ -13,12 +13,22 @@ import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
 import 'more_row.dart';
+import 'touch_target.dart';
 
-/// How many rows a dashboard card shows on a phone before its "+N" footer: the
-/// card is as tall as its content there, so this is its height. Null (no cap)
+/// How many rows a dashboard card previews on a phone before its "+N" footer.
+///
+/// This is a fixed count, not a measurement, and it departs from the spec's
+/// "measure the box, don't cap rows" (docs/scallop-overrides.md): the owner's
+/// condense target makes a phone card as tall as its content, so there is no
+/// box to measure. "Dining card, 4 rows" is that target. Every phone cap comes
+/// from this one number.
+const int phonePreviewRows = 4;
+
+/// [phonePreviewRows] on a phone, less [reserved] rows for what else the card
+/// shows (a group header counts as a row, a week strip as one). Null (no cap)
 /// at 600pt and wider, where the cell's box does the bounding.
-int? phoneRowCap(BuildContext context, {int rows = 4}) =>
-    Insets.phone(context) ? rows : null;
+int? phoneRowCap(BuildContext context, {int reserved = 0}) =>
+    Insets.phone(context) ? phonePreviewRows - reserved : null;
 
 class BoundedList extends StatelessWidget {
   const BoundedList({
@@ -42,8 +52,8 @@ class BoundedList extends StatelessWidget {
   final int Function(int shown)? hiddenCountBuilder;
   final double footerHeight;
 
-  /// The phone dashboard's condensed footer: a 36 block holding one 28 text
-  /// row, instead of the 46 pill block. Wider windows ignore it.
+  /// The phone dashboard's condensed footer: one 28 text row inside a 48 tall
+  /// hit region, instead of the 46 pill block. Wider windows ignore it.
   final bool dense;
 
   /// Most rows shown before the footer takes over. The phone dashboard sizes a
@@ -51,7 +61,7 @@ class BoundedList extends StatelessWidget {
   final int? maxRows;
 
   /// The footer block of a dense list on a phone.
-  static const double denseFooterHeight = 36;
+  static const double denseFooterHeight = TouchTarget.size;
 
   @override
   Widget build(BuildContext context) {
@@ -60,6 +70,33 @@ class BoundedList extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final cap = maxRows ?? itemCount;
+
+        if (compact) {
+          // Phone dashboard rows size to their text (a long name takes two
+          // lines), so there is no row height to divide: the preview is the
+          // first [cap] rows.
+          final shown = itemCount < cap ? itemCount : cap;
+          final footerHidden =
+              hiddenCountBuilder?.call(shown) ?? itemCount - shown;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < shown; i++) itemBuilder(context, i),
+              if (footerHidden > 0)
+                SizedBox(
+                  height: footer,
+                  child: MoreRow(
+                    hidden: footerHidden,
+                    noun: noun,
+                    onTap: onShowAll,
+                    dense: true,
+                  ),
+                ),
+            ],
+          );
+        }
+
         final available = constraints.maxHeight.isFinite
             ? constraints.maxHeight
             : itemHeight * itemCount + footer;

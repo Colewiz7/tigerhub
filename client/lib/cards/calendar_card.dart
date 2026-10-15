@@ -174,7 +174,7 @@ class _CalendarCardState extends State<CalendarCard> {
                         itemHeight: StatusRow.heightFor(context, dense: true) +
                             (Insets.phone(context) ? 0 : 4),
                         dense: true,
-                        maxRows: phoneRowCap(context, rows: 3),
+                        maxRows: phoneRowCap(context, reserved: 1),
                         noun: 'events',
                         onShowAll: widget.onShowAll,
                         itemBuilder: (context, i) =>

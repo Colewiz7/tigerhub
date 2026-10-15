@@ -11,6 +11,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import 'touch_target.dart';
 
 class MoreRow extends StatelessWidget {
   const MoreRow({
@@ -28,7 +29,7 @@ class MoreRow extends StatelessWidget {
   /// The phone dashboard's footer: one text row, "+10 open ›", with no pill.
   final bool dense;
 
-  /// The text row's height.
+  /// The text row's visual height. Its hit region is [TouchTarget.size].
   static const double denseHeight = 28;
 
   @override
@@ -38,8 +39,10 @@ class MoreRow extends StatelessWidget {
     final muted = scheme.onSurfaceVariant;
 
     if (dense && Insets.phone(context)) {
-      return Align(
+      // A 28 visual row inside a 48 tall hit region.
+      return TouchTarget(
         alignment: Alignment.centerLeft,
+        onTap: onTap,
         child: Semantics(
           button: onTap != null,
           enabled: onTap != null,

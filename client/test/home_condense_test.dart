@@ -25,6 +25,7 @@ import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart' show CardHero;
 import 'package:tigerhub/widgets/status_row.dart';
+import 'package:tigerhub/widgets/touch_target.dart';
 
 import 'golden_harness.dart';
 
@@ -136,14 +137,14 @@ void main() {
     addTearDown(tester.platformDispatcher.clearAllTestValues);
   }
 
-  HomeScreen home() => HomeScreen(
+  HomeScreen home(ValueChanged<int>? onGoToTab) => HomeScreen(
     api: ApiClient(backend: _EmptyBackend()),
     dining: _dining,
     events: _events,
     chefs: _chefs,
     areas: _ok<HousingArea>(const []),
     onRefresh: () async {},
-    onGoToTab: (_) {},
+    onGoToTab: onGoToTab ?? (_) {},
   );
 
   Future<void> pumpHome(
@@ -152,6 +153,7 @@ void main() {
     double scale = 1,
     Brightness brightness = Brightness.dark,
     double? boxHeight,
+    ValueChanged<int>? onGoToTab,
   }) async {
     phoneView(tester, size, scale: scale);
     await tester.pumpWidget(
@@ -165,7 +167,7 @@ void main() {
                 color: Theme.of(context).scaffoldBackgroundColor,
                 child: Align(
                   alignment: Alignment.topCenter,
-                  child: SizedBox(height: boxHeight, child: home()),
+                  child: SizedBox(height: boxHeight, child: home(onGoToTab)),
                 ),
               ),
             ),
@@ -254,8 +256,9 @@ void main() {
       expect(footer, findsOneWidget);
       expect(tester.getSize(footer).height, lessThanOrEqualTo(28));
 
-      // 4 rows: about 330 tall
-      expect(dining.height, inInclusiveRange(320, 345));
+      // 4 rows: about 330 tall. 344: the footer's 48 tall hit region (see the
+      // footer test below) is real layout space, 12 more than a 36 block.
+      expect(dining.height, 344);
 
       final chefRow = tester.getRect(
         find
@@ -270,6 +273,13 @@ void main() {
             )
             .first,
       );
+      // Visiting Chefs with data: the target is 56, and it is NOT met. The
+      // title, the "2 today" pill and the three 32 wide edit controls do not fit
+      // on one row of a 358 (or 408) wide card, so the title wraps beside the
+      // controls and the header, which keeps the same height in edit mode, is
+      // 56 tall instead of 32 (16 + 56 + 8 = 80). Pinned here so a change shows.
+      expect(chefRow.top - chefs.top, 80);
+
       report(name, {
         'chefsTopToFirstRow': chefRow.top - chefs.top,
         'diningHeight': dining.height,
@@ -315,6 +325,70 @@ void main() {
       expect(lines[0].style!.letterSpacing, 0);
       expect(lines[1].style!.fontSize, 14);
       expect(lines[1].style!.letterSpacing, 0);
+    });
+
+    testWidgets('$name: the "+10 open" footer is a 28 row with a 48 hit region', (
+      tester,
+    ) async {
+      final taps = <int>[];
+      await pumpHome(tester, size, onGoToTab: taps.add);
+
+      final label = find.text('+10 open');
+      final visual = tester.getRect(label);
+      expect(visual.height, lessThanOrEqualTo(28));
+      final target = tester.getRect(
+        find.ancestor(of: label, matching: find.byType(TouchTarget)),
+      );
+      expect(target.height, greaterThanOrEqualTo(48));
+      expect(target.width, greaterThanOrEqualTo(48));
+      expect(target.contains(visual.center), isTrue);
+
+      // a tap above and below the visual row, in the region, goes through
+      for (final dy in [-20.0, 20.0]) {
+        await tester.tapAt(Offset(visual.center.dx, visual.center.dy + dy));
+        await tester.pump();
+      }
+      expect(taps, [1, 1]);
+    });
+
+    testWidgets('$name: at 2x names and statuses take two lines, not an ellipsis', (
+      tester,
+    ) async {
+      await pumpHome(tester, size, scale: 2);
+      final rows = find.byType(DiningRow);
+      for (var i = 0; i < 4; i++) {
+        final texts = find.descendant(
+          of: rows.at(i),
+          matching: find.byType(Text),
+        );
+        for (final text in tester.widgetList<Text>(texts)) {
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.byWidget(text),
+          );
+          expect(
+            paragraph.didExceedMaxLines,
+            isFalse,
+            reason: '"${text.data}" was cut off at 2x',
+          );
+        }
+      }
+    });
+
+    testWidgets('$name: at 1x normal names keep rows 52 tall', (tester) async {
+      await pumpHome(tester, size);
+      // every dashboard row: dining, events and chefs
+      final rows = find.byType(StatusRow);
+      expect(rows.evaluate().length, greaterThanOrEqualTo(8));
+      for (var i = 0; i < rows.evaluate().length; i++) {
+        final height = tester
+            .getRect(
+              find
+                  .descendant(of: rows.at(i), matching: find.byType(Material))
+                  .first,
+            )
+            .height;
+        expect(height, 52, reason: 'row $i');
+      }
     });
 
     for (final scale in [1.0, 2.0]) {
@@ -387,7 +461,7 @@ void main() {
     });
     expect(first.bottom, lessThanOrEqualTo(content));
     expect(second.bottom, lessThanOrEqualTo(content));
-    expect(third.top, lessThan(content - 40), reason: 'the third card is not visible');
+    expect(third.top, lessThan(content - 30), reason: 'the third card is not visible');
     expect(third.bottom, greaterThan(content), reason: 'the third is only started');
   });
 }

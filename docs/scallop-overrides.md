@@ -16,3 +16,9 @@ One line per override: rule, what we do instead, why.
   tinted capsule of the same shape if a real-iPhone profile shows jank.
   Decided by the owner 2026-10-14. Replaces the earlier "frosted top bar behind
   a flag" idea.
+
+- **Measure the box, don't cap rows** -> on phones (under 600pt) a dashboard
+  card previews a fixed number of rows (`phonePreviewRows` = 4 in
+  `bounded_list.dart`, with the "+N more" row for the rest). Why: the owner's
+  condense target ("Dining card 4 rows") makes card height equal its content,
+  so there is no box to measure. Owner to confirm.
