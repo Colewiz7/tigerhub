@@ -101,7 +101,8 @@ void main() {
             await tester.pumpAndSettle();
 
             expect(find.text('No visiting chefs today'), findsOneWidget);
-            expect(find.text('OPEN'), findsOneWidget);
+            // the hero is the inline pill on a phone, not the scalloped badge
+            expect(find.text('1 open'), findsOneWidget);
             await expectLater(
               find.byType(MaterialApp),
               matchesGoldenFile(
