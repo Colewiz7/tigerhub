@@ -433,7 +433,8 @@ on a 440x956 device.
 - [x] Hero: an inline 28pt pill right of the card title ("14 open") replaces
   the 86x86 scalloped blob on phones. Card top to first row 56.
 - [x] Rows 52 tall with a 4 gap, a 32 leading circle, an 18 icon.
-- [x] "+N" footer is one 28pt text row ("+10 open ›") in a 36 block.
+- [x] "+N" footer is one 28pt text row ("+10 open ›") inside a 48pt touch
+  target (the block is 48 tall: Flutter only hit-tests inside layout bounds).
 - [x] Fonts: card title 22, row title 17, row subtitle 14, letterSpacing 0.
 - [x] Gap between cards 10. Card height is its content, no fixed cell on a
   phone. Dining with 4 rows is 332.
@@ -468,8 +469,9 @@ on a 440x956 device.
   mode, or shrink the controls.
 - [ ] Occupancy pill: color by crowding (low green, mid amber, high red) with a
   clear label ("100% full" or "Busy"). Never green at 100%.
-- [ ] Long names: allow 2 lines on rows before truncating. A pill must not
-  force truncation.
+- [x] Long names: dashboard rows allow 2 lines before truncating; at 1.5x text
+  the status wraps too and the trailing pill moves under the text. A 1x row is
+  still 52 for normal names.
 - [ ] Row subtitle joins with "·" (middle dot). The source already uses U+00B7
   but it reads as a bullet in Rubik on a device. Check against the spec.
 - [ ] Event rows with no time show "All day" and no empty column.
@@ -525,13 +527,18 @@ on a 440x956 device.
   says. `scallop-ui` SKILL.md still says "gutter 4" for phones: that 4 is the
   row gap here. Update the skill text or the list.
 - Phone cards are as tall as their content, so the row count is a cap, not a
-  measurement: Dining, Chefs, Events and dates show up to 4 rows, grouped
-  events 2 groups, calendar day 3 rows. The spec says to measure the box; there
-  is no box on a phone.
+  measurement: `phonePreviewRows` = 4 in `bounded_list.dart` (grouped events 2
+  groups, a calendar day 3 rows come from it). The spec says to measure the
+  box; there is no box on a phone. Recorded in `docs/scallop-overrides.md`.
+  **Owner to confirm.**
+- 600pt and wider keeps the original card header and title (so edit mode there
+  still ellipsizes a long title to hold the header height). A test pins the
+  wide geometry to the base commit.
 - Phone card header is 32 tall (the edit controls are 32) and the gap under it
   is 8, which puts content 56 from the card top, the same as a 28 header and a
   12 gap.
-- The footer block is 36 tall, so its tap target is 36, under the spec's 48.
+- The edit bar pills and the "+N" footer have 48pt touch targets. The edit
+  controls in a card header (handle, Inspect, Remove) are still 32.
 - Dashboard group header is 40 (the spec's) on phones, 46 elsewhere.
 
 ## Desktop launcher: build in the background  *(2026-10-13)*
