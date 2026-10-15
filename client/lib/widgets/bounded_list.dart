@@ -11,7 +11,24 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../theme/tokens.dart';
 import 'more_row.dart';
+import 'touch_target.dart';
+
+/// How many rows a dashboard card previews on a phone before its "+N" footer.
+///
+/// This is a fixed count, not a measurement, and it departs from the spec's
+/// "measure the box, don't cap rows" (docs/scallop-overrides.md): the owner's
+/// condense target makes a phone card as tall as its content, so there is no
+/// box to measure. "Dining card, 4 rows" is that target. Every phone cap comes
+/// from this one number.
+const int phonePreviewRows = 4;
+
+/// [phonePreviewRows] on a phone, less [reserved] rows for what else the card
+/// shows (a group header counts as a row, a week strip as one). Null (no cap)
+/// at 600pt and wider, where the cell's box does the bounding.
+int? phoneRowCap(BuildContext context, {int reserved = 0}) =>
+    Insets.phone(context) ? phonePreviewRows - reserved : null;
 
 class BoundedList extends StatelessWidget {
   const BoundedList({
@@ -23,6 +40,8 @@ class BoundedList extends StatelessWidget {
     this.onShowAll,
     this.hiddenCountBuilder,
     this.footerHeight = 46,
+    this.dense = false,
+    this.maxRows,
   });
 
   final int itemCount;
@@ -33,28 +52,70 @@ class BoundedList extends StatelessWidget {
   final int Function(int shown)? hiddenCountBuilder;
   final double footerHeight;
 
+  /// The phone dashboard's condensed footer: one 28 text row inside a 48 tall
+  /// hit region, instead of the 46 pill block. Wider windows ignore it.
+  final bool dense;
+
+  /// Most rows shown before the footer takes over. The phone dashboard sizes a
+  /// card to its content, so there is no box to measure and this is the box.
+  final int? maxRows;
+
+  /// The footer block of a dense list on a phone.
+  static const double denseFooterHeight = TouchTarget.size;
+
   @override
   Widget build(BuildContext context) {
+    final compact = dense && Insets.phone(context);
+    final footer = compact ? denseFooterHeight : footerHeight;
     return LayoutBuilder(
       builder: (context, constraints) {
+        final cap = maxRows ?? itemCount;
+
+        if (compact) {
+          // Phone dashboard rows size to their text (a long name takes two
+          // lines), so there is no row height to divide: the preview is the
+          // first [cap] rows.
+          final shown = itemCount < cap ? itemCount : cap;
+          final footerHidden =
+              hiddenCountBuilder?.call(shown) ?? itemCount - shown;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < shown; i++) itemBuilder(context, i),
+              if (footerHidden > 0)
+                SizedBox(
+                  height: footer,
+                  child: MoreRow(
+                    hidden: footerHidden,
+                    noun: noun,
+                    onTap: onShowAll,
+                    dense: true,
+                  ),
+                ),
+            ],
+          );
+        }
+
         final available = constraints.maxHeight.isFinite
             ? constraints.maxHeight
-            : itemHeight * itemCount + footerHeight;
+            : itemHeight * itemCount + footer;
 
         // Assume a footer is needed, then check whether everything fits after
         // all. Reserving the space up front is what keeps it on screen.
-        var fits = ((available - footerHeight) / itemHeight).floor();
-        if (fits >= itemCount) {
+        var shown = ((available - footer) / itemHeight).floor().clamp(0, itemCount);
+        if (shown > cap) shown = cap;
+        if (shown >= itemCount) {
           // No footer needed, so the whole box is available for rows.
-          fits = (available / itemHeight).floor();
+          shown = (available / itemHeight).floor().clamp(0, itemCount);
         }
-        var shown = fits.clamp(0, itemCount);
         var hidden = itemCount - shown;
         var footerHidden = hiddenCountBuilder?.call(shown) ?? hidden;
         if (footerHidden <= 0 && hidden > 0) {
           // If none of the relevant rows are hidden, reclaim the space that
           // would otherwise have been reserved for an empty footer.
           shown = (available / itemHeight).floor().clamp(0, itemCount);
+          if (shown > cap) shown = cap;
           hidden = itemCount - shown;
           footerHidden = hiddenCountBuilder?.call(shown) ?? hidden;
         }
@@ -67,11 +128,12 @@ class BoundedList extends StatelessWidget {
               SizedBox(height: itemHeight, child: itemBuilder(context, i)),
             if (footerHidden > 0)
               SizedBox(
-                height: footerHeight,
+                height: footer,
                 child: MoreRow(
                   hidden: footerHidden,
                   noun: noun,
                   onTap: onShowAll,
+                  dense: dense,
                 ),
               ),
           ],

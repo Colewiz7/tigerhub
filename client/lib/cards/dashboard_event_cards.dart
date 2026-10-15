@@ -85,10 +85,13 @@ class ScopedEventsCard extends StatelessWidget {
           // overflow the same way.
           : BoundedList(
               itemCount: shown.length,
-              itemHeight: StatusRow.heightFor(context),
+              itemHeight: StatusRow.heightFor(context, dense: true),
+              dense: true,
+              maxRows: phoneRowCap(context),
               noun: 'events',
               onShowAll: onShowAll,
-              itemBuilder: (context, index) => EventRow(event: shown[index]),
+              itemBuilder: (context, index) =>
+                  EventRow(event: shown[index], dense: true),
             ),
     );
   }

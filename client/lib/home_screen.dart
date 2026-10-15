@@ -25,6 +25,7 @@ import 'services/api.dart';
 import 'services/dashboard.dart';
 import 'theme/tokens.dart';
 import 'widgets/card_shell.dart' show editControlsWidth;
+import 'widgets/touch_target.dart';
 
 /// The icon each module type shows in the card library and the hidden chips.
 /// The name comes from `moduleLabels` beside the type itself, so the library
@@ -446,6 +447,12 @@ class _HomeScreenState extends State<HomeScreen> {
             .clamp(_minCardHeight, _maxCardHeight)
             .toDouble();
 
+        // Phone tokens: cards 16 from the window edge and 10 apart, so each
+        // cell carries 5 of padding and the page inset makes up the rest.
+        final phone = Insets.phone(context);
+        final gutter = phone ? Insets.phoneCardGap / 2 : _cardGutter;
+        final sideInset = phone ? Insets.phoneMargin - gutter : 8.0;
+
         final children = [
           for (var index = 0; index < _order.length; index++)
             Semantics(
@@ -467,19 +474,22 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: SizedBox(
                 width:
-                    (constraints.maxWidth - 16) /
+                    (constraints.maxWidth - sideInset * 2) /
                     columns *
                     ((_instance(_order[index])?.size.columns ?? 1).clamp(
                       1,
                       columns,
                     )),
-                height:
-                    (_instance(_order[index])?.size == CardSize.compact
-                        ? cardHeight * .58
-                        : cardHeight) +
-                    _cardGutter * 2,
+                // Phones size a card to its content, so there is no cell
+                // height. Wider windows divide the viewport into cells.
+                height: phone
+                    ? null
+                    : (_instance(_order[index])?.size == CardSize.compact
+                              ? cardHeight * .58
+                              : cardHeight) +
+                          gutter * 2,
                 child: Padding(
-                  padding: const EdgeInsets.all(_cardGutter),
+                  padding: EdgeInsets.all(gutter),
                   // A Stack, as before the header controls moved into the
                   // card: it hands the card loose constraints, so a card
                   // keeps its natural height inside its cell.
@@ -495,7 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
             controller: _scrollController,
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: EdgeInsets.symmetric(horizontal: sideInset),
                 sliver: SliverToBoxAdapter(
                   child: ReorderableBuilder<String>(
                     // No scrollController on purpose. The inner GridView is
@@ -660,49 +670,24 @@ class _EditBar extends StatelessWidget {
             spacing: 12,
             runSpacing: 8,
             children: [
-              Material(
-                elevation: 0,
-                color: editing ? scheme.primary : scheme.surfaceContainerHigh,
-                shape: Shapes.pill,
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: onToggle,
-                  child: Padding(
-                    // The spec's pill-x of 13, which is what lets "Customize"
-                    // fit a 390 wide phone at 2x text.
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          editing ? Icons.check_rounded : Icons.tune_rounded,
-                          size: 18,
-                          color: editing
-                              ? scheme.onPrimary
-                              : scheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          editing ? 'Done' : 'Customize',
-                          style: text.bodyMedium?.copyWith(
-                            color: editing
-                                ? scheme.onPrimary
-                                : scheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              _BarPill(
+                onTap: onToggle,
+                icon: editing ? Icons.check_rounded : Icons.tune_rounded,
+                label: editing ? 'Done' : 'Customize',
+                background: editing
+                    ? scheme.primary
+                    : scheme.surfaceContainerHigh,
+                iconColor: editing ? scheme.onPrimary : scheme.onSurfaceVariant,
+                labelColor: editing ? scheme.onPrimary : scheme.onSurface,
               ),
               if (editing) ...[
-                FilledButton.tonalIcon(
-                  onPressed: () => _showLibrary(context),
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add module'),
+                _BarPill(
+                  onTap: () => _showLibrary(context),
+                  icon: Icons.add_rounded,
+                  label: 'Add module',
+                  background: scheme.primaryContainer,
+                  iconColor: scheme.onPrimaryContainer,
+                  labelColor: scheme.onPrimaryContainer,
                 ),
                 Text('Drag to reorder, or tune a card', style: text.bodySmall),
               ],
@@ -923,6 +908,65 @@ class _EditBar extends StatelessWidget {
               child: Text('Every card is on screen.', style: text.bodySmall),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// A pill in the edit bar. Every pill there is this widget, so they share a
+/// height at any text size, and the icon scales with the text beside it.
+class _BarPill extends StatelessWidget {
+  const _BarPill({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.background,
+    required this.iconColor,
+    required this.labelColor,
+  });
+
+  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+  final Color background;
+  final Color iconColor;
+  final Color labelColor;
+
+  @override
+  Widget build(BuildContext context) {
+    // The pill is the visual; taps answer across a 48 tall region around it.
+    return TouchTarget(onTap: onTap, child: _visual(context));
+  }
+
+  Widget _visual(BuildContext context) {
+    return Material(
+      elevation: 0,
+      color: background,
+      shape: Shapes.pill,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 40),
+          child: Padding(
+            // The spec's pill-x of 13, which is what lets "Customize" fit a
+            // 390 wide phone at 2x text.
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 18, color: iconColor, applyTextScaling: true),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: labelColor),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

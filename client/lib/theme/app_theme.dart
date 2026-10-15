@@ -8,6 +8,7 @@
 /// anywhere in this app.
 library;
 
+import 'package:flutter/cupertino.dart' show CupertinoTextThemeData, CupertinoThemeData;
 import 'package:flutter/material.dart';
 
 import 'semantic.dart';
@@ -49,7 +50,10 @@ class AppTheme {
         space: 1,
         thickness: 1,
       ),
-      textTheme: TextTheme(
+      // Merged onto the base text theme, which already carries Rubik on all 15
+      // slots. Passing a bare TextTheme here would replace it and drop the
+      // family from every slot this file does not restyle.
+      textTheme: base.textTheme.merge(TextTheme(
         // The one oversized, light-weight number per card.
         displayLarge: TextStyle(
           fontSize: 68,
@@ -94,7 +98,8 @@ class AppTheme {
           letterSpacing: 1.1,
           color: muted,
         ),
-      ),
+      )),
+      cupertinoOverrideTheme: _cupertino(scheme),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: scheme.surfaceContainerHigh,
@@ -112,6 +117,28 @@ class AppTheme {
           borderRadius: Shapes.inner,
           borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
+      ),
+    );
+  }
+
+  /// The Cupertino text styles default to the platform system font, so any
+  /// Cupertino widget (the iOS path) would ignore Rubik. Each style keeps its
+  /// iOS size, weight and colour and only swaps the family.
+  static CupertinoThemeData _cupertino(ColorScheme scheme) {
+    final d = CupertinoTextThemeData(primaryColor: scheme.primary);
+    TextStyle rubik(TextStyle s) => s.copyWith(fontFamily: fontFamily);
+    return CupertinoThemeData(
+      textTheme: CupertinoTextThemeData(
+        primaryColor: scheme.primary,
+        textStyle: rubik(d.textStyle),
+        actionTextStyle: rubik(d.actionTextStyle),
+        actionSmallTextStyle: rubik(d.actionSmallTextStyle),
+        tabLabelTextStyle: rubik(d.tabLabelTextStyle),
+        navTitleTextStyle: rubik(d.navTitleTextStyle),
+        navLargeTitleTextStyle: rubik(d.navLargeTitleTextStyle),
+        navActionTextStyle: rubik(d.navActionTextStyle),
+        pickerTextStyle: rubik(d.pickerTextStyle),
+        dateTimePickerTextStyle: rubik(d.dateTimePickerTextStyle),
       ),
     );
   }
