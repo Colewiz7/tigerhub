@@ -30,7 +30,7 @@ import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/dashboard.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
-import 'package:tigerhub/widgets/scalloped_badge.dart';
+import 'package:tigerhub/widgets/scalloped_badge.dart' show CardHero;
 
 class _EmptyBackend implements Backend {
   @override
@@ -188,7 +188,7 @@ void main() {
   final cards = <String, ({Widget Function(Widget?) build, Finder hero})>{
     'dining badge hero': (
       build: (handle) => DiningCard(result: _dining, dragHandle: handle),
-      hero: find.byType(ScallopedBadge),
+      hero: find.byType(CardHero),
     ),
     'scoped events text hero': (
       build: (handle) => ScopedEventsCard(
@@ -256,7 +256,7 @@ void main() {
     }
   }
 
-  testWidgets('an ellipsized title still holds its full string', (
+  testWidgets('a long title wraps by whole words and is never cut', (
     tester,
   ) async {
     final handle = tester.ensureSemantics();
@@ -274,8 +274,8 @@ void main() {
     final title = find.textContaining('Robotics');
     final text = tester.widget<Text>(title);
     expect(text.data, _organizer);
-    expect(text.maxLines, isNotNull);
-    expect(text.overflow, TextOverflow.ellipsis);
+    expect(text.maxLines, isNull);
+    expect(text.overflow, isNot(TextOverflow.ellipsis));
     expect(tester.getSemantics(title).label, _organizer);
     handle.dispose();
   });
@@ -329,7 +329,7 @@ void main() {
                   of: find.byType(CardShell).first,
                   matching: find.text('2 events'),
                 )
-              : find.byType(ScallopedBadge);
+              : find.byType(CardHero);
           expect(hero, findsOneWidget);
           ({double height, double gap}) measure() {
             final first = tester.getRect(find.byType(CardShell).at(0));

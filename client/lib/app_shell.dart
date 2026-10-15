@@ -24,6 +24,7 @@ import 'services/preferences.dart';
 import 'services/api.dart';
 import 'widgets/wordmark.dart';
 import 'theme/dynamic_theme.dart';
+import 'theme/tokens.dart';
 import 'widgets/page_veil.dart';
 import 'widgets/tab_bar.dart';
 
@@ -436,18 +437,22 @@ class _Masthead extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final state = scheme.state;
 
+    // 48 tall on phones: a 32 logo and the 36 icon buttons, 6 above and below.
+    final phone = Insets.phone(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(26, 20, 26, 12),
+      padding: phone
+          ? const EdgeInsets.fromLTRB(Insets.phoneMargin, 6, Insets.phoneMargin, 6)
+          : const EdgeInsets.fromLTRB(26, 20, 26, 12),
       child: Row(
         children: [
           Image.asset(
             'assets/images/tigerhub-mascot.png',
-            height: 44,
+            height: phone ? 32 : 44,
             filterQuality: FilterQuality.medium,
             excludeFromSemantics: true,
           ),
           const SizedBox(width: 8),
-          const Wordmark(),
+          Wordmark(height: phone ? 32 : null),
           const Spacer(),
           Tooltip(
             message: settingsOpen ? 'Close settings' : 'Settings',

@@ -124,12 +124,7 @@ class EventsCard extends StatelessWidget {
       // decide whether there is anything happening now.
       hero: events.isEmpty
           ? null
-          : ScallopedBadge(
-              value: '$today',
-              label: 'TODAY',
-              size: 88,
-              filled: today > 0,
-            ),
+          : CardHero(value: '$today', label: 'TODAY', filled: today > 0),
       child: switch ((result.isPriming, events.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading events'),
         (_, true) => EmptyState(
@@ -160,7 +155,7 @@ class _Compact extends StatelessWidget {
     final next = ordered
         .where((event) => (event.endsAt ?? event.startsAt).isAfter(now))
         .firstOrNull;
-    return EventRow(event: next ?? ordered.first);
+    return EventRow(event: next ?? ordered.first, dense: true);
   }
 }
 
@@ -181,10 +176,12 @@ class _Flat extends StatelessWidget {
 
     return BoundedList(
       itemCount: ordered.length,
-      itemHeight: StatusRow.heightFor(context),
+      itemHeight: StatusRow.heightFor(context, dense: true),
+      dense: true,
+      maxRows: phoneRowCap(context),
       noun: 'events',
       onShowAll: onShowAll,
-      itemBuilder: (context, i) => EventRow(event: ordered[i]),
+      itemBuilder: (context, i) => EventRow(event: ordered[i], dense: true),
     );
   }
 }
@@ -200,9 +197,8 @@ class _Grouped extends StatelessWidget {
   /// be low here: the Events tab is where the full feed lives.
   static const int _perGroup = 1;
   static double _groupHeightFor(BuildContext context) =>
-      GroupHeader.height +
-      GroupHeader.gap +
-      StatusRow.heightFor(context) * _perGroup;
+      GroupHeader.blockHeight(context, dense: true) +
+      StatusRow.heightFor(context, dense: true) * _perGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -218,6 +214,8 @@ class _Grouped extends StatelessWidget {
     return BoundedList(
       itemCount: ordered.length,
       itemHeight: _groupHeightFor(context),
+      dense: true,
+      maxRows: phoneRowCap(context, rows: 2),
       noun: 'organizers',
       onShowAll: onShowAll,
       itemBuilder: (context, i) => Column(
@@ -225,12 +223,13 @@ class _Grouped extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           GroupHeader(
+            dense: true,
             icon: iconForOrganizer(ordered[i].key),
             title: ordered[i].key,
             count: ordered[i].value.length,
           ),
           for (final event in ordered[i].value.take(_perGroup))
-            EventRow(event: event),
+            EventRow(event: event, dense: true),
         ],
       ),
     );
