@@ -576,8 +576,10 @@ void main() {
     ) async {
       final handle = tester.ensureSemantics();
       await pumpMany(tester);
-      // The footer's label merges with its visible "+N more" text.
-      final node = find.bySemanticsLabel(RegExp(r'^\d+ more'));
+      // The label is exactly the visible "+N more", read once.
+      final visible = tester.widget<Text>(pill).data!;
+      expect(visible, matches(RegExp(r'^\+\d+ more$')));
+      final node = find.bySemanticsLabel(visible);
       expect(node, findsOneWidget);
       expect(
         tester.getSemantics(node),
