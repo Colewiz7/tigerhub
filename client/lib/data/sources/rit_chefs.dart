@@ -286,9 +286,11 @@ bool ritChefsFailed(Map<String, dynamic> snapshot) =>
 DateTime? _stamp(Object? raw) =>
     raw is String ? DateTime.tryParse(raw)?.toUtc() : null;
 
-/// When this feed last held real chef information. A TigerCenter snapshot
-/// whose every `menus[]` is empty is not that, so a first run outage reports
-/// null rather than the moment the failed fetch happened.
+/// When this feed last held real chef information: a `/menus` read with chefs,
+/// a schedule read that covered its day, or today's TigerCenter payload with a
+/// visiting chef in it. A TigerCenter payload that merely has menus is not
+/// that, so a first run outage reports null rather than the moment the failed
+/// fetch happened.
 DateTime? chefsLastUpdated({
   required Map<String, dynamic>? tigerCenter,
   required DateTime? tigerCenterAt,
@@ -300,7 +302,7 @@ DateTime? chefsLastUpdated({
     ?_stamp(rit?['schedule_at']),
     if (tigerCenterAt != null &&
         tigerCenter?['service_date'] == CampusTime.formatDate(now) &&
-        !tigerCenterMenusEmpty(tigerCenter))
+        menuItemsWithCategory(tigerCenter!, visitingChef).isNotEmpty)
       tigerCenterAt.toUtc(),
   ]..sort();
   return stamps.isEmpty ? null : stamps.last;
@@ -378,8 +380,14 @@ Map<String, dynamic> visitingChefsView({
   // A day block the parser could not read says nothing, either way.
   if (scheduleToday?['unknown'] == true) scheduleToday = null;
   // The one place a quiet day comes from rit.edu: the schedule page lists
-  // today's block and positively marks it empty, on a read that succeeded.
+  // today's block and positively marks it empty, on a read that succeeded
+  // today. A read from an earlier service day listed today ahead of time, and
+  // may since have changed, so it cannot confirm. `schedule_at` is that read's
+  // time, stamped on the campus clock when the schedule page last parsed.
+  final readAt = _stamp(rit?['schedule_at']);
+  final readToday = readAt != null && CampusTime.formatDate(readAt) == today;
   final scheduleConfirms =
+      readToday &&
       scheduleToday != null &&
       scheduleToday['empty'] == true &&
       scheduleToday['unknown'] == false &&
