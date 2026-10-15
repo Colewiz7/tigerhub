@@ -104,6 +104,13 @@ final _events = _ok([
   ),
 ]);
 
+/// The same events with the all day one and the past one first, which is the
+/// order a group shows its single row from.
+final _eventsLeadingWithOddRows = _ok([
+  ..._events.value!.data.where((e) => e.uid == 'allday' || e.uid == 'past'),
+  ..._events.value!.data.where((e) => e.uid != 'allday' && e.uid != 'past'),
+]);
+
 String _r(Rect rect) =>
     '${rect.left.toStringAsFixed(1)},${rect.top.toStringAsFixed(1)},'
     '${rect.width.toStringAsFixed(1)}x${rect.height.toStringAsFixed(1)}';
@@ -168,12 +175,17 @@ void main() {
   });
 
   for (final edit in const [false, true]) {
-    for (final empty in const [false, true]) {
+    // 'rows' leads each Events group with the all day and the past event, so
+    // their row text is on screen and compared too. The card shows one row per
+    // group, and in the default data those two sit behind another event.
+    for (final variant in const ['data', 'empty', 'rows']) {
+      final empty = variant == 'empty';
+      final rows = variant == 'rows';
       for (final width in const [600.0, 768.0, 1024.0]) {
         for (final scale in const [1.0, 2.0]) {
           final key =
               '${width.toInt()} @ ${scale}x${empty ? ' empty' : ''}'
-              '${edit ? ' edit' : ''}';
+              '${rows ? ' rows' : ''}${edit ? ' edit' : ''}';
           testWidgets('wide dashboard at $key matches the base commit', (
             tester,
           ) async {
@@ -210,7 +222,11 @@ void main() {
                   body: HomeScreen(
                     api: ApiClient(backend: _EmptyBackend()),
                     dining: empty ? _ok<DiningLocation>(const []) : _dining,
-                    events: empty ? _ok<CampusEvent>(const []) : _events,
+                    events: empty
+                        ? _ok<CampusEvent>(const [])
+                        : rows
+                        ? _eventsLeadingWithOddRows
+                        : _events,
                     chefs: empty ? _ok<MenuItem>(const []) : _chefs,
                     areas: _ok<HousingArea>(const []),
                     onRefresh: () async {},
