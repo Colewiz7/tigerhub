@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../theme/semantic.dart';
+import '../theme/tokens.dart';
 import '../widgets/event_details_sheet.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
@@ -85,6 +86,8 @@ class EventRow extends StatelessWidget {
     // after a middle dot ("Fri 5:00 PM · SAU"), and keeps the trailing slot
     // for "ENDED". The standard row keeps the time on the right.
     final place = event.location?.isNotEmpty == true ? event.location! : null;
+    // Only on phones: dense is ignored at 600pt and up, which keep base text.
+    final condensed = dense && Insets.phone(context);
     final denseWhen = event.allDay ? 'All day' : stamp;
     final denseSubtitle = place == null ? denseWhen : '$denseWhen · $place';
     final ended = Text(
@@ -100,14 +103,14 @@ class EventRow extends StatelessWidget {
                 ? Icons.history_rounded
                 : iconForEventType(event.eventType)),
       title: boosted ? '✦ ${event.title}' : event.title,
-      subtitle: dense ? denseSubtitle : (place ?? when),
+      subtitle: condensed ? denseSubtitle : (place ?? when),
       accent: boosted
           ? Theme.of(context).colorScheme.primary
           : (isPast ? semantic.closed : semantic.open),
       emphasis: isPast ? RowEmphasis.dimmed : RowEmphasis.normal,
       semanticHint: 'Opens event details',
       onTap: () => showEventDetailsSheet(context, event),
-      trailing: dense
+      trailing: condensed
           ? (isPast ? ended : null)
           : Column(
               crossAxisAlignment: CrossAxisAlignment.end,

@@ -21,4 +21,8 @@ One line per override: rule, what we do instead, why.
   card previews a fixed number of rows (`phonePreviewRows` = 4 in
   `bounded_list.dart`, with the "+N more" row for the rest). Why: the owner's
   condense target ("Dining card 4 rows") makes card height equal its content,
-  so there is no box to measure. Owner to confirm.
+  so there is no box to measure. Confirmed by the owner (round 4).
+- **Card gap 10 on phones** -> the gap between dashboard cards is 10 under 600pt
+  (`Insets.phoneCardGap`; 5 per cell side), where SKILL.md said "gutter 4". The
+  4 is the row gap. Confirmed by the owner (round 4); the `scallop-ui` SKILL.md
+  override line now says card gap 10, row gap 4.

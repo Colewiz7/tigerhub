@@ -463,10 +463,10 @@ on a 440x956 device.
   (Dining, Events, Mailing Address, Chefs), with geometry tests.
 - [x] Edit bar at 2x: "Add module" and "Done" are one pill widget, equal height,
   icons scale with text.
-- [ ] Visiting Chefs with data: at 390 and 440 wide the title, the "2 today" pill
+- [x] Visiting Chefs with data: at 390 and 440 wide the title, the "2 today" pill
   and the three edit controls do not fit one row, so the header is 56 tall in
-  both modes (card top to first row 80, not 56). Options: hide the pill in edit
-  mode, or shrink the controls.
+  both modes (card top to first row 80, not 56). Accepted by the owner (round
+  4): the pin at 80 stays, and the hero pill never hides in edit mode.
 - [ ] Occupancy pill: color by crowding (low green, mid amber, high red) with a
   clear label ("100% full" or "Busy"). Never green at 100%.
 - [x] Long names: dashboard rows allow 2 lines for the name and the status. The
@@ -530,13 +530,14 @@ on a 440x956 device.
 ### Decisions and deviations in this pass
 
 - The gap is 10 between cards (5 per cell side), which is what the owner's list
-  says. `scallop-ui` SKILL.md still says "gutter 4" for phones: that 4 is the
-  row gap here. Update the skill text or the list.
+  says. `scallop-ui` SKILL.md now says "card gap 10, row gap 4", recorded as a
+  confirmed override in `docs/scallop-overrides.md`. `design/STYLE.md` has no
+  phone gutter wording, so it needs no change.
 - Phone cards are as tall as their content, so the row count is a cap, not a
   measurement: `phonePreviewRows` = 4 in `bounded_list.dart` (grouped events 2
   groups, a calendar day 3 rows come from it). The spec says to measure the
   box; there is no box on a phone. Recorded in `docs/scallop-overrides.md`.
-  **Owner to confirm.**
+  **Confirmed by the owner (round 4).**
 - 600pt and wider keeps the original card header and title (so edit mode there
   still ellipsizes a long title to hold the header height). A test pins the
   wide geometry to the base commit.
