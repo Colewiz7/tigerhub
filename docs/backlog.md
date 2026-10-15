@@ -456,6 +456,10 @@ is not built.
   or store credentials.
 - Source terms audit (item 3, paused): add `rit.edu/dining` (food trucks page)
   and the `ondemand.rit.edu` and `tigerspend.rit.edu` link-outs to the list.
+- The `foodTrucksSource` SourceSpec has no `manualFloor` or `failed` fields
+  because `FoodTruckPacer` owns the 6 hour and 5 minute spacing, so a pull to
+  refresh inside the 1 minute global floor enters the scrape and is refused by
+  the pacer.
 
 ## A+B: the full list  *(master list 2026-10-14, status 2026-10-14)*
 
