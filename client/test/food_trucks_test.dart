@@ -632,12 +632,16 @@ void main() {
         'origin': origin,
         'fetched_at': stamp.toUtc().toIso8601String(),
       });
-      File('${dir.path}/${JsonStore.fileNameFor(foodTrucksSource)}').setLastModifiedSync(stamp);
       log.clear();
+      // The store stamps the envelope with the real time it was written, and
+      // LocalBackend reads the snapshot's age from that stamp, so the age is
+      // made by moving the injected clock forward instead of aging the file.
+      final later = DateTime.now().add(age);
       // fresh backend each time, the in memory snapshot would hide the new file
       backend = LocalBackend(
         upstream: routed(pageBody: page, drupalBody: noEvents, log: log),
         store: store,
+        clock: () => later,
       );
       await backend.refreshNow();
       return pageHits(log);
