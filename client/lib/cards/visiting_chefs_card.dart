@@ -18,10 +18,12 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../services/open_link.dart';
 import '../theme/tokens.dart';
+import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/glyph.dart';
 import '../widgets/freshness.dart';
 import '../widgets/scalloped_badge.dart';
+import '../widgets/status_row.dart';
 
 class VisitingChefsCard extends StatelessWidget {
   const VisitingChefsCard({
@@ -48,13 +50,6 @@ class VisitingChefsCard extends StatelessWidget {
     // said "Updated just now" over a fetch that had just failed.
     final updated = value?.lastUpdated;
 
-    // The badge and a two line title share one row, and at large text the
-    // title no longer fits beside it and breaks mid word. Past this scale the
-    // count moves into words beneath the title, which the spec asks for anyway.
-    final badgeFits =
-        MediaQuery.textScalerOf(context).scale(1) < _badgeScaleMax;
-    final summary = '${all.length} ${all.length == 1 ? 'chef' : 'chefs'} today';
-
     return CardShell(
       // The toque is this section's identity, per the adoption spec.
       glyph: GlyphKind.visitingChef,
@@ -67,41 +62,64 @@ class VisitingChefsCard extends StatelessWidget {
       dragHandle: dragHandle,
       // This feed is already scoped to today, so its count is honest and
       // immediately useful. The individual chef name remains the hero of each
-      // row; this is the one card-level number.
-      hero: all.isEmpty || !badgeFits
+      // row; this is the one card-level number. It stays in the header at
+      // every text size and in edit mode: a pill on a phone, the scalloped
+      // badge from 600pt.
+      hero: all.isEmpty
           ? null
-          : ScallopedBadge(
+          : CardHero(
               value: '${all.length}',
-              // One word, as the spec requires. "CHEFS TODAY" was wider than
-              // the badge and wrapped over its edge. The card is today's.
-              label: all.length == 1 ? 'CHEF' : 'CHEFS',
-              size: 88,
+              // Main's wording, which the wide layout keeps from the base
+              // commit. The title already says chefs; the shorter pill keeps
+              // room for the edit controls beside it on a 390 wide phone.
+              label: all.length == 1 ? 'CHEF TODAY' : 'CHEFS TODAY',
+              pill: '${all.length} today',
             ),
       child: switch ((result.isPriming, all.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading today'),
-        (_, true) when availability == Availability.unavailable => _Scrolls(
-          EmptyState(
-            kind: EmptyKind.sourceDown,
-            title: 'Menus unavailable',
-            detail: updated == null
-                ? 'Never updated'
-                : 'Updated ${formatAge(updated)}',
-            action: const _DiningLink(),
+        (_, true) when availability == Availability.unavailable =>
+          _Centered(
+            EmptyState(
+              kind: EmptyKind.sourceDown,
+              fill: true,
+              title: 'Menus unavailable',
+              detail: updated == null
+                  ? 'Never updated'
+                  : 'Updated ${formatAge(updated)}',
+              action: const _DiningLink(),
+            ),
           ),
-        ),
-        (_, true) => _Scrolls(
+        (_, true) => _Centered(
           EmptyState(
             kind: EmptyKind.noVisitingChefs,
+            fill: true,
             detail: next == null ? null : _nextLine(next),
           ),
         ),
-        _ => _ChefList(chefs: all, summary: badgeFits ? null : summary),
+        _ => BoundedList(
+          itemCount: all.length,
+          itemHeight: StatusRow.heightFor(context, dense: true),
+          dense: true,
+          maxRows: phoneRowCap(context),
+          // "+2 more", not "+2 chefs": one left over never reads "+1 chefs".
+          noun: 'more',
+          // The Dining tab lists TigerCenter specials and has none of these
+          // chefs, so "+N more" opens a sheet of all of them. [onShowAll] is
+          // accepted for existing callers and unused.
+          onShowAll: () => _showAllChefs(context, all),
+          itemBuilder: (context, index) => StatusRow(
+            dense: true,
+            icon: Icons.restaurant_menu_rounded,
+            title: all[index].name,
+            subtitle: [
+              ?_window(all[index]),
+              all[index].locationName,
+            ].where((s) => s.isNotEmpty).join(' · '),
+          ),
+        ),
       },
     );
   }
-
-  /// Text scale from which the count badge is dropped from the header.
-  static const double _badgeScaleMax = 1.5;
 
   /// "11:00 AM to 2:00 PM", on the campus clock. Null when RIT gave no time,
   /// which is never filled in by guessing.
@@ -136,130 +154,6 @@ class VisitingChefsCard extends StatelessWidget {
         ? 'Tomorrow'
         : DateFormat(days > 6 ? 'EEE d MMM' : 'EEE').format(next.date);
     return 'Next: $day · ${next.name} at ${next.locationName}';
-  }
-}
-
-/// The chefs, each row as tall as its own text needs.
-///
-/// A fixed row height clipped the time and location (an ellipsis after
-/// "The Cafe" and half a time at 2x). Here every row wraps its lines, and the
-/// rows that fit the box are chosen by measuring them, with a "+N more" pill
-/// counting the rest, so nothing is cut off without being counted. If even
-/// the first row and the pill cannot fit, the list scrolls rather than
-/// overflowing.
-class _ChefList extends StatelessWidget {
-  const _ChefList({required this.chefs, this.summary});
-
-  final List<MenuItem> chefs;
-
-  /// The count in words, when the badge is not shown.
-  final String? summary;
-
-  static const double _gap = 8;
-  static const double _badge = 42;
-
-  static double _text(
-    BuildContext context,
-    String text,
-    TextStyle? style,
-    double width,
-    int maxLines,
-  ) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: text,
-        style: DefaultTextStyle.of(context).style.merge(style),
-      ),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      maxLines: maxLines,
-    )..layout(maxWidth: width);
-    final height = painter.height;
-    painter.dispose();
-    return height;
-  }
-
-  /// The row's height, from the same styles and width it will be drawn with.
-  static double _rowHeight(BuildContext context, MenuItem chef, double width) {
-    final text = Theme.of(context).textTheme;
-    final inner = width - 24 - _badge - 13;
-    final window = VisitingChefsCard._window(chef);
-    var lines = _text(context, chef.name, text.titleMedium, inner, 2);
-    if (window != null) {
-      lines += 2 + _text(context, window, text.bodySmall, inner, 2);
-    }
-    if (chef.locationName.isNotEmpty) {
-      lines += 2 + _text(context, chef.locationName, text.bodySmall, inner, 3);
-    }
-    // 8 above and below, never shorter than the badge's own row.
-    return (lines + 16 + 1).clamp(_badge + 16, double.infinity);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final available = constraints.maxHeight;
-
-        final summaryHeight = summary == null
-            ? 0.0
-            : _text(context, summary!, text.bodyMedium, width, 1) + 10;
-        final heights = [
-          for (final chef in chefs) _rowHeight(context, chef, width) + _gap,
-        ];
-        final footer = _MoreChefs.heightFor(
-          _text(context, '+99 more', text.bodySmall, width, 1),
-        );
-
-        var shown = chefs.length;
-        if (available.isFinite) {
-          final total = heights.fold<double>(summaryHeight, (a, b) => a + b);
-          if (total > available) {
-            shown = 0;
-            var used = summaryHeight + footer + _gap;
-            for (final h in heights) {
-              if (used + h > available) break;
-              used += h;
-              shown++;
-            }
-            // Never none: a card of only "+3 more" says nothing. If the first
-            // chef does not quite fit with the pill, the card scrolls.
-            if (shown == 0) shown = 1;
-          }
-        }
-        final hidden = chefs.length - shown;
-
-        return _Scrolls(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (summary != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Text(
-                    summary!,
-                    style: text.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              for (var i = 0; i < shown; i++)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: _gap),
-                  child: _ChefRow(chef: chefs[i]),
-                ),
-              if (hidden > 0)
-                _MoreChefs(
-                  hidden: hidden,
-                  onTap: () => _showAllChefs(context, chefs),
-                ),
-            ],
-          ),
-        );
-      },
-    );
   }
 }
 
@@ -298,8 +192,8 @@ class _ChefRow extends StatelessWidget {
           child: Row(
             children: [
               Container(
-                width: _ChefList._badge,
-                height: _ChefList._badge,
+                width: StatusRow.badgeSize,
+                height: StatusRow.badgeSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: scheme.primary.withValues(alpha: 0.32),
@@ -353,131 +247,6 @@ class _ChefRow extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// "+2 more", for the chefs the box had no room for. Says "more", not "chefs",
-/// so one left over never reads "+1 chefs". Opens the sheet of every chef.
-///
-/// The pill is drawn at its own size and answers taps across a 48px band, so
-/// the hit area is full without the pill growing.
-class _MoreChefs extends StatefulWidget {
-  const _MoreChefs({required this.hidden, this.onTap});
-
-  final int hidden;
-  final VoidCallback? onTap;
-
-  /// The shortest the footer gets: the 48px touch band.
-  static const double minHeight = 48;
-
-  /// Room the focus ring takes around the pill, always reserved so focusing
-  /// never moves anything: a 2px offset and a 2px ring.
-  static const double ring = 4;
-
-  /// The footer's height from its own text, which grows with the text scale.
-  static double heightFor(double textHeight) =>
-      (textHeight + 12 + ring * 2).clamp(minHeight, double.infinity);
-
-  @override
-  State<_MoreChefs> createState() => _MoreChefsState();
-}
-
-class _MoreChefsState extends State<_MoreChefs> {
-  bool _focused = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final muted = scheme.onSurfaceVariant;
-    final hidden = widget.hidden;
-    // The ring is for the keyboard. A tap focuses the pill too, and a ring
-    // after every tap would be noise.
-    final ring =
-        _focused &&
-        FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Semantics(
-        button: true,
-        onTap: widget.onTap,
-        label: 'Show $hidden more ${hidden == 1 ? 'chef' : 'chefs'}',
-        excludeSemantics: true,
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            onTap: widget.onTap,
-            onFocusChange: (focused) => setState(() => _focused = focused),
-            borderRadius: BorderRadius.circular(_MoreChefs.minHeight / 2),
-            focusColor: Colors.transparent,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: _MoreChefs.minHeight,
-              ),
-              child: Center(
-                widthFactor: 1,
-                // 2px primary ring, 2px off the pill, per the focus-ring token.
-                // A border paints inside its own box, so the box is the pill
-                // plus the 2px offset plus the 2px ring: the outer 2px is the
-                // ring and the 2px inside it is the gap. That room is reserved
-                // all round, then pulled back left by its own width so the
-                // pill lines up with the rows above; the ring spills 4px into
-                // the card padding while focused.
-                child: Transform.translate(
-                  offset: const Offset(-_MoreChefs.ring, 0),
-                  child: DecoratedBox(
-                    key: const ValueKey('focus-ring'),
-                    decoration: ShapeDecoration(
-                      shape: StadiumBorder(
-                        side: BorderSide(
-                          width: 2,
-                          color: ring ? scheme.primary : Colors.transparent,
-                        ),
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(_MoreChefs.ring),
-                      child: DecoratedBox(
-                        key: const ValueKey('more-pill'),
-                        decoration: ShapeDecoration(
-                          color: scheme.surfaceContainerHigh,
-                          shape: Shapes.pill,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 13,
-                            vertical: 6,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '+$hidden more',
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: muted,
-                                      fontVariations: Weights.medium,
-                                    ),
-                              ),
-                              const SizedBox(width: 3),
-                              Icon(
-                                Icons.chevron_right_rounded,
-                                size: 15,
-                                color: muted,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ),
         ),
       ),
@@ -573,17 +342,26 @@ class _ChefsSheet extends StatelessWidget {
   }
 }
 
-/// Lets a message taller than its box scroll instead of overflowing. At 2x
-/// text a mark, a title, a detail line and a link no longer fit a compact card.
-class _Scrolls extends StatelessWidget {
-  const _Scrolls(this.child);
+/// An empty or unavailable message, centered in the box the card gives it at
+/// every text size, and scrolling rather than overflowing when a mark, a
+/// title, a detail line and a link are taller than that box (2x text).
+class _Centered extends StatelessWidget {
+  const _Centered(this.child);
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    primary: false,
-    child: SizedBox(width: double.infinity, child: child),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, box) {
+      if (!box.maxHeight.isFinite) return child;
+      return SingleChildScrollView(
+        primary: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: box.maxHeight),
+          child: Center(child: child),
+        ),
+      );
+    },
   );
 }
 

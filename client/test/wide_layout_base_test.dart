@@ -1,0 +1,365 @@
+/// Dashboard layouts at 600pt and wider are unchanged from the base commit.
+///
+/// The A+B condense is phone only (under 600pt). This pins the Today cards at
+/// 600, 768 and 1024 wide, at 1x and 2x text, in normal and edit mode, with
+/// data and with every card empty, to numbers measured on base commit edc9f6c
+/// with this same test (see [_measure]): card size, title and hero size and
+/// place, where the content starts, the first row, the edit controls, and the
+/// empty state block. Nothing is exempt.
+///
+/// The one deliberate difference is the empty state block's horizontal place:
+/// the owner's list says empty states are centered in their card, and the base
+/// left aligned them at every width (the Dining, Events and Mailing Address
+/// cards). So that field is pinned twice: against the base's size and top (they
+/// must not move), and against the centered left edge it has now.
+///
+/// To re-measure on another commit, copy this file there and run
+/// `flutter test --dart-define=MEASURE=true test/wide_layout_base_test.dart`.
+library;
+
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
+import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/home_screen.dart';
+import 'package:tigerhub/models/api_models.dart';
+import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/widgets/card_shell.dart';
+import 'package:tigerhub/widgets/empty_state.dart';
+import 'package:tigerhub/widgets/scalloped_badge.dart';
+import 'package:tigerhub/widgets/status_row.dart';
+
+import 'golden_harness.dart';
+
+const _measure = bool.fromEnvironment('MEASURE');
+
+class _EmptyBackend implements Backend {
+  @override
+  Future<Map<String, dynamic>> fetch(
+    String path, [
+    Map<String, String>? q,
+  ]) async => {'data': <dynamic>[], 'stale': false, 'last_updated': null};
+
+  @override
+  void close() {}
+}
+
+Result<Collection<T>> _ok<T>(List<T> data) => Result(
+  value: Collection<T>(data: data, stale: false),
+  state: DataState.ok,
+);
+
+final _dining = _ok([
+  for (var i = 0; i < 12; i++)
+    DiningLocation(
+      id: i + 1,
+      name: 'Place number $i',
+      isOpen: i < 7,
+      category: 'dining',
+      categoryName: 'Dining',
+      closesAt: i < 7 ? DateTime.utc(2099, 1, 1, 23) : null,
+      opensAt: i < 7 ? null : DateTime.utc(2099, 1, 2, 12),
+    ),
+]);
+
+final _chefs = _ok([
+  const MenuItem(id: 1, locationName: 'Gracies', name: 'Chef Marco'),
+  const MenuItem(id: 2, locationName: 'Crossroads', name: 'Chef Ayana'),
+]);
+
+final _events = _ok([
+  for (final (i, organizer) in ['Robotics Club', 'SWE', 'Art Club'].indexed)
+    CampusEvent(
+      uid: 'e$i',
+      source: 'test',
+      title: 'Meeting $i',
+      startsAt: DateTime.utc(2099, 1, 1 + i, 15),
+      location: i == 1 ? 'SAU 2nd floor' : null,
+      organizer: organizer,
+      organizerKey: organizer.toLowerCase(),
+    ),
+  // all day, and one that is over: the other trailing texts a row can have
+  CampusEvent(
+    uid: 'allday',
+    source: 'test',
+    title: 'Career fair',
+    startsAt: DateTime.utc(2099, 1, 5, 5),
+    allDay: true,
+    location: 'Gordon Field House',
+    organizer: 'Robotics Club',
+    organizerKey: 'robotics club',
+  ),
+  CampusEvent(
+    uid: 'past',
+    source: 'test',
+    title: 'Old meeting',
+    startsAt: DateTime.utc(2000, 1, 1, 15),
+    endsAt: DateTime.utc(2000, 1, 1, 16),
+    organizer: 'SWE',
+    organizerKey: 'swe',
+  ),
+]);
+
+String _r(Rect rect) =>
+    '${rect.left.toStringAsFixed(1)},${rect.top.toStringAsFixed(1)},'
+    '${rect.width.toStringAsFixed(1)}x${rect.height.toStringAsFixed(1)}';
+
+/// The base commit's numbers, captured by running this file's measurement
+/// (`--dart-define=MEASURE=true`) on edc9f6c in a separate worktree and saving
+/// what it printed in test/fixtures/wide_layout_base.txt.
+///
+/// Per (width, text scale, variant, mode) and card, `BASE` lines are
+/// `card | title | hero | content top | first row | edit controls`, every rect
+/// relative to the card's top left as left,top,widthxheight, and `EMPTY` lines
+/// are the empty state block ('none' when the card has none) as the base had
+/// it. Only that block's left edge differs now: it is centered.
+({
+  Map<String, List<String>> base,
+  Map<String, List<String>> empty,
+  Map<String, List<String>> text,
+})
+_loadBase() {
+  final base = <String, List<String>>{};
+  final empty = <String, List<String>>{};
+  final text = <String, List<String>>{};
+  Map<String, List<String>>? into;
+  String? key;
+  for (final line in File(
+    'test/fixtures/wide_layout_base.txt',
+  ).readAsLinesSync()) {
+    final header = RegExp(r"^(BASE|EMPTY|TEXT) '(.*)': \[$").firstMatch(line);
+    if (header != null) {
+      into = switch (header.group(1)) {
+        'BASE' => base,
+        'EMPTY' => empty,
+        _ => text,
+      };
+      key = header.group(2);
+      into[key!] = [];
+    } else if (line.startsWith("  '")) {
+      into![key]!.add(line.substring(3, line.length - 2));
+    }
+  }
+  return (base: base, empty: empty, text: text);
+}
+
+/// Every string a card shows, in tree order, joined with ' ¦ '. The rows'
+/// own text (names, status lines, times, ENDED) is in here.
+String _texts(WidgetTester tester, Finder within) => [
+  for (final t in tester.widgetList<Text>(
+    find.descendant(of: within, matching: find.byType(Text)),
+  ))
+    t.data ?? t.textSpan?.toPlainText() ?? '',
+].join(' ¦ ');
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // Real Rubik, loaded once for the file the way goldenWidgets does.
+  setUpAll(loadGoldenFonts);
+
+  setUp(() {
+    SharedPreferencesAsyncPlatform.instance =
+        InMemorySharedPreferencesAsync.empty();
+  });
+
+  for (final edit in const [false, true]) {
+    for (final empty in const [false, true]) {
+      for (final width in const [600.0, 768.0, 1024.0]) {
+        for (final scale in const [1.0, 2.0]) {
+          final key =
+              '${width.toInt()} @ ${scale}x${empty ? ' empty' : ''}'
+              '${edit ? ' edit' : ''}';
+          testWidgets('wide dashboard at $key matches the base commit', (
+            tester,
+          ) async {
+            tester.view.devicePixelRatio = 1;
+            tester.view.physicalSize = Size(width, 1100);
+            addTearDown(tester.view.reset);
+            tester.platformDispatcher.textScaleFactorTestValue = scale;
+            addTearDown(tester.platformDispatcher.clearAllTestValues);
+
+            final lines = <String>[];
+            final blocks = <String>[];
+            final texts = <String>[];
+            // 2x text overflows inside some cells on both commits; geometry,
+            // not overflow, is what is compared here. The reports are dropped
+            // rather than captured: the harness's capture formats the whole
+            // widget tree for each one, which does not finish at 2x.
+            final previous = FlutterError.onError;
+            FlutterError.onError = (_) {};
+            addTearDown(() => FlutterError.onError = previous);
+
+            Future<void> settle() async {
+              // Fixed pumps, not pumpAndSettle.
+              for (var i = 0; i < 4; i++) {
+                await tester.pump(const Duration(milliseconds: 500));
+              }
+            }
+
+            await tester.pumpWidget(
+              MaterialApp(
+                theme: AppTheme.from(
+                  ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+                ),
+                home: Scaffold(
+                  body: HomeScreen(
+                    api: ApiClient(backend: _EmptyBackend()),
+                    dining: empty ? _ok<DiningLocation>(const []) : _dining,
+                    events: empty ? _ok<CampusEvent>(const []) : _events,
+                    chefs: empty ? _ok<MenuItem>(const []) : _chefs,
+                    areas: _ok<HousingArea>(const []),
+                    onRefresh: () async {},
+                    onGoToTab: (_) {},
+                  ),
+                ),
+              ),
+            );
+            await settle();
+
+            if (edit) {
+              final position = tester
+                  .state<ScrollableState>(find.byType(Scrollable).first)
+                  .position;
+              position.jumpTo(position.maxScrollExtent);
+              await settle();
+              await tester.tap(find.text('Customize'));
+              await settle();
+              position.jumpTo(0);
+              await settle();
+            }
+
+            final shells = find.byType(CardShell);
+            for (var i = 0; i < shells.evaluate().length; i++) {
+              final shell = shells.at(i);
+              final card = tester.getRect(shell);
+              Rect rel(Rect r) => r.shift(-card.topLeft);
+              Finder within(Finder f) =>
+                  find.descendant(of: shell, matching: f);
+
+              final title = rel(
+                tester.getRect(within(find.byType(Text)).first),
+              );
+              final hero = within(find.byType(ScallopedBadge));
+              final content = rel(
+                tester.getRect(
+                  within(
+                    find.byWidgetPredicate(
+                      (w) =>
+                          w is AnimatedSwitcher &&
+                          w.duration == const Duration(milliseconds: 140),
+                    ),
+                  ).first,
+                ),
+              );
+              final rows = within(find.byType(StatusRow));
+              final firstRow = rows.evaluate().isEmpty
+                  ? 'none'
+                  : _r(rel(tester.getRect(rows.first)));
+
+              String controls = 'none';
+              if (edit) {
+                final handle = Rect.fromCenter(
+                  center: tester.getCenter(
+                    within(find.byIcon(Icons.drag_indicator_rounded)),
+                  ),
+                  width: 32,
+                  height: 32,
+                );
+                final inspect = tester.getRect(
+                  within(find.byTooltip('Customize card')),
+                );
+                final remove = tester.getRect(
+                  within(find.byTooltip('Remove card from Today')),
+                );
+                controls =
+                    '${_r(rel(handle))} ${_r(rel(inspect))} ${_r(rel(remove))}';
+              }
+
+              lines.add(
+                '${card.width.toStringAsFixed(1)}x${card.height.toStringAsFixed(1)}'
+                ' | ${_r(title)}'
+                ' | ${hero.evaluate().isEmpty ? 'none' : _r(rel(tester.getRect(hero.first)))}'
+                ' | ${content.top.toStringAsFixed(1)}'
+                ' | $firstRow'
+                ' | $controls',
+              );
+
+              texts.add(_texts(tester, shell));
+
+              final emptyState = within(find.byType(EmptyState));
+              blocks.add(
+                emptyState.evaluate().isEmpty
+                    ? 'none'
+                    : _r(
+                        rel(
+                          tester.getRect(
+                            find
+                                .descendant(
+                                  of: emptyState,
+                                  matching: find.byType(Column),
+                                )
+                                .first,
+                          ),
+                        ),
+                      ),
+              );
+            }
+            FlutterError.onError = previous;
+
+            if (_measure) {
+              debugPrint("BASE '$key': [");
+              for (final line in lines) {
+                debugPrint("  '$line',");
+              }
+              debugPrint('],');
+              debugPrint("EMPTY '$key': [");
+              for (final block in blocks) {
+                debugPrint("  '$block',");
+              }
+              debugPrint('],');
+              debugPrint("TEXT '$key': [");
+              for (final text in texts) {
+                debugPrint("  '$text',");
+              }
+              debugPrint('],');
+            } else {
+              final fixture = _loadBase();
+              expect(lines, fixture.base[key], reason: 'geometry moved');
+              expect(texts, fixture.text[key], reason: 'row text changed');
+
+              // The empty state block: same size and top as the base, and
+              // centered across its card (the base left aligned it).
+              final base = fixture.empty[key]!;
+              expect(blocks.length, base.length);
+              for (var i = 0; i < blocks.length; i++) {
+                if (base[i] == 'none') {
+                  expect(blocks[i], 'none', reason: 'card $i');
+                  continue;
+                }
+                List<double> parse(String s) => [
+                  for (final n in s.split(RegExp(r'[,x]'))) double.parse(n),
+                ];
+                final now = parse(blocks[i]);
+                final then = parse(base[i]);
+                expect(now[1], then[1], reason: 'card $i empty block top');
+                expect(now[2], then[2], reason: 'card $i empty block width');
+                expect(now[3], then[3], reason: 'card $i empty block height');
+                final cardWidth = double.parse(lines[i].split('x').first);
+                expect(
+                  now[0],
+                  closeTo((cardWidth - now[2]) / 2, 1),
+                  reason: 'card $i empty block is not centered across the card',
+                );
+              }
+            }
+          });
+        }
+      }
+    }
+  }
+}

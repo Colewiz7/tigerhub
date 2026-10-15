@@ -47,10 +47,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      wrap(
-        const ScallopedBadge(value: '3', label: 'OPEN NOW'),
-        reduceMotion: true,
-      ),
+      wrap(const ScallopedBadge(value: '3', label: 'OPEN'), reduceMotion: true),
     );
 
     final switcher = tester.widget<AnimatedSwitcher>(

@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_reorderable_grid_view/widgets/widgets.dart';
 
 import 'cards/dining_card.dart';
@@ -23,6 +24,8 @@ import 'models/api_models.dart';
 import 'services/api.dart';
 import 'services/dashboard.dart';
 import 'theme/tokens.dart';
+import 'widgets/card_shell.dart' show editControlsWidth;
+import 'widgets/touch_target.dart';
 
 /// The icon each module type shows in the card library and the hidden chips.
 /// The name comes from `moduleLabels` beside the type itself, so the library
@@ -134,7 +137,6 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Edit mode reveals the remove buttons and the add row.
   bool _editing = false;
   String? _selectedId;
-  String _announcement = '';
   Result<Collection<RecreationFacility>> _recreation = const Result(
     value: null,
     state: DataState.priming,
@@ -222,8 +224,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _order = _order.where((c) => c != id).toList();
       _hidden = [..._hidden, id];
       if (_selectedId == id) _selectedId = null;
-      _announcement = '${moduleLabels[removed?.type] ?? 'Card'} removed';
     });
+    _announce('${moduleLabels[removed?.type] ?? 'Card'} removed');
     _persist();
   }
 
@@ -232,8 +234,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _hidden = _hidden.where((c) => c != id).toList();
       _order = [..._order, id];
-      _announcement = '${moduleLabels[added?.type] ?? 'Card'} added';
     });
+    _announce('${moduleLabels[added?.type] ?? 'Card'} added');
     _persist();
   }
 
@@ -254,25 +256,26 @@ class _HomeScreenState extends State<HomeScreen> {
       _instances = [..._instances, card];
       _order = [..._order, card.id];
       _selectedId = card.id;
-      _announcement = '${moduleLabels[type]} added, position ${_order.length}';
     });
+    _announce('${moduleLabels[type]} added, position ${_order.length}');
     await _persist();
   }
 
   Future<void> _updateCard(CardInstance updated) async {
     final previous = _instance(updated.id);
+    String? spoken;
     setState(() {
       _instances = [
         for (final card in _instances)
           if (card.id == updated.id) updated else card,
       ];
       if (previous?.size != updated.size) {
-        _announcement =
-            '${moduleLabels[updated.type]} resized to ${updated.size.id}';
+        spoken = '${moduleLabels[updated.type]} resized to ${updated.size.id}';
       } else if (previous?.scope != updated.scope) {
-        _announcement = '${moduleLabels[updated.type]} scope updated';
+        spoken = '${moduleLabels[updated.type]} scope updated';
       }
     });
+    if (spoken != null) _announce(spoken!);
     await _persist();
   }
 
@@ -285,10 +288,21 @@ class _HomeScreenState extends State<HomeScreen> {
       final moved = next.removeAt(from);
       next.insert(to, moved);
       _order = next;
-      _announcement =
-          '${moduleLabels[_instance(id)?.type] ?? 'Card'} moved to position ${to + 1}';
     });
+    _announce(
+      '${moduleLabels[_instance(id)?.type] ?? 'Card'} moved to position ${to + 1}',
+    );
     _persist();
+  }
+
+  /// Speaks [message] to screen readers. A zero size live region is dropped
+  /// from the semantics tree, so every announcement goes through here.
+  void _announce(String message) {
+    SemanticsService.sendAnnouncement(
+      View.of(context),
+      message,
+      Directionality.of(context),
+    );
   }
 
   List<({String key, String name})> get _organizers {
@@ -324,68 +338,78 @@ class _HomeScreenState extends State<HomeScreen> {
       (key: facility.name, name: facility.name),
   ];
 
-  Widget _cardFor(String id, bool showDragHandle) {
+  Widget _cardFor(String id) {
     final card = _instance(id);
     if (card == null) return const SizedBox.shrink();
-    return _moduleFor(card, showDragHandle);
+    // The handle, Inspect and Remove sit in the card's own header, so they
+    // can never cover each other or the title. None of them exist outside
+    // edit mode.
+    final controls = _editing
+        ? EditControls(
+            selected: _selectedId == id,
+            onInspect: () => setState(() => _selectedId = id),
+            onRemove: () => _removeCard(id),
+          )
+        : null;
+    return _moduleFor(card, controls);
   }
 
   /// One module type to one widget. This is the seam the spec's later stages
   /// hang off: adding a card type is a case here plus an entry in the library,
   /// not a change to how the grid works.
-  Widget _moduleFor(CardInstance card, bool showDragHandle) =>
+  Widget _moduleFor(CardInstance card, Widget? controls) =>
       switch (card.type) {
         ModuleType.diningStatus => DiningCard(
           result: widget.dining,
           category: card.scope,
           compact: card.size == CardSize.compact,
-          dragHandle: _DragHandle(visible: showDragHandle),
+          dragHandle: controls,
           onShowAll: () => widget.onGoToTab(1),
         ),
         ModuleType.generalEvents => EventsCard(
           result: widget.events,
           organizerKey: card.scope,
           compact: card.size == CardSize.compact,
-          dragHandle: _DragHandle(visible: showDragHandle),
+          dragHandle: controls,
           onShowAll: () => widget.onGoToTab(2),
         ),
         ModuleType.clubEvents => ScopedEventsCard(
           result: widget.events,
           organizerKey: card.scope,
           compact: card.size == CardSize.compact,
-          dragHandle: _DragHandle(visible: showDragHandle),
+          dragHandle: controls,
           onShowAll: () => widget.onGoToTab(2),
         ),
         ModuleType.calendar => CalendarCard(
           result: widget.events,
           organizerKey: card.scope,
           compact: card.size == CardSize.compact,
-          dragHandle: _DragHandle(visible: showDragHandle),
+          dragHandle: controls,
           onShowAll: () => widget.onGoToTab(2),
         ),
         ModuleType.visitingChefs => VisitingChefsCard(
           result: widget.chefs,
-          dragHandle: _DragHandle(visible: showDragHandle),
+          dragHandle: controls,
           onShowAll: () => widget.onGoToTab(1),
         ),
         ModuleType.mailingAddress => HousingCard(
           areas: widget.areas,
           api: widget.api,
-          dragHandle: _DragHandle(visible: showDragHandle),
+          dragHandle: controls,
         ),
         ModuleType.facilityHours => FacilityHoursCard(
           result: _recreation,
           facilityName: card.scope,
           compact: card.size == CardSize.compact,
-          dragHandle: _DragHandle(visible: showDragHandle),
+          dragHandle: controls,
         ),
         ModuleType.campusMap => DashboardMapCard(
           result: _campusMap,
           events: widget.events,
-          dragHandle: _DragHandle(visible: showDragHandle),
+          dragHandle: controls,
         ),
         ModuleType.academicDates => AcademicDatesCard(
-          dragHandle: _DragHandle(visible: showDragHandle),
+          dragHandle: controls,
           onShowAll: () => widget.onGoToTab(4),
         ),
       };
@@ -423,12 +447,26 @@ class _HomeScreenState extends State<HomeScreen> {
             .clamp(_minCardHeight, _maxCardHeight)
             .toDouble();
 
+        // Phone tokens: cards 16 from the window edge and 10 apart, so each
+        // cell carries 5 of padding and the page inset makes up the rest.
+        final phone = Insets.phone(context);
+        final gutter = phone ? Insets.phoneCardGap / 2 : _cardGutter;
+        final sideInset = phone ? Insets.phoneMargin - gutter : 8.0;
+
         final children = [
           for (var index = 0; index < _order.length; index++)
             Semantics(
               key: ValueKey(_order[index]),
               container: true,
               sortKey: OrdinalSortKey(index.toDouble()),
+              customSemanticsActions: {
+                if (_editing && index > 0)
+                  const CustomSemanticsAction(label: 'Move up'): () =>
+                      _moveCard(_order[index], -1),
+                if (_editing && index < _order.length - 1)
+                  const CustomSemanticsAction(label: 'Move down'): () =>
+                      _moveCard(_order[index], 1),
+              },
               label: dashboardCardSemanticsLabel(
                 _instance(_order[index]),
                 index + 1,
@@ -436,45 +474,26 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: SizedBox(
                 width:
-                    (constraints.maxWidth - 16) /
+                    (constraints.maxWidth - sideInset * 2) /
                     columns *
                     ((_instance(_order[index])?.size.columns ?? 1).clamp(
                       1,
                       columns,
                     )),
-                height:
-                    (_instance(_order[index])?.size == CardSize.compact
-                        ? cardHeight * .58
-                        : cardHeight) +
-                    _cardGutter * 2,
+                // Phones size a card to its content, so there is no cell
+                // height. Wider windows divide the viewport into cells.
+                height: phone
+                    ? null
+                    : (_instance(_order[index])?.size == CardSize.compact
+                              ? cardHeight * .58
+                              : cardHeight) +
+                          gutter * 2,
                 child: Padding(
-                  padding: const EdgeInsets.all(_cardGutter),
-                  child: _HoverCard(
-                    builder: (hovered) => Stack(
-                      children: [
-                        _cardFor(_order[index], hovered || _editing),
-                        if (_editing)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: Row(
-                              children: [
-                                _InspectButton(
-                                  selected: _selectedId == _order[index],
-                                  onTap: () => setState(
-                                    () => _selectedId = _order[index],
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                _RemoveButton(
-                                  onTap: () => _removeCard(_order[index]),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
+                  padding: EdgeInsets.all(gutter),
+                  // A Stack, as before the header controls moved into the
+                  // card: it hands the card loose constraints, so a card
+                  // keeps its natural height inside its cell.
+                  child: Stack(children: [_cardFor(_order[index])]),
                 ),
               ),
             ),
@@ -486,7 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
             controller: _scrollController,
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: EdgeInsets.symmetric(horizontal: sideInset),
                 sliver: SliverToBoxAdapter(
                   child: ReorderableBuilder<String>(
                     // No scrollController on purpose. The inner GridView is
@@ -494,12 +513,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     // scrolling, so the package must find that itself. Passing
                     // the outer controller here is what broke dragging.
                     enableScrollingWhileDragging: false,
+                    enableDraggable: _editing,
                     longPressDelay: const Duration(milliseconds: 180),
                     onReorder: (reorderedListFunction) {
                       setState(() {
                         _order = reorderedListFunction(_order);
-                        _announcement = 'Dashboard order updated';
                       });
+                      _announce('Dashboard order updated');
+                      HapticFeedback.lightImpact();
                       _persist();
                     },
                     builder: (wrapped) =>
@@ -513,13 +534,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   editing: _editing,
                   hidden: _hidden,
                   cards: {for (final c in _instances) c.id: c},
-                  onToggle: () => setState(() {
-                    _editing = !_editing;
-                    _announcement = _editing
-                        ? 'Customize mode on. Select a card to edit it.'
-                        : 'Customize mode off';
-                    if (!_editing) _selectedId = null;
-                  }),
+                  onToggle: () {
+                    setState(() {
+                      _editing = !_editing;
+                      if (!_editing) _selectedId = null;
+                    });
+                    _announce(
+                      _editing
+                          ? 'Customize mode on. Select a card to edit it.'
+                          : 'Customize mode off',
+                    );
+                  },
                   onAdd: _addCard,
                   onAddModule: _addModule,
                   selected: _selectedId == null
@@ -530,13 +555,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   facilities: _facilities,
                   onUpdate: _updateCard,
                   onMove: (delta) => _moveCard(_selectedId!, delta),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: Semantics(
-                  liveRegion: true,
-                  label: _announcement,
-                  child: const SizedBox.shrink(),
                 ),
               ),
               const SliverToBoxAdapter(child: _Colophon()),
@@ -645,58 +663,33 @@ class _EditBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // A Wrap, so at large text the hint drops to its own line rather
+          // than pushing the buttons off the edge.
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 8,
             children: [
-              Material(
-                elevation: 0,
-                color: editing ? scheme.primary : scheme.surfaceContainerHigh,
-                shape: Shapes.pill,
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: onToggle,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          editing ? Icons.check_rounded : Icons.tune_rounded,
-                          size: 18,
-                          color: editing
-                              ? scheme.onPrimary
-                              : scheme.onSurfaceVariant,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          editing ? 'Done' : 'Customize',
-                          style: text.bodyMedium?.copyWith(
-                            color: editing
-                                ? scheme.onPrimary
-                                : scheme.onSurface,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+              _BarPill(
+                onTap: onToggle,
+                icon: editing ? Icons.check_rounded : Icons.tune_rounded,
+                label: editing ? 'Done' : 'Customize',
+                background: editing
+                    ? scheme.primary
+                    : scheme.surfaceContainerHigh,
+                iconColor: editing ? scheme.onPrimary : scheme.onSurfaceVariant,
+                labelColor: editing ? scheme.onPrimary : scheme.onSurface,
               ),
               if (editing) ...[
-                const SizedBox(width: 12),
-                FilledButton.tonalIcon(
-                  onPressed: () => _showLibrary(context),
-                  icon: const Icon(Icons.add_rounded, size: 18),
-                  label: const Text('Add module'),
+                _BarPill(
+                  onTap: () => _showLibrary(context),
+                  icon: Icons.add_rounded,
+                  label: 'Add module',
+                  background: scheme.primaryContainer,
+                  iconColor: scheme.onPrimaryContainer,
+                  labelColor: scheme.onPrimaryContainer,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Drag to reorder, or tune a card',
-                    style: text.bodySmall,
-                  ),
-                ),
+                Text('Drag to reorder, or tune a card', style: text.bodySmall),
               ],
             ],
           ),
@@ -724,12 +717,12 @@ class _EditBar extends StatelessWidget {
                           ),
                         ),
                         IconButton(
-                          tooltip: 'Move earlier',
+                          tooltip: 'Move up',
                           onPressed: () => onMove(-1),
                           icon: const Icon(Icons.arrow_back_rounded),
                         ),
                         IconButton(
-                          tooltip: 'Move later',
+                          tooltip: 'Move down',
                           onPressed: () => onMove(1),
                           icon: const Icon(Icons.arrow_forward_rounded),
                         ),
@@ -920,6 +913,65 @@ class _EditBar extends StatelessWidget {
   }
 }
 
+/// A pill in the edit bar. Every pill there is this widget, so they share a
+/// height at any text size, and the icon scales with the text beside it.
+class _BarPill extends StatelessWidget {
+  const _BarPill({
+    required this.onTap,
+    required this.icon,
+    required this.label,
+    required this.background,
+    required this.iconColor,
+    required this.labelColor,
+  });
+
+  final VoidCallback onTap;
+  final IconData icon;
+  final String label;
+  final Color background;
+  final Color iconColor;
+  final Color labelColor;
+
+  @override
+  Widget build(BuildContext context) {
+    // The pill is the visual; taps answer across a 48 tall region around it.
+    return TouchTarget(onTap: onTap, child: _visual(context));
+  }
+
+  Widget _visual(BuildContext context) {
+    return Material(
+      elevation: 0,
+      color: background,
+      shape: Shapes.pill,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 40),
+          child: Padding(
+            // The spec's pill-x of 13, which is what lets "Customize" fit a
+            // 390 wide phone at 2x text.
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 18, color: iconColor, applyTextScaling: true),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: labelColor),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _RemoveButton extends StatelessWidget {
   const _RemoveButton({required this.onTap});
 
@@ -994,31 +1046,6 @@ class _InspectButton extends StatelessWidget {
   }
 }
 
-/// Reveals the drag handle on hover, so it is not permanent visual noise.
-class _HoverCard extends StatefulWidget {
-  const _HoverCard({required this.builder});
-
-  final Widget Function(bool hovered) builder;
-
-  @override
-  State<_HoverCard> createState() => _HoverCardState();
-}
-
-class _HoverCardState extends State<_HoverCard> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final mouseConnected =
-        RendererBinding.instance.mouseTracker.mouseIsConnected;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: widget.builder(_hovered || !mouseConnected),
-    );
-  }
-}
-
 class _Colophon extends StatelessWidget {
   const _Colophon();
 
@@ -1035,29 +1062,128 @@ class _Colophon extends StatelessWidget {
   );
 }
 
-class _DragHandle extends StatelessWidget {
-  const _DragHandle({required this.visible});
+/// The edit mode controls in a card header: drag handle, Inspect, Remove.
+///
+/// One row, so the three can never overlap each other at any width or text
+/// scale. CardShell gives the row its own space beside the title.
+class EditControls extends StatelessWidget {
+  const EditControls({
+    super.key,
+    required this.selected,
+    required this.onInspect,
+    required this.onRemove,
+  });
 
-  final bool visible;
+  final bool selected;
+  final VoidCallback onInspect;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: editControlsWidth,
+    child: Row(
+      children: [
+        _DragHandle(onActivate: onInspect),
+        const SizedBox(width: 6),
+        _InspectButton(selected: selected, onTap: onInspect),
+        const SizedBox(width: 6),
+        _RemoveButton(onTap: onRemove),
+      ],
+    ),
+  );
+}
+
+/// Only built in edit mode, where it fades in. Tab reaches it and a focus
+/// ring shows for keyboard focus. Enter or Space opens the card's options,
+/// which carry the Move up and Move down buttons, so the keyboard has a way
+/// to reorder as well as a way to land on the handle.
+class _DragHandle extends StatefulWidget {
+  const _DragHandle({required this.onActivate});
+
+  static const double size = 32;
+
+  final VoidCallback onActivate;
+
+  @override
+  State<_DragHandle> createState() => _DragHandleState();
+}
+
+class _DragHandleState extends State<_DragHandle> {
+  bool _shown = false;
+  bool _focused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _shown = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    return Padding(
-      padding: const EdgeInsets.only(left: 8),
-      // The space is always reserved, so revealing the handle never shifts
-      // the title next to it.
-      child: AnimatedOpacity(
-        opacity: visible ? 1 : 0,
-        duration: reduceMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 130),
-        curve: Curves.easeOutCubic,
-        child: Icon(
-          Icons.drag_indicator_rounded,
-          size: 17,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        (MediaQuery.maybeOf(context)?.disableAnimations ?? false) ||
+        View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
+    return Semantics(
+      button: true,
+      label: 'Reorder card',
+      hint: 'Opens card options with Move up and Move down',
+      excludeSemantics: true,
+      onTap: widget.onActivate,
+      child: FocusableActionDetector(
+        onShowFocusHighlight: (value) => setState(() => _focused = value),
+        shortcuts: const {
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onActivate();
+              return null;
+            },
+          ),
+        },
+        child: SizedBox(
+          width: _DragHandle.size,
+          height: _DragHandle.size,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              AnimatedOpacity(
+                opacity: _shown ? 1 : 0,
+                duration: reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 130),
+                curve: Curves.easeOutCubic,
+                child: Icon(
+                  Icons.drag_indicator_rounded,
+                  size: 17,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              // Spec focus ring: 2px primary, 2px offset, element radius + 2.
+              if (_focused)
+                Positioned(
+                  key: const ValueKey('drag-handle-focus-ring'),
+                  left: -4,
+                  top: -4,
+                  right: -4,
+                  bottom: -4,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: scheme.primary, width: 2),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
