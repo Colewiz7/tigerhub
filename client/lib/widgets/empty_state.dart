@@ -41,7 +41,12 @@ class EmptyState extends StatelessWidget {
     this.detail,
     this.action,
     this.compact = true,
+    this.fill = false,
   });
+
+  /// Take all the height offered and center in it. The Visiting Chefs card sets
+  /// it: its empty card fills its cell on wide layouts, as it always has.
+  final bool fill;
 
   final EmptyKind kind;
 
@@ -63,15 +68,20 @@ class EmptyState extends StatelessWidget {
 
     final markSize = compact ? 58.0 : 76.0;
 
-    // Fills the room it is given and centers in it, both ways. A card's
-    // content column is left aligned, so without this the mark and sentence
-    // sat at the left edge, and in a tall cell at the top. With no bounded
-    // width or height (a list, a scroll view) it just takes its own size.
+    // Takes the room it is given across and centers in it. A card's content
+    // column is left aligned, so without this the mark and sentence sat at the
+    // left edge. With no bounded width (a list, a scroll view) it just takes its
+    // own size. With [fill] it also takes the height it is given, so it centers
+    // down a fixed height cell; without, the card is as tall as the block.
     return LayoutBuilder(
       builder: (context, box) => SizedBox(
         width: box.maxWidth.isFinite ? box.maxWidth : null,
-        height: box.maxHeight.isFinite ? box.maxHeight : null,
-        child: Center(child: _body(context, text, scheme, markSize)),
+        height: fill && box.maxHeight.isFinite ? box.maxHeight : null,
+        // heightFactor 1: a Center would otherwise take all the height offered.
+        child: Center(
+          heightFactor: 1,
+          child: _body(context, text, scheme, markSize),
+        ),
       ),
     );
   }
