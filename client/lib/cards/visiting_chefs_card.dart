@@ -52,7 +52,10 @@ class VisitingChefsCard extends StatelessWidget {
             ),
       child: switch ((result.isPriming, all.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading today'),
-        (_, true) => const EmptyState(kind: EmptyKind.noVisitingChefs),
+        (_, true) => const EmptyState(
+          kind: EmptyKind.noVisitingChefs,
+          fill: true,
+        ),
         _ => BoundedList(
           // Not capped for a compact card. A compact card is already a shorter
           // box (58% of the row height), and BoundedList measures the box it

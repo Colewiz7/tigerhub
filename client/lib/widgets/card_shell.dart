@@ -28,6 +28,15 @@ const double editControlsHeight = 32;
 /// Gap between the title and the controls when they sit under it.
 const double _belowGap = 6;
 
+/// Wide layout only (600pt and up, unchanged from before the phone condense):
+/// the title width at which the edit controls still sit beside the title and
+/// hero. Narrower than this they drop under the title when the band has room.
+const double _asideTitleWidth = 96;
+
+/// Wide layout only: the least a title may keep beside the controls before the
+/// hero scales down.
+const double _titleFloor = 48;
+
 class CardShell extends StatelessWidget {
   const CardShell({
     super.key,
@@ -82,7 +91,12 @@ class CardShell extends StatelessWidget {
             _CardHeader(
               hasHero: hero != null,
               editing: dragHandle != null,
-              title: _CardTitle(title: title, glyph: glyph),
+              legacy: !Insets.phone(context),
+              title: _CardTitle(
+                title: title,
+                glyph: glyph,
+                legacy: !Insets.phone(context),
+              ),
               freshness: FittedBox(
                 fit: BoxFit.scaleDown,
                 alignment: Alignment.centerLeft,
@@ -146,13 +160,22 @@ class _FlexibleIfBounded extends StatelessWidget {
 /// header gives it room by moving the controls (see [_CardHeader]), so a name
 /// like "Visiting Chefs" or "Mailing Address" is always shown in full.
 class _CardTitle extends StatelessWidget {
-  const _CardTitle({required this.title, required this.glyph});
+  const _CardTitle({
+    required this.title,
+    required this.glyph,
+    required this.legacy,
+  });
 
   final String title;
   final GlyphKind? glyph;
 
+  /// The 600pt and wider title, as it was before the phone condense: given a
+  /// finite height it keeps only the lines that fit and ellipsizes past them.
+  final bool legacy;
+
   @override
   Widget build(BuildContext context) {
+    if (legacy) return _legacyTitle(context);
     final base = Theme.of(context).textTheme.titleLarge;
     // Phones: title 22, no tracking.
     final style = Insets.phone(context)
@@ -167,6 +190,46 @@ class _CardTitle extends StatelessWidget {
         ],
         Flexible(child: Text(title, style: style)),
       ],
+    );
+  }
+
+  Widget _legacyTitle(BuildContext context) {
+    final style = Theme.of(context).textTheme.titleLarge;
+    return LayoutBuilder(
+      builder: (context, box) {
+        int? lines;
+        if (box.maxHeight.isFinite) {
+          final painter = TextPainter(
+            text: TextSpan(
+              text: 'A',
+              style: DefaultTextStyle.of(context).style.merge(style),
+            ),
+            textDirection: Directionality.of(context),
+            textScaler: MediaQuery.textScalerOf(context),
+          )..layout();
+          final lineHeight = painter.height;
+          painter.dispose();
+          lines = math.max(1, ((box.maxHeight + 0.5) / lineHeight).floor());
+        }
+        return Row(
+          children: [
+            if (glyph != null) ...[
+              Glyph(glyph!, size: 22),
+              const SizedBox(width: 9),
+            ],
+            Flexible(
+              child: Text(
+                title,
+                style: style,
+                maxLines: lines,
+                overflow: lines == null
+                    ? TextOverflow.clip
+                    : TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -190,6 +253,7 @@ class _CardHeader extends MultiChildRenderObjectWidget {
   _CardHeader({
     required this.hasHero,
     required this.editing,
+    required this.legacy,
     required Widget title,
     required Widget freshness,
     required Widget hero,
@@ -199,15 +263,21 @@ class _CardHeader extends MultiChildRenderObjectWidget {
   final bool hasHero;
   final bool editing;
 
+  /// 600pt and wider: the header as it was before the phone condense. Edit
+  /// mode keeps the normal height by ellipsizing the title to its normal line
+  /// count and, as a last resort, scaling the hero down.
+  final bool legacy;
+
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      _RenderCardHeader(hasHero: hasHero, editing: editing);
+      _RenderCardHeader(hasHero: hasHero, editing: editing, legacy: legacy);
 
   @override
   void updateRenderObject(BuildContext context, _RenderCardHeader renderObject) {
     renderObject
       ..hasHero = hasHero
-      ..editing = editing;
+      ..editing = editing
+      ..legacy = legacy;
   }
 }
 
@@ -218,9 +288,22 @@ class _RenderCardHeader extends RenderBox
           RenderBox,
           ContainerBoxParentData<RenderBox>
         > {
-  _RenderCardHeader({required bool hasHero, required bool editing}) {
+  _RenderCardHeader({
+    required bool hasHero,
+    required bool editing,
+    required bool legacy,
+  }) {
     _hasHero = hasHero;
     _editing = editing;
+    _legacy = legacy;
+  }
+
+  late bool _legacy;
+  bool get legacy => _legacy;
+  set legacy(bool value) {
+    if (value == _legacy) return;
+    _legacy = value;
+    markNeedsLayout();
   }
 
   late bool _hasHero;
@@ -253,15 +336,96 @@ class _RenderCardHeader extends RenderBox
     );
   }
 
-  @override
-  void performLayout() {
+  /// The header as it was for every width before the phone condense, kept for
+  /// 600pt and wider so those layouts are unchanged.
+  void _performLegacyLayout() {
     final title = firstChild!;
     final freshness = childAfter(title)!;
     final hero = childAfter(freshness)!;
     final controls = childAfter(hero)!;
     final maxW = constraints.maxWidth;
 
-    hero.layout(const BoxConstraints(), parentUsesSize: true);
+    Size layoutHero(BoxConstraints c) {
+      hero.layout(c, parentUsesSize: true);
+      return hero.size;
+    }
+
+    // Outside edit mode: the hero at its natural size, the title column in the
+    // rest. This measurement sets the band in both modes.
+    final heroNatural = layoutHero(const BoxConstraints());
+    final heroGap = hasHero ? _headerGap : 0.0;
+    final normalW = math.max(0.0, maxW - heroNatural.width - heroGap);
+    title.layout(BoxConstraints(maxWidth: normalW), parentUsesSize: true);
+    freshness.layout(BoxConstraints(maxWidth: normalW), parentUsesSize: true);
+    final titleH = title.size.height;
+    final freshH = freshness.size.height;
+    final leftH = titleH + freshH;
+    final band = math.max(leftH, heroNatural.height);
+    size = constraints.constrain(Size(maxW, band));
+
+    var heroX = maxW - heroNatural.width;
+    _place(hero, heroX, (band - heroNatural.height) / 2);
+
+    if (!editing) {
+      _place(title, 0, (band - leftH) / 2);
+      _place(freshness, 0, (band - leftH) / 2 + titleH);
+      controls.layout(BoxConstraints.tight(Size.zero));
+      _place(controls, 0, 0);
+      return;
+    }
+
+    controls.layout(const BoxConstraints(), parentUsesSize: true);
+    final cw = controls.size.width;
+    final ch = controls.size.height;
+    final asideRoom = maxW - heroNatural.width - heroGap - _headerGap - cw;
+    final canGoBelow = cw <= normalW && leftH + _belowGap + ch <= band;
+
+    if (asideRoom < _asideTitleWidth && canGoBelow) {
+      // The title keeps its normal layout; the controls take the height the
+      // hero's band leaves under it.
+      final top = (band - (leftH + _belowGap + ch)) / 2;
+      _place(title, 0, top);
+      _place(freshness, 0, top + titleH);
+      _place(controls, 0, top + leftH + _belowGap);
+      return;
+    }
+
+    // Beside the hero. The hero keeps its size unless the title would be left
+    // with less than the floor, and then it scales down rather than hide.
+    var heroW = heroNatural.width;
+    if (hasHero) {
+      final cap = math.max(0.0, maxW - heroGap - _headerGap - cw - _titleFloor);
+      if (heroW > cap) heroW = layoutHero(BoxConstraints(maxWidth: cap)).width;
+    }
+    final titleW = math.max(0.0, maxW - heroW - heroGap - _headerGap - cw);
+    // The normal height as the ceiling keeps the normal line count.
+    title.layout(
+      BoxConstraints(maxWidth: titleW, maxHeight: titleH),
+      parentUsesSize: true,
+    );
+    freshness.layout(BoxConstraints(maxWidth: titleW), parentUsesSize: true);
+    final top = (band - (title.size.height + freshness.size.height)) / 2;
+    _place(title, 0, top);
+    _place(freshness, 0, top + title.size.height);
+    final controlsX = maxW - cw;
+    _place(controls, controlsX, (band - ch) / 2);
+    heroX = hasHero ? controlsX - _headerGap - hero.size.width : 0;
+    _place(hero, heroX, (band - hero.size.height) / 2);
+  }
+
+  @override
+  void performLayout() {
+    if (legacy) return _performLegacyLayout();
+    final title = firstChild!;
+    final freshness = childAfter(title)!;
+    final hero = childAfter(freshness)!;
+    final controls = childAfter(hero)!;
+    final maxW = constraints.maxWidth;
+
+    // At most the header's width: a long pill at large text ("12 days to go")
+    // is wider than a phone card, and its FittedBox scales it down to fit
+    // rather than letting it leave the card.
+    hero.layout(BoxConstraints(maxWidth: maxW), parentUsesSize: true);
     final heroW = hero.size.width;
     final heroH = hero.size.height;
     final heroGap = hasHero ? _headerGap : 0.0;

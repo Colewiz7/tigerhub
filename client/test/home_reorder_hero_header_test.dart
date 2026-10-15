@@ -21,7 +21,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/cards/dashboard_event_cards.dart';
+import 'package:tigerhub/cards/academic_dates_card.dart';
+import 'package:tigerhub/cards/calendar_card.dart';
 import 'package:tigerhub/cards/dining_card.dart';
+import 'package:tigerhub/cards/events_card.dart';
+import 'package:tigerhub/cards/visiting_chefs_card.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/home_screen.dart';
 import 'package:tigerhub/models/api_models.dart';
@@ -189,6 +193,30 @@ void main() {
       build: (handle) => DiningCard(result: _dining, dragHandle: handle),
       hero: find.byType(CardHero),
     ),
+    // every other hero a card passes: the events, chefs, calendar and academic
+    // dates pills (scalloped badges at 600 and wider)
+    'events today hero': (
+      build: (handle) => EventsCard(result: _events, dragHandle: handle),
+      hero: find.byType(CardHero),
+    ),
+    'chefs count hero': (
+      build: (handle) => VisitingChefsCard(
+        result: _result([
+          const MenuItem(id: 1, locationName: 'Gracies', name: 'Chef Marco'),
+          const MenuItem(id: 2, locationName: 'Crossroads', name: 'Chef Ayana'),
+        ]),
+        dragHandle: handle,
+      ),
+      hero: find.byType(CardHero),
+    ),
+    'calendar week hero': (
+      build: (handle) => CalendarCard(result: _events, dragHandle: handle),
+      hero: find.byType(CardHero),
+    ),
+    'academic dates hero': (
+      build: (handle) => AcademicDatesCard(dragHandle: handle),
+      hero: find.byType(CardHero),
+    ),
     'scoped events text hero': (
       build: (handle) => ScopedEventsCard(
         result: _events,
@@ -200,7 +228,7 @@ void main() {
   };
 
   for (final card in cards.entries) {
-    for (final width in [320.0, 390.0, 430.0]) {
+    for (final width in [320.0, 390.0, 430.0, 700.0, 1000.0]) {
       for (final scale in [1.0, 2.0]) {
         testWidgets(
           '${card.key} at $width wide, text ${scale}x: edit mode keeps the '
@@ -229,7 +257,10 @@ void main() {
             final heroSize = tester.getSize(card.value.hero);
             expect(heroSize.width, greaterThan(0));
             expect(heroSize.height, greaterThan(0));
-            if (card.key.startsWith('dining')) {
+            // (at 600 and wider the base header may scale a hero down as a
+            // last resort, so that is only asserted for dining there)
+            if (card.key.startsWith('dining') ||
+                (width < 600 && card.key != 'scoped events text hero')) {
               expect(heroSize, normalHero);
             }
 
