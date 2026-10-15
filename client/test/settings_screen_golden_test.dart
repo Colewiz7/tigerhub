@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/settings/settings_screen.dart';
@@ -7,16 +6,9 @@ import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 
-void main() {
-  setUpAll(() async {
-    final font = FontLoader('Rubik');
-    font.addFont(rootBundle.load('assets/fonts/Rubik.ttf'));
-    await font.load();
-    final icons = FontLoader('MaterialIcons');
-    icons.addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'));
-    await icons.load();
-  });
+import 'golden_harness.dart';
 
+void main() {
   Future<void> pumpSettings(WidgetTester tester, Size size, Brightness brightness, double scale) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
@@ -24,12 +16,11 @@ void main() {
 
     final scheme = SchemeController();
     addTearDown(scheme.dispose);
-    final theme = AppTheme.from(SchemeController.builtIn(brightness));
     await tester.pumpWidget(Builder(
       builder: (context) => MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
         child: MaterialApp(
-          theme: theme.copyWith(textTheme: theme.textTheme.apply(fontFamily: 'Rubik')),
+          theme: AppTheme.from(SchemeController.builtIn(brightness)),
           home: Scaffold(
             body: SettingsScreen(
               scheme: scheme,
@@ -49,9 +40,8 @@ void main() {
     for (final brightness in Brightness.values) {
       for (final scale in const [1.0, 2.0]) {
         final name = 'settings_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${scale.toInt()}x.png';
-        testWidgets(name, (tester) async {
+        goldenWidgets(name, (tester) async {
           await pumpSettings(tester, size, brightness, scale);
-          expect(tester.takeException(), isNull);
           await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
         });
       }

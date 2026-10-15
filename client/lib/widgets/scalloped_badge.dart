@@ -9,6 +9,67 @@ import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
 
+/// A card's one hero number. On phones (under 600pt) it is an inline 28pt pill
+/// beside the title, which costs no vertical room; wider it is the scalloped
+/// badge. Same fact either way.
+class CardHero extends StatelessWidget {
+  const CardHero({
+    super.key,
+    required this.value,
+    required this.label,
+    this.pill,
+    this.filled = true,
+  });
+
+  /// The badge number, already formatted.
+  final String value;
+
+  /// The badge's one word caption.
+  final String label;
+
+  /// The pill's wording, e.g. "14 open". Defaults to value and caption.
+  final String? pill;
+
+  final bool filled;
+
+  /// Pill height at 1x text. It grows with the text size.
+  static const double pillHeight = 28;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!Insets.phone(context)) {
+      return ScallopedBadge(value: value, label: label, size: 88, filled: filled);
+    }
+    final scheme = Theme.of(context).colorScheme;
+    final background = filled ? scheme.primary : scheme.surfaceContainerHighest;
+    final foreground = filled ? scheme.onPrimary : scheme.onSurface;
+    return Material(
+      elevation: 0,
+      color: background,
+      shape: Shapes.pill,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: pillHeight),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          child: Center(
+            widthFactor: 1,
+            child: Text(
+              pill ?? '$value ${label.toLowerCase()}',
+              maxLines: 1,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: foreground,
+                fontSize: 14,
+                letterSpacing: 0,
+                fontVariations: Weights.medium,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class ScallopedBadge extends StatelessWidget {
   const ScallopedBadge({
     super.key,

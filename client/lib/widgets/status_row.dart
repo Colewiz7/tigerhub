@@ -6,7 +6,10 @@
 /// hierarchy instead of a single flat run of words.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../theme/tokens.dart';
 
@@ -24,7 +27,20 @@ class StatusRow extends StatelessWidget {
     this.emphasis = RowEmphasis.normal,
     this.onTap,
     this.semanticHint,
+    this.dense = false,
   });
+
+  /// The dashboard's condensed row on phones (under 600pt): 52 tall with a 4
+  /// gap, a 32 icon circle, title 17 and subtitle 14 with no tracking. Wider
+  /// windows, and rows outside the dashboard, keep the standard row.
+  final bool dense;
+
+  /// The dense row at 1x text, without its gap.
+  static const double denseHeight = 52;
+  static const double denseGap = 4;
+  static const double denseBadgeSize = 32;
+
+  bool _isDense(BuildContext context) => dense && Insets.phone(context);
 
   final IconData icon;
   final String title;
@@ -58,12 +74,15 @@ class StatusRow extends StatelessWidget {
   /// Scaling the budget rather than shrinking the text keeps both properties:
   /// the rows still have an exact height for BoundedList to divide by, and the
   /// text is still the size the reader asked for.
-  static double heightFor(BuildContext context) {
+  static double heightFor(BuildContext context, {bool dense = false}) {
     final scale = MediaQuery.textScalerOf(context).scale(1);
     // Below 1 the rows would get tighter than they were designed for, and
     // above 2 a single row would eat a whole card.
-    return height * scale.clamp(1.0, 2.0);
+    final clamped = scale.clamp(1.0, 2.0);
+    if (dense && Insets.phone(context)) return denseHeight * clamped + denseGap;
+    return height * clamped;
   }
+
   static const double gap = 8;
   static const double badgeSize = 42;
 
@@ -73,13 +92,30 @@ class StatusRow extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final dimmed = emphasis == RowEmphasis.dimmed;
     final tint = accent ?? scheme.primary;
+    final dense = _isDense(context);
+    final rowGap = dense ? denseGap : gap;
+    final badge = dense ? denseBadgeSize : badgeSize;
+    final titleStyle = dense
+        ? text.titleMedium?.copyWith(
+            fontSize: 17,
+            height: 1.3,
+            letterSpacing: 0,
+          )
+        : text.titleMedium;
+    final subtitleStyle = dense
+        ? text.bodySmall?.copyWith(fontSize: 14, height: 1.3, letterSpacing: 0)
+        : text.bodySmall;
+    // Dense rows size to their text (see _DenseBody): 52 stays the height of a
+    // row whose name and status each fit one line, grown with the text size.
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    final minHeight = dense ? denseHeight * scale.clamp(1.0, 2.0) : 0.0;
 
     // A dimmed row keeps its shape but loses contrast, so open and closed are
     // separable at a glance without reading either.
     final opacity = dimmed ? 0.55 : 1.0;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: gap),
+      padding: EdgeInsets.only(bottom: rowGap),
       child: Semantics(
         button: onTap != null,
         enabled: onTap != null,
@@ -92,72 +128,102 @@ class StatusRow extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
-            child: Padding(
-              // BoundedList budgets 72px including the 8px row gap. Ten
-              // vertical pixels left only 44px for two text lines whose
-              // configured line heights need 48, causing quiet 4px overflows
-              // on longer copy. Eight preserves the touch target and gives
-              // the typography its actual measured height.
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
-                children: [
-                  Opacity(
-                    opacity: opacity,
-                    child: Container(
-                      width: badgeSize,
-                      height: badgeSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        // Strong on purpose. Sampled from Caelestia, the badge is
-                        // far brighter than the row it sits on, and that contrast is
-                        // what the eye actually lands on.
-                        color: tint.withValues(alpha: dimmed ? 0.20 : 0.32),
-                      ),
-                      // 18 in a 42px circle. At 21 the glyph very nearly filled
-                      // its box, leaving a ring too thin to read as a badge.
-                      child: Icon(icon, size: 18, color: tint),
-                    ),
-                  ),
-                  const SizedBox(width: 13),
-                  Expanded(
-                    child: Opacity(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: minHeight),
+              child: Padding(
+                // BoundedList budgets 72px including the 8px row gap. Ten
+                // vertical pixels left only 44px for two text lines whose
+                // configured line heights need 48, causing quiet 4px overflows
+                // on longer copy. Eight preserves the touch target and gives
+                // the typography its actual measured height.
+                padding: EdgeInsets.symmetric(
+                  horizontal: dense ? 10 : 12,
+                  vertical: dense ? 4 : 8,
+                ),
+                child: Row(
+                  children: [
+                    Opacity(
                       opacity: opacity,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            title,
-                            style: text.titleMedium,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (subtitle != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              subtitle!,
-                              style: text.bodySmall,
-                              maxLines: 1,
+                      child: Container(
+                        width: badge,
+                        height: badge,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          // Strong on purpose. Sampled from Caelestia, the badge is
+                          // far brighter than the row it sits on, and that contrast is
+                          // what the eye actually lands on.
+                          color: tint.withValues(alpha: dimmed ? 0.20 : 0.32),
+                        ),
+                        // 18 in a 42px circle. At 21 the glyph very nearly filled
+                        // its box, leaving a ring too thin to read as a badge.
+                        child: Icon(icon, size: 18, color: tint),
+                      ),
+                    ),
+                    SizedBox(width: dense ? 10 : 13),
+                    if (dense)
+                      Expanded(
+                        child: Opacity(
+                          opacity: opacity,
+                          child: _DenseBody(
+                            title: Text(
+                              title,
+                              style: titleStyle,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ],
+                            subtitle: subtitle == null
+                                ? null
+                                : Text(
+                                    subtitle!,
+                                    style: subtitleStyle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                            trailing: trailing,
+                          ),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: Opacity(
+                          opacity: opacity,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                style: titleStyle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (subtitle != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  subtitle!,
+                                  style: subtitleStyle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  if (trailing != null) ...[
-                    const SizedBox(width: 10),
-                    // Trailing metadata must never consume the title's entire
-                    // lane on a narrow screen. Event timestamps exposed this:
-                    // an unconstrained Text measured at 283px and reduced the
-                    // Expanded title to zero width.
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 132),
-                      child: Opacity(opacity: opacity, child: trailing!),
-                    ),
+                    if (trailing != null && !dense) ...[
+                      const SizedBox(width: 10),
+                      // Trailing metadata must never consume the title's entire
+                      // lane on a narrow screen. Event timestamps exposed this:
+                      // an unconstrained Text measured at 283px and reduced the
+                      // Expanded title to zero width.
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 132),
+                        child: Opacity(opacity: opacity, child: trailing!),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -165,6 +231,197 @@ class StatusRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The text of a dense row: name, status and the trailing widget.
+///
+/// The trailing widget (an occupancy pill, an "ENDED" label) sits beside the
+/// text when the name still shows in full there (up to two lines, not cut) and
+/// the status needs no more lines than it does at the full width. Otherwise it
+/// moves under the status. This is measured when the row is laid out, so no
+/// text size is a threshold, and the trailing widget never makes a name
+/// ellipsize that would fit without it.
+class _DenseBody extends MultiChildRenderObjectWidget {
+  _DenseBody({required Widget title, Widget? subtitle, Widget? trailing})
+    : hasSubtitle = subtitle != null,
+      hasTrailing = trailing != null,
+      super(
+        children: [
+          title,
+          subtitle ?? const SizedBox.shrink(),
+          trailing ?? const SizedBox.shrink(),
+        ],
+      );
+
+  final bool hasSubtitle;
+  final bool hasTrailing;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderDenseBody(hasSubtitle: hasSubtitle, hasTrailing: hasTrailing);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderDenseBody renderObject) {
+    renderObject
+      ..hasSubtitle = hasSubtitle
+      ..hasTrailing = hasTrailing;
+  }
+}
+
+class _RenderDenseBody extends RenderBox
+    with
+        ContainerRenderObjectMixin<
+          RenderBox,
+          ContainerBoxParentData<RenderBox>
+        >,
+        RenderBoxContainerDefaultsMixin<
+          RenderBox,
+          ContainerBoxParentData<RenderBox>
+        > {
+  _RenderDenseBody({required bool hasSubtitle, required bool hasTrailing}) {
+    _hasSubtitle = hasSubtitle;
+    _hasTrailing = hasTrailing;
+  }
+
+  /// Between the text and a trailing widget beside it.
+  static const double _gap = 10;
+
+  /// Between the status and a trailing widget under it.
+  static const double _stackGap = 4;
+
+  /// Between the name and the status.
+  static const double _lineGap = 2;
+
+  /// A trailing widget never takes more than this of the row, so a long stamp
+  /// cannot squeeze the text to nothing.
+  static const double _maxTrailing = 132;
+
+  late bool _hasSubtitle;
+  bool get hasSubtitle => _hasSubtitle;
+  set hasSubtitle(bool value) {
+    if (value == _hasSubtitle) return;
+    _hasSubtitle = value;
+    markNeedsLayout();
+  }
+
+  late bool _hasTrailing;
+  bool get hasTrailing => _hasTrailing;
+  set hasTrailing(bool value) {
+    if (value == _hasTrailing) return;
+    _hasTrailing = value;
+    markNeedsLayout();
+  }
+
+  @override
+  void setupParentData(RenderBox child) {
+    if (child.parentData is! MultiChildLayoutParentData) {
+      child.parentData = MultiChildLayoutParentData();
+    }
+  }
+
+  static void _place(RenderBox child, double x, double y) {
+    (child.parentData! as ContainerBoxParentData<RenderBox>).offset = Offset(
+      x,
+      y,
+    );
+  }
+
+  static RenderParagraph? _paragraph(RenderObject node) {
+    if (node is RenderParagraph) return node;
+    RenderParagraph? found;
+    node.visitChildren((child) => found ??= _paragraph(child));
+    return found;
+  }
+
+  @override
+  void performLayout() {
+    final title = firstChild!;
+    final subtitle = childAfter(title)!;
+    final trailing = childAfter(subtitle)!;
+    final w = constraints.maxWidth;
+
+    var trailW = 0.0;
+    var trailH = 0.0;
+    if (hasTrailing) {
+      trailing.layout(
+        BoxConstraints(maxWidth: math.min(_maxTrailing, w)),
+        parentUsesSize: true,
+      );
+      trailW = trailing.size.width;
+      trailH = trailing.size.height;
+    } else {
+      trailing.layout(BoxConstraints.tight(Size.zero));
+    }
+    if (!hasSubtitle) subtitle.layout(BoxConstraints.tight(Size.zero));
+
+    // Lays the name and status (two lines each at most) out in [width]: the
+    // text's height, whether either was cut, and the status's height.
+    ({double height, bool cut, bool statusCut, double statusHeight}) layoutText(
+      double width,
+    ) {
+      title.layout(BoxConstraints(maxWidth: width), parentUsesSize: true);
+      var height = title.size.height;
+      var statusHeight = 0.0;
+      var statusCut = false;
+      if (hasSubtitle) {
+        subtitle.layout(BoxConstraints(maxWidth: width), parentUsesSize: true);
+        statusHeight = subtitle.size.height;
+        statusCut = _paragraph(subtitle)?.didExceedMaxLines ?? false;
+        height += _lineGap + statusHeight;
+      }
+      return (
+        height: height,
+        cut: _paragraph(title)?.didExceedMaxLines ?? false,
+        statusCut: statusCut,
+        statusHeight: statusHeight,
+      );
+    }
+
+    final full = layoutText(w);
+    var text = full;
+    var beside = false;
+    if (hasTrailing) {
+      final narrow = layoutText(math.max(0.0, w - trailW - _gap));
+      // Compare what each lane shows. The beside lane is the narrower one, so
+      // it never shows more of the name or the status than the stacked lane:
+      // when either is cut beside, stacked shows at least as much (and more,
+      // even if it is cut there too, since it has the wider lines). Beside wins
+      // only when both lines are whole there and the status takes no more
+      // lines than it does at the full width.
+      beside =
+          !narrow.cut &&
+          !narrow.statusCut &&
+          narrow.statusHeight <= full.statusHeight + 0.5;
+      text = beside ? narrow : layoutText(w);
+    }
+
+    final titleH = title.size.height;
+    if (beside) {
+      final height = math.max(text.height, trailH);
+      final top = (height - text.height) / 2;
+      _place(title, 0, top);
+      _place(subtitle, 0, top + titleH + _lineGap);
+      _place(trailing, w - trailW, (height - trailH) / 2);
+      size = constraints.constrain(Size(w, height));
+      return;
+    }
+    _place(title, 0, 0);
+    _place(subtitle, 0, titleH + _lineGap);
+    var height = text.height;
+    if (hasTrailing) {
+      _place(trailing, 0, height + _stackGap);
+      height += _stackGap + trailH;
+    }
+    size = constraints.constrain(Size(w, height));
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) =>
+      defaultPaint(context, offset);
+
+  @override
+  bool hitTestChildren(BoxHitTestResult result, {required Offset position}) =>
+      defaultHitTestChildren(result, position: position);
 }
 
 /// A tinted header that introduces a group of rows.
@@ -177,27 +434,58 @@ class GroupHeader extends StatelessWidget {
     required this.icon,
     required this.title,
     this.count,
+    this.dense = false,
   });
 
   final IconData icon;
   final String title;
   final int? count;
 
+  /// The dashboard's condensed phone header: 40 tall (the spec's group header)
+  /// with a 4 gap below, title 17.
+  final bool dense;
+
   static const double height = 46;
   static const double gap = 6;
+  static const double denseHeight = 40;
+  static const double denseGap = 4;
+
+  /// The height a list should budget for one header and the gap under it.
+  static double blockHeight(BuildContext context, {bool dense = false}) {
+    if (dense && Insets.phone(context)) {
+      final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+      return denseHeight * scale + denseGap;
+    }
+    return height + gap;
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final compact = dense && Insets.phone(context);
+    final titleStyle = compact
+        ? text.titleMedium?.copyWith(
+            fontSize: 17,
+            height: 1.3,
+            letterSpacing: 0,
+          )
+        : text.titleMedium;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: gap),
+      padding: EdgeInsets.only(bottom: compact ? denseGap : gap),
       child: Semantics(
         header: true,
         label: count == null ? title : '$title, $count items',
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          constraints: compact
+              ? const BoxConstraints(minHeight: denseHeight)
+              : null,
+          alignment: compact ? Alignment.centerLeft : null,
+          padding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: compact ? 4 : 8,
+          ),
           decoration: BoxDecoration(
             color: scheme.primary.withValues(alpha: 0.14),
             borderRadius: Shapes.small,
@@ -209,7 +497,7 @@ class GroupHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: text.titleMedium?.copyWith(color: scheme.primary),
+                  style: titleStyle?.copyWith(color: scheme.primary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -217,7 +505,7 @@ class GroupHeader extends StatelessWidget {
               if (count != null)
                 Text(
                   '$count',
-                  style: text.titleMedium?.copyWith(
+                  style: titleStyle?.copyWith(
                     color: scheme.primary.withValues(alpha: 0.75),
                   ),
                 ),
