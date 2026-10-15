@@ -557,6 +557,45 @@ void main() {
     }
   }
 
+  // The edit bar's pills are one widget: equal height at any text size, and
+  // their icons grow with the text.
+  for (final width in const [320.0, 390.0, 440.0]) {
+    for (final scale in const [1.0, 2.0]) {
+      goldenWidgets(
+        'edit bar at ${width.toInt()} wide, text ${scale}x: Done and Add '
+        'module are the same height and their icons scale',
+        (tester) async {
+          await pumpHome(tester, width: width, height: 2800, textScale: scale);
+          await toggleCustomize(tester);
+          await scrollTo(tester, bottom: true);
+
+          Rect pill(String label) => tester.getRect(
+            find
+                .ancestor(
+                  of: find.text(label),
+                  matching: find.byType(Material),
+                )
+                .first,
+          );
+          final done = pill('Done');
+          final add = pill('Add module');
+          expect(add.height, done.height);
+          expect(done.height, greaterThanOrEqualTo(40));
+          // both pills sit on one row or wrap, but never overlap
+          expect(done.overlaps(add), isFalse);
+
+          for (final icon in [Icons.check_rounded, Icons.add_rounded]) {
+            expect(
+              tester.getSize(find.byIcon(icon)).height,
+              closeTo(18 * scale, 0.5),
+              reason: '$icon did not scale with text',
+            );
+          }
+        },
+      );
+    }
+  }
+
   // Card widths the dashboard gives one column cards: the viewport minus the
   // phone's 16 page margin on each side, at 320, 390, 430 and a tablet. Real
   // Rubik, so the title measures as it does on a device.
