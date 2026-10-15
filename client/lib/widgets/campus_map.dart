@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import '../data/campus_paths.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import 'campus_event_mapper.dart';
 import 'empty_state.dart';
@@ -1787,6 +1788,7 @@ class CampusMapPainter extends CustomPainter {
       text: TextSpan(
         text: metres >= 1000 ? '${metres ~/ 1000} km' : '$metres m',
         style: TextStyle(
+          fontFamily: AppTheme.fontFamily,
           color: scheme.onSurfaceVariant,
           fontSize: 9 / zoom,
           fontWeight: FontWeight.w600,
@@ -1893,6 +1895,7 @@ class CampusMapPainter extends CustomPainter {
       text: TextSpan(
         text: count,
         style: TextStyle(
+          fontFamily: AppTheme.fontFamily,
           color: color,
           fontSize: 9 * scale,
           fontWeight: FontWeight.w800,
@@ -1992,6 +1995,7 @@ class _MapGeometry {
           textDirection: TextDirection.ltr,
         )..layout();
         const base = TextStyle(
+          fontFamily: AppTheme.fontFamily,
           fontSize: labelBaseSize,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2,

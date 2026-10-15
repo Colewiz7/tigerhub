@@ -17,7 +17,14 @@ Order matters; later items assume earlier ones.
 3. Per source terms, robots and official feed audit (guideline 5.2.2), as its
    own PR, before any submission. The owner is sending RIT the permission
    email and brand project request answers; record the send date and any reply
-   in docs/notes.md section 12 when told.
+   in docs/notes.md section 12 when told. Sources the audit must cover include
+   the two added for visiting chefs on 2026-10-14:
+   - rit.edu `/dining/menus` and `/dining/visiting-chefs` (HTML, read every 30
+     minutes). `rit.edu/disclaimer` says personal, noncommercial use,
+     `robots.txt` does not disallow `/dining`. Terms of Use page not yet read.
+   - FD MealPlanner (`locations.fdmealplanner.com` and
+     `apiservicelocatorstenantrit.fdmealplanner.com`, dishes). `robots.txt`
+     returns 404. Terms of Use page not yet read.
 4. Privacy policy and support pages, hosted on GitHub Pages from this repo
    (owner decision 2026-10-08; privacy.colewiz.dev CNAME possible later). Drafts
    are not written yet. Do not publish or enable Pages until the owner approves the
@@ -75,6 +82,20 @@ Order matters; later items assume earlier ones.
 9. (merged into item 4)
 10. Phase 2 UX and accessibility pass; Phase 3 notifications, calendar export,
    deep links, then the widget branch.
+11. Visiting chefs (`client/lib/data/sources/rit_chefs.dart`), known gaps left
+    open on 2026-10-15. A quiet day is only ever confirmed by the
+    `/dining/visiting-chefs` block for today with `p.no-visiting-chefs`; the
+    three below can still misread that page. None has been seen on the live site.
+    - The parsers end a section at a lowercase `<script` or `<h2`. An uppercase
+      `<SCRIPT>` or `<H2>` is not found, so the section can run on into the
+      page's scripts and carousel. Match those case-insensitively.
+    - A day block holding RIT's empty marker beside chef markup that no longer
+      matches reads as a confirmed quiet day. The marker should only count when
+      the block has no other chef-like markup.
+    - The schedule page's block for today can come from a read made on an
+      earlier day (it lists 14 days), so after a day rollover with a failed
+      refresh a cached marker can still confirm "No visiting chefs today".
+      Require the schedule read to be from today's campus date.
 
 ---
 
@@ -418,3 +439,149 @@ own location, not the post office's. Check that before designing the sort.
 `recreation_campus_date_test.dart` catches the old `toLocal()` bug only on
 devices west of UTC (fails under Los Angeles, passes under Tokyo), so run it
 under America/Los_Angeles.
+
+## A+B: the full list  *(master list 2026-10-14, status 2026-10-14)*
+
+One list for the A+B layout pass: the owner's master queue plus every item
+logged from the 2026-10-13 scallop review and the E golden review. `[x]` is
+built on feat/phase2-ab, `[ ]` is open. Remove an item when it is fixed and
+verified on a device. Targets are phone width (under 600pt) and were measured
+on a 440x956 device.
+
+### Dashboard condense
+
+- [x] Page side margin 16. Card padding 16 on all sides. Radius 24.
+- [x] Hero: an inline 28pt pill right of the card title ("14 open") replaces
+  the 86x86 scalloped blob on phones. Card top to first row 56.
+- [x] Rows 52 tall with a 4 gap, a 32 leading circle, an 18 icon.
+- [x] "+N" footer is one 28pt text row ("+10 open ›") inside a 48pt touch
+  target (the block is 48 tall: Flutter only hit-tests inside layout bounds).
+- [x] Fonts: card title 22, row title 17, row subtitle 14, letterSpacing 0.
+- [x] Gap between cards 10. Card height is its content, no fixed cell on a
+  phone. Dining with 4 rows is 344 (332 before the 48pt footer).
+- [x] Masthead 48 with a 32 tall logo.
+- [ ] Masthead collapses on scroll.
+- [ ] Tab bar 121 to 83 including the safe area. Labels sentence case, 11pt, no
+  tracking. Content scrolls under the bar.
+- [x] Acceptance: at 440x956 two full cards and the start of a third fit on
+  Today (the second card ends at 655 of a 725 content area).
+- [ ] Bottom bar: iOS 26 floating glass capsule, iOS only, per
+  `.scratch/tabbar-glass-spec-2026-10-14.md`. Android and Linux keep the
+  Material NavigationBar. Logged as scallop exception #2 in
+  `docs/scallop-overrides.md`.
+
+### Dashboard cards and edit mode
+
+- [x] E edit-mode title was squeezed: it ellipsized at 1x and broke mid-word at
+  2x ("Visiti/ng C"). The header now wraps the title by whole words and never
+  cuts it, and its height is the same in both modes.
+- [x] Dining card title broke mid-word at 2x on a 390 wide screen ("Dinin" /
+  "g"). Same fix.
+- [x] Hero header edge case from E: at 320 wide and 2x a scoped events text
+  hero left the title about 15. The hero now drops under the title when the
+  title cannot keep its longest word beside it.
+- [x] Empty states are centered horizontally and vertically in their card
+  (Dining, Events, Mailing Address, Chefs), with geometry tests.
+- [x] Edit bar at 2x: "Add module" and "Done" are one pill widget, equal height,
+  icons scale with text.
+- [x] Visiting Chefs with data: at 390 and 440 wide the title, the "2 today" pill
+  and the three edit controls do not fit one row, so the header is 56 tall in
+  both modes (card top to first row 80, not 56). Accepted by the owner (round
+  4): the pin at 80 stays, and the hero pill never hides in edit mode.
+- [ ] Occupancy pill: color by crowding (low green, mid amber, high red) with a
+  clear label ("100% full" or "Busy"). Never green at 100%.
+- [x] Long names: dashboard rows allow 2 lines for the name and the status. The
+  trailing pill sits beside the text only when both stay whole there; otherwise
+  it drops under the status (measured when the row is laid out, no text size is
+  a threshold). A 1x row is 52 for normal names at 390 and 440 wide; at 320 wide
+  a pill row stacks because the status does not fit beside it.
+- [ ] Row subtitle joins with "·" (middle dot). The source already uses U+00B7
+  but it reads as a bullet in Rubik on a device. Check against the spec.
+- [ ] Event rows with no time show "All day" and no empty column.
+- [ ] No floating button or tab bar covers list content. Long titles never
+  collide with the status bar when scrolled.
+
+### Events
+
+- [ ] "Today" chip shows Oct 16/17/20 events: fix the filter or the label.
+- [x] Dashboard event rows say the time once, in the status line, with the
+  place after a dot ("Thu 1 Jan, 10:00 AM · SAU"), and the trailing slot is
+  only "ENDED". The Events tab rows still show it twice.
+- [ ] Title full width (up to 2 lines) on the Events tab. Subtitle format
+  "Fri 5:00 PM · SAU" (short weekday and clock). A location that is a meeting
+  ID or URL shows "Online".
+- [ ] Remove the ✦ and the per-row calendar icon unless meaningful. Report what
+  ✦ means (it marks a boosted keyword match, `EventRow.boosted`).
+
+### Map
+
+- [ ] Controls above the map collapse to one row. Legend not clipped, compass not
+  over the legend.
+- [ ] "Zoom in for walking paths" chip fully on screen (clipped on the left at
+  1x) and not covering the scale bar. Scale bar in feet and miles.
+- [ ] "500 m" scale label hidden by the bottom overlay at 2x text.
+- [ ] Card strip overflow, 24 px twice at `campus_map.dart:900`, at 2x text.
+  Remove its entry in `known_overflows.dart` when fixed.
+- [ ] Light theme card strip title contrast, WCAG AA 4.5:1.
+- [ ] Bottom-left chip text is flush to the left edge at 1x (measured on base
+  5e818fa, so existing).
+
+### Campus, masthead, settings
+
+- [ ] Campus list rows about 60pt, subtitles not truncated, tracking 0. Icon
+  glyphs sized consistently in their circles (Mail, Find on campus overflow).
+- [ ] Masthead lock icon: report what it does (it toggles the built-in palette
+  against the wallpaper scheme), propose removal or a clearer icon.
+- [ ] Pre-existing overflows: scope dropdown (`DropdownButtonFormField` in the
+  card options).
+- [ ] Settings and About line: "Unofficial student project. Not affiliated with
+  or endorsed by RIT." No "RIT" in the display name.
+
+### Test harness
+
+- [x] Golden harness loads real Rubik and icon fonts and fails on any overflow
+  not in `known_overflows.dart`.
+- [x] The home reorder shot helper paints the page colour, so dark goldens are
+  dark.
+- [x] 440x956 is in the home reorder golden matrix, and real data goldens cover
+  the condensed layout (`home_condense_test.dart`).
+- [x] The card gap assertion is the target (10 in normal and edit mode), not a
+  re-pinned measurement.
+
+### Decisions and deviations in this pass
+
+- The gap is 10 between cards (5 per cell side), which is what the owner's list
+  says. `scallop-ui` SKILL.md now says "card gap 10, row gap 4", recorded as a
+  confirmed override in `docs/scallop-overrides.md`. `design/STYLE.md` has no
+  phone gutter wording, so it needs no change.
+- Phone cards are as tall as their content, so the row count is a cap, not a
+  measurement: `phonePreviewRows` = 4 in `bounded_list.dart` (grouped events 2
+  groups, a calendar day 3 rows come from it). The spec says to measure the
+  box; there is no box on a phone. Recorded in `docs/scallop-overrides.md`.
+  **Confirmed by the owner (round 4).**
+- 600pt and wider keeps the original card header and title (so edit mode there
+  still ellipsizes a long title to hold the header height). A test pins the
+  wide geometry to the base commit.
+- Phone card header is 32 tall (the edit controls are 32) and the gap under it
+  is 8, which puts content 56 from the card top, the same as a 28 header and a
+  12 gap.
+- The edit bar pills and the "+N" footer have 48pt touch targets. The edit
+  controls in a card header (handle, Inspect, Remove) are still 32.
+- Dashboard group header is 40 (the spec's) on phones, 46 elsewhere.
+
+## Desktop launcher: build in the background  *(2026-10-13)*
+
+Today `scripts/tigerhub-launch` blocks: when the source changed, the first
+launch notifies, runs `scripts/dev build` and only then starts the app, so the
+launch can take a minute or more. TigerHub is a quick-check tool, so the launch
+should not wait.
+
+- Start `current` immediately.
+- Build in the background (detached, under the existing build lock), publish the
+  new release with the same verified copy and atomic `current` switch, and use
+  it on the next launch.
+- Keep the failure rules: a failed build leaves `current` alone and writes the
+  log; notify once when the update is ready or failed.
+- First run with no release yet still has to build before it can start.
+- Not started. Raised by the owner 2026-10-13; review as local tooling (one
+  pass).
