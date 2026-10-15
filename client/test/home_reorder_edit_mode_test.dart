@@ -22,6 +22,7 @@ import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
+import 'package:tigerhub/widgets/scalloped_badge.dart' show CardHero;
 
 import 'golden_harness.dart';
 
@@ -510,43 +511,61 @@ void main() {
     }
   }
 
-  testWidgets('edit mode does not change card 1 or the gap after it', (
-    tester,
-  ) async {
-    await pumpHome(tester);
-    ({double height, double gap}) measure() {
-      final first = tester.getRect(find.byType(CardShell).at(0));
-      final second = tester.getRect(find.byType(CardShell).at(1));
-      return (height: first.height, gap: second.top - first.bottom);
-    }
+  // The owner-approved phone gap between two stacked cards, in both modes. The
+  // cards are as tall as their content, so the gap is the only thing between
+  // them and it is the token, not a leftover of a fixed height cell.
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    testWidgets(
+      'at ${size.width.toInt()}x${size.height.toInt()} the gap between cards '
+      'is 10 in normal and edit mode, and edit mode keeps card 1',
+      (tester) async {
+        await pumpHome(tester, width: size.width, height: size.height);
+        ({double height, List<double> gaps}) measure() {
+          final shells = find.byType(CardShell);
+          final rects = [
+            for (var i = 0; i < 3; i++) tester.getRect(shells.at(i)),
+          ];
+          return (
+            height: rects.first.height,
+            gaps: [
+              for (var i = 0; i < 2; i++) rects[i + 1].top - rects[i].bottom,
+            ],
+          );
+        }
 
-    final normal = measure();
-    // the gap on base commit 5e818fa, which this change must not move. It was
-    // 314 with Ahem; the harness loads Rubik for the whole file, which gives 338.
-    expect(normal.gap, 338);
-    await toggleCustomize(tester);
-    final edit = measure();
+        final normal = measure();
+        expect(normal.gaps, [10.0, 10.0]);
+        await toggleCustomize(tester);
+        final edit = measure();
 
-    expect(edit.height, normal.height);
-    expect(edit.gap, normal.gap);
-  });
+        expect(edit.gaps, [10.0, 10.0]);
+        expect(edit.height, normal.height);
+      },
+    );
+  }
 
-  // Card widths the dashboard gives one column cards: the viewport minus 16 of
-  // page padding and 12 of gutter, at 320, 390, 430 and a tablet.
-  for (final cardWidth in [292.0, 362.0, 402.0, 672.0]) {
+  // Card widths the dashboard gives one column cards: the viewport minus the
+  // phone's 16 page margin on each side, at 320, 390, 430 and a tablet. Real
+  // Rubik, so the title measures as it does on a device.
+  const titles = [
+    'Visiting Chefs',
+    'Mailing Address',
+    'Visiting chefs and a very long module title',
+  ];
+  for (final title in titles) {
+    for (final cardWidth in [288.0, 358.0, 398.0, 672.0]) {
     for (final scale in [1.0, 2.0]) {
       for (final hero in [false, true]) {
-        testWidgets(
-          'card header, ${cardWidth.toInt()} wide, text ${scale}x'
+        goldenWidgets(
+          'card header "$title", ${cardWidth.toInt()} wide, text ${scale}x'
           '${hero ? ', with hero' : ''}: title stops before the controls',
           (tester) async {
             // a phone sized view, so the card padding is the phone's
             tester.view.devicePixelRatio = 1;
-            tester.view.physicalSize = Size(cardWidth + 28, 4000);
+            tester.view.physicalSize = Size(cardWidth + 32, 4000);
             addTearDown(tester.view.reset);
             tester.platformDispatcher.textScaleFactorTestValue = scale;
             addTearDown(tester.platformDispatcher.clearAllTestValues);
-            const title = 'Visiting chefs and a very long module title';
             await tester.pumpWidget(
               MaterialApp(
                 theme: _theme(Brightness.light),
@@ -558,7 +577,7 @@ void main() {
                       child: CardShell(
                         title: title,
                         hero: hero
-                            ? const SizedBox(width: 88, height: 88)
+                            ? const CardHero(value: '3', label: 'OPEN')
                             : null,
                         dragHandle: EditControls(
                           selected: false,
@@ -605,12 +624,65 @@ void main() {
                 );
               }
             }
-            expect(titleRect.right, lessThanOrEqualTo(handle.left));
-            // the long title wrapped rather than running under the controls
-            expect(tester.takeException(), isNull);
+            // beside the controls, the title ends before the handle
+            if (titleRect.bottom > handle.top && titleRect.top < handle.bottom) {
+              expect(titleRect.right, lessThanOrEqualTo(handle.left));
+            }
+
+            // Whole words only: the title is at least as wide as its longest
+            // word, so nothing breaks mid-word, and it is never cut.
+            final paragraph = tester.renderObject<RenderParagraph>(
+              find.text(title),
+            );
+            expect(
+              paragraph.getMinIntrinsicWidth(double.infinity),
+              lessThanOrEqualTo(paragraph.size.width + 0.01),
+              reason: 'a word was broken across lines',
+            );
+            expect(tester.widget<Text>(find.text(title)).maxLines, isNull);
+            // At 1x on a 390 or wider phone the module names fit on one line
+            // beside the controls.
+            if (scale == 1 && !hero && cardWidth >= 358 && title.length < 20) {
+              expect(
+                paragraph.getMaxIntrinsicWidth(double.infinity),
+                lessThanOrEqualTo(paragraph.size.width + 0.01),
+                reason: '"$title" wrapped at 1x',
+              );
+            }
+
+            // Controls beside or under the title, the header is the same
+            // height with the controls gone.
+            final editHeader = tester.getRect(find.byType(CardShell)).height;
+            await tester.pumpWidget(
+              MaterialApp(
+                theme: _theme(Brightness.light),
+                home: Scaffold(
+                  body: Align(
+                    alignment: Alignment.topLeft,
+                    child: SizedBox(
+                      width: cardWidth,
+                      child: CardShell(
+                        title: title,
+                        hero: hero
+                            ? const CardHero(value: '3', label: 'OPEN')
+                            : null,
+                        child: const SizedBox(height: 40),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+            expect(
+              tester.getRect(find.byType(CardShell)).height,
+              editHeader,
+              reason: 'edit mode changed the card height',
+            );
           },
         );
       }
+    }
     }
   }
 
@@ -667,6 +739,7 @@ void main() {
   const sizes = {
     '390x844': Size(390, 844),
     '430x932': Size(430, 932),
+    '440x956': Size(440, 956),
     // tall enough that the cards reach their maximum height and the page,
     // including the Customize or Done bar and the colophon at 2x text, fits
     // with no scrolling

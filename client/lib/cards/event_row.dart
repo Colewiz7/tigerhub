@@ -41,9 +41,13 @@ class EventRow extends StatelessWidget {
     this.now,
     this.boosted = false,
     this.forceDimmed = false,
+    this.dense = false,
   });
 
   final CampusEvent event;
+
+  /// The dashboard's condensed phone row.
+  final bool dense;
 
   /// Matched a boost keyword. Gets a subtle accent marker.
   final bool boosted;
@@ -78,6 +82,7 @@ class EventRow extends StatelessWidget {
               : formatDayAndClock(event.startsAt));
 
     return StatusRow(
+      dense: dense,
       icon: forceDimmed
           ? Icons.visibility_off_rounded
           : (isPast

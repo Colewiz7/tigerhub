@@ -446,6 +446,12 @@ class _HomeScreenState extends State<HomeScreen> {
             .clamp(_minCardHeight, _maxCardHeight)
             .toDouble();
 
+        // Phone tokens: cards 16 from the window edge and 10 apart, so each
+        // cell carries 5 of padding and the page inset makes up the rest.
+        final phone = Insets.phone(context);
+        final gutter = phone ? Insets.phoneCardGap / 2 : _cardGutter;
+        final sideInset = phone ? Insets.phoneMargin - gutter : 8.0;
+
         final children = [
           for (var index = 0; index < _order.length; index++)
             Semantics(
@@ -467,19 +473,22 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               child: SizedBox(
                 width:
-                    (constraints.maxWidth - 16) /
+                    (constraints.maxWidth - sideInset * 2) /
                     columns *
                     ((_instance(_order[index])?.size.columns ?? 1).clamp(
                       1,
                       columns,
                     )),
-                height:
-                    (_instance(_order[index])?.size == CardSize.compact
-                        ? cardHeight * .58
-                        : cardHeight) +
-                    _cardGutter * 2,
+                // Phones size a card to its content, so there is no cell
+                // height. Wider windows divide the viewport into cells.
+                height: phone
+                    ? null
+                    : (_instance(_order[index])?.size == CardSize.compact
+                              ? cardHeight * .58
+                              : cardHeight) +
+                          gutter * 2,
                 child: Padding(
-                  padding: const EdgeInsets.all(_cardGutter),
+                  padding: EdgeInsets.all(gutter),
                   // A Stack, as before the header controls moved into the
                   // card: it hands the card loose constraints, so a card
                   // keeps its natural height inside its cell.
@@ -495,7 +504,7 @@ class _HomeScreenState extends State<HomeScreen> {
             controller: _scrollController,
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: EdgeInsets.symmetric(horizontal: sideInset),
                 sliver: SliverToBoxAdapter(
                   child: ReorderableBuilder<String>(
                     // No scrollController on purpose. The inner GridView is

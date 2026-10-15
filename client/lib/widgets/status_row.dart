@@ -24,7 +24,20 @@ class StatusRow extends StatelessWidget {
     this.emphasis = RowEmphasis.normal,
     this.onTap,
     this.semanticHint,
+    this.dense = false,
   });
+
+  /// The dashboard's condensed row on phones (under 600pt): 52 tall with a 4
+  /// gap, a 32 icon circle, title 17 and subtitle 14 with no tracking. Wider
+  /// windows, and rows outside the dashboard, keep the standard row.
+  final bool dense;
+
+  /// The dense row at 1x text, without its gap.
+  static const double denseHeight = 52;
+  static const double denseGap = 4;
+  static const double denseBadgeSize = 32;
+
+  bool _isDense(BuildContext context) => dense && Insets.phone(context);
 
   final IconData icon;
   final String title;
@@ -58,11 +71,13 @@ class StatusRow extends StatelessWidget {
   /// Scaling the budget rather than shrinking the text keeps both properties:
   /// the rows still have an exact height for BoundedList to divide by, and the
   /// text is still the size the reader asked for.
-  static double heightFor(BuildContext context) {
+  static double heightFor(BuildContext context, {bool dense = false}) {
     final scale = MediaQuery.textScalerOf(context).scale(1);
     // Below 1 the rows would get tighter than they were designed for, and
     // above 2 a single row would eat a whole card.
-    return height * scale.clamp(1.0, 2.0);
+    final clamped = scale.clamp(1.0, 2.0);
+    if (dense && Insets.phone(context)) return denseHeight * clamped + denseGap;
+    return height * clamped;
   }
   static const double gap = 8;
   static const double badgeSize = 42;
@@ -73,13 +88,22 @@ class StatusRow extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final dimmed = emphasis == RowEmphasis.dimmed;
     final tint = accent ?? scheme.primary;
+    final dense = _isDense(context);
+    final rowGap = dense ? denseGap : gap;
+    final badge = dense ? denseBadgeSize : badgeSize;
+    final titleStyle = dense
+        ? text.titleMedium?.copyWith(fontSize: 17, height: 1.3, letterSpacing: 0)
+        : text.titleMedium;
+    final subtitleStyle = dense
+        ? text.bodySmall?.copyWith(fontSize: 14, height: 1.3, letterSpacing: 0)
+        : text.bodySmall;
 
     // A dimmed row keeps its shape but loses contrast, so open and closed are
     // separable at a glance without reading either.
     final opacity = dimmed ? 0.55 : 1.0;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: gap),
+      padding: EdgeInsets.only(bottom: rowGap),
       child: Semantics(
         button: onTap != null,
         enabled: onTap != null,
@@ -98,14 +122,17 @@ class StatusRow extends StatelessWidget {
               // configured line heights need 48, causing quiet 4px overflows
               // on longer copy. Eight preserves the touch target and gives
               // the typography its actual measured height.
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: dense ? 10 : 12,
+                vertical: dense ? 4 : 8,
+              ),
               child: Row(
                 children: [
                   Opacity(
                     opacity: opacity,
                     child: Container(
-                      width: badgeSize,
-                      height: badgeSize,
+                      width: badge,
+                      height: badge,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         // Strong on purpose. Sampled from Caelestia, the badge is
@@ -118,7 +145,7 @@ class StatusRow extends StatelessWidget {
                       child: Icon(icon, size: 18, color: tint),
                     ),
                   ),
-                  const SizedBox(width: 13),
+                  SizedBox(width: dense ? 10 : 13),
                   Expanded(
                     child: Opacity(
                       opacity: opacity,
@@ -129,7 +156,7 @@ class StatusRow extends StatelessWidget {
                         children: [
                           Text(
                             title,
-                            style: text.titleMedium,
+                            style: titleStyle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -137,7 +164,7 @@ class StatusRow extends StatelessWidget {
                             const SizedBox(height: 2),
                             Text(
                               subtitle!,
-                              style: text.bodySmall,
+                              style: subtitleStyle,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -177,27 +204,54 @@ class GroupHeader extends StatelessWidget {
     required this.icon,
     required this.title,
     this.count,
+    this.dense = false,
   });
 
   final IconData icon;
   final String title;
   final int? count;
 
+  /// The dashboard's condensed phone header: 40 tall (the spec's group header)
+  /// with a 4 gap below, title 17.
+  final bool dense;
+
   static const double height = 46;
   static const double gap = 6;
+  static const double denseHeight = 40;
+  static const double denseGap = 4;
+
+  /// The height a list should budget for one header and the gap under it.
+  static double blockHeight(BuildContext context, {bool dense = false}) {
+    if (dense && Insets.phone(context)) {
+      final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0);
+      return denseHeight * scale + denseGap;
+    }
+    return height + gap;
+  }
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    final compact = dense && Insets.phone(context);
+    final titleStyle = compact
+        ? text.titleMedium?.copyWith(fontSize: 17, height: 1.3, letterSpacing: 0)
+        : text.titleMedium;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: gap),
+      padding: EdgeInsets.only(bottom: compact ? denseGap : gap),
       child: Semantics(
         header: true,
         label: count == null ? title : '$title, $count items',
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          constraints: compact
+              ? const BoxConstraints(minHeight: denseHeight)
+              : null,
+          alignment: compact ? Alignment.centerLeft : null,
+          padding: EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: compact ? 4 : 8,
+          ),
           decoration: BoxDecoration(
             color: scheme.primary.withValues(alpha: 0.14),
             borderRadius: Shapes.small,
@@ -209,7 +263,7 @@ class GroupHeader extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: text.titleMedium?.copyWith(color: scheme.primary),
+                  style: titleStyle?.copyWith(color: scheme.primary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -217,7 +271,7 @@ class GroupHeader extends StatelessWidget {
               if (count != null)
                 Text(
                   '$count',
-                  style: text.titleMedium?.copyWith(
+                  style: titleStyle?.copyWith(
                     color: scheme.primary.withValues(alpha: 0.75),
                   ),
                 ),

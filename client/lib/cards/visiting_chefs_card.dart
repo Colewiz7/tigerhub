@@ -43,23 +43,16 @@ class VisitingChefsCard extends StatelessWidget {
       // row; this is the one card-level number.
       hero: all.isEmpty
           ? null
-          : ScallopedBadge(
+          : CardHero(
               value: '${all.length}',
               label: all.length == 1 ? 'CHEF TODAY' : 'CHEFS TODAY',
-              size: 88,
+              // The title already says chefs; the shorter pill keeps room for
+              // the edit controls beside it on a 390 wide phone.
+              pill: '${all.length} today',
             ),
       child: switch ((result.isPriming, all.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading today'),
-        (_, true) => LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: const Center(
-                child: EmptyState(kind: EmptyKind.noVisitingChefs),
-              ),
-            ),
-          ),
-        ),
+        (_, true) => const EmptyState(kind: EmptyKind.noVisitingChefs),
         _ => BoundedList(
           // Not capped for a compact card. A compact card is already a shorter
           // box (58% of the row height), and BoundedList measures the box it
@@ -67,10 +60,13 @@ class VisitingChefsCard extends StatelessWidget {
           // chef at the top with the rest of the card empty beneath it. The
           // widget exists precisely so nobody has to guess this number.
           itemCount: all.length,
-          itemHeight: StatusRow.heightFor(context),
+          itemHeight: StatusRow.heightFor(context, dense: true),
+          dense: true,
+          maxRows: phoneRowCap(context),
           noun: 'chefs',
           onShowAll: onShowAll,
           itemBuilder: (context, index) => StatusRow(
+            dense: true,
             icon: Icons.restaurant_menu_rounded,
             title: all[index].name,
             subtitle: all[index].locationName,
