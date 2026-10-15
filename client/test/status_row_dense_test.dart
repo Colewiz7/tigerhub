@@ -24,6 +24,12 @@ const _names = [
   'Extremely Long Dining Location Name That Keeps Going And Going Past Two Lines Of Text At Any Size',
 ];
 
+const _statuses = [
+  'OPEN · until 6:00 PM',
+  // long enough to be cut in two lines at the larger text sizes
+  'CLOSED · opens tomorrow at 11:00 AM and again for dinner after five',
+];
+
 Widget _pill() => Container(
   padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
   decoration: const ShapeDecoration(
@@ -60,21 +66,22 @@ void main() {
                   padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Column(
                     children: [
-                      for (final name in _names) ...[
-                        StatusRow(
-                          dense: true,
-                          icon: Icons.restaurant_rounded,
-                          title: name,
-                          subtitle: 'OPEN · until 6:00 PM',
-                          trailing: _pill(),
-                        ),
-                        StatusRow(
-                          dense: true,
-                          icon: Icons.restaurant_rounded,
-                          title: name,
-                          subtitle: 'OPEN · until 6:00 PM',
-                        ),
-                      ],
+                      for (final name in _names)
+                        for (final status in _statuses) ...[
+                          StatusRow(
+                            dense: true,
+                            icon: Icons.restaurant_rounded,
+                            title: name,
+                            subtitle: status,
+                            trailing: _pill(),
+                          ),
+                          StatusRow(
+                            dense: true,
+                            icon: Icons.restaurant_rounded,
+                            title: name,
+                            subtitle: status,
+                          ),
+                        ],
                     ],
                   ),
                 ),
@@ -86,26 +93,42 @@ void main() {
           bool cut(Finder text) =>
               tester.renderObject<RenderParagraph>(text).didExceedMaxLines;
 
+          double lane(Finder text) => tester.getSize(text).width;
+
           for (final (i, name) in _names.indexed) {
-            final both = find.text(name);
-            expect(both, findsNWidgets(2), reason: name);
-            final withPill = both.at(0);
-            final alone = both.at(1);
-            if (!cut(alone)) {
-              expect(
-                cut(withPill),
-                isFalse,
-                reason: '"$name" was cut by the pill at ${width}x$scale',
-              );
-            }
-            // the status line is not cut by the pill either
-            final status = find.text('OPEN · until 6:00 PM');
-            if (!cut(status.at(2 * i + 1))) {
-              expect(
-                cut(status.at(2 * i)),
-                isFalse,
-                reason: 'the status of "$name" was cut by the pill',
-              );
+            final names = find.text(name);
+            expect(names, findsNWidgets(2 * _statuses.length), reason: name);
+            for (final (j, statusText) in _statuses.indexed) {
+              final where = '"$name" / "$statusText" at ${width}x$scale';
+              final withPill = names.at(2 * j);
+              final alone = names.at(2 * j + 1);
+              final status = find.text(statusText);
+              final statusPill = status.at(2 * i);
+              final statusAlone = status.at(2 * i + 1);
+
+              // The pill never cuts what fits without it.
+              if (!cut(alone)) {
+                expect(cut(withPill), isFalse, reason: 'name cut: $where');
+              }
+              if (!cut(statusAlone)) {
+                expect(cut(statusPill), isFalse, reason: 'status cut: $where');
+              }
+              // Text already too long for one lane still gets the better
+              // lane: when the pill row is cut at all, the text has the same
+              // width as without the pill (the pill went under it), never
+              // the narrower lane beside the pill.
+              if (cut(withPill) || cut(statusPill)) {
+                expect(
+                  lane(withPill),
+                  lane(alone),
+                  reason: 'name lane narrowed by the pill: $where',
+                );
+                expect(
+                  lane(statusPill),
+                  lane(statusAlone),
+                  reason: 'status lane narrowed by the pill: $where',
+                );
+              }
             }
           }
 

@@ -40,7 +40,6 @@ class StatusRow extends StatelessWidget {
   static const double denseGap = 4;
   static const double denseBadgeSize = 32;
 
-
   bool _isDense(BuildContext context) => dense && Insets.phone(context);
 
   final IconData icon;
@@ -83,6 +82,7 @@ class StatusRow extends StatelessWidget {
     if (dense && Insets.phone(context)) return denseHeight * clamped + denseGap;
     return height * clamped;
   }
+
   static const double gap = 8;
   static const double badgeSize = 42;
 
@@ -96,7 +96,11 @@ class StatusRow extends StatelessWidget {
     final rowGap = dense ? denseGap : gap;
     final badge = dense ? denseBadgeSize : badgeSize;
     final titleStyle = dense
-        ? text.titleMedium?.copyWith(fontSize: 17, height: 1.3, letterSpacing: 0)
+        ? text.titleMedium?.copyWith(
+            fontSize: 17,
+            height: 1.3,
+            letterSpacing: 0,
+          )
         : text.titleMedium;
     final subtitleStyle = dense
         ? text.bodySmall?.copyWith(fontSize: 14, height: 1.3, letterSpacing: 0)
@@ -127,100 +131,100 @@ class StatusRow extends StatelessWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(minHeight: minHeight),
               child: Padding(
-              // BoundedList budgets 72px including the 8px row gap. Ten
-              // vertical pixels left only 44px for two text lines whose
-              // configured line heights need 48, causing quiet 4px overflows
-              // on longer copy. Eight preserves the touch target and gives
-              // the typography its actual measured height.
-              padding: EdgeInsets.symmetric(
-                horizontal: dense ? 10 : 12,
-                vertical: dense ? 4 : 8,
-              ),
-              child: Row(
-                children: [
-                  Opacity(
-                    opacity: opacity,
-                    child: Container(
-                      width: badge,
-                      height: badge,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        // Strong on purpose. Sampled from Caelestia, the badge is
-                        // far brighter than the row it sits on, and that contrast is
-                        // what the eye actually lands on.
-                        color: tint.withValues(alpha: dimmed ? 0.20 : 0.32),
-                      ),
-                      // 18 in a 42px circle. At 21 the glyph very nearly filled
-                      // its box, leaving a ring too thin to read as a badge.
-                      child: Icon(icon, size: 18, color: tint),
-                    ),
-                  ),
-                  SizedBox(width: dense ? 10 : 13),
-                  if (dense)
-                    Expanded(
-                      child: Opacity(
-                        opacity: opacity,
-                        child: _DenseBody(
-                          title: Text(
-                            title,
-                            style: titleStyle,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          subtitle: subtitle == null
-                              ? null
-                              : Text(
-                                  subtitle!,
-                                  style: subtitleStyle,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                          trailing: trailing,
-                        ),
-                      ),
-                    )
-                  else
-                  Expanded(
-                    child: Opacity(
+                // BoundedList budgets 72px including the 8px row gap. Ten
+                // vertical pixels left only 44px for two text lines whose
+                // configured line heights need 48, causing quiet 4px overflows
+                // on longer copy. Eight preserves the touch target and gives
+                // the typography its actual measured height.
+                padding: EdgeInsets.symmetric(
+                  horizontal: dense ? 10 : 12,
+                  vertical: dense ? 4 : 8,
+                ),
+                child: Row(
+                  children: [
+                    Opacity(
                       opacity: opacity,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            title,
-                            style: titleStyle,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (subtitle != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              subtitle!,
-                              style: subtitleStyle,
-                              maxLines: 1,
+                      child: Container(
+                        width: badge,
+                        height: badge,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          // Strong on purpose. Sampled from Caelestia, the badge is
+                          // far brighter than the row it sits on, and that contrast is
+                          // what the eye actually lands on.
+                          color: tint.withValues(alpha: dimmed ? 0.20 : 0.32),
+                        ),
+                        // 18 in a 42px circle. At 21 the glyph very nearly filled
+                        // its box, leaving a ring too thin to read as a badge.
+                        child: Icon(icon, size: 18, color: tint),
+                      ),
+                    ),
+                    SizedBox(width: dense ? 10 : 13),
+                    if (dense)
+                      Expanded(
+                        child: Opacity(
+                          opacity: opacity,
+                          child: _DenseBody(
+                            title: Text(
+                              title,
+                              style: titleStyle,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ],
-                        ],
+                            subtitle: subtitle == null
+                                ? null
+                                : Text(
+                                    subtitle!,
+                                    style: subtitleStyle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                            trailing: trailing,
+                          ),
+                        ),
+                      )
+                    else
+                      Expanded(
+                        child: Opacity(
+                          opacity: opacity,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                title,
+                                style: titleStyle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (subtitle != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  subtitle!,
+                                  style: subtitleStyle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  if (trailing != null && !dense) ...[
-                    const SizedBox(width: 10),
-                    // Trailing metadata must never consume the title's entire
-                    // lane on a narrow screen. Event timestamps exposed this:
-                    // an unconstrained Text measured at 283px and reduced the
-                    // Expanded title to zero width.
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 132),
-                      child: Opacity(opacity: opacity, child: trailing!),
-                    ),
+                    if (trailing != null && !dense) ...[
+                      const SizedBox(width: 10),
+                      // Trailing metadata must never consume the title's entire
+                      // lane on a narrow screen. Event timestamps exposed this:
+                      // an unconstrained Text measured at 283px and reduced the
+                      // Expanded title to zero width.
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 132),
+                        child: Opacity(opacity: opacity, child: trailing!),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
             ),
           ),
         ),
@@ -266,7 +270,10 @@ class _DenseBody extends MultiChildRenderObjectWidget {
 
 class _RenderDenseBody extends RenderBox
     with
-        ContainerRenderObjectMixin<RenderBox, ContainerBoxParentData<RenderBox>>,
+        ContainerRenderObjectMixin<
+          RenderBox,
+          ContainerBoxParentData<RenderBox>
+        >,
         RenderBoxContainerDefaultsMixin<
           RenderBox,
           ContainerBoxParentData<RenderBox>
@@ -288,7 +295,6 @@ class _RenderDenseBody extends RenderBox
   /// A trailing widget never takes more than this of the row, so a long stamp
   /// cannot squeeze the text to nothing.
   static const double _maxTrailing = 132;
-
 
   late bool _hasSubtitle;
   bool get hasSubtitle => _hasSubtitle;
@@ -376,14 +382,15 @@ class _RenderDenseBody extends RenderBox
     var beside = false;
     if (hasTrailing) {
       final narrow = layoutText(math.max(0.0, w - trailW - _gap));
-      // Beside is fine if neither line gives anything up there: the name is
-      // whole (or is cut anyway at the full width, so stacking would not save
-      // it) and the status needs no more lines than it does at the full width.
-      // Otherwise the trailing widget goes under the text, so it never costs a
-      // name or a status its room.
+      // Compare what each lane shows. The beside lane is the narrower one, so
+      // it never shows more of the name or the status than the stacked lane:
+      // when either is cut beside, stacked shows at least as much (and more,
+      // even if it is cut there too, since it has the wider lines). Beside wins
+      // only when both lines are whole there and the status takes no more
+      // lines than it does at the full width.
       beside =
-          (!narrow.cut || full.cut) &&
-          (!narrow.statusCut || full.statusCut) &&
+          !narrow.cut &&
+          !narrow.statusCut &&
           narrow.statusHeight <= full.statusHeight + 0.5;
       text = beside ? narrow : layoutText(w);
     }
@@ -458,7 +465,11 @@ class GroupHeader extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final compact = dense && Insets.phone(context);
     final titleStyle = compact
-        ? text.titleMedium?.copyWith(fontSize: 17, height: 1.3, letterSpacing: 0)
+        ? text.titleMedium?.copyWith(
+            fontSize: 17,
+            height: 1.3,
+            letterSpacing: 0,
+          )
         : text.titleMedium;
 
     return Padding(

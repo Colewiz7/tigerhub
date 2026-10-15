@@ -45,8 +45,10 @@ class _EmptyBackend implements Backend {
   void close() {}
 }
 
-Result<Collection<T>> _ok<T>(List<T> data) =>
-    Result(value: Collection<T>(data: data, stale: false), state: DataState.ok);
+Result<Collection<T>> _ok<T>(List<T> data) => Result(
+  value: Collection<T>(data: data, stale: false),
+  state: DataState.ok,
+);
 
 const _names = [
   'Crossroads',
@@ -220,9 +222,7 @@ void main() {
       );
       expect(rows, findsNWidgets(4));
       final firstRow = tester.getRect(
-        find
-            .descendant(of: rows.first, matching: find.byType(Material))
-            .first,
+        find.descendant(of: rows.first, matching: find.byType(Material)).first,
       );
       expect(firstRow.top - dining.top, 56);
       // rows 52 tall, 4 apart
@@ -292,6 +292,44 @@ void main() {
       });
     });
 
+    testWidgets(
+      '$name: Visiting Chefs keeps its pill in edit mode, first row at 80',
+      (tester) async {
+        await pumpHome(tester, size);
+        final position = tester
+            .state<ScrollableState>(find.byType(Scrollable).first)
+            .position;
+        position.jumpTo(position.maxScrollExtent);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Customize'));
+        await tester.pumpAndSettle();
+        position.jumpTo(0);
+        await tester.pumpAndSettle();
+
+        final chefs = find.byType(CardShell).at(2);
+        final box = tester.getRect(chefs);
+        // the hero pill is never hidden: it is there, whole, inside the card
+        final pill = find.descendant(of: chefs, matching: find.text('2 today'));
+        expect(pill, findsOneWidget);
+        final pillRect = tester.getRect(pill);
+        expect(pillRect.width, greaterThan(0));
+        expect(box.contains(pillRect.topLeft), isTrue);
+        expect(box.contains(pillRect.bottomRight), isTrue);
+        // the accepted header height in edit mode as well
+        final row = tester.getRect(
+          find
+              .descendant(
+                of: find
+                    .descendant(of: chefs, matching: find.byType(StatusRow))
+                    .first,
+                matching: find.byType(Material),
+              )
+              .first,
+        );
+        expect(row.top - box.top, 80);
+      },
+    );
+
     testWidgets('$name: icon circles are 32 with an 18 glyph', (tester) async {
       await pumpHome(tester, size);
       final circles = find.descendant(
@@ -304,10 +342,19 @@ void main() {
         ),
       );
       expect(tester.getSize(circles.first), const Size(32, 32));
-      expect(tester.widget<Icon>(find.descendant(of: circles.first, matching: find.byType(Icon))).size, 18);
+      expect(
+        tester
+            .widget<Icon>(
+              find.descendant(of: circles.first, matching: find.byType(Icon)),
+            )
+            .size,
+        18,
+      );
     });
 
-    testWidgets('$name: fonts are 22 / 17 / 14 with no tracking', (tester) async {
+    testWidgets('$name: fonts are 22 / 17 / 14 with no tracking', (
+      tester,
+    ) async {
       await pumpHome(tester, size);
       final title = tester.widget<Text>(find.text('Dining')).style!;
       expect(title.fontSize, 22);
@@ -327,52 +374,54 @@ void main() {
       expect(lines[1].style!.letterSpacing, 0);
     });
 
-    testWidgets('$name: the "+10 open" footer is a 28 row with a 48 hit region', (
-      tester,
-    ) async {
-      final taps = <int>[];
-      await pumpHome(tester, size, onGoToTab: taps.add);
+    testWidgets(
+      '$name: the "+10 open" footer is a 28 row with a 48 hit region',
+      (tester) async {
+        final taps = <int>[];
+        await pumpHome(tester, size, onGoToTab: taps.add);
 
-      final label = find.text('+10 open');
-      final visual = tester.getRect(label);
-      expect(visual.height, lessThanOrEqualTo(28));
-      final target = tester.getRect(
-        find.ancestor(of: label, matching: find.byType(TouchTarget)),
-      );
-      expect(target.height, greaterThanOrEqualTo(48));
-      expect(target.width, greaterThanOrEqualTo(48));
-      expect(target.contains(visual.center), isTrue);
-
-      // a tap above and below the visual row, in the region, goes through
-      for (final dy in [-20.0, 20.0]) {
-        await tester.tapAt(Offset(visual.center.dx, visual.center.dy + dy));
-        await tester.pump();
-      }
-      expect(taps, [1, 1]);
-    });
-
-    testWidgets('$name: at 2x names and statuses take two lines, not an ellipsis', (
-      tester,
-    ) async {
-      await pumpHome(tester, size, scale: 2);
-      final rows = find.byType(DiningRow);
-      for (var i = 0; i < 4; i++) {
-        final texts = find.descendant(
-          of: rows.at(i),
-          matching: find.byType(Text),
+        final label = find.text('+10 open');
+        final visual = tester.getRect(label);
+        expect(visual.height, lessThanOrEqualTo(28));
+        final target = tester.getRect(
+          find.ancestor(of: label, matching: find.byType(TouchTarget)),
         );
-        for (final text in tester.widgetList<Text>(texts)) {
-          final paragraph = tester.renderObject<RenderParagraph>(
-            find.byWidget(text),
-          );
-          expect(
-            paragraph.didExceedMaxLines,
-            isFalse,
-            reason: '"${text.data}" was cut off at 2x',
-          );
+        expect(target.height, greaterThanOrEqualTo(48));
+        expect(target.width, greaterThanOrEqualTo(48));
+        expect(target.contains(visual.center), isTrue);
+
+        // a tap above and below the visual row, in the region, goes through
+        for (final dy in [-20.0, 20.0]) {
+          await tester.tapAt(Offset(visual.center.dx, visual.center.dy + dy));
+          await tester.pump();
         }
-      }
-    });
+        expect(taps, [1, 1]);
+      },
+    );
+
+    testWidgets(
+      '$name: at 2x names and statuses take two lines, not an ellipsis',
+      (tester) async {
+        await pumpHome(tester, size, scale: 2);
+        final rows = find.byType(DiningRow);
+        for (var i = 0; i < 4; i++) {
+          final texts = find.descendant(
+            of: rows.at(i),
+            matching: find.byType(Text),
+          );
+          for (final text in tester.widgetList<Text>(texts)) {
+            final paragraph = tester.renderObject<RenderParagraph>(
+              find.byWidget(text),
+            );
+            expect(
+              paragraph.didExceedMaxLines,
+              isFalse,
+              reason: '"${text.data}" was cut off at 2x',
+            );
+          }
+        }
+      },
+    );
 
     testWidgets('$name: at 1x normal names keep rows 52 tall', (tester) async {
       await pumpHome(tester, size);
@@ -395,12 +444,7 @@ void main() {
       for (final brightness in Brightness.values) {
         final shot = '${name}_${brightness.name}_${scale.toInt()}x';
         goldenWidgets('golden home condense $shot', (tester) async {
-          await pumpHome(
-            tester,
-            size,
-            scale: scale,
-            brightness: brightness,
-          );
+          await pumpHome(tester, size, scale: scale, brightness: brightness);
           final boundary = tester.renderObject<RenderRepaintBoundary>(
             find.byKey(const ValueKey('shot')),
           );
@@ -418,27 +462,28 @@ void main() {
 
   // The real shell on a phone: the masthead is 48 tall.
   for (final size in const [Size(390, 844), Size(440, 956)]) {
-    testWidgets('${size.width.toInt()}x${size.height.toInt()}: masthead is 48', (
-      tester,
-    ) async {
-      phoneView(tester, size);
-      final scheme = SchemeController();
-      await scheme.load();
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: _theme(Brightness.dark),
-          home: AppShell(
-            api: ApiClient(backend: _EmptyBackend()),
-            scheme: scheme,
+    testWidgets(
+      '${size.width.toInt()}x${size.height.toInt()}: masthead is 48',
+      (tester) async {
+        phoneView(tester, size);
+        final scheme = SchemeController();
+        await scheme.load();
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: _theme(Brightness.dark),
+            home: AppShell(
+              api: ApiClient(backend: _EmptyBackend()),
+              scheme: scheme,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      final mastheadHeight = tester.getTopLeft(find.byType(HomeScreen)).dy;
-      report('masthead ${size.width.toInt()}', {'height': mastheadHeight});
-      expect(mastheadHeight, 48);
-      scheme.dispose();
-    });
+        );
+        await tester.pumpAndSettle();
+        final mastheadHeight = tester.getTopLeft(find.byType(HomeScreen)).dy;
+        report('masthead ${size.width.toInt()}', {'height': mastheadHeight});
+        expect(mastheadHeight, 48);
+        scheme.dispose();
+      },
+    );
   }
 
   // Acceptance: at 440x956, two full cards and the start of a third show on
@@ -461,7 +506,15 @@ void main() {
     });
     expect(first.bottom, lessThanOrEqualTo(content));
     expect(second.bottom, lessThanOrEqualTo(content));
-    expect(third.top, lessThan(content - 30), reason: 'the third card is not visible');
-    expect(third.bottom, greaterThan(content), reason: 'the third is only started');
+    expect(
+      third.top,
+      lessThan(content - 30),
+      reason: 'the third card is not visible',
+    );
+    expect(
+      third.bottom,
+      greaterThan(content),
+      reason: 'the third is only started',
+    );
   });
 }

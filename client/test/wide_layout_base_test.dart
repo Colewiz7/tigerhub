@@ -48,8 +48,10 @@ class _EmptyBackend implements Backend {
   void close() {}
 }
 
-Result<Collection<T>> _ok<T>(List<T> data) =>
-    Result(value: Collection<T>(data: data, stale: false), state: DataState.ok);
+Result<Collection<T>> _ok<T>(List<T> data) => Result(
+  value: Collection<T>(data: data, stale: false),
+  state: DataState.ok,
+);
 
 final _dining = _ok([
   for (var i = 0; i < 12; i++)
@@ -76,9 +78,30 @@ final _events = _ok([
       source: 'test',
       title: 'Meeting $i',
       startsAt: DateTime.utc(2099, 1, 1 + i, 15),
+      location: i == 1 ? 'SAU 2nd floor' : null,
       organizer: organizer,
       organizerKey: organizer.toLowerCase(),
     ),
+  // all day, and one that is over: the other trailing texts a row can have
+  CampusEvent(
+    uid: 'allday',
+    source: 'test',
+    title: 'Career fair',
+    startsAt: DateTime.utc(2099, 1, 5, 5),
+    allDay: true,
+    location: 'Gordon Field House',
+    organizer: 'Robotics Club',
+    organizerKey: 'robotics club',
+  ),
+  CampusEvent(
+    uid: 'past',
+    source: 'test',
+    title: 'Old meeting',
+    startsAt: DateTime.utc(2000, 1, 1, 15),
+    endsAt: DateTime.utc(2000, 1, 1, 16),
+    organizer: 'SWE',
+    organizerKey: 'swe',
+  ),
 ]);
 
 String _r(Rect rect) =>
@@ -94,24 +117,44 @@ String _r(Rect rect) =>
 /// relative to the card's top left as left,top,widthxheight, and `EMPTY` lines
 /// are the empty state block ('none' when the card has none) as the base had
 /// it. Only that block's left edge differs now: it is centered.
-({Map<String, List<String>> base, Map<String, List<String>> empty})
+({
+  Map<String, List<String>> base,
+  Map<String, List<String>> empty,
+  Map<String, List<String>> text,
+})
 _loadBase() {
   final base = <String, List<String>>{};
   final empty = <String, List<String>>{};
+  final text = <String, List<String>>{};
   Map<String, List<String>>? into;
   String? key;
-  for (final line in File('test/fixtures/wide_layout_base.txt').readAsLinesSync()) {
-    final header = RegExp(r"^(BASE|EMPTY) '(.*)': \[$").firstMatch(line);
+  for (final line in File(
+    'test/fixtures/wide_layout_base.txt',
+  ).readAsLinesSync()) {
+    final header = RegExp(r"^(BASE|EMPTY|TEXT) '(.*)': \[$").firstMatch(line);
     if (header != null) {
-      into = header.group(1) == 'BASE' ? base : empty;
+      into = switch (header.group(1)) {
+        'BASE' => base,
+        'EMPTY' => empty,
+        _ => text,
+      };
       key = header.group(2);
       into[key!] = [];
     } else if (line.startsWith("  '")) {
       into![key]!.add(line.substring(3, line.length - 2));
     }
   }
-  return (base: base, empty: empty);
+  return (base: base, empty: empty, text: text);
 }
+
+/// Every string a card shows, in tree order, joined with ' ¦ '. The rows'
+/// own text (names, status lines, times, ENDED) is in here.
+String _texts(WidgetTester tester, Finder within) => [
+  for (final t in tester.widgetList<Text>(
+    find.descendant(of: within, matching: find.byType(Text)),
+  ))
+    t.data ?? t.textSpan?.toPlainText() ?? '',
+].join(' ¦ ');
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -142,6 +185,7 @@ void main() {
 
             final lines = <String>[];
             final blocks = <String>[];
+            final texts = <String>[];
             // 2x text overflows inside some cells on both commits; geometry,
             // not overflow, is what is compared here. The reports are dropped
             // rather than captured: the harness's capture formats the whole
@@ -245,6 +289,8 @@ void main() {
                 ' | $controls',
               );
 
+              texts.add(_texts(tester, shell));
+
               final emptyState = within(find.byType(EmptyState));
               blocks.add(
                 emptyState.evaluate().isEmpty
@@ -276,9 +322,15 @@ void main() {
                 debugPrint("  '$block',");
               }
               debugPrint('],');
+              debugPrint("TEXT '$key': [");
+              for (final text in texts) {
+                debugPrint("  '$text',");
+              }
+              debugPrint('],');
             } else {
               final fixture = _loadBase();
               expect(lines, fixture.base[key], reason: 'geometry moved');
+              expect(texts, fixture.text[key], reason: 'row text changed');
 
               // The empty state block: same size and top as the base, and
               // centered across its card (the base left aligned it).
