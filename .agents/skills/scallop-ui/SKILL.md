@@ -15,7 +15,7 @@ explicit user instruction > Tried and Rejected > Do's and Don'ts > YAML tokens >
 - Reference roles, never values. When unsure, choose the quieter option.
 
 ## Project overrides
-- TigerHub phones under 600pt use responsive tokens: card padding 16, radius 24, gutter 4 (via the `Insets` token). This is the owner-approved Phase 2 A+B decision (tigerhub docs/backlog.md) and wins over the spec's 26 / 30 / 10 there. At 600pt and above the spec values stand. The radius still obeys "no radius <= 8".
+- TigerHub phones under 600pt use responsive tokens: card padding 16, radius 24, card gap 10, row gap 4 (via the `Insets` token). This is the owner-approved Phase 2 A+B decision (tigerhub docs/backlog.md) and wins over the spec's 26 / 30 / 10 there. At 600pt and above the spec values stand. The radius still obeys "no radius <= 8".
 
 ## Do
 - One seed (chroma >= 5), engine renders both modes; read every warning.

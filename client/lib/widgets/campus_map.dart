@@ -13,10 +13,14 @@ import 'package:flutter/services.dart';
 import '../data/campus_paths.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import 'campus_event_mapper.dart';
 import 'empty_state.dart';
 import 'freshness.dart';
+
+const double _maxMapZoom = 20;
+const double _mapPanMargin = 80;
 
 class CampusMapView extends StatefulWidget {
   const CampusMapView({super.key, required this.result, this.events});
@@ -58,7 +62,7 @@ class _CampusMapViewState extends State<CampusMapView> {
   void _zoomBy(double factor) {
     final matrix = _transform.value;
     final current = matrix.getMaxScaleOnAxis();
-    final target = (current * factor).clamp(1.0, 5.0);
+    final target = (current * factor).clamp(1.0, _maxMapZoom);
     final applied = target / current;
     if (applied == 1) return;
     final focus = _viewportSize.isEmpty
@@ -66,11 +70,17 @@ class _CampusMapViewState extends State<CampusMapView> {
         : _viewportSize.center(Offset.zero);
     final translatedX = focus.dx - applied * (focus.dx - matrix.entry(0, 3));
     final translatedY = focus.dy - applied * (focus.dy - matrix.entry(1, 3));
-    _transform.value = Matrix4.identity()
-      ..setEntry(0, 0, target)
-      ..setEntry(1, 1, target)
-      ..setEntry(0, 3, translatedX)
-      ..setEntry(1, 3, translatedY);
+    _transform.value = _clampedTransform(target, translatedX, translatedY);
+  }
+
+  Matrix4 _clampedTransform(double scale, double tx, double ty) {
+    final minX = _viewportSize.width * (1 - scale) - _mapPanMargin;
+    final minY = _viewportSize.height * (1 - scale) - _mapPanMargin;
+    return Matrix4.identity()
+      ..setEntry(0, 0, scale)
+      ..setEntry(1, 1, scale)
+      ..setEntry(0, 3, tx.clamp(minX, _mapPanMargin))
+      ..setEntry(1, 3, ty.clamp(minY, _mapPanMargin));
   }
 
   KeyEventResult _handleMapKey(FocusNode node, KeyEvent event) {
@@ -121,11 +131,11 @@ class _CampusMapViewState extends State<CampusMapView> {
       if (anchor == null) return;
       final point = projection.project(anchor);
       const scale = 2.4;
-      _transform.value = Matrix4.identity()
-        ..setEntry(0, 0, scale)
-        ..setEntry(1, 1, scale)
-        ..setEntry(0, 3, _viewportSize.width / 2 - point.dx * scale)
-        ..setEntry(1, 3, _viewportSize.height / 2 - point.dy * scale);
+      _transform.value = _clampedTransform(
+        scale,
+        _viewportSize.width / 2 - point.dx * scale,
+        _viewportSize.height / 2 - point.dy * scale,
+      );
     });
   }
 
@@ -257,11 +267,19 @@ class _CampusMapViewState extends State<CampusMapView> {
                             child: Focus(
                               focusNode: _mapFocus,
                               onKeyEvent: _handleMapKey,
-                              child: InteractiveViewer(
-                                transformationController: _transform,
-                                minScale: 1,
-                                maxScale: 5,
-                                boundaryMargin: const EdgeInsets.all(80),
+                              child: ValueListenableBuilder<Matrix4>(
+                                valueListenable: _transform,
+                                builder: (context, matrix, child) =>
+                                    InteractiveViewer(
+                                      transformationController: _transform,
+                                      minScale: 1,
+                                      maxScale: _maxMapZoom,
+                                      boundaryMargin: EdgeInsets.all(
+                                        _mapPanMargin /
+                                            matrix.getMaxScaleOnAxis(),
+                                      ),
+                                      child: child!,
+                                    ),
                                 child: GestureDetector(
                                   behavior: HitTestBehavior.opaque,
                                   onDoubleTap: () => _zoomBy(1.5),
@@ -277,6 +295,8 @@ class _CampusMapViewState extends State<CampusMapView> {
                                     );
                                     final hit = projection.nearest(
                                       details.localPosition,
+                                      zoom: _transform.value
+                                          .getMaxScaleOnAxis(),
                                     );
                                     if (hit != null) {
                                       setState(() => _selectedId = hit.id);
@@ -498,7 +518,7 @@ class _MapZoomControls extends StatelessWidget {
               ),
               IconButton(
                 tooltip: 'Zoom in',
-                onPressed: zoom < 4.99 ? onZoomIn : null,
+                onPressed: zoom < _maxMapZoom - 0.01 ? onZoomIn : null,
                 icon: const Icon(Icons.add_rounded),
               ),
             ],
@@ -1205,9 +1225,9 @@ class CampusMapProjection {
     );
   }
 
-  CampusMapFeature? nearest(Offset position) {
+  CampusMapFeature? nearest(Offset position, {double zoom = 1}) {
     CampusMapFeature? nearestFeature;
-    var nearestDistance = 28.0;
+    var nearestDistance = 28.0 / zoom;
     for (final feature in features.where((f) => f.geometryType == 'Point')) {
       final anchor = feature.anchor;
       if (anchor == null) continue;
@@ -1428,7 +1448,7 @@ class CampusMapPainter extends CustomPainter {
             key: ValueKey(feature.id),
             rect: Rect.fromCircle(
               center: projection.project(feature.anchor!),
-              radius: 22,
+              radius: 24 / zoom,
             ),
             properties: SemanticsProperties(
               label: [
@@ -1569,20 +1589,16 @@ class CampusMapPainter extends CustomPainter {
     _paintBuildingLabels(canvas, geometry.labels, scheme);
     _paintScaleBar(canvas, projection, mapRect, scheme);
 
-    final buckets = geometry.pins;
+    final buckets = geometry.pinBucketsAt(zoom);
 
     // "All places" is a category chooser, not a heat map. Almost every kind
     // is concentrated in the academic core, so showing all twelve at once
     // creates a misleading knot. The icon cards below provide the overview;
     // spatial markers appear after the reader chooses a category.
-    for (final entry
-        in geometry.categoryOverview
-            ? const <
-                MapEntry<Object, List<({CampusMapFeature feature, Offset at})>>
-              >[]
-            : buckets.entries) {
-      final bucket = entry.value;
-      final center = geometry.pinCenters[entry.key]!;
+    for (final pinBucket
+        in geometry.categoryOverview ? const <_PinBucket>[] : buckets) {
+      final bucket = pinBucket.items;
+      final center = pinBucket.center;
       final selected = bucket.any((item) => item.feature.id == selectedId);
       final eventCount = bucket.fold<int>(0, (total, item) {
         final kind = item.feature.kind;
@@ -1718,6 +1734,11 @@ class CampusMapPainter extends CustomPainter {
   /// Only for tests that need a cold build.
   static void resetGeometryCacheForTest() => _geometryCache = null;
 
+  @visibleForTesting
+  Object pinLayoutForTest(Size size) => _geometryFor(
+    CampusMapProjection(features, size, boundsFeatures: boundsFeatures),
+  ).pinBucketsAt(zoom);
+
   _MapGeometry _geometryFor(CampusMapProjection projection) {
     final cached = _geometryCache;
     if (cached != null &&
@@ -1767,6 +1788,7 @@ class CampusMapPainter extends CustomPainter {
       text: TextSpan(
         text: metres >= 1000 ? '${metres ~/ 1000} km' : '$metres m',
         style: TextStyle(
+          fontFamily: AppTheme.fontFamily,
           color: scheme.onSurfaceVariant,
           fontSize: 9 / zoom,
           fontWeight: FontWeight.w600,
@@ -1873,6 +1895,7 @@ class CampusMapPainter extends CustomPainter {
       text: TextSpan(
         text: count,
         style: TextStyle(
+          fontFamily: AppTheme.fontFamily,
           color: color,
           fontSize: 9 * scale,
           fontWeight: FontWeight.w800,
@@ -1924,7 +1947,8 @@ class CampusMapPainter extends CustomPainter {
   bool shouldRebuildSemantics(CampusMapPainter oldDelegate) =>
       oldDelegate.features != features ||
       oldDelegate.boundsFeatures != boundsFeatures ||
-      oldDelegate.selectedId != selectedId;
+      oldDelegate.selectedId != selectedId ||
+      (oldDelegate.zoom * 4).round() != (zoom * 4).round();
 }
 
 /// Names the three outline families.
@@ -1943,6 +1967,9 @@ class CampusMapPainter extends CustomPainter {
 /// Now each layer is a single Path with many subpaths, so the whole walking
 /// network is two draw calls rather than 1824, and the work happens once per
 /// projection rather than once per frame.
+typedef _Pin = ({CampusMapFeature feature, Offset at});
+typedef _PinBucket = ({List<_Pin> items, Offset center});
+
 class _MapGeometry {
   _MapGeometry(this.projection, this.features, this.paths, this.scheme) {
     for (final feature in features) {
@@ -1968,6 +1995,7 @@ class _MapGeometry {
           textDirection: TextDirection.ltr,
         )..layout();
         const base = TextStyle(
+          fontFamily: AppTheme.fontFamily,
           fontSize: labelBaseSize,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
@@ -2000,27 +2028,65 @@ class _MapGeometry {
     categoryOverview =
         pointKinds.length > 1 &&
         pointKinds.every((kind) => !kind.startsWith('_event:'));
-    clusterCell = 46.0;
-    final visible = projection.mapRect.inflate(12);
     for (final feature in features) {
       if (feature.geometryType != 'Point') continue;
       final anchor = feature.anchor;
       if (anchor == null) continue;
-      final center = projection.project(anchor);
-      if (!visible.contains(center)) continue;
+      pointLocations.add((feature: feature, at: projection.project(anchor)));
+    }
+  }
+
+  List<_PinBucket> pinBucketsAt(double zoom) {
+    final clusterCell = 46.0 / zoom;
+    final visible = projection.mapRect.inflate(12 / zoom);
+    final keys = <Object?>[];
+    for (final point in pointLocations) {
+      final center = point.at;
+      if (!visible.contains(center)) {
+        keys.add(null);
+        continue;
+      }
       // The overview gets one meaningful marker per category. Once a category
       // is selected, nearby individual places use spatial clusters. Event
       // groups keep spatial clustering as well because each group has a
       // synthetic kind of its own.
       final Object key = categoryOverview
-          ? feature.kind
+          ? point.feature.kind
           : (
               (center.dx / clusterCell).floor(),
               (center.dy / clusterCell).floor(),
             );
-      pins.putIfAbsent(key, () => []).add((feature: feature, at: center));
+      keys.add(key);
     }
-    _layoutPins();
+    final oldKeys = _pinKeys;
+    if (oldKeys != null && oldKeys.length == keys.length) {
+      var same = true;
+      for (var i = 0; i < keys.length; i++) {
+        if (oldKeys[i] != keys[i]) {
+          same = false;
+          break;
+        }
+      }
+      if (same) return _pinBuckets!;
+    }
+
+    final groups = <Object, List<_Pin>>{};
+    final sums = <Object, Offset>{};
+    for (var i = 0; i < keys.length; i++) {
+      final key = keys[i];
+      if (key == null) continue;
+      final point = pointLocations[i];
+      groups.putIfAbsent(key, () => []).add(point);
+      sums[key] = (sums[key] ?? Offset.zero) + point.at;
+    }
+    _pinKeys = keys;
+    return _pinBuckets = [
+      for (final entry in groups.entries)
+        (
+          items: entry.value,
+          center: sums[entry.key]! / entry.value.length.toDouble(),
+        ),
+    ];
   }
 
   /// Labels are measured at this size and scaled when drawn.
@@ -2036,26 +2102,13 @@ class _MapGeometry {
     ({TextPainter halo, TextPainter painter, Rect bounds, double area})
   >
   labels = [];
-  final Map<Object, List<({CampusMapFeature feature, Offset at})>> pins = {};
-  final Map<Object, Offset> pinCenters = {};
+  final List<_Pin> pointLocations = [];
+  List<Object?>? _pinKeys;
+  List<_PinBucket>? _pinBuckets;
   late final Set<String> pointKinds;
   late final bool categoryOverview;
-  late final double clusterCell;
   late final Path foot;
   late final Path road;
-
-  void _layoutPins() {
-    for (final entry in pins.entries) {
-      final bucket = entry.value;
-      final center = Offset(
-        bucket.map((item) => item.at.dx).reduce((a, b) => a + b) /
-            bucket.length,
-        bucket.map((item) => item.at.dy).reduce((a, b) => a + b) /
-            bucket.length,
-      );
-      pinCenters[entry.key] = center;
-    }
-  }
 
   Path _network(List<List<GeoCoordinate>> ways) {
     final path = Path();
