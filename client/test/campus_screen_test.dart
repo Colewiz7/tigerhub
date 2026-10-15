@@ -31,6 +31,8 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:url_launcher_platform_interface/method_channel_url_launcher.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
+import 'golden_harness.dart';
+
 /// Serves the same envelopes LocalBackend does, from captured fixtures, with no
 /// network and no clock dependence.
 class _FixtureBackend implements Backend {
@@ -277,8 +279,8 @@ void main() {
   for (final size in const [Size(390, 844), Size(430, 932)]) {
     for (final brightness in Brightness.values) {
       for (final textScale in const [1.0, 2.0]) {
-        testWidgets(
-          'campus safety ${size.width.toInt()}x${size.height.toInt()} ${brightness.name} ${textScale}x',
+        goldenWidgets(
+          'campus safety${size.width.toInt()}x${size.height.toInt()} ${brightness.name} ${textScale}x',
           (tester) async {
             await pumpCampus(
               tester,
