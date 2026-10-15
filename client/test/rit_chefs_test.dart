@@ -582,6 +582,64 @@ void main() {
       expect(stamp, DateTime.utc(2026, 10, 14, 15));
     });
 
+    test('the read day is the campus date across a DST change', () {
+      // Stamps are in UTC so nothing but the campus calendar can place them.
+      // A fixed -04:00 or -05:00 offset gets one of each pair wrong.
+      String quiet(String date) =>
+          '<div class="daily-visiting-chefs" id="day-$date">'
+          '<p class="no-visiting-chefs">None</p></div>';
+      String availability(String date, String readAtUtc, DateTime now) =>
+          visitingChefsView(
+                tigerCenter: tigerCenter(),
+                rit: ritSnapshot(
+                  scheduleHtml: quiet(date),
+                  scheduleAt: readAtUtc,
+                ),
+                now: now,
+              )['availability']
+              as String;
+
+      // Fall back, Sun 2026-11-01: EDT until 06:00Z, EST after. Midnights are
+      // 04:00Z on 11-01 and 05:00Z on 11-02, so the day is 25 hours.
+      final afterFallBack = DateTime.utc(2026, 11, 2, 5, 10); // 00:10 EST 11-02
+      expect(
+        availability('2026-11-02', '2026-11-02T04:30:00Z', afterFallBack),
+        availabilityUnavailable,
+        reason: '23:30 EST on 11-01 is the day before, though -04:00 says 11-02',
+      );
+      expect(
+        availability('2026-11-02', '2026-11-02T05:05:00Z', afterFallBack),
+        availabilityEmpty,
+      );
+      // 00:30 EDT and 23:50 EST on 11-01: one campus day, 24h20m apart.
+      final lateFallBack = DateTime.utc(2026, 11, 2, 4, 50); // 23:50 EST 11-01
+      expect(
+        availability('2026-11-01', '2026-11-01T04:30:00Z', lateFallBack),
+        availabilityEmpty,
+        reason: '-05:00 would put the 00:30 EDT read on 10-31',
+      );
+
+      // Spring forward, Sun 2026-03-08: EST until 07:00Z, EDT after. Midnights
+      // are 05:00Z on 03-08 and 04:00Z on 03-09, so the day is 23 hours.
+      final afterSpring = DateTime.utc(2026, 3, 9, 4, 10); // 00:10 EDT 03-09
+      expect(
+        availability('2026-03-09', '2026-03-09T03:30:00Z', afterSpring),
+        availabilityUnavailable,
+        reason: '23:30 EDT on 03-08 is the day before; -05:00 would say 22:30'
+            ' and 23:10, the same day',
+      );
+      expect(
+        availability('2026-03-09', '2026-03-09T04:05:00Z', afterSpring),
+        availabilityEmpty,
+      );
+      final lateSpring = DateTime.utc(2026, 3, 9, 3, 50); // 23:50 EDT 03-08
+      expect(
+        availability('2026-03-08', '2026-03-08T05:30:00Z', lateSpring),
+        availabilityEmpty,
+        reason: '00:30 EST on 03-08 is the same campus day as 23:50 EDT',
+      );
+    });
+
     test('a TigerCenter payload with menus but no chef is not an update', () {
       final soup = tigerCenter();
       (soup['locations'] as List).first['menus'] = [
@@ -1009,7 +1067,9 @@ void main() {
       final evening = await backend!.fetch('/dining/visiting-chefs');
       expect(evening['availability'], availabilityEmpty);
 
-      // 00:10 Sunday, inside the five minute retry floor, so nothing refetches.
+      // 00:10 Sunday, 20 minutes on. Nothing refetches because fetch() only
+      // reads the stored snapshot; reads happen on a scheduler tick or
+      // refreshNow, and neither runs here. The snapshot is the 23:50 one.
       setClock(DateTime.utc(2026, 10, 18, 4, 10));
       final morning = await backend!.fetch('/dining/visiting-chefs');
       expect(morning['availability'], availabilityUnavailable,
