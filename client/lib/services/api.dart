@@ -180,9 +180,10 @@ class ApiClient {
     );
   }
 
-  Stream<Result<Collection<MenuItem>>> visitingChefs() => watch(
+  Stream<Result<Collection<MenuItem>>> visitingChefs() =>
+      watch<Collection<MenuItem>>(
     '/dining/visiting-chefs',
-    (j) => Collection.fromJson(j, MenuItem.fromJson),
+    ChefCollection.fromJson,
   );
 
   /// Every item RIT has published for today's location menus. TigerCenter

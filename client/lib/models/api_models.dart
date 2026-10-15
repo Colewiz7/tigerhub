@@ -4,6 +4,20 @@
 /// `nextTransition` are computed server side and only displayed here.
 library;
 
+/// Whether a feed could answer. `unavailable` is not `empty`: empty is a real
+/// quiet day, unavailable means the sources could not say, and showing "none
+/// today" there would be a guess.
+enum Availability {
+  available,
+  empty,
+  unavailable;
+
+  static Availability parse(Object? raw) => Availability.values.firstWhere(
+    (a) => a.name == raw,
+    orElse: () => Availability.available,
+  );
+}
+
 /// Envelope returned by every list endpoint.
 class Collection<T> {
   const Collection({
@@ -11,11 +25,16 @@ class Collection<T> {
     required this.stale,
     this.lastUpdated,
     this.dropped = 0,
+    this.availability = Availability.available,
   });
 
   final List<T> data;
   final bool stale;
   final DateTime? lastUpdated;
+
+  /// Only the feeds that can be down rather than quiet set this. Everything
+  /// else, and every body cached before it existed, reads as available.
+  final Availability availability;
 
   /// Total items skipped for a missing required time, top level records and
   /// nested spans and days together.
@@ -42,6 +61,7 @@ class Collection<T> {
       stale: json['stale'] as bool? ?? false,
       lastUpdated: _date(json['last_updated']),
       dropped: dropped,
+      availability: Availability.parse(json['availability']),
     );
   }
 
@@ -50,7 +70,62 @@ class Collection<T> {
     stale: stale ?? this.stale,
     lastUpdated: lastUpdated,
     dropped: dropped,
+    availability: availability,
   );
+}
+
+/// The first day after today with a visiting chef, for the card's one
+/// "Next:" line.
+class UpcomingChef {
+  const UpcomingChef({
+    required this.date,
+    required this.name,
+    required this.locationName,
+  });
+
+  /// A calendar date, kept as UTC midnight so the device offset never shifts it.
+  final DateTime date;
+  final String name;
+  final String locationName;
+
+  static UpcomingChef? fromJson(Object? raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    try {
+      return UpcomingChef(
+        date: _requiredCalendarDate(raw, 'date'),
+        name: raw['name'] as String? ?? '',
+        locationName: raw['location_name'] as String? ?? '',
+      );
+    } on MissingTimeException {
+      return null;
+    }
+  }
+}
+
+/// Visiting chefs: the usual envelope plus the next chef when today has none.
+class ChefCollection extends Collection<MenuItem> {
+  const ChefCollection({
+    required super.data,
+    required super.stale,
+    super.lastUpdated,
+    super.dropped,
+    super.availability,
+    this.next,
+  });
+
+  final UpcomingChef? next;
+
+  factory ChefCollection.fromJson(Map<String, dynamic> json) {
+    final base = Collection.fromJson(json, MenuItem.fromJson);
+    return ChefCollection(
+      data: base.data,
+      stale: base.stale,
+      lastUpdated: base.lastUpdated,
+      dropped: base.dropped,
+      availability: base.availability,
+      next: UpcomingChef.fromJson(json['next']),
+    );
+  }
 }
 
 mixin NestedDrops {
@@ -235,6 +310,9 @@ class MenuItem {
     required this.name,
     this.description,
     this.category,
+    this.startsAt,
+    this.endsAt,
+    this.cuisine,
   });
 
   final int id;
@@ -243,12 +321,20 @@ class MenuItem {
   final String? description;
   final String? category;
 
+  /// Visiting chef service window, when rit.edu publishes one. Never inferred.
+  final DateTime? startsAt;
+  final DateTime? endsAt;
+  final String? cuisine;
+
   factory MenuItem.fromJson(Map<String, dynamic> json) => MenuItem(
     id: json['id'] as int,
     locationName: json['location_name'] as String? ?? '',
     name: json['name'] as String? ?? '',
     description: json['description'] as String?,
     category: json['category'] as String?,
+    startsAt: _date(json['start_time']),
+    endsAt: _date(json['end_time']),
+    cuisine: json['cuisine'] as String?,
   );
 }
 

@@ -294,6 +294,14 @@ class _TodayMenuGroup extends StatelessWidget {
         ),
         if (result.isPriming)
           const PrimingPlaceholder(label: 'Loading today’s menu')
+        else if (items.isEmpty &&
+            !filtering &&
+            result.value?.availability == Availability.unavailable)
+          const EmptyState(
+            kind: EmptyKind.sourceDown,
+            title: 'Menu features unavailable',
+            detail: 'Location hours and individual menus are still available below.',
+          )
         else if (items.isEmpty)
           EmptyState(
             kind: EmptyKind.noEvents,
