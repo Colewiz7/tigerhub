@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
@@ -13,6 +12,8 @@ import 'package:tigerhub/screens/map_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/campus_map.dart';
+
+import 'golden_harness.dart';
 
 class _MapBackend implements Backend {
   @override
@@ -54,15 +55,6 @@ void _expectPaintedPaths(WidgetTester tester) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUpAll(() async {
-    await (FontLoader(
-      'Rubik',
-    )..addFont(rootBundle.load('assets/fonts/Rubik.ttf'))).load();
-    await (FontLoader(
-      'MaterialIcons',
-    )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
-  });
-
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
@@ -71,7 +63,7 @@ void main() {
   for (final size in [const Size(390, 844), const Size(430, 932)]) {
     for (final brightness in [Brightness.light, Brightness.dark]) {
       for (final textScale in [1.0, 2.0]) {
-        testWidgets(
+        goldenWidgets(
           'map screen ${size.width.toInt()}x${size.height.toInt()} ${brightness.name} ${textScale}x',
           (tester) async {
             tester.view.devicePixelRatio = 1;
@@ -99,12 +91,6 @@ void main() {
             );
             await tester.pumpAndSettle();
             _expectPaintedPaths(tester);
-            final layoutError = tester.takeException();
-            if (textScale == 2) {
-              expect(layoutError, isNotNull);
-            } else {
-              expect(layoutError, isNull);
-            }
             await expectLater(
               find.byType(Scaffold),
               matchesGoldenFile(
@@ -117,7 +103,7 @@ void main() {
     }
   }
 
-  testWidgets('map screen 390x844 light at 20x', (tester) async {
+  goldenWidgets('map screen 390x844 light at 20x', (tester) async {
     const size = Size(390, 844);
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
@@ -152,7 +138,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text(feature.kindName).last);
     await tester.pumpAndSettle();
-    expect(tester.takeException(), isNull);
     final viewer = tester.widget<InteractiveViewer>(
       find.byType(InteractiveViewer),
     );
@@ -183,7 +168,6 @@ void main() {
       ..setEntry(0, 3, center.dx - pin.dx * 20)
       ..setEntry(1, 3, center.dy - pin.dy * 20);
     await tester.pump();
-    expect(tester.takeException(), isNull);
     await expectLater(
       find.byType(Scaffold),
       matchesGoldenFile('goldens/map_390x844_light_20x.png'),

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../theme/semantic.dart';
+import '../theme/tokens.dart';
 import '../widgets/event_details_sheet.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
@@ -41,9 +42,13 @@ class EventRow extends StatelessWidget {
     this.now,
     this.boosted = false,
     this.forceDimmed = false,
+    this.dense = false,
   });
 
   final CampusEvent event;
+
+  /// The dashboard's condensed phone row.
+  final bool dense;
 
   /// Matched a boost keyword. Gets a subtle accent marker.
   final bool boosted;
@@ -77,41 +82,53 @@ class EventRow extends StatelessWidget {
               ? formatClock(event.startsAt)
               : formatDayAndClock(event.startsAt));
 
+    // The dashboard row says the time once, in the status line, with the place
+    // after a middle dot ("Fri 5:00 PM · SAU"), and keeps the trailing slot
+    // for "ENDED". The standard row keeps the time on the right.
+    final place = event.location?.isNotEmpty == true ? event.location! : null;
+    // Only on phones: dense is ignored at 600pt and up, which keep base text.
+    final condensed = dense && Insets.phone(context);
+    final denseWhen = event.allDay ? 'All day' : stamp;
+    final denseSubtitle = place == null ? denseWhen : '$denseWhen · $place';
+    final ended = Text(
+      'ENDED',
+      style: text.labelSmall?.copyWith(color: semantic.closed),
+    );
+
     return StatusRow(
+      dense: dense,
       icon: forceDimmed
           ? Icons.visibility_off_rounded
           : (isPast
                 ? Icons.history_rounded
                 : iconForEventType(event.eventType)),
       title: boosted ? '✦ ${event.title}' : event.title,
-      subtitle: event.location?.isNotEmpty == true ? event.location : when,
+      subtitle: condensed ? denseSubtitle : (place ?? when),
       accent: boosted
           ? Theme.of(context).colorScheme.primary
           : (isPast ? semantic.closed : semantic.open),
       emphasis: isPast ? RowEmphasis.dimmed : RowEmphasis.normal,
       semanticHint: 'Opens event details',
       onTap: () => showEventDetailsSheet(context, event),
-      trailing: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            stamp,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: text.bodySmall?.copyWith(
-              color: isPast
-                  ? semantic.closed
-                  : Theme.of(context).colorScheme.onSurface,
+      trailing: condensed
+          ? (isPast ? ended : null)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  stamp,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.bodySmall?.copyWith(
+                    color: isPast
+                        ? semantic.closed
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                if (isPast) ended,
+              ],
             ),
-          ),
-          if (isPast)
-            Text(
-              'ENDED',
-              style: text.labelSmall?.copyWith(color: semantic.closed),
-            ),
-        ],
-      ),
     );
   }
 }

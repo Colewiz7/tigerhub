@@ -37,6 +37,15 @@ class Shapes {
   static final BorderRadius inner = BorderRadius.circular(innerRadius);
   static final BorderRadius small = BorderRadius.circular(smallRadius);
 
+  /// Phone cards use 24 (owner-approved A+B decision, wins over the spec's 30
+  /// under 600pt). 24 is still above the "no radius <= 8" floor.
+  static const double phoneCardRadius = 24;
+  static final BorderRadius phoneCard = BorderRadius.circular(phoneCardRadius);
+
+  /// Dashboard card radius for the width the card sits in.
+  static BorderRadius cardFor(BuildContext context) =>
+      Insets.phone(context) ? phoneCard : card;
+
   /// Chips, buttons, the occupancy indicator.
   static const StadiumBorder pill = StadiumBorder();
 }
@@ -46,6 +55,28 @@ class Insets {
 
   static const double cardPadding = 26;
   static const double gutter = 10;
+
+  /// Under this window width the dashboard uses the phone tokens below. At and
+  /// above it the spec values above stand.
+  static const double phoneMax = 600;
+
+  static const double phoneCardPadding = 16;
+
+  /// Page side margin on phones. Cards sit this far from the window edge.
+  static const double phoneMargin = 16;
+
+  /// The gap between two stacked cards on phones. Each card cell carries half
+  /// of it on every side, so [phoneCardGap] / 2 is the per-cell padding.
+  static const double phoneCardGap = 10;
+
+  /// The gap between two rows inside a card on phones.
+  static const double phoneRowGap = 4;
+
+  static bool phone(BuildContext context) =>
+      MediaQuery.sizeOf(context).width < phoneMax;
+
+  static double cardPaddingFor(BuildContext context) =>
+      phone(context) ? phoneCardPadding : cardPadding;
 }
 
 /// Rubik is a variable font, so weights are chosen on the wght axis rather
