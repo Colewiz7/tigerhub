@@ -4,17 +4,16 @@
 /// header is always the height it has outside edit mode, so edit mode never
 /// makes a card taller or shorter or moves the gap after it.
 ///
-/// Covered: the real DiningCard (88px scalloped badge hero) and the real
+/// Covered: the real DiningCard (inline hero pill on phones) and the real
 /// ScopedEventsCard (variable width text hero) on their own at the card widths
 /// of a 320, 390 and 430 wide phone at 1x and 2x text, asserting the header
-/// height is exactly equal, the badge keeps its size, the hero element is not
-/// recreated, and nothing overlaps; plus the whole dashboard with a dining
-/// hero and with a scoped events text hero at 390x844 and 430x932 at 1x,
-/// asserting card 1 and the gap are equal. Not covered: the dashboard at 2x
-/// text, which overflows inside the empty state cards of empty_state.dart
-/// whatever this change does; the text hero at 320 wide and 2x text (see
-/// below); and the hero element surviving at dashboard level, because the
-/// grid rebuilds the whole card when edit mode starts.
+/// height is exactly equal, the pill keeps its size, the hero element is not
+/// recreated, and nothing overlaps (the 320 wide 2x text hero case included:
+/// the hero drops under the title when the title cannot keep its longest word
+/// beside it); plus the whole dashboard with a dining hero and with a scoped
+/// events text hero at 390x844 and 430x932 at 1x, asserting card 1 and the gap
+/// are equal. Not covered: the hero element surviving at dashboard level,
+/// because the grid rebuilds the whole card when edit mode starts.
 library;
 
 import 'package:flutter/material.dart';
@@ -203,14 +202,6 @@ void main() {
   for (final card in cards.entries) {
     for (final width in [320.0, 390.0, 430.0]) {
       for (final scale in [1.0, 2.0]) {
-        // Left out: the text hero at 320 wide and 2x text. In the test font
-        // the hero is 225px of a 240px header, so outside edit mode the title
-        // is left 15px, less than its own 31px glyph, and the normal layout
-        // overflows by 26px before edit mode is involved. Normal mode is not part
-        // of this change, so the case is left out rather than suppressed.
-        if (card.key.startsWith('scoped') && width == 320 && scale == 2) {
-          continue;
-        }
         testWidgets(
           '${card.key} at $width wide, text ${scale}x: edit mode keeps the '
           'header height exactly and nothing overlaps',
