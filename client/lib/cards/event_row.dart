@@ -81,6 +81,17 @@ class EventRow extends StatelessWidget {
               ? formatClock(event.startsAt)
               : formatDayAndClock(event.startsAt));
 
+    // The dashboard row says the time once, in the status line, with the place
+    // after a middle dot ("Fri 5:00 PM · SAU"), and keeps the trailing slot
+    // for "ENDED". The standard row keeps the time on the right.
+    final place = event.location?.isNotEmpty == true ? event.location! : null;
+    final denseWhen = event.allDay ? 'All day' : stamp;
+    final denseSubtitle = place == null ? denseWhen : '$denseWhen · $place';
+    final ended = Text(
+      'ENDED',
+      style: text.labelSmall?.copyWith(color: semantic.closed),
+    );
+
     return StatusRow(
       dense: dense,
       icon: forceDimmed
@@ -89,34 +100,32 @@ class EventRow extends StatelessWidget {
                 ? Icons.history_rounded
                 : iconForEventType(event.eventType)),
       title: boosted ? '✦ ${event.title}' : event.title,
-      subtitle: event.location?.isNotEmpty == true ? event.location : when,
+      subtitle: dense ? denseSubtitle : (place ?? when),
       accent: boosted
           ? Theme.of(context).colorScheme.primary
           : (isPast ? semantic.closed : semantic.open),
       emphasis: isPast ? RowEmphasis.dimmed : RowEmphasis.normal,
       semanticHint: 'Opens event details',
       onTap: () => showEventDetailsSheet(context, event),
-      trailing: Column(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            stamp,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: text.bodySmall?.copyWith(
-              color: isPast
-                  ? semantic.closed
-                  : Theme.of(context).colorScheme.onSurface,
+      trailing: dense
+          ? (isPast ? ended : null)
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  stamp,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: text.bodySmall?.copyWith(
+                    color: isPast
+                        ? semantic.closed
+                        : Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                if (isPast) ended,
+              ],
             ),
-          ),
-          if (isPast)
-            Text(
-              'ENDED',
-              style: text.labelSmall?.copyWith(color: semantic.closed),
-            ),
-        ],
-      ),
     );
   }
 }
