@@ -25,6 +25,7 @@ import 'services/api.dart';
 import 'services/dashboard.dart';
 import 'theme/tokens.dart';
 import 'widgets/card_shell.dart' show editControlsWidth;
+import 'widgets/touch_target.dart';
 
 /// The icon each module type shows in the card library and the hidden chips.
 /// The name comes from `moduleLabels` beside the type itself, so the library
@@ -933,6 +934,11 @@ class _BarPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The pill is the visual; taps answer across a 48 tall region around it.
+    return TouchTarget(onTap: onTap, child: _visual(context));
+  }
+
+  Widget _visual(BuildContext context) {
     return Material(
       elevation: 0,
       color: background,

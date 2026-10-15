@@ -215,7 +215,7 @@ class _Grouped extends StatelessWidget {
       itemCount: ordered.length,
       itemHeight: _groupHeightFor(context),
       dense: true,
-      maxRows: phoneRowCap(context, rows: 2),
+      maxRows: phoneRowCap(context, reserved: 2),
       noun: 'organizers',
       onShowAll: onShowAll,
       itemBuilder: (context, i) => Column(

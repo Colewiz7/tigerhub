@@ -37,6 +37,10 @@ class StatusRow extends StatelessWidget {
   static const double denseGap = 4;
   static const double denseBadgeSize = 32;
 
+  /// From this text scale a dense row puts its trailing widget under the text
+  /// instead of beside it, so the name keeps the row's width.
+  static const double _stackTrailingFrom = 1.5;
+
   bool _isDense(BuildContext context) => dense && Insets.phone(context);
 
   final IconData icon;
@@ -97,6 +101,17 @@ class StatusRow extends StatelessWidget {
     final subtitleStyle = dense
         ? text.bodySmall?.copyWith(fontSize: 14, height: 1.3, letterSpacing: 0)
         : text.bodySmall;
+    // Dense rows size to their text: a name or status may take two lines before
+    // it is cut, and at large text the trailing pill moves under the text so it
+    // cannot take the width the name needs. 52 stays the height of a row whose
+    // name and status each fit one line.
+    final scale = MediaQuery.textScalerOf(context).scale(1);
+    final largeText = scale >= _stackTrailingFrom;
+    final titleLines = dense ? 2 : 1;
+    // The status line wraps only at large text, so a 1x row stays 52 tall.
+    final subtitleLines = dense && largeText ? 2 : 1;
+    final stackTrailing = dense && trailing != null && largeText;
+    final minHeight = dense ? denseHeight * scale.clamp(1.0, 2.0) : 0.0;
 
     // A dimmed row keeps its shape but loses contrast, so open and closed are
     // separable at a glance without reading either.
@@ -116,7 +131,9 @@ class StatusRow extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
-            child: Padding(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: minHeight),
+              child: Padding(
               // BoundedList budgets 72px including the 8px row gap. Ten
               // vertical pixels left only 44px for two text lines whose
               // configured line heights need 48, causing quiet 4px overflows
@@ -157,7 +174,7 @@ class StatusRow extends StatelessWidget {
                           Text(
                             title,
                             style: titleStyle,
-                            maxLines: 1,
+                            maxLines: titleLines,
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (subtitle != null) ...[
@@ -165,15 +182,19 @@ class StatusRow extends StatelessWidget {
                             Text(
                               subtitle!,
                               style: subtitleStyle,
-                              maxLines: 1,
+                              maxLines: subtitleLines,
                               overflow: TextOverflow.ellipsis,
                             ),
+                          ],
+                          if (stackTrailing) ...[
+                            const SizedBox(height: 4),
+                            trailing!,
                           ],
                         ],
                       ),
                     ),
                   ),
-                  if (trailing != null) ...[
+                  if (trailing != null && !stackTrailing) ...[
                     const SizedBox(width: 10),
                     // Trailing metadata must never consume the title's entire
                     // lane on a narrow screen. Event timestamps exposed this:
@@ -186,6 +207,7 @@ class StatusRow extends StatelessWidget {
                   ],
                 ],
               ),
+            ),
             ),
           ),
         ),

@@ -23,6 +23,7 @@ import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart' show CardHero;
+import 'package:tigerhub/widgets/touch_target.dart';
 
 import 'golden_harness.dart';
 
@@ -584,6 +585,19 @@ void main() {
           // both pills sit on one row or wrap, but never overlap
           expect(done.overlaps(add), isFalse);
 
+          // the touch target is at least 48 either way, the visual may stay
+          for (final label in ['Done', 'Add module']) {
+            final target = tester.getRect(
+              find.ancestor(
+                of: find.text(label),
+                matching: find.byType(TouchTarget),
+              ),
+            );
+            expect(target.height, greaterThanOrEqualTo(48), reason: label);
+            expect(target.width, greaterThanOrEqualTo(48), reason: label);
+            expect(target.contains(pill(label).center), isTrue);
+          }
+
           for (final icon in [Icons.check_rounded, Icons.add_rounded]) {
             expect(
               tester.getSize(find.byIcon(icon)).height,
@@ -595,6 +609,24 @@ void main() {
       );
     }
   }
+
+  testWidgets('a tap just outside the Customize pill, inside its 48 box, works', (
+    tester,
+  ) async {
+    await pumpHome(tester, height: 2800);
+    await scrollTo(tester, bottom: true);
+    final pill = tester.getRect(
+      find
+          .ancestor(of: find.text('Customize'), matching: find.byType(Material))
+          .first,
+    );
+    expect(pill.height, lessThan(48));
+    // just under the visual pill, where only the hit region answers
+    final margin = (48 - pill.height) / 2;
+    await tester.tapAt(Offset(pill.center.dx, pill.bottom + margin - 0.5));
+    await tester.pumpAndSettle();
+    expect(find.text('Done'), findsOneWidget);
+  });
 
   // Card widths the dashboard gives one column cards: the viewport minus the
   // phone's 16 page margin on each side, at 320, 390, 430 and a tablet. Real
@@ -686,12 +718,16 @@ void main() {
             final paragraph = tester.renderObject<RenderParagraph>(
               find.text(title),
             );
-            expect(
-              paragraph.getMinIntrinsicWidth(double.infinity),
-              lessThanOrEqualTo(paragraph.size.width + 0.01),
-              reason: 'a word was broken across lines',
-            );
-            expect(tester.widget<Text>(find.text(title)).maxLines, isNull);
+            // (phones only: 600 and wider keeps the base header, which may
+            // ellipsize a title in edit mode to hold the header height)
+            if (cardWidth < 600) {
+              expect(
+                paragraph.getMinIntrinsicWidth(double.infinity),
+                lessThanOrEqualTo(paragraph.size.width + 0.01),
+                reason: 'a word was broken across lines',
+              );
+              expect(tester.widget<Text>(find.text(title)).maxLines, isNull);
+            }
             // At 1x on a 390 or wider phone the module names fit on one line
             // beside the controls.
             if (scale == 1 && !hero && cardWidth >= 358 && title.length < 20) {
