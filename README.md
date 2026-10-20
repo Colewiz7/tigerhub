@@ -51,6 +51,7 @@ scripts/dev test      # analyze and test
 scripts/dev data      # what has been scraped and how old it is
 scripts/dev reset     # wipe the snapshots
 scripts/dev package   # single-file AppImage in dist/
+git config core.hooksPath .githooks
 ```
 
 `scripts/dev package` produces one executable AppImage of about 11 MB that needs nothing installed beyond the usual desktop libraries.
