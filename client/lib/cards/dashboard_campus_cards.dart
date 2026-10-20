@@ -46,7 +46,7 @@ class FacilityHoursCard extends StatelessWidget {
         (true, _) => const PrimingPlaceholder(label: 'Loading facility hours'),
         (_, true) => const EmptyState(
           kind: EmptyKind.sourceDown,
-          title: 'Facility hours are unavailable',
+          title: 'Hours unavailable',
         ),
         // Kept as a plain Column rather than BoundedList, deliberately.
         // BoundedList pins every row to StatusRow.height so its arithmetic is

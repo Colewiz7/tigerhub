@@ -56,7 +56,7 @@ final RegExp _locationNameRe = RegExp(
 
 const String _time = r'\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?';
 final RegExp _chefTextRe = RegExp(
-  '^(.*?)\\s*:\\s*($_time)\\s*[-–—]\\s*($_time)\\s*\$',
+  '^(.*?)\\s*:\\s*($_time)\\s*[-–\\u2014]\\s*($_time)\\s*\$',
   caseSensitive: false,
   dotAll: true,
 );

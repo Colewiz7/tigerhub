@@ -45,10 +45,6 @@ class VisitingChefsCard extends StatelessWidget {
     final all = result.value?.data ?? const <MenuItem>[];
     final value = result.value;
     final availability = value?.availability ?? Availability.available;
-    final next = value is ChefCollection ? value.next : null;
-    // Only a time a source really held chefs. Falling back to the fetch time
-    // said "Updated just now" over a fetch that had just failed.
-    final updated = value?.lastUpdated;
 
     return CardShell(
       // The toque is this section's identity, per the adoption spec.
@@ -83,18 +79,11 @@ class VisitingChefsCard extends StatelessWidget {
               kind: EmptyKind.sourceDown,
               fill: true,
               title: 'Menus unavailable',
-              detail: updated == null
-                  ? 'Never updated'
-                  : 'Updated ${formatAge(updated)}',
               action: const _DiningLink(),
             ),
           ),
-        (_, true) => _Centered(
-          EmptyState(
-            kind: EmptyKind.noVisitingChefs,
-            fill: true,
-            detail: next == null ? null : _nextLine(next),
-          ),
+        (_, true) => const _Centered(
+          EmptyState(kind: EmptyKind.noVisitingChefs, fill: true),
         ),
         _ => BoundedList(
           itemCount: all.length,
@@ -144,17 +133,6 @@ class VisitingChefsCard extends StatelessWidget {
     return formatClock(when);
   }
 
-  /// "Next: Thu · P.H. Express at RITZ". The date is added once the day is
-  /// more than a week out, where a weekday alone would be ambiguous.
-  static String _nextLine(UpcomingChef next) {
-    final wall = CampusTime.wallDate();
-    final today = DateTime.utc(wall.year, wall.month, wall.day);
-    final days = next.date.difference(today).inDays;
-    final day = days == 1
-        ? 'Tomorrow'
-        : DateFormat(days > 6 ? 'EEE d MMM' : 'EEE').format(next.date);
-    return 'Next: $day · ${next.name} at ${next.locationName}';
-  }
 }
 
 /// One chef: a badge, the name, then the time and the location, each allowed

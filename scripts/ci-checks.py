@@ -100,6 +100,19 @@ cm = (ROOT / "codemagic.yaml").read_text()
 if re.search(r"(?im)^\s*[A-Z_]*(TOKEN|SECRET|PASSWORD|PRIVATE_KEY)[A-Z_]*\s*:\s*\S", cm):
     problems.append("codemagic.yaml: a secret-named variable has an inline value")
 
+# --- copy style ---
+EMPTY_BODY = re.compile(r"\bEmptyState\s*\((?:[^()]|\([^()]*\))*?\b(body|message|detail)\s*:")
+EM_DASH = "—"
+for f in files:
+    if not (f.startswith("client/lib/") and f.endswith(".dart")):
+        continue
+    text = (ROOT / f).read_text(errors="ignore")
+    if EMPTY_BODY.search(text):
+        problems.append(f"EmptyState given a body/message argument: {f}")
+    for n, line in enumerate(text.splitlines(), 1):
+        if EM_DASH in line and not line.lstrip().startswith("//"):
+            problems.append(f"em dash in code (use a plain dash or comma): {f}:{n}")
+
 if problems:
     print("\n".join(problems))
     sys.exit(1)

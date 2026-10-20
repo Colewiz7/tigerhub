@@ -54,7 +54,7 @@ const Map<String, String> _entities = {
   '&#39;': "'",
   '&rsquo;': '’',
   '&ndash;': '–',
-  '&mdash;': '—',
+  '&mdash;': '-',
 };
 
 /// Strip tags and entities down to a single clean line.
@@ -103,7 +103,7 @@ List<Map<String, String>> parseHoursCell(String cell) {
   final spans = <Map<String, String>>[];
   for (final segment in value.split(',')) {
     // An en dash, em dash or hyphen separates the two ends.
-    final parts = segment.trim().split(RegExp(r'\s*[-–—]\s*'));
+    final parts = segment.trim().split(RegExp('\\s*[-–\\u2014]\\s*'));
     if (parts.length != 2) continue;
     final opens = parseRecreationTime(parts[0]);
     final closes = parseRecreationTime(parts[1]);

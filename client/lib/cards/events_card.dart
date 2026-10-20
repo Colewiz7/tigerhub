@@ -131,7 +131,7 @@ class EventsCard extends StatelessWidget {
           kind: EmptyKind.noEvents,
           // A club with nothing on is a different fact from the whole campus
           // being quiet, and saying so avoids looking broken.
-          title: _scoped ? 'Nothing from this club yet' : null,
+          title: _scoped ? 'No club events' : null,
         ),
         _ when compact => _Compact(events: events),
         // Grouping by organizer is pointless when they are all one organizer.

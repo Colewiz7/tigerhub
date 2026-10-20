@@ -149,7 +149,7 @@ class _CampusMapViewState extends State<CampusMapView> {
     if (all.isEmpty) {
       return const EmptyState(
         kind: EmptyKind.sourceDown,
-        title: 'Campus map is unavailable',
+        title: 'Map unavailable',
       );
     }
 

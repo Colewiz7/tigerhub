@@ -153,7 +153,7 @@ class _CalendarCardState extends State<CalendarCard> {
           kind: EmptyKind.noEvents,
           title: widget.organizerKey == null
               ? null
-              : 'Nothing from this club this week',
+              : 'No club events this week',
         ),
         _ => Column(
           crossAxisAlignment: CrossAxisAlignment.start,

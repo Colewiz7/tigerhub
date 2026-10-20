@@ -87,7 +87,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Nothing scheduled today'), findsOneWidget);
+    expect(find.text('No events today'), findsOneWidget);
   });
 
   testWidgets('the wordmark follows the theme into light mode', (tester) async {

@@ -24,7 +24,7 @@ String eventDescriptionText(String? raw, {String? eventUrl}) {
       .replaceAll('&#39;', "'")
       .replaceAll('&rsquo;', '’')
       .replaceAll('&ndash;', '–')
-      .replaceAll('&mdash;', '—');
+      .replaceAll('&mdash;', '-');
   value = value.replaceAllMapped(
     RegExp(r'&#(\d+);'),
     (match) => String.fromCharCode(int.parse(match.group(1)!)),
