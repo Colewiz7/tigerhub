@@ -387,6 +387,8 @@ class LocalBackend implements Backend {
         return _shedHours();
       case '/recreation/hours':
         return _recreation();
+      case '/dining/food-trucks':
+        return _foodTrucks();
       case '/campus/places':
         return _placeKinds();
       case '/campus/map':
@@ -655,6 +657,24 @@ class LocalBackend implements Backend {
       recreationFacilities(snapshot),
       fetchedAt,
     );
+  }
+
+  // --- food trucks ---
+
+  /// Upcoming trucks, or an unavailable body with no rows. No trucks, a failed
+  /// read and off-season all read as unavailable: zero is unknown, never empty.
+  Future<Map<String, dynamic>> _foodTrucks() async {
+    final (snapshot, fetchedAt) = await _snapshot(foodTrucksSource);
+    final view = foodTruckView(snapshot, CampusTime.wallDate());
+    final show = !view.hidden && view.inSeason;
+    return {
+      ..._envelope(
+        foodTrucksSource,
+        show ? view.trucks : const <Map<String, dynamic>>[],
+        fetchedAt,
+      ),
+      'availability': show ? availabilityAvailable : availabilityUnavailable,
+    };
   }
 
   // --- campus places ---

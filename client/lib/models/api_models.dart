@@ -338,6 +338,32 @@ class MenuItem {
   );
 }
 
+/// One scheduled truck stop. [date] is a campus calendar day, y-m-d.
+class FoodTruck {
+  const FoodTruck({
+    required this.name,
+    required this.date,
+    this.timeText,
+    this.location,
+  });
+
+  final String name;
+  final String date;
+  final String? timeText;
+  final String? location;
+
+  factory FoodTruck.fromJson(Map<String, dynamic> json) {
+    final date = json['date'] as String?;
+    if (date == null || date.isEmpty) throw const MissingTimeException('date');
+    return FoodTruck(
+      name: (json['name'] as String? ?? '').trim(),
+      date: date,
+      timeText: json['time_text'] as String?,
+      location: json['location'] as String?,
+    );
+  }
+}
+
 class CampusEvent {
   const CampusEvent({
     required this.uid,

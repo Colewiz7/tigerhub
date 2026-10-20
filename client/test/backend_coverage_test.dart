@@ -46,6 +46,7 @@ void main() {
     '/dining',
     '/dining/visiting-chefs',
     '/dining/specials',
+    '/dining/food-trucks',
     '/dining/23/menu',
     '/dining/23/occupancy',
     '/dining/21/menu',

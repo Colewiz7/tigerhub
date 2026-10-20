@@ -47,7 +47,7 @@ class MoreRow extends StatelessWidget {
           button: onTap != null,
           enabled: onTap != null,
           label: _label,
-          child: _FocusRing(
+          child: FocusRing(
             radius: Shapes.smallRadius,
             builder: (onFocusChange) => InkWell(
               onTap: onTap,
@@ -96,7 +96,7 @@ class MoreRow extends StatelessWidget {
         button: onTap != null,
         enabled: onTap != null,
         label: _label,
-        child: _FocusRing(
+        child: FocusRing(
           radius: 24,
           builder: (onFocusChange) => Material(
             elevation: 0,
@@ -147,8 +147,8 @@ class MoreRow extends StatelessWidget {
 /// focusing moves nothing. The ring box is the child inflated by 4px and its
 /// border paints inside that box: the outer 2px is the ring and the 2px inside
 /// it is the gap.
-class _FocusRing extends StatefulWidget {
-  const _FocusRing({required this.radius, required this.builder});
+class FocusRing extends StatefulWidget {
+  const FocusRing({super.key, required this.radius, required this.builder});
 
   /// The child's corner radius. The ring's is this plus the 4px.
   final double radius;
@@ -157,10 +157,10 @@ class _FocusRing extends StatefulWidget {
   final Widget Function(ValueChanged<bool> onFocusChange) builder;
 
   @override
-  State<_FocusRing> createState() => _FocusRingState();
+  State<FocusRing> createState() => _FocusRingState();
 }
 
-class _FocusRingState extends State<_FocusRing> {
+class _FocusRingState extends State<FocusRing> {
   bool _focused = false;
 
   @override
