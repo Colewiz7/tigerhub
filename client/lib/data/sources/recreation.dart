@@ -67,6 +67,12 @@ String textOf(String raw) {
     RegExp(r'&#(\d+);'),
     (m) => String.fromCharCode(int.parse(m.group(1)!)),
   );
+  value = value.replaceAllMapped(
+    RegExp(r'&#x([0-9a-f]+);', caseSensitive: false),
+    (m) => String.fromCharCode(int.parse(m.group(1)!, radix: 16)),
+  );
+  // numeric entities can still decode to an em dash
+  value = value.replaceAll('\u{2014}', '-');
   return value.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 

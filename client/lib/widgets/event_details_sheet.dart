@@ -29,6 +29,12 @@ String eventDescriptionText(String? raw, {String? eventUrl}) {
     RegExp(r'&#(\d+);'),
     (match) => String.fromCharCode(int.parse(match.group(1)!)),
   );
+  value = value.replaceAllMapped(
+    RegExp(r'&#x([0-9a-f]+);', caseSensitive: false),
+    (match) => String.fromCharCode(int.parse(match.group(1)!, radix: 16)),
+  );
+  // numeric entities can still decode to an em dash
+  value = value.replaceAll('\u{2014}', '-');
   if (eventUrl != null && eventUrl.isNotEmpty) {
     value = value.replaceAll('Event Details: $eventUrl', '');
   }

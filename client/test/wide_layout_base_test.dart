@@ -5,7 +5,8 @@
 /// data and with every card empty, to numbers measured on base commit edc9f6c
 /// with this same test (see [_measure]): card size, title and hero size and
 /// place, where the content starts, the first row, the edit controls, and the
-/// empty state block. Nothing is exempt.
+/// empty state block. Only the cases listed under [_housingOldHeight] and
+/// [_shorterCopySizes] are exempt, because shorter copy changed their size.
 ///
 /// The one deliberate difference is the empty state block's horizontal place:
 /// the owner's list says empty states are centered in their card, and the base
@@ -153,6 +154,37 @@ _loadBase() {
   }
   return (base: base, empty: empty, text: text);
 }
+
+// --- the only places shorter copy changed geometry ---
+// every other number must match the base commit exactly
+
+// housing is the fourth card on the dashboard
+const _housing = 3;
+
+// 1024 @ 2x: "Housing areas are unavailable" wrapped to two lines in the
+// 492 wide card, "Housing unavailable" fits on one, so the card loses a line
+// of 2x text (48pt): 410 -> 362. Every variant of 1024 @ 2x has it.
+const _housingOldHeight = '492.0x410.0';
+const _housingNewHeight = '492.0x362.0';
+
+// empty state block sizes (widthxheight) by the copy that changed them:
+//   Housing, 1x: 243.1x96.0 -> 163.9x96.0, 2x: 479.0x120.0 -> 323.0x120.0
+//     "Housing areas are unavailable" -> "Housing unavailable"
+//   Housing, 1024 @ 2x: 424.0x168.0 -> 323.0x120.0, same string change, the
+//     old copy wrapped to two lines and the new copy is one
+//   Dining, 1x: 166.7x96.0 -> 149.0x96.0, 2x: 328.1x120.0 -> 293.4x120.0
+//     "Dining is unavailable" -> "Dining unavailable"
+//   Events, 1x: 203.9x96.0 -> 131.7x96.0, 2x: 402.0x120.0 -> 259.6x120.0
+//     "Nothing scheduled today" -> "No events today"
+const _shorterCopySizes = {
+  '243.1x96.0': '163.9x96.0',
+  '479.0x120.0': '323.0x120.0',
+  '424.0x168.0': '323.0x120.0',
+  '166.7x96.0': '149.0x96.0',
+  '328.1x120.0': '293.4x120.0',
+  '203.9x96.0': '131.7x96.0',
+  '402.0x120.0': '259.6x120.0',
+};
 
 /// Every string a card shows, in tree order, joined with ' ¦ '. The rows'
 /// own text (names, status lines, times, ENDED) is in here.
@@ -345,7 +377,14 @@ void main() {
               debugPrint('],');
             } else {
               final fixture = _loadBase();
-              expect(lines, fixture.base[key], reason: 'geometry moved');
+              final expected = [...fixture.base[key]!];
+              if (key.startsWith('1024 @ 2.0x')) {
+                expected[_housing] = expected[_housing].replaceFirst(
+                  _housingOldHeight,
+                  _housingNewHeight,
+                );
+              }
+              expect(lines, expected, reason: 'geometry moved');
               expect(texts, fixture.text[key], reason: 'row text changed');
 
               // The empty state block: same size and top as the base, and
@@ -362,9 +401,14 @@ void main() {
                 ];
                 final now = parse(blocks[i]);
                 final then = parse(base[i]);
+                final sizeNow = '${now[2]}x${now[3]}';
+                final sizeThen = '${then[2]}x${then[3]}';
                 expect(now[1], then[1], reason: 'card $i empty block top');
-                expect(now[2], then[2], reason: 'card $i empty block width');
-                expect(now[3], then[3], reason: 'card $i empty block height');
+                expect(
+                  sizeNow,
+                  _shorterCopySizes[sizeThen] ?? sizeThen,
+                  reason: 'card $i empty block size',
+                );
                 final cardWidth = double.parse(lines[i].split('x').first);
                 expect(
                   now[0],

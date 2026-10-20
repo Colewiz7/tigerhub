@@ -8,7 +8,7 @@ EMPTY '600 @ 1.0x': [
   'none',
   'none',
   'none',
-  '204.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '600 @ 1.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -26,7 +26,7 @@ EMPTY '600 @ 2.0x': [
   'none',
   'none',
   'none',
-  '124.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '600 @ 2.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -44,7 +44,7 @@ EMPTY '768 @ 1.0x': [
   'none',
   'none',
   'none',
-  '288.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '768 @ 1.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -62,7 +62,7 @@ EMPTY '768 @ 2.0x': [
   'none',
   'none',
   'none',
-  '208.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '768 @ 2.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -80,7 +80,7 @@ EMPTY '1024 @ 1.0x': [
   'none',
   'none',
   'none',
-  '164.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '1024 @ 1.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -92,13 +92,13 @@ BASE '1024 @ 2.0x': [
   '492.0x486.0 | 57.0,35.5,170.6x69.0 | 378.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x144.0 | none',
   '492.0x394.0 | 57.0,35.5,183.5x69.0 | 378.0,26.0,88.0x88.0 | 126.0 | 26.0,202.0,440.0x119.0 | none',
   '492.0x490.0 | 57.0,26.0,311.0x138.0 | 378.0,51.0,88.0x88.0 | 176.0 | 26.0,176.0,440.0x144.0 | none',
-  '492.0x362.0 | 57.0,26.0,409.0x138.0 | none | 176.0 | none | none',
+  '492.0x410.0 | 57.0,26.0,409.0x138.0 | none | 176.0 | none | none',
 ],
 EMPTY '1024 @ 2.0x': [
   'none',
   'none',
   'none',
-  '84.5,196.0,323.0x120.0',
+  '34.0,196.0,424.0x168.0',
 ],
 TEXT '1024 @ 2.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -113,10 +113,10 @@ BASE '600 @ 1.0x empty': [
   '572.0x234.0 | 57.0,26.0,209.8x34.0 | none | 72.0 | none | none',
 ],
 EMPTY '600 @ 1.0x empty': [
-  '211.5,92.0,149.0x96.0',
-  '220.2,92.0,131.7x96.0',
+  '34.0,92.0,166.7x96.0',
+  '34.0,92.0,203.9x96.0',
   '193.0,255.0,186.0x96.0',
-  '204.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '600 @ 1.0x empty': [
   'Dining ¦ Dining unavailable',
@@ -131,10 +131,10 @@ BASE '600 @ 2.0x empty': [
   '572.0x293.0 | 57.0,26.0,418.1x69.0 | none | 107.0 | none | none',
 ],
 EMPTY '600 @ 2.0x empty': [
-  '139.3,127.0,293.4x120.0',
-  '156.2,127.0,259.6x120.0',
+  '34.0,127.0,328.1x120.0',
+  '34.0,127.0,402.0x120.0',
   '102.9,260.5,366.2x120.0',
-  '124.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '600 @ 2.0x empty': [
   'Dining ¦ Dining unavailable',
@@ -149,10 +149,10 @@ BASE '768 @ 1.0x empty': [
   '740.0x234.0 | 57.0,26.0,209.8x34.0 | none | 72.0 | none | none',
 ],
 EMPTY '768 @ 1.0x empty': [
-  '295.5,92.0,149.0x96.0',
-  '304.2,92.0,131.7x96.0',
+  '34.0,92.0,166.7x96.0',
+  '34.0,92.0,203.9x96.0',
   '277.0,255.0,186.0x96.0',
-  '288.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '768 @ 1.0x empty': [
   'Dining ¦ Dining unavailable',
@@ -167,10 +167,10 @@ BASE '768 @ 2.0x empty': [
   '740.0x293.0 | 57.0,26.0,418.1x69.0 | none | 107.0 | none | none',
 ],
 EMPTY '768 @ 2.0x empty': [
-  '223.3,127.0,293.4x120.0',
-  '240.2,127.0,259.6x120.0',
+  '34.0,127.0,328.1x120.0',
+  '34.0,127.0,402.0x120.0',
   '186.9,260.5,366.2x120.0',
-  '208.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '768 @ 2.0x empty': [
   'Dining ¦ Dining unavailable',
@@ -185,10 +185,10 @@ BASE '1024 @ 1.0x empty': [
   '492.0x234.0 | 57.0,26.0,209.8x34.0 | none | 72.0 | none | none',
 ],
 EMPTY '1024 @ 1.0x empty': [
-  '171.5,92.0,149.0x96.0',
-  '180.2,92.0,131.7x96.0',
+  '34.0,92.0,166.7x96.0',
+  '34.0,92.0,203.9x96.0',
   '153.0,255.0,186.0x96.0',
-  '164.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '1024 @ 1.0x empty': [
   'Dining ¦ Dining unavailable',
@@ -200,13 +200,13 @@ BASE '1024 @ 2.0x empty': [
   '492.0x293.0 | 57.0,26.0,170.6x69.0 | none | 107.0 | none | none',
   '492.0x293.0 | 57.0,26.0,183.5x69.0 | none | 107.0 | none | none',
   '492.0x560.0 | 57.0,26.0,371.2x69.0 | none | 107.0 | none | none',
-  '492.0x362.0 | 57.0,26.0,409.0x138.0 | none | 176.0 | none | none',
+  '492.0x410.0 | 57.0,26.0,409.0x138.0 | none | 176.0 | none | none',
 ],
 EMPTY '1024 @ 2.0x empty': [
-  '99.3,127.0,293.4x120.0',
-  '116.2,127.0,259.6x120.0',
+  '34.0,127.0,328.1x120.0',
+  '34.0,127.0,402.0x120.0',
   '62.9,260.5,366.2x120.0',
-  '84.5,196.0,323.0x120.0',
+  '34.0,196.0,424.0x168.0',
 ],
 TEXT '1024 @ 2.0x empty': [
   'Dining ¦ Dining unavailable',
@@ -224,7 +224,7 @@ EMPTY '600 @ 1.0x edit': [
   'none',
   'none',
   'none',
-  '204.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '600 @ 1.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -242,7 +242,7 @@ EMPTY '600 @ 2.0x edit': [
   'none',
   'none',
   'none',
-  '124.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '600 @ 2.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -260,7 +260,7 @@ EMPTY '768 @ 1.0x edit': [
   'none',
   'none',
   'none',
-  '288.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '768 @ 1.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -278,7 +278,7 @@ EMPTY '768 @ 2.0x edit': [
   'none',
   'none',
   'none',
-  '208.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '768 @ 2.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -296,7 +296,7 @@ EMPTY '1024 @ 1.0x edit': [
   'none',
   'none',
   'none',
-  '164.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '1024 @ 1.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -308,13 +308,13 @@ BASE '1024 @ 2.0x edit': [
   '492.0x486.0 | 57.0,35.5,170.6x69.0 | 260.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x144.0 | 358.0,54.0,32.0x32.0 396.0,54.0,32.0x32.0 434.0,54.0,32.0x32.0',
   '492.0x394.0 | 57.0,35.5,183.5x69.0 | 260.0,26.0,88.0x88.0 | 126.0 | 26.0,202.0,440.0x119.0 | 358.0,54.0,32.0x32.0 396.0,54.0,32.0x32.0 434.0,54.0,32.0x32.0',
   '492.0x490.0 | 57.0,26.0,193.0x138.0 | 260.0,51.0,88.0x88.0 | 176.0 | 26.0,176.0,440.0x144.0 | 358.0,79.0,32.0x32.0 396.0,79.0,32.0x32.0 434.0,79.0,32.0x32.0',
-  '492.0x362.0 | 57.0,26.0,291.0x138.0 | none | 176.0 | none | 358.0,79.0,32.0x32.0 396.0,79.0,32.0x32.0 434.0,79.0,32.0x32.0',
+  '492.0x410.0 | 57.0,26.0,291.0x138.0 | none | 176.0 | none | 358.0,79.0,32.0x32.0 396.0,79.0,32.0x32.0 434.0,79.0,32.0x32.0',
 ],
 EMPTY '1024 @ 2.0x edit': [
   'none',
   'none',
   'none',
-  '84.5,196.0,323.0x120.0',
+  '34.0,196.0,424.0x168.0',
 ],
 TEXT '1024 @ 2.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -329,10 +329,10 @@ BASE '600 @ 1.0x empty edit': [
   '572.0x234.0 | 57.0,26.0,209.8x34.0 | none | 72.0 | none | 438.0,27.0,32.0x32.0 476.0,27.0,32.0x32.0 514.0,27.0,32.0x32.0',
 ],
 EMPTY '600 @ 1.0x empty edit': [
-  '211.5,92.0,149.0x96.0',
-  '220.2,92.0,131.7x96.0',
+  '34.0,92.0,166.7x96.0',
+  '34.0,92.0,203.9x96.0',
   '193.0,255.0,186.0x96.0',
-  '204.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '600 @ 1.0x empty edit': [
   'Dining ¦ Dining unavailable',
@@ -347,10 +347,10 @@ BASE '600 @ 2.0x empty edit': [
   '572.0x293.0 | 57.0,26.0,371.0x69.0 | none | 107.0 | none | 438.0,44.5,32.0x32.0 476.0,44.5,32.0x32.0 514.0,44.5,32.0x32.0',
 ],
 EMPTY '600 @ 2.0x empty edit': [
-  '139.3,127.0,293.4x120.0',
-  '156.2,127.0,259.6x120.0',
+  '34.0,127.0,328.1x120.0',
+  '34.0,127.0,402.0x120.0',
   '102.9,260.5,366.2x120.0',
-  '124.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '600 @ 2.0x empty edit': [
   'Dining ¦ Dining unavailable',
@@ -365,10 +365,10 @@ BASE '768 @ 1.0x empty edit': [
   '740.0x234.0 | 57.0,26.0,209.8x34.0 | none | 72.0 | none | 606.0,27.0,32.0x32.0 644.0,27.0,32.0x32.0 682.0,27.0,32.0x32.0',
 ],
 EMPTY '768 @ 1.0x empty edit': [
-  '295.5,92.0,149.0x96.0',
-  '304.2,92.0,131.7x96.0',
+  '34.0,92.0,166.7x96.0',
+  '34.0,92.0,203.9x96.0',
   '277.0,255.0,186.0x96.0',
-  '288.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '768 @ 1.0x empty edit': [
   'Dining ¦ Dining unavailable',
@@ -383,10 +383,10 @@ BASE '768 @ 2.0x empty edit': [
   '740.0x293.0 | 57.0,26.0,418.1x69.0 | none | 107.0 | none | 606.0,44.5,32.0x32.0 644.0,44.5,32.0x32.0 682.0,44.5,32.0x32.0',
 ],
 EMPTY '768 @ 2.0x empty edit': [
-  '223.3,127.0,293.4x120.0',
-  '240.2,127.0,259.6x120.0',
+  '34.0,127.0,328.1x120.0',
+  '34.0,127.0,402.0x120.0',
   '186.9,260.5,366.2x120.0',
-  '208.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '768 @ 2.0x empty edit': [
   'Dining ¦ Dining unavailable',
@@ -401,10 +401,10 @@ BASE '1024 @ 1.0x empty edit': [
   '492.0x234.0 | 57.0,26.0,209.8x34.0 | none | 72.0 | none | 358.0,27.0,32.0x32.0 396.0,27.0,32.0x32.0 434.0,27.0,32.0x32.0',
 ],
 EMPTY '1024 @ 1.0x empty edit': [
-  '171.5,92.0,149.0x96.0',
-  '180.2,92.0,131.7x96.0',
+  '34.0,92.0,166.7x96.0',
+  '34.0,92.0,203.9x96.0',
   '153.0,255.0,186.0x96.0',
-  '164.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '1024 @ 1.0x empty edit': [
   'Dining ¦ Dining unavailable',
@@ -416,13 +416,13 @@ BASE '1024 @ 2.0x empty edit': [
   '492.0x293.0 | 57.0,26.0,170.6x69.0 | none | 107.0 | none | 358.0,44.5,32.0x32.0 396.0,44.5,32.0x32.0 434.0,44.5,32.0x32.0',
   '492.0x293.0 | 57.0,26.0,183.5x69.0 | none | 107.0 | none | 358.0,44.5,32.0x32.0 396.0,44.5,32.0x32.0 434.0,44.5,32.0x32.0',
   '492.0x560.0 | 57.0,26.0,291.0x69.0 | none | 107.0 | none | 358.0,44.5,32.0x32.0 396.0,44.5,32.0x32.0 434.0,44.5,32.0x32.0',
-  '492.0x362.0 | 57.0,26.0,291.0x138.0 | none | 176.0 | none | 358.0,79.0,32.0x32.0 396.0,79.0,32.0x32.0 434.0,79.0,32.0x32.0',
+  '492.0x410.0 | 57.0,26.0,291.0x138.0 | none | 176.0 | none | 358.0,79.0,32.0x32.0 396.0,79.0,32.0x32.0 434.0,79.0,32.0x32.0',
 ],
 EMPTY '1024 @ 2.0x empty edit': [
-  '99.3,127.0,293.4x120.0',
-  '116.2,127.0,259.6x120.0',
+  '34.0,127.0,328.1x120.0',
+  '34.0,127.0,402.0x120.0',
   '62.9,260.5,366.2x120.0',
-  '84.5,196.0,323.0x120.0',
+  '34.0,196.0,424.0x168.0',
 ],
 TEXT '1024 @ 2.0x empty edit': [
   'Dining ¦ Dining unavailable',
@@ -440,7 +440,7 @@ EMPTY '600 @ 1.0x rows': [
   'none',
   'none',
   'none',
-  '204.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '600 @ 1.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -458,7 +458,7 @@ EMPTY '600 @ 2.0x rows': [
   'none',
   'none',
   'none',
-  '124.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '600 @ 2.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -476,7 +476,7 @@ EMPTY '768 @ 1.0x rows': [
   'none',
   'none',
   'none',
-  '288.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '768 @ 1.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -494,7 +494,7 @@ EMPTY '768 @ 2.0x rows': [
   'none',
   'none',
   'none',
-  '208.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '768 @ 2.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -512,7 +512,7 @@ EMPTY '1024 @ 1.0x rows': [
   'none',
   'none',
   'none',
-  '164.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '1024 @ 1.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -524,13 +524,13 @@ BASE '1024 @ 2.0x rows': [
   '492.0x486.0 | 57.0,35.5,170.6x69.0 | 378.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x144.0 | none',
   '492.0x394.0 | 57.0,35.5,183.5x69.0 | 378.0,26.0,88.0x88.0 | 126.0 | 26.0,202.0,440.0x119.0 | none',
   '492.0x490.0 | 57.0,26.0,311.0x138.0 | 378.0,51.0,88.0x88.0 | 176.0 | 26.0,176.0,440.0x144.0 | none',
-  '492.0x362.0 | 57.0,26.0,409.0x138.0 | none | 176.0 | none | none',
+  '492.0x410.0 | 57.0,26.0,409.0x138.0 | none | 176.0 | none | none',
 ],
 EMPTY '1024 @ 2.0x rows': [
   'none',
   'none',
   'none',
-  '84.5,196.0,323.0x120.0',
+  '34.0,196.0,424.0x168.0',
 ],
 TEXT '1024 @ 2.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -548,7 +548,7 @@ EMPTY '600 @ 1.0x rows edit': [
   'none',
   'none',
   'none',
-  '204.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '600 @ 1.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -566,7 +566,7 @@ EMPTY '600 @ 2.0x rows edit': [
   'none',
   'none',
   'none',
-  '124.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '600 @ 2.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -584,7 +584,7 @@ EMPTY '768 @ 1.0x rows edit': [
   'none',
   'none',
   'none',
-  '288.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '768 @ 1.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -602,7 +602,7 @@ EMPTY '768 @ 2.0x rows edit': [
   'none',
   'none',
   'none',
-  '208.5,127.0,323.0x120.0',
+  '34.0,127.0,479.0x120.0',
 ],
 TEXT '768 @ 2.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
@@ -620,7 +620,7 @@ EMPTY '1024 @ 1.0x rows edit': [
   'none',
   'none',
   'none',
-  '164.1,92.0,163.9x96.0',
+  '34.0,92.0,243.1x96.0',
 ],
 TEXT '1024 @ 1.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
@@ -632,13 +632,13 @@ BASE '1024 @ 2.0x rows edit': [
   '492.0x486.0 | 57.0,35.5,170.6x69.0 | 260.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x144.0 | 358.0,54.0,32.0x32.0 396.0,54.0,32.0x32.0 434.0,54.0,32.0x32.0',
   '492.0x394.0 | 57.0,35.5,183.5x69.0 | 260.0,26.0,88.0x88.0 | 126.0 | 26.0,202.0,440.0x119.0 | 358.0,54.0,32.0x32.0 396.0,54.0,32.0x32.0 434.0,54.0,32.0x32.0',
   '492.0x490.0 | 57.0,26.0,193.0x138.0 | 260.0,51.0,88.0x88.0 | 176.0 | 26.0,176.0,440.0x144.0 | 358.0,79.0,32.0x32.0 396.0,79.0,32.0x32.0 434.0,79.0,32.0x32.0',
-  '492.0x362.0 | 57.0,26.0,291.0x138.0 | none | 176.0 | none | 358.0,79.0,32.0x32.0 396.0,79.0,32.0x32.0 434.0,79.0,32.0x32.0',
+  '492.0x410.0 | 57.0,26.0,291.0x138.0 | none | 176.0 | none | 358.0,79.0,32.0x32.0 396.0,79.0,32.0x32.0 434.0,79.0,32.0x32.0',
 ],
 EMPTY '1024 @ 2.0x rows edit': [
   'none',
   'none',
   'none',
-  '84.5,196.0,323.0x120.0',
+  '34.0,196.0,424.0x168.0',
 ],
 TEXT '1024 @ 2.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',

@@ -5,6 +5,7 @@ Run as `python3 -I scripts/ci-checks.py` from the repo root. Exits non-zero
 with a list of problems. Prints paths only, never file contents, so a leaked
 secret is not echoed into a CI log.
 """
+import importlib.util
 import plistlib
 import re
 import subprocess
@@ -101,17 +102,20 @@ if re.search(r"(?im)^\s*[A-Z_]*(TOKEN|SECRET|PASSWORD|PRIVATE_KEY)[A-Z_]*\s*:\s*
     problems.append("codemagic.yaml: a secret-named variable has an inline value")
 
 # --- copy style ---
-EMPTY_BODY = re.compile(r"\bEmptyState\s*\((?:[^()]|\([^()]*\))*?\b(body|message|detail)\s*:")
-EM_DASH = "—"
+spec = importlib.util.spec_from_file_location("copy_style", ROOT / "scripts/copy_style.py")
+copy_style = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(copy_style)
+selftest = subprocess.run([sys.executable, "-I", str(ROOT / "scripts/test_ci_checks.py")], capture_output=True, text=True)
+if selftest.returncode != 0:
+    problems.append("copy style self-test failed (scripts/test_ci_checks.py):\n" + selftest.stderr)
 for f in files:
     if not (f.startswith("client/lib/") and f.endswith(".dart")):
         continue
     text = (ROOT / f).read_text(errors="ignore")
-    if EMPTY_BODY.search(text):
-        problems.append(f"EmptyState given a body/message argument: {f}")
-    for n, line in enumerate(text.splitlines(), 1):
-        if EM_DASH in line and not line.lstrip().startswith("//"):
-            problems.append(f"em dash in code (use a plain dash or comma): {f}:{n}")
+    for line, name in copy_style.empty_state_violations(text):
+        problems.append("EmptyState given a %s argument: %s:%d" % (name, f, line))
+    for n in copy_style.em_dash_lines(text):
+        problems.append("em dash in code (use a plain dash or comma): %s:%d" % (f, n))
 
 if problems:
     print("\n".join(problems))
