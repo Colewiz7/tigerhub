@@ -136,15 +136,12 @@ void main() {
   /// Where the card's content starts, so the header above it has a height.
   double contentTop(WidgetTester tester, Finder shell) => tester
       .getTopLeft(
-        // The shell's content switcher is the one fading in 140ms. The badge
-        // hero has a switcher of its own, so the type alone is not enough.
+        // The shell's content is the subtree keyed on its priming state.
         find
             .descendant(
               of: shell,
               matching: find.byWidgetPredicate(
-                (w) =>
-                    w is AnimatedSwitcher &&
-                    w.duration == const Duration(milliseconds: 140),
+                (w) => w is KeyedSubtree && w.key is ValueKey<bool>,
               ),
             )
             .first,
