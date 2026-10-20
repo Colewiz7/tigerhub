@@ -1,6 +1,7 @@
 /// One loop over every context menu surface, so a new menu cannot ship untested.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:tigerhub/cards/event_row.dart';
 import 'package:tigerhub/data/campus_time.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/models/api_models.dart';
+import 'package:tigerhub/services/clipboard.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/widgets/context_actions.dart';
 
@@ -101,10 +103,10 @@ void main() {
     expect(find.text('Undo'), findsOneWidget, reason: 'the undo outlasts plain feedback');
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
-    expect(find.text('Undo'), findsNothing);
+    expect(find.text('Undo'), findsNothing, reason: 'gone after 5 seconds without accessible navigation');
   });
 
-  testWidgets('the mute undo stays 10 seconds with accessible navigation', (tester) async {
+  testWidgets('with accessible navigation the mute undo stays until dismissed or replaced', (tester) async {
     MenuProbe().install(tester);
     tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(accessibleNavigation: true);
     addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
@@ -112,10 +114,14 @@ void main() {
     await pumpSurface(tester, surface);
     await secondaryTap(tester, surface.target());
     await tapMenuItem(tester, 'Mute organizer');
-    await tester.pump(const Duration(seconds: 8));
+    // Flutter holds an actionable snackbar while accessibleNavigation is on
+    await tester.pump(const Duration(seconds: 11));
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.text('Undo'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 3));
+    // newer feedback replaces it
+    unawaited(showFeedback(tester.element(find.byType(Scaffold).first), 'Newer'));
     await tester.pumpAndSettle();
+    expect(find.text('Newer'), findsOneWidget);
     expect(find.text('Undo'), findsNothing);
   });
 

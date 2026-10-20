@@ -243,8 +243,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.getRect(find.byKey(ContextActions.ringKey)), row.inflate(4));
     final ring = tester.widget<DecoratedBox>(find.byKey(ContextActions.ringKey));
-    expect((ring.decoration as BoxDecoration).borderRadius, BorderRadius.circular(Shapes.innerRadius + ContextActions.ringGap));
-    expect(Shapes.innerRadius + ContextActions.ringGap, 22);
+    // outer edge = 20 row + 2 gap + 2 stroke; the stroke paints inward, so the
+    // inner edge lands 2px off the row (22) and the centerline at 23
+    expect((ring.decoration as BoxDecoration).borderRadius, BorderRadius.circular(24));
+    expect(ContextActions.ringOuterRadius, Shapes.innerRadius + ContextActions.ringGap + ContextActions.ringWidth);
   });
 
   testWidgets('long press does not hijack a vertical scroll, and taps still land', (tester) async {

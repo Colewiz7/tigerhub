@@ -72,6 +72,9 @@ class ContextActions extends StatefulWidget {
   // focus ring tokens from the spec: 2px wide, 2px clear of the row
   static const double ringWidth = 2;
   static const double ringGap = 2;
+  // Flutter paints a border inside its box, so the decoration radius is the
+  // ring's outer edge: row radius + gap + stroke (inner edge is row + gap)
+  static const double ringOuterRadius = Shapes.innerRadius + ringGap + ringWidth;
   static const ringKey = ValueKey('context-focus-ring');
 
   @override
@@ -160,7 +163,7 @@ class _ContextActionsState extends State<ContextActions> {
                 child: DecoratedBox(
                   key: ContextActions.ringKey,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(Shapes.innerRadius + ContextActions.ringGap),
+                    borderRadius: BorderRadius.circular(ContextActions.ringOuterRadius),
                     border: Border.all(color: Theme.of(context).colorScheme.primary, width: ContextActions.ringWidth),
                   ),
                 ),

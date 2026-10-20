@@ -13,15 +13,17 @@ Future<void> showFeedback(BuildContext context, String message, {SnackBarAction?
   final view = View.of(context);
   final direction = Directionality.of(context);
   final accessible = MediaQuery.maybeOf(context)?.accessibleNavigation ?? false;
-  // an Undo needs time to reach; plain feedback stays short
-  final duration = action == null ? const Duration(seconds: 2) : Duration(seconds: accessible ? 10 : 5);
+  // an Undo needs time to reach; plain feedback stays short. With accessible
+  // navigation an actionable snackbar stays up until it is dismissed or
+  // replaced, which clearSnackBars below handles for newer feedback.
+  final duration = action == null ? const Duration(seconds: 2) : const Duration(seconds: 5);
   messenger
     ?..clearSnackBars()
     ..showSnackBar(
       SnackBar(
         content: Text(message),
         duration: duration,
-        persist: false,
+        persist: action != null && accessible,
         action: action,
       ),
     );
