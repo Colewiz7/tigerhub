@@ -1,6 +1,6 @@
 # TigerHub
 
-Campus info app for RIT. Dining hours and menus, events, SHED equipment availability, post office hours and campus mail, all in one place. It is built with Flutter and has no server: the app reads RIT's public endpoints on the device and keeps working with no network.
+An app for RIT students that puts dining hours and menus, events, SHED equipment availability, post office hours and campus mail in one place. It's built with Flutter and has no server. The app reads RIT's public endpoints on the device and keeps working offline.
 
 <p>
   <img src="screenshots/dashboard.webp" alt="Today dashboard with dining and events" width="200">
@@ -13,25 +13,19 @@ Campus info app for RIT. Dining hours and menus, events, SHED equipment availabi
   <img src="screenshots/desktop.webp" alt="Desktop layout of the dining view" width="640">
 </p>
 
-Not affiliated with or endorsed by RIT. It only contacts public endpoints, and no credentials are ever stored.
+Not affiliated with or endorsed by RIT. It only contacts public endpoints and never stores credentials.
 
-## What it does
+## What's in it
 
-- **Today** is a dashboard of cards for dining, events and campus status, with a reorderable home screen.
-- **Dining** shows what is open now, hours per location, and each location's menu with dietary tags and allergens you can filter on.
-- **Events** merges student club events and official university events, with muting and keyword rules.
-- **Map** draws campus buildings by category, with walking paths and a search.
-- **Campus** covers post office hours, mail zones and live SHED makerspace equipment availability.
+The Today tab is a dashboard of cards for dining, events and campus status, and you can reorder them. Dining shows what is open now and the hours for each location. Each location's menu has dietary tags, and you can filter on allergens. Events merges student club events with official university ones, and you can mute organizers or add keyword rules. The map draws campus buildings by category with walking paths and search. The Campus tab has post office hours, mail zones and live SHED makerspace equipment availability.
 
 ## How it works
 
-There is no backend. It used to be a FastAPI service on a homelab, but that box gets rebuilt for other projects and could not promise uptime for something you check between classes, so the scraping moved onto the device.
+I first ran this as a FastAPI service on my homelab. That box gets rebuilt and rebooted for other projects, so I couldn't promise uptime for something you check between classes, and the scraping moved onto the device.
 
-**Scraping is polite and enforced in code.** Every outbound call goes through one client that sets an identifiable User-Agent, timeouts and backoff. A source refreshes only when its stored snapshot is older than that source's cadence (dining hourly, events every 3 hours, makerspace every 15 minutes, occupancy every 5 minutes), so opening a tab five times does not scrape five times. Menus are fetched only for the location being viewed and cached for a day. Login-gated endpoints are never contacted.
+Every outbound call goes through one client that sets an identifiable User-Agent, timeouts and backoff. A source only refreshes when its stored snapshot is older than that source's cadence: dining hourly, events every 3 hours, makerspace every 15 minutes, occupancy every 5. Opening a tab five times doesn't scrape five times. Menus are fetched only for the location you're viewing and cached for a day. Login-gated endpoints are never contacted.
 
-**Offline first.** Every response is stored and replayed on the next launch, so the last known data paints instantly. A stale cache never produces an error screen. Post office hours, mail zone formats and SHED hours ship inside the app, so the lookup you do at a counter with no signal still answers.
-
-**Data sources**
+Every response is stored and replayed on the next launch, so the last known data paints instantly and a stale cache never produces an error screen. Post office hours, mail zone formats and SHED hours ship inside the app, so the lookup you do at a counter with no signal still works.
 
 | Source | What it gives |
 |---|---|
@@ -45,7 +39,7 @@ There is no backend. It used to be a FastAPI service on a homelab, but that box 
 | FD MealPlanner | menus, allergens and dietary tags |
 | rit.edu recreation | gym, fitness and pool hours |
 
-Four of the upstreams send no CORS headers, so a browser cannot reach them. Web is not a target. Linux, Android and iOS are.
+Four of the upstreams send no CORS headers, so a browser can't reach them and web isn't a target. It builds for Linux, Android and iOS.
 
 ## Run it
 
@@ -63,9 +57,9 @@ scripts/dev package   # single-file AppImage in dist/
 
 ## Layout
 
-- `client/` the Flutter app. `lib/data/sources/` has one scraper per upstream, and `lib/data/local_backend.dart` routes a request to a source and holds the cadence.
-- `client/test/golden/` pinned parser output and captured upstream payloads.
-- `client/assets/config/` hand-maintained JSON, each file with a last-verified date.
-- `assets/` wordmark, glyphs and icon art.
-- `design/` UI tokens.
-- `scripts/` dev tooling, plus CI and Codemagic config for Android and iOS builds.
+- `client/` is the Flutter app. `lib/data/sources/` has one scraper per upstream, and `lib/data/local_backend.dart` routes a request to a source and holds the cadence.
+- `client/test/golden/` has pinned parser output and captured upstream payloads.
+- `client/assets/config/` holds hand-maintained JSON, each file with a last-verified date.
+- `assets/` has the wordmark, glyphs and icon art.
+- `design/` has the UI tokens.
+- `scripts/` has dev tooling, and the repo also carries CI and Codemagic config for the Android and iOS builds.
