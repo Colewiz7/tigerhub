@@ -95,6 +95,23 @@ class _JumpListState extends State<JumpList> {
     }
   }
 
+  bool _syncQueued = false;
+
+  /// A scroll notification can arrive in the middle of layout, when the list
+  /// has dropped children whose keys still resolve to inactive elements or
+  /// boxes not yet laid out (a jump that leaves the offset past the new end
+  /// restarts the scroll from inside performLayout). Reading render objects
+  /// there throws, so the sync waits for the frame to finish.
+  void _queueSync() {
+    if (_syncQueued) return;
+    _syncQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncQueued = false;
+      if (mounted) _syncActive();
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
   /// Which group the viewport is currently showing, so the rail tracks the
   /// scroll rather than only responding to clicks.
   void _syncActive() {
@@ -123,7 +140,7 @@ class _JumpListState extends State<JumpList> {
 
         final list = NotificationListener<ScrollNotification>(
           onNotification: (_) {
-            _syncActive();
+            _queueSync();
             return false;
           },
           child: ListView.builder(
