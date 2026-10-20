@@ -10,6 +10,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'clipboard.dart';
+
 /// Digits and a leading plus only, so "585-475-2853" dials as `tel:5854752853`.
 Uri phoneUri(String number) =>
     Uri(scheme: 'tel', path: number.replaceAll(RegExp(r'[^0-9+]'), ''));
@@ -33,7 +35,5 @@ Future<void> openOrCopy(
   if (await _launch(uri)) return;
   await Clipboard.setData(ClipboardData(text: copyText ?? uri.toString()));
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(content: Text('$label copied')));
+  await showFeedback(context, '$label copied');
 }

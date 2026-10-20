@@ -8,6 +8,7 @@ import '../services/api.dart';
 import '../theme/semantic.dart';
 import '../widgets/campus_map.dart';
 import '../widgets/card_shell.dart';
+import '../widgets/context_actions.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
 import '../widgets/glyph.dart';
@@ -104,6 +105,7 @@ class _FacilityRow extends StatelessWidget {
       subtitle: hours,
       accent: open ? semantic.open : semantic.closed,
       emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
+      actions: [MenuAction.copy('${facility.name}\n$hours')],
     );
   }
 }

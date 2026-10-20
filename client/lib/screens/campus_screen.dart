@@ -22,6 +22,7 @@ import '../services/preferences.dart';
 import '../services/academic_dates.dart';
 import '../theme/semantic.dart';
 import '../theme/tokens.dart';
+import '../widgets/context_actions.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 import '../widgets/places_sheet.dart';
@@ -362,6 +363,7 @@ class _ShuttleSection extends StatelessWidget {
               icon: Icons.directions_bus_rounded,
               title: '${route.number} · ${route.name}',
               subtitle: route.hours,
+              actions: [MenuAction.copy('${route.number} · ${route.name}\n${route.hours}')],
             ),
         const SizedBox(height: 8),
         Text(
@@ -405,6 +407,9 @@ class _AcademicDatesSection extends StatelessWidget {
                   : Icons.calendar_today_rounded,
               title: upcoming[index].title,
               subtitle: upcoming[index].detail,
+              actions: [
+                MenuAction.copy('${upcoming[index].title}\n${formatter.format(upcoming[index].date)}\n${upcoming[index].detail}'),
+              ],
               trailing: Text(
                 formatter.format(upcoming[index].date),
                 textAlign: TextAlign.end,
@@ -473,6 +478,20 @@ class _SafetySection extends StatelessWidget {
             label: '${contact.label} number',
             copyText: contact.number,
           ),
+          actions: [
+            MenuAction(
+              label: contact.isText ? 'Text' : 'Call',
+              icon: contact.isText ? Icons.sms_rounded : Icons.call_rounded,
+              onSelected: (context) => openOrCopy(
+                context,
+                phoneUri(contact.number)
+                    .replace(scheme: contact.isText ? 'sms' : 'tel'),
+                label: '${contact.label} number',
+                copyText: contact.number,
+              ),
+            ),
+            MenuAction.copy(contact.number, label: 'Copy number'),
+          ],
         ),
       const SizedBox(height: 12),
       Text(
@@ -1280,16 +1299,19 @@ class _RecreationRow extends StatelessWidget {
     final today = facility.dayOn(CampusTime.wallDate());
     final open = today != null && !today.closed && today.spans.isNotEmpty;
 
+    final hours = today == null
+        ? (facility.droppedNested > 0
+              ? 'Hours unavailable'
+              : 'No hours published')
+        : _spansOf(today);
+
     return StatusRow(
       icon: _icon(facility.name),
       title: facility.name,
-      subtitle: today == null
-          ? (facility.droppedNested > 0
-                ? 'Hours unavailable'
-                : 'No hours published')
-          : _spansOf(today),
+      subtitle: hours,
       accent: open ? semantic.open : semantic.closed,
       emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
+      actions: [MenuAction.copy('${facility.name}\n$hours')],
       onTap: facility.days.length < 2
           ? null
           : () => showModalBottomSheet<void>(
@@ -1517,6 +1539,9 @@ class _EquipmentBlock extends StatelessWidget {
             emphasis: room.available > 0
                 ? RowEmphasis.normal
                 : RowEmphasis.dimmed,
+            actions: [
+              MenuAction.copy('${room.room}\n${room.machines} machine${room.machines == 1 ? '' : 's'}, ${room.available > 0 ? '${room.available} free' : 'none free'}'),
+            ],
             trailing: Text(
               room.available > 0 ? '${room.available} free' : 'none free',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(

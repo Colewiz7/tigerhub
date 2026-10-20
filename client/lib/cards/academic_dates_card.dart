@@ -5,6 +5,7 @@ import '../data/campus_time.dart';
 import '../services/academic_dates.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
+import '../widgets/context_actions.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/glyph.dart';
 import '../widgets/scalloped_badge.dart';
@@ -65,6 +66,9 @@ class AcademicDatesCard extends StatelessWidget {
                     : Icons.calendar_today_rounded,
                 title: dates[index].title,
                 subtitle: dates[index].detail,
+                actions: [
+                  MenuAction.copy('${dates[index].title}\n${formatter.format(dates[index].date)}\n${dates[index].detail}'),
+                ],
                 trailing: Text(
                   formatter.format(dates[index].date),
                   style: Theme.of(context).textTheme.bodySmall,

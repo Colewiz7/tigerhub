@@ -25,6 +25,7 @@ import 'services/api.dart';
 import 'services/dashboard.dart';
 import 'theme/tokens.dart';
 import 'widgets/card_shell.dart' show editControlsWidth;
+import 'widgets/context_actions.dart' show ContextActionsScope;
 import 'widgets/touch_target.dart';
 
 /// The icon each module type shows in the card library and the hidden chips.
@@ -499,66 +500,70 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ];
 
-        return RefreshIndicator(
-          onRefresh: widget.onRefresh,
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: sideInset),
-                sliver: SliverToBoxAdapter(
-                  child: ReorderableBuilder<String>(
-                    // No scrollController on purpose. The inner GridView is
-                    // non-scrollable and the parent CustomScrollView does the
-                    // scrolling, so the package must find that itself. Passing
-                    // the outer controller here is what broke dragging.
-                    enableScrollingWhileDragging: false,
-                    enableDraggable: _editing,
-                    longPressDelay: const Duration(milliseconds: 180),
-                    onReorder: (reorderedListFunction) {
-                      setState(() {
-                        _order = reorderedListFunction(_order);
-                      });
-                      _announce('Dashboard order updated');
-                      HapticFeedback.lightImpact();
-                      _persist();
-                    },
-                    builder: (wrapped) =>
-                        Wrap(key: _gridKey, children: wrapped),
-                    children: children,
+        // Long-press is a drag in edit mode, so row menus are off there.
+        return ContextActionsScope(
+          enabled: !_editing,
+          child: RefreshIndicator(
+            onRefresh: widget.onRefresh,
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: sideInset),
+                  sliver: SliverToBoxAdapter(
+                    child: ReorderableBuilder<String>(
+                      // No scrollController on purpose. The inner GridView is
+                      // non-scrollable and the parent CustomScrollView does the
+                      // scrolling, so the package must find that itself. Passing
+                      // the outer controller here is what broke dragging.
+                      enableScrollingWhileDragging: false,
+                      enableDraggable: _editing,
+                      longPressDelay: const Duration(milliseconds: 180),
+                      onReorder: (reorderedListFunction) {
+                        setState(() {
+                          _order = reorderedListFunction(_order);
+                        });
+                        _announce('Dashboard order updated');
+                        HapticFeedback.lightImpact();
+                        _persist();
+                      },
+                      builder: (wrapped) =>
+                          Wrap(key: _gridKey, children: wrapped),
+                      children: children,
+                    ),
                   ),
                 ),
-              ),
-              SliverToBoxAdapter(
-                child: _EditBar(
-                  editing: _editing,
-                  hidden: _hidden,
-                  cards: {for (final c in _instances) c.id: c},
-                  onToggle: () {
-                    setState(() {
-                      _editing = !_editing;
-                      if (!_editing) _selectedId = null;
-                    });
-                    _announce(
-                      _editing
-                          ? 'Customize mode on. Select a card to edit it.'
-                          : 'Customize mode off',
-                    );
-                  },
-                  onAdd: _addCard,
-                  onAddModule: _addModule,
-                  selected: _selectedId == null
-                      ? null
-                      : _instance(_selectedId!),
-                  organizers: _organizers,
-                  diningCategories: _diningCategories,
-                  facilities: _facilities,
-                  onUpdate: _updateCard,
-                  onMove: (delta) => _moveCard(_selectedId!, delta),
+                SliverToBoxAdapter(
+                  child: _EditBar(
+                    editing: _editing,
+                    hidden: _hidden,
+                    cards: {for (final c in _instances) c.id: c},
+                    onToggle: () {
+                      setState(() {
+                        _editing = !_editing;
+                        if (!_editing) _selectedId = null;
+                      });
+                      _announce(
+                        _editing
+                            ? 'Customize mode on. Select a card to edit it.'
+                            : 'Customize mode off',
+                      );
+                    },
+                    onAdd: _addCard,
+                    onAddModule: _addModule,
+                    selected: _selectedId == null
+                        ? null
+                        : _instance(_selectedId!),
+                    organizers: _organizers,
+                    diningCategories: _diningCategories,
+                    facilities: _facilities,
+                    onUpdate: _updateCard,
+                    onMove: (delta) => _moveCard(_selectedId!, delta),
+                  ),
                 ),
-              ),
-              const SliverToBoxAdapter(child: _Colophon()),
-            ],
+                const SliverToBoxAdapter(child: _Colophon()),
+              ],
+            ),
           ),
         );
       },
