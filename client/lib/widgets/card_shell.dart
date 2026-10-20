@@ -117,9 +117,7 @@ class CardShell extends StatelessWidget {
             // is no height to divide and the content is laid out as it is.
             _FlexibleIfBounded(
               bounded: box.maxHeight.isFinite,
-              // Skeleton to content is a swap in place. A crossfade here kept
-              // both in the tree for a frame or more, stacked at their own
-              // heights.
+              // Skeleton to content swaps in place, with no crossfade.
               child: KeyedSubtree(
                 key: ValueKey(state == DataState.priming),
                 child: child,

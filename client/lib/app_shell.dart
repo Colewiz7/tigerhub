@@ -279,15 +279,8 @@ class _AppShellState extends State<AppShell>
   }
 }
 
-/// The tabs, keeping every screen's state while only painting the one shown.
-///
-/// Everything except the current tab is Offstage. Offstage keeps the State
-/// alive, and therefore scroll positions, subscriptions and any in progress
-/// edit, while skipping layout and paint entirely.
-///
-/// A switch is instant. It used to crossfade the whole outgoing screen into the
-/// whole incoming one behind a spinner, which on a device showed both screens
-/// at partial opacity and covered loaded content with a dim.
+/// Every tab stays mounted; only the current one is painted, hit-tested,
+/// focusable or ticking. Switching is instant.
 class _TabStack extends StatelessWidget {
   const _TabStack({required this.index, required this.children});
 
@@ -302,11 +295,14 @@ class _TabStack extends StatelessWidget {
         for (var childIndex = 0; childIndex < children.length; childIndex++)
           Offstage(
             offstage: childIndex != index,
-            child: ExcludeSemantics(
+            child: ExcludeFocus(
               excluding: childIndex != index,
-              child: TickerMode(
-                enabled: childIndex == index,
-                child: children[childIndex],
+              child: ExcludeSemantics(
+                excluding: childIndex != index,
+                child: TickerMode(
+                  enabled: childIndex == index,
+                  child: children[childIndex],
+                ),
               ),
             ),
           ),
