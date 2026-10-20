@@ -34,6 +34,24 @@ class EmptyStateTests(unittest.TestCase):
     def test_interpolation_with_quotes_passes(self):
         self.assertEqual(names("""EmptyState(title: '${a['body: z']}', kind: k)"""), [])
 
+    def test_banned_arg_inside_interpolation_fails(self):
+        self.assertEqual(names("final s = '${EmptyState(body: 'x')}';"), ["body"])
+
+    def test_clean_call_inside_interpolation_passes(self):
+        self.assertEqual(names("final s = '${EmptyState(title: 't')}';"), [])
+
+    def test_literal_text_naming_the_call_passes(self):
+        self.assertEqual(names("final s = 'EmptyState(body: x)';"), [])
+
+    def test_literal_text_beside_interpolation_passes(self):
+        self.assertEqual(names("final s = 'EmptyState(body: x) ${a}';"), [])
+
+    def test_nested_string_inside_interpolation_is_blanked(self):
+        self.assertEqual(names("""final s = '${f("EmptyState(body: x)")}';"""), [])
+
+    def test_call_inside_nested_interpolation_fails(self):
+        self.assertEqual(names("""final s = '${f("${EmptyState(detail: 1)}")}';"""), ["detail"])
+
     def test_each_banned_name_fails(self):
         for name in ("body", "message", "detail"):
             self.assertEqual(names("EmptyState(%s: 'x')" % name), [name])

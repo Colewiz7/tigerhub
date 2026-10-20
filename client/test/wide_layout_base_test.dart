@@ -176,15 +176,52 @@ const _housingNewHeight = '492.0x362.0';
 //     "Dining is unavailable" -> "Dining unavailable"
 //   Events, 1x: 203.9x96.0 -> 131.7x96.0, 2x: 402.0x120.0 -> 259.6x120.0
 //     "Nothing scheduled today" -> "No events today"
-const _shorterCopySizes = {
-  '243.1x96.0': '163.9x96.0',
-  '479.0x120.0': '323.0x120.0',
-  '424.0x168.0': '323.0x120.0',
-  '166.7x96.0': '149.0x96.0',
-  '328.1x120.0': '293.4x120.0',
-  '203.9x96.0': '131.7x96.0',
-  '402.0x120.0': '259.6x120.0',
-};
+// Each exception names the cases it applies to (a substring of the case key),
+// the card, and the old size, so another card can't ride on someone else's.
+const _diningCard = 0;
+const _eventsCard = 1;
+const _shorterCopySizes = <({String cases, int card, String old, String now})>[
+  (cases: '@ 1.0x', card: _housing, old: '243.1x96.0', now: '163.9x96.0'),
+  (cases: '600 @ 2.0x', card: _housing, old: '479.0x120.0', now: '323.0x120.0'),
+  (cases: '768 @ 2.0x', card: _housing, old: '479.0x120.0', now: '323.0x120.0'),
+  (
+    cases: '1024 @ 2.0x',
+    card: _housing,
+    old: '424.0x168.0',
+    now: '323.0x120.0',
+  ),
+  (
+    cases: '@ 1.0x empty',
+    card: _diningCard,
+    old: '166.7x96.0',
+    now: '149.0x96.0',
+  ),
+  (
+    cases: '@ 2.0x empty',
+    card: _diningCard,
+    old: '328.1x120.0',
+    now: '293.4x120.0',
+  ),
+  (
+    cases: '@ 1.0x empty',
+    card: _eventsCard,
+    old: '203.9x96.0',
+    now: '131.7x96.0',
+  ),
+  (
+    cases: '@ 2.0x empty',
+    card: _eventsCard,
+    old: '402.0x120.0',
+    now: '259.6x120.0',
+  ),
+];
+
+String _expectedEmptySize(String key, int card, String old) {
+  for (final e in _shorterCopySizes) {
+    if (e.card == card && e.old == old && key.contains(e.cases)) return e.now;
+  }
+  return old;
+}
 
 /// Every string a card shows, in tree order, joined with ' ¦ '. The rows'
 /// own text (names, status lines, times, ENDED) is in here.
@@ -406,7 +443,7 @@ void main() {
                 expect(now[1], then[1], reason: 'card $i empty block top');
                 expect(
                   sizeNow,
-                  _shorterCopySizes[sizeThen] ?? sizeThen,
+                  _expectedEmptySize(key, i, sizeThen),
                   reason: 'card $i empty block size',
                 );
                 final cardWidth = double.parse(lines[i].split('x').first);

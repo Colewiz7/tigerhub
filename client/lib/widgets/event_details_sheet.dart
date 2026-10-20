@@ -7,6 +7,25 @@ import '../models/api_models.dart';
 import '../services/open_link.dart';
 import 'status_row.dart';
 
+// &#8212; and &#x2014; with or without the semicolon, as HTML5 allows. Digits
+// are consumed greedily, so '&#8212abc' is a dash then 'abc'. A number that is
+// not a character (zero, a surrogate, past U+10FFFF) is left as written.
+String _decodeNumericEntities(String value) => value.replaceAllMapped(
+  RegExp(r'&#(?:[xX]([0-9a-fA-F]+)|([0-9]+));?'),
+  (match) {
+    final hex = match.group(1);
+    final code = hex != null
+        ? int.tryParse(hex, radix: 16)
+        : int.tryParse(match.group(2)!);
+    final valid =
+        code != null &&
+        code > 0 &&
+        code <= 0x10FFFF &&
+        !(code >= 0xD800 && code <= 0xDFFF);
+    return valid ? String.fromCharCode(code) : match.group(0)!;
+  },
+);
+
 String eventDescriptionText(String? raw, {String? eventUrl}) {
   if (raw == null || raw.trim().isEmpty) return '';
   var value = raw
@@ -25,14 +44,7 @@ String eventDescriptionText(String? raw, {String? eventUrl}) {
       .replaceAll('&rsquo;', '’')
       .replaceAll('&ndash;', '–')
       .replaceAll('&mdash;', '-');
-  value = value.replaceAllMapped(
-    RegExp(r'&#(\d+);'),
-    (match) => String.fromCharCode(int.parse(match.group(1)!)),
-  );
-  value = value.replaceAllMapped(
-    RegExp(r'&#x([0-9a-f]+);', caseSensitive: false),
-    (match) => String.fromCharCode(int.parse(match.group(1)!, radix: 16)),
-  );
+  value = _decodeNumericEntities(value);
   // numeric entities can still decode to an em dash
   value = value.replaceAll('\u{2014}', '-');
   if (eventUrl != null && eventUrl.isNotEmpty) {

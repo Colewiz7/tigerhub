@@ -23,7 +23,6 @@ def strip_dart(text, keep_strings=False):
     pending = []
     while i < n:
         c = text[i]
-        inside_string = string is not None or bool(pending)
         if string is None:
             if text.startswith("//", i):
                 while i < n and text[i] != "\n":
@@ -63,7 +62,8 @@ def strip_dart(text, keep_strings=False):
                     i += 1
                     continue
                 pending[-1][1] -= 1
-            out.append(blank(c) if inside_string and not keep_strings else c)
+            # an interpolation expression is code, so it stays visible
+            out.append(c)
             i += 1
             continue
         quote, raw = string
