@@ -147,7 +147,7 @@ class DiningCard extends StatelessWidget {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
         (_, true) => const EmptyState(
           kind: EmptyKind.sourceDown,
-          title: 'Dining is unavailable',
+          title: 'Dining unavailable',
         ),
         _ => _List(
           locations: locations,

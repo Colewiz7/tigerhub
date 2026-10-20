@@ -309,7 +309,7 @@ class _ShuttleSection extends StatelessWidget {
         ? const <_ShuttleRoute>[
             (
               number: 1,
-              name: 'RIT RTS Connection — Holiday',
+              name: 'RIT RTS Connection (Holiday)',
               hours: 'See the holiday timetable',
               weekday: true,
               weekend: true,
@@ -341,19 +341,19 @@ class _ShuttleSection extends StatelessWidget {
         if (homeId == null)
           const EmptyState(
             kind: EmptyKind.notFound,
-            title: 'Choose your housing area in Mail first',
+            title: 'Set your housing area',
             compact: false,
           )
         else if (!laborDay && !_shuttlesByHome.containsKey(homeId))
           const EmptyState(
             kind: EmptyKind.notFound,
-            title: 'RIT does not publish a route table for this housing area',
+            title: 'No routes for this area',
             compact: false,
           )
         else if (routes.isEmpty)
           const EmptyState(
             kind: EmptyKind.noEvents,
-            title: 'No scheduled routes today',
+            title: 'No routes today',
             compact: false,
           )
         else
@@ -394,7 +394,7 @@ class _AcademicDatesSection extends StatelessWidget {
         if (upcoming.isEmpty)
           const EmptyState(
             kind: EmptyKind.noEvents,
-            title: 'No more dates in this academic year',
+            title: 'No more dates',
             compact: false,
           )
         else
@@ -1490,7 +1490,7 @@ class _EquipmentBlock extends StatelessWidget {
     if (rooms.isEmpty) {
       return const EmptyState(
         kind: EmptyKind.sourceDown,
-        title: 'Equipment availability is unavailable',
+        title: 'Equipment unavailable',
         compact: false,
       );
     }

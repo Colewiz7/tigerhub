@@ -150,8 +150,7 @@ class _DiningScreenState extends State<DiningScreen> {
                       count: 0,
                       builder: (context) => const EmptyState(
                         kind: EmptyKind.notFound,
-                        title: 'No dining locations match these filters',
-                        detail: 'Clear a filter or try a different search.',
+                        title: 'No matching locations',
                         compact: false,
                       ),
                     )
@@ -300,17 +299,13 @@ class _TodayMenuGroup extends StatelessWidget {
           const EmptyState(
             kind: EmptyKind.sourceDown,
             title: 'Menu features unavailable',
-            detail: 'Location hours and individual menus are still available below.',
           )
         else if (items.isEmpty)
           EmptyState(
             kind: EmptyKind.noEvents,
             title: filtering
-                ? 'No published menu items match this search'
-                : 'No menu features are published today',
-            detail: filtering
-                ? 'Dining locations are filtered by the same search.'
-                : 'Location hours and individual menus are still available below.',
+                ? 'No matching menu items'
+                : 'No menu features today',
           )
         else
           for (final item in items)

@@ -17,12 +17,12 @@ import 'package:flutter/material.dart';
 /// language as the rest of the app. Empty states used to render cartoon tiger
 /// scenes, which made ordinary "nothing today" results feel like novelty art.
 enum EmptyKind {
-  noEvents(Icons.event_busy_rounded, 'Nothing scheduled today'),
-  allClosed(Icons.nightlight_round, 'Everything is closed right now'),
+  noEvents(Icons.event_busy_rounded, 'No events today'),
+  allClosed(Icons.nightlight_round, 'All closed'),
   noVisitingChefs(Icons.room_service_rounded, 'No visiting chefs today'),
   notFound(Icons.search_off_rounded, 'No matches'),
   offline(Icons.cloud_off_rounded, 'Showing saved data'),
-  sourceDown(Icons.sync_problem_rounded, 'This source is unavailable');
+  sourceDown(Icons.sync_problem_rounded, 'Unavailable');
 
   const EmptyKind(this.icon, this.title);
 
@@ -38,7 +38,6 @@ class EmptyState extends StatelessWidget {
     super.key,
     required this.kind,
     this.title,
-    this.detail,
     this.action,
     this.compact = true,
     this.fill = false,
@@ -53,9 +52,7 @@ class EmptyState extends StatelessWidget {
   /// Overrides [EmptyKind.title] when the caller can be more specific.
   final String? title;
 
-  /// One optional supporting line. Keep it short, and do not apologise.
-  final String? detail;
-
+  /// An optional action. There is no body text: a title and an icon only.
   final Widget? action;
 
   /// Cards use a smaller mark than full panels.
@@ -119,10 +116,6 @@ class EmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: text.bodyMedium?.copyWith(color: scheme.onSurface),
           ),
-          if (detail != null) ...[
-            const SizedBox(height: 6),
-            Text(detail!, textAlign: TextAlign.center, style: text.bodySmall),
-          ],
           if (action != null) ...[const SizedBox(height: 8), action!],
         ],
       ),

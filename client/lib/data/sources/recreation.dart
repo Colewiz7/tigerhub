@@ -35,14 +35,18 @@ const Map<String, int> _weekdayNames = {
   'sunday': 6,
 };
 
-final RegExp _nameRe =
-    RegExp(r'<span class="overflow-hidden">\s*(.*?)\s*</span>', dotAll: true);
+final RegExp _nameRe = RegExp(
+  r'<span class="overflow-hidden">\s*(.*?)\s*</span>',
+  dotAll: true,
+);
 final RegExp _tableRe = RegExp(
   r'<table[^>]*class="[^"]*seven-day-schedule[^"]*"[^>]*>(.*?)</table>',
   dotAll: true,
 );
-final RegExp _rowRe =
-    RegExp(r'<tr>\s*<th>(.*?)</th>\s*<td>(.*?)</td>\s*</tr>', dotAll: true);
+final RegExp _rowRe = RegExp(
+  r'<tr>\s*<th>(.*?)</th>\s*<td>(.*?)</td>\s*</tr>',
+  dotAll: true,
+);
 final RegExp _tagsRe = RegExp(r'<[^>]+>');
 
 const Map<String, String> _entities = {
@@ -54,7 +58,7 @@ const Map<String, String> _entities = {
   '&#39;': "'",
   '&rsquo;': '’',
   '&ndash;': '–',
-  '&mdash;': '—',
+  '&mdash;': '-',
 };
 
 /// Strip tags and entities down to a single clean line.
@@ -64,9 +68,22 @@ String textOf(String raw) {
     value = value.replaceAll(entity, replacement);
   });
   value = value.replaceAllMapped(
-    RegExp(r'&#(\d+);'),
-    (m) => String.fromCharCode(int.parse(m.group(1)!)),
+    RegExp(r'&#(?:[xX]([0-9a-fA-F]+)|([0-9]+));?'),
+    (m) {
+      final hex = m.group(1);
+      final code = hex != null
+          ? int.tryParse(hex, radix: 16)
+          : int.tryParse(m.group(2)!);
+      final valid =
+          code != null &&
+          code > 0 &&
+          code <= 0x10FFFF &&
+          !(code >= 0xD800 && code <= 0xDFFF);
+      return valid ? String.fromCharCode(code) : m.group(0)!;
+    },
   );
+  // numeric entities can still decode to an em dash
+  value = value.replaceAll('\u{2014}', '-');
   return value.replaceAll(RegExp(r'\s+'), ' ').trim();
 }
 
@@ -76,8 +93,8 @@ String? parseRecreationTime(String token) {
   if (value == 'noon' || value == '12noon') return '12:00';
   if (value == 'midnight') return '00:00';
 
-  final match =
-      RegExp(r'^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$').firstMatch(value);
+  final match = RegExp(r'^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$')
+      .firstMatch(value);
   if (match == null) return null;
 
   var hour = int.parse(match.group(1)!);
@@ -103,7 +120,7 @@ List<Map<String, String>> parseHoursCell(String cell) {
   final spans = <Map<String, String>>[];
   for (final segment in value.split(',')) {
     // An en dash, em dash or hyphen separates the two ends.
-    final parts = segment.trim().split(RegExp(r'\s*[-–—]\s*'));
+    final parts = segment.trim().split(RegExp('\\s*[-–\\u2014]\\s*'));
     if (parts.length != 2) continue;
     final opens = parseRecreationTime(parts[0]);
     final closes = parseRecreationTime(parts[1]);
@@ -160,7 +177,8 @@ List<Map<String, dynamic>> parseRecreation(String html, {DateTime? today}) {
       if (weekday == null) continue;
 
       final serviceDate = resolveServiceDate(weekday, reference);
-      final key = '${serviceDate.year}-'
+      final key =
+          '${serviceDate.year}-'
           '${serviceDate.month.toString().padLeft(2, '0')}-'
           '${serviceDate.day.toString().padLeft(2, '0')}';
 
@@ -211,7 +229,9 @@ Future<Map<String, dynamic>> scrapeRecreation(Upstream http) async {
 /// The scrape produces one row per span, because a pool day has several
 /// sessions. The card wants them nested, and a facility with a single
 /// open-to-close range would be a lie about the middle of the day.
-List<Map<String, dynamic>> recreationFacilities(Map<String, dynamic>? snapshot) {
+List<Map<String, dynamic>> recreationFacilities(
+  Map<String, dynamic>? snapshot,
+) {
   final byFacility = <String, Map<String, Map<String, dynamic>>>{};
   final order = <String>[];
 
