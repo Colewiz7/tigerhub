@@ -33,9 +33,10 @@ class StatusRow extends StatelessWidget {
     this.actions = const [],
   });
 
-  /// Lines a dense row's subtitle may take before it ends in an ellipsis. Null
-  /// shows it whole, for a row whose subtitle holds a place that must not be
-  /// cut. Only a row outside BoundedList's fixed budget should pass null.
+  /// Lines a dense row's subtitle may take before it ends in an ellipsis (the
+  /// standard row always takes one). Null shows it whole in either row, for a
+  /// subtitle holding a place that must not be cut. Only a row outside
+  /// BoundedList's fixed budget should pass null.
   final int? subtitleMaxLines;
 
   /// The dashboard's condensed row on phones (under 600pt): 52 tall with a 4
@@ -225,8 +226,12 @@ class StatusRow extends StatelessWidget {
                                 Text(
                                   subtitle!,
                                   style: subtitleStyle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  // The standard row keeps one line; only an
+                                  // explicit null lets it wrap whole.
+                                  maxLines: subtitleMaxLines == null ? null : 1,
+                                  overflow: subtitleMaxLines == null
+                                      ? TextOverflow.clip
+                                      : TextOverflow.ellipsis,
                                 ),
                               ],
                             ],

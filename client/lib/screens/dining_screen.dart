@@ -12,10 +12,8 @@ import '../cards/dining_card.dart';
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
-import '../widgets/bounded_list.dart' show phonePreviewRows;
 import '../widgets/jump_list.dart';
 import '../widgets/link_button.dart';
-import '../widgets/more_row.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
 import '../services/preferences.dart';
@@ -113,10 +111,12 @@ class _DiningScreenState extends State<DiningScreen> {
               )
               .toList();
 
-    // Only a read that has trucks shows the group. None, unavailable and
-    // off-season all hide it: zero trucks is unknown, never "empty".
+    // Only a fresh, successful read that has trucks shows the group. None,
+    // unavailable, off-season, cached and failed all hide it: anything short of
+    // a good read is unknown, never "empty".
     final trucks = [
-      if (_trucks.value?.availability == Availability.available)
+      if (_trucks.state == DataState.ok &&
+          _trucks.value?.availability == Availability.available)
         for (final truck in _trucks.value!.data)
           if (truck.name.isNotEmpty &&
               (query.isEmpty ||
@@ -344,9 +344,6 @@ class _FoodTrucksGroup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final today = CampusTime.wallDate();
-    final shown = trucks.length < phonePreviewRows
-        ? trucks.length
-        : phonePreviewRows;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -355,7 +352,7 @@ class _FoodTrucksGroup extends StatelessWidget {
           title: 'Food trucks',
           count: trucks.length,
         ),
-        for (final truck in trucks.take(shown))
+        for (final truck in trucks)
           StatusRow(
             key: ValueKey('truck-${truck.date}-${truck.name}'),
             icon: Icons.local_shipping_rounded,
@@ -368,7 +365,6 @@ class _FoodTrucksGroup extends StatelessWidget {
               if (truck.location?.trim().isNotEmpty ?? false) truck.location!,
             ].where((part) => part.isNotEmpty).join(' · '),
           ),
-        MoreRow(hidden: trucks.length - shown, noun: 'trucks'),
       ],
     );
   }

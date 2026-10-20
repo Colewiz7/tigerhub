@@ -20,6 +20,9 @@ import 'package:tigerhub/data/upstream.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/cache.dart';
+import 'package:tigerhub/widgets/link_button.dart';
+import 'package:tigerhub/widgets/status_row.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:url_launcher_platform_interface/method_channel_url_launcher.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -109,7 +112,9 @@ void main() {
     Size size = const Size(390, 844),
     Brightness brightness = Brightness.light,
     double scale = 1,
+    Future<void> Function()? seedCache,
   }) async {
+    await seedCache?.call();
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
     addTearDown(tester.view.reset);
@@ -157,13 +162,46 @@ void main() {
       expect(find.text('Fri, Oct 16 · 5 p.m. to 8 p.m. · Gracie’s lawn'), findsOneWidget);
     });
 
-    testWidgets('caps at four rows and counts the rest', (tester) async {
-      await pumpDining(tester, _body(_six));
+    testWidgets('lists every truck, with no footer for the rest', (tester) async {
+      final seven = [..._six, _truck('Rolling Rice', '2026-10-22', time: '5 p.m. to 8 p.m.', place: 'Lot G')];
+      await pumpDining(tester, _body(seven), size: const Size(390, 3200));
 
-      expect(find.text('Bao Down'), findsOneWidget);
-      expect(find.text('Waffle Wagon'), findsNothing);
-      expect(find.text('Curry Up'), findsNothing);
-      expect(find.text('+2 trucks'), findsOneWidget);
+      for (final name in ['Taco Loco', 'Bao Down', 'Waffle Wagon', 'Curry Up', 'Rolling Rice']) {
+        expect(find.text(name), findsOneWidget);
+      }
+      expect(find.textContaining('more'), findsNothing);
+      expect(find.textContaining('+'), findsNothing);
+      final rows = find.byWidgetPredicate((w) => w is StatusRow && '${w.key}'.contains('truck-'));
+      expect(rows, findsNWidgets(7));
+    });
+
+    testWidgets('a cached read replayed after a failed refresh hides the group', (tester) async {
+      await pumpDining(
+        tester,
+        null,
+        seedCache: () => ResponseCache.instance.write('/dining/food-trucks', _body(_six)),
+      );
+
+      expect(find.text('Food trucks'), findsNothing);
+      expect(find.text('Taco Loco'), findsNothing);
+      expect(find.text('Crossroads'), findsOneWidget);
+    });
+
+    testWidgets('a fresh successful read shows the group over an old cache', (tester) async {
+      await pumpDining(
+        tester,
+        _body([_six.first]),
+        seedCache: () => ResponseCache.instance.write('/dining/food-trucks', _body(_six)),
+      );
+
+      expect(find.text('Taco Loco'), findsOneWidget);
+      expect(find.text('Pierogi Pals'), findsNothing);
+    });
+
+    testWidgets('a read the backend calls stale hides the group', (tester) async {
+      await pumpDining(tester, {..._body(_six), 'stale': true});
+
+      expect(find.text('Food trucks'), findsNothing);
     });
 
     testWidgets('a time or place that is missing is left out, not blanked', (tester) async {
@@ -196,7 +234,10 @@ void main() {
     late JsonStore store;
     late LocalBackend backend;
 
-    Map<String, dynamic> snapshot({String origin = 'html', List<Map<String, dynamic>>? trucks}) => {
+    Map<String, dynamic> snapshot({
+      String origin = 'html',
+      List<Map<String, dynamic>>? trucks,
+    }) => {
       'trucks': trucks ?? _six,
       'roster': <Map<String, dynamic>>[],
       'season_months': defaultFoodTruckSeasonMonths.toList()..sort(),
@@ -228,6 +269,24 @@ void main() {
 
       expect(body['availability'], 'available');
       expect(body['data'], hasLength(6));
+    });
+
+    test('is unavailable with no rows when the snapshot is stale', () async {
+      await store.write(foodTrucksSource, snapshot());
+      final later = LocalBackend(
+        upstream: Upstream(
+          client: MockClient((_) async => throw const SocketException('offline')),
+          maxRetries: 1,
+        ),
+        store: store,
+        clock: () => DateTime.now().add(const Duration(days: 3)),
+      );
+      addTearDown(later.close);
+      final body = await later.fetch('/dining/food-trucks');
+
+      expect(body['stale'], isTrue);
+      expect(body['availability'], 'unavailable');
+      expect(body['data'], isEmpty);
     });
 
     test('is unavailable with no rows off season', () async {
@@ -266,7 +325,7 @@ void main() {
     testWidgets('scrolling to the trucks shows every place whole', (tester) async {
       await pumpDining(tester, _body(_six), size: const Size(390, 844), scale: 2);
       await tester.scrollUntilVisible(
-        find.text('+2 trucks'),
+        find.text('Curry Up'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
@@ -279,9 +338,26 @@ void main() {
 
     testWidgets('ensureVisible on the last truck row does not throw', (tester) async {
       await pumpDining(tester, _body(_six), size: const Size(390, 844), scale: 2);
-      await tester.ensureVisible(find.text('+2 trucks'));
+      await tester.ensureVisible(find.text('Curry Up'));
       await tester.pumpAndSettle();
 
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a wide layout shows a long place whole', (tester) async {
+      const place = 'Behind the Gordon Field House beside the Global Village Plaza loading dock';
+      await pumpDining(
+        tester,
+        _body([_truck('Taco Loco', '2026-10-14', time: '11 a.m. to 2 p.m.', place: place)]),
+        size: const Size(700, 1600),
+        scale: 2,
+      );
+
+      final text = find.text('Today · 11 a.m. to 2 p.m. · $place');
+      expect(text, findsOneWidget);
+      final paragraph = tester.renderObject<RenderParagraph>(text);
+      expect(paragraph.didExceedMaxLines, isFalse);
+      expect(paragraph.size.height, greaterThan(paragraph.preferredLineHeight * 1.5));
       expect(tester.takeException(), isNull);
     });
   });
@@ -343,15 +419,25 @@ void main() {
       await pumpDining(tester, _body(const []));
       expect(find.byKey(const ValueKey('focus-ring')), findsNothing);
 
-      for (var i = 0; i < 6 && find.byKey(const ValueKey('focus-ring')).evaluate().isEmpty; i++) {
+      final order = find.widgetWithText(LinkButton, 'Order online');
+      final balance = find.widgetWithText(LinkButton, 'Check balance');
+      Finder ringIn(Finder pill) => find.descendant(of: pill, matching: find.byKey(const ValueKey('focus-ring')));
+
+      for (var i = 0; i < 6 && ringIn(order).evaluate().isEmpty; i++) {
         await tester.sendKeyEvent(LogicalKeyboardKey.tab);
         await tester.pump();
       }
 
-      final ring = find.byKey(const ValueKey('focus-ring'));
-      expect(ring, findsOneWidget);
-      final decoration = tester.widget<DecoratedBox>(ring).decoration as ShapeDecoration;
+      expect(ringIn(order), findsOneWidget);
+      expect(ringIn(balance), findsNothing);
+      final decoration = tester.widget<DecoratedBox>(ringIn(order)).decoration as ShapeDecoration;
       expect((decoration.shape as RoundedRectangleBorder).side.width, 2);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+
+      expect(ringIn(balance), findsOneWidget);
+      expect(ringIn(order), findsNothing);
     });
 
     testWidgets('large text wraps the pills and keeps the full label', (tester) async {
@@ -360,9 +446,11 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Order online'), findsOneWidget);
       expect(find.text('Check balance'), findsOneWidget);
-      final text = tester.widget<Text>(find.text('Check balance'));
-      expect(text.overflow, isNull);
-      expect(text.maxLines, isNull);
+      for (final label in ['Order online', 'Check balance']) {
+        final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
+        expect(paragraph.didExceedMaxLines, isFalse, reason: label);
+        expect(paragraph.size.width, lessThanOrEqualTo(320), reason: label);
+      }
     });
   });
 
@@ -381,7 +469,7 @@ void main() {
           final tall = '${name}_tall';
           goldenWidgets(tall, (tester) async {
             await pumpDining(tester, _body(_six), size: Size(size.width, 2600), brightness: brightness, scale: scale);
-            expect(find.text('+2 trucks'), findsOneWidget);
+            expect(find.text('Curry Up'), findsOneWidget);
             await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$tall.png'));
           });
         }
