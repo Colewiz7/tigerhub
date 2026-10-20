@@ -281,27 +281,81 @@ class _AppShellState extends State<AppShell>
 
 /// Every tab stays mounted; only the current one is painted, hit-tested,
 /// focusable or ticking. Switching is instant.
-class _TabStack extends StatelessWidget {
+class _TabStack extends StatefulWidget {
   const _TabStack({required this.index, required this.children});
 
   final int index;
   final List<Widget> children;
 
   @override
+  State<_TabStack> createState() => _TabStackState();
+}
+
+class _TabStackState extends State<_TabStack> {
+  late final List<FocusScopeNode> _scopes = [
+    for (final _ in widget.children) FocusScopeNode(),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _focusActive());
+  }
+
+  @override
+  void didUpdateWidget(_TabStack old) {
+    super.didUpdateWidget(old);
+    if (old.index != widget.index) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _focusActive());
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final scope in _scopes) {
+      scope.dispose();
+    }
+    super.dispose();
+  }
+
+  /// A hidden tab cannot take its autofocus, so the active one asks for it
+  /// when it appears. A screen with no autofocus node focuses its own scope,
+  /// which keeps Tab traversal and the shell's key bindings working. Never the
+  /// search field, so no keyboard opens, and never while focus is already in
+  /// the tab.
+  void _focusActive() {
+    if (!mounted) return;
+    final scope = _scopes[widget.index];
+    if (scope.hasFocus) return;
+    for (final node in scope.descendants) {
+      final focus = node.context?.widget;
+      if (focus is Focus && focus.autofocus && node.canRequestFocus) {
+        node.requestFocus();
+        return;
+      }
+    }
+    scope.requestFocus();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final active = widget.index;
     return Stack(
       fit: StackFit.expand,
       children: [
-        for (var childIndex = 0; childIndex < children.length; childIndex++)
+        for (var i = 0; i < widget.children.length; i++)
           Offstage(
-            offstage: childIndex != index,
+            offstage: i != active,
             child: ExcludeFocus(
-              excluding: childIndex != index,
+              excluding: i != active,
               child: ExcludeSemantics(
-                excluding: childIndex != index,
+                excluding: i != active,
                 child: TickerMode(
-                  enabled: childIndex == index,
-                  child: children[childIndex],
+                  enabled: i == active,
+                  child: FocusScope(
+                    node: _scopes[i],
+                    child: widget.children[i],
+                  ),
                 ),
               ),
             ),

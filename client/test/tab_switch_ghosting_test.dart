@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
@@ -30,11 +31,13 @@ const _perCategory = 6;
 /// tabs hold real lists. Answers can be held back with [gate].
 class _DataBackend implements Backend {
   Completer<void>? gate;
+  int diningCalls = 0;
 
   static String name(int id) => 'Place number $id';
 
   @override
   Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async {
+    if (path == '/dining') diningCalls++;
     await gate?.future;
     if (path == '/makerspace/hours') return {'items': <dynamic>[]};
     final List<Map<String, dynamic>> data;
@@ -220,14 +223,20 @@ void main() {
     await tester.tap(find.text('DINING'));
     await tester.pumpAndSettle();
 
+    final seen = <int>{};
     void expectOneList(String where) {
       expect(find.byType(ListView), findsOneWidget, reason: 'lists $where');
-      expect(find.text('Today’s published menu'), findsOneWidget,
-          reason: 'menu group $where');
-      for (var id = 0; id < _perCategory; id++) {
-        expect(find.text(_DataBackend.name(id)).evaluate().length,
-            lessThanOrEqualTo(1),
-            reason: 'row ${_DataBackend.name(id)} twice $where');
+      expect(find.text('Today’s published menu').evaluate().length,
+          lessThanOrEqualTo(1),
+          reason: 'menu group twice $where');
+      for (var c = 0; c < _categories; c++) {
+        for (var i = 0; i < _perCategory; i++) {
+          final id = c * 100 + i;
+          final count = find.text(_DataBackend.name(id)).evaluate().length;
+          expect(count, lessThanOrEqualTo(1),
+              reason: 'row ${_DataBackend.name(id)} twice $where');
+          if (count == 1) seen.add(id);
+        }
       }
     }
 
@@ -239,6 +248,16 @@ void main() {
     }
 
     expectOneList('at rest');
+    // Walk the whole list so every location is on screen at some point.
+    for (var n = 0; n < 12; n++) {
+      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      await step('scroll $n');
+    }
+    await tester.drag(find.byType(ListView), const Offset(0, 6000));
+    await step('scroll back');
+    expect(seen.length, _categories * _perCategory,
+        reason: 'some locations were never on screen, so never checked');
+
     for (final chip in ['Open', 'Open', 'Pinned (1)', 'Pinned (1)']) {
       await tester.tap(find.textContaining(chip).first);
       await step('after $chip');
@@ -249,14 +268,123 @@ void main() {
     await tester.enterText(diningSearch(), '');
     await step('after clearing search');
 
+    final callsBefore = backend.diningCalls;
     backend.gate = Completer<void>();
     await tester.pump(const Duration(minutes: 2));
     await step('during refresh');
+    expect(backend.diningCalls - callsBefore, 1,
+        reason: 'exactly one refresh should be in flight');
     backend.gate!.complete();
     backend.gate = null;
     for (var frame = 0; frame < 20; frame++) {
       await tester.pump(const Duration(milliseconds: 16));
       expectOneList('after refresh, frame $frame');
+    }
+  });
+
+  /// The focus scope the shell gives a tab.
+  FocusNode tabScope(WidgetTester tester, Type screen) => tester
+      .widget<FocusScope>(find
+          .ancestor(
+            of: find.byType(screen, skipOffstage: false),
+            matching: find.byType(FocusScope, skipOffstage: false),
+          )
+          .first)
+      .focusNode!;
+
+  Future<void> pressCtrlF(WidgetTester tester) async {
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pump();
+  }
+
+  bool anySearchFocused(WidgetTester tester) => tester
+      .widgetList<TextField>(find.byType(TextField, skipOffstage: false))
+      .any((field) => field.focusNode?.hasFocus ?? false);
+
+  testWidgets('the launch tab has focus inside it', (tester) async {
+    await pumpShell(tester);
+
+    expect(tabScope(tester, HomeScreen).hasFocus, isTrue,
+        reason: 'nothing in the first tab has focus');
+    for (final other in [DiningScreen, EventsScreen, MapScreen, CampusScreen]) {
+      expect(tabScope(tester, other).hasFocus, isFalse,
+          reason: '$other holds focus while hidden');
+    }
+  });
+
+  testWidgets('the active tab takes focus on a switch, and Ctrl+F reaches it',
+      (tester) async {
+    await pumpShell(tester);
+
+    for (final (tab, screen) in [
+      ('EVENTS', EventsScreen),
+      ('DINING', DiningScreen),
+      ('EVENTS', EventsScreen),
+    ]) {
+      await tester.tap(find.text(tab));
+      await tester.pump();
+      await tester.pump();
+
+      final primary = FocusManager.instance.primaryFocus;
+      final owner = primary?.context;
+      expect(owner?.widget, isA<Focus>(), reason: 'no shortcut Focus on $tab');
+      expect(owner!.findAncestorWidgetOfExactType<CallbackShortcuts>(),
+          isNotNull,
+          reason: 'focus on $tab is outside its shortcut handler');
+      expect(tabScope(tester, screen).hasFocus, isTrue);
+      expect(anySearchFocused(tester), isFalse,
+          reason: 'switching to $tab focused a search field');
+
+      await pressCtrlF(tester);
+      expect(anySearchFocused(tester), isTrue,
+          reason: 'Ctrl+F did not reach the $tab handler');
+      // Leave the field before the next switch.
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
+    }
+  });
+
+  testWidgets('switching tabs never opens the keyboard', (tester) async {
+    await pumpShell(tester);
+
+    for (final tab in ['DINING', 'EVENTS', 'MAP', 'CAMPUS', 'TODAY']) {
+      await tester.tap(find.text(tab));
+      await tester.pump();
+      await tester.pump();
+      expect(anySearchFocused(tester), isFalse, reason: '$tab focused a field');
+      expect(tester.testTextInput.hasAnyClients, isFalse,
+          reason: '$tab attached a text input');
+    }
+  });
+
+  testWidgets('Tab key traversal stays inside the active tab', (tester) async {
+    await pumpShell(tester);
+
+    for (final (tab, screen) in [
+      ('DINING', DiningScreen),
+      ('EVENTS', EventsScreen),
+      ('TODAY', HomeScreen),
+    ]) {
+      await tester.tap(find.text(tab));
+      await tester.pump();
+      await tester.pump();
+      final hidden = _tabTypes.values.where((t) => t != screen);
+      for (var press = 0; press < 12; press++) {
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        expect(tabScope(tester, screen).hasFocus, isTrue,
+            reason: 'Tab $press left $tab');
+        for (final other in hidden) {
+          expect(tabScope(tester, other).hasFocus, isFalse,
+              reason: 'Tab $press on $tab reached $other');
+        }
+        // Tabbing into the search field is the user's doing; stop there.
+        if (anySearchFocused(tester)) break;
+      }
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pump();
     }
   });
 
