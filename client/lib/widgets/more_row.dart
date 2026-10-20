@@ -60,13 +60,18 @@ class MoreRow extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        '+$hidden $noun',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: muted,
-                          fontSize: 14,
-                          letterSpacing: 0,
-                          fontVariations: Weights.medium,
+                      // The label above already says it. Left in, the visible
+                      // text merges in and it reads twice.
+                      ExcludeSemantics(
+                        child: Text(
+                          '+$hidden $noun',
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: muted,
+                                fontSize: 14,
+                                letterSpacing: 0,
+                                fontVariations: Weights.medium,
+                              ),
                         ),
                       ),
                       if (onTap != null)
@@ -109,11 +114,13 @@ class MoreRow extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '+$hidden $noun',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: muted,
-                        fontVariations: Weights.medium,
+                    ExcludeSemantics(
+                      child: Text(
+                        '+$hidden $noun',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: muted,
+                          fontVariations: Weights.medium,
+                        ),
                       ),
                     ),
                     if (onTap != null) ...[
@@ -130,8 +137,9 @@ class MoreRow extends StatelessWidget {
     );
   }
 
-  /// "2 more events", or just "2 more" when the noun is the default.
-  String get _label => noun == 'more' ? '$hidden more' : '$hidden more $noun';
+  /// "+2 more events", or just "+2 more" when the noun is the default, which
+  /// is the visible footer text.
+  String get _label => noun == 'more' ? '+$hidden more' : '+$hidden more $noun';
 }
 
 /// The keyboard focus ring: 2px, [ColorScheme.primary], 2px clear of the

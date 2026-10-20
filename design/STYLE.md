@@ -148,3 +148,25 @@ Each of these cost real debugging time in TigerHub.
   grow with the system font or it leaves the circle.
 - **Contrast against the surface it is actually on**, not against white. A
   1.2:1 fill is invisible whatever the swatch looked like in isolation.
+
+## 10. Phone (<600pt)
+
+Under 600pt the numbers above give way to tighter ones. 600pt and wider keeps
+section 4 as written.
+
+```
+card gap: 10       between stacked cards
+row gap: 4         between rows inside a card
+side margin: 16    page edge to card
+card padding: 16
+radius: 24         still well clear of the 8 floor
+```
+
+- **A card shows at most 4 rows.** A phone card is as tall as its content, so
+  there is no box to measure and the count is a cap. Grouped events show 2
+  groups and a calendar day shows 3 rows. This is a confirmed override of
+  "measure the box", not a default to copy.
+- **Touch targets are 48pt, by expanding the hit area.** The visible control
+  stays small (the "+N" footer is one 28pt text row) and the tappable region
+  around it grows to 48. Do not make the thing look bigger to make it
+  tappable.

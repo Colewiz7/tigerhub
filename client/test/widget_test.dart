@@ -469,6 +469,49 @@ void main() {
       expect(find.text('+3 events'), findsOneWidget);
       expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
     });
+
+    testWidgets('the screen reader label is the visible footer, plus included', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      Future<String> labelOf(Widget row, {Size? size}) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(size: size ?? const Size(800, 600)),
+              child: Scaffold(body: row),
+            ),
+          ),
+        );
+        final node = find.descendant(
+          of: find.byType(MoreRow),
+          matching: find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.label != null,
+          ),
+        );
+        return tester.getSemantics(node.first).label;
+      }
+
+      // The pill, the dense phone text row, the default noun and a named one.
+      expect(await labelOf(const MoreRow(hidden: 2)), '+2 more');
+      expect(
+        await labelOf(const MoreRow(hidden: 2, noun: 'events')),
+        '+2 more events',
+      );
+      const phone = Size(411, 914);
+      expect(
+        await labelOf(const MoreRow(hidden: 2, dense: true), size: phone),
+        '+2 more',
+      );
+      expect(
+        await labelOf(
+          const MoreRow(hidden: 2, noun: 'open', dense: true),
+          size: phone,
+        ),
+        '+2 more open',
+      );
+      handle.dispose();
+    });
   });
 
   group('freshness line', () {
