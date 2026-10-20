@@ -14,7 +14,7 @@ TEXT '600 @ 1.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ SWE ¦ 2 ¦ Meeting 1 ¦ SAU 2nd floor ¦ Fri 2 Jan, 10:00 AM ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 2.0x': [
   '572.0x486.0 | 57.0,35.5,170.6x69.0 | 458.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,520.0x144.0 | none',
@@ -32,7 +32,7 @@ TEXT '600 @ 2.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 1.0x': [
   '740.0x558.0 | 57.0,53.0,85.6x34.0 | 626.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,688.0x72.0 | none',
@@ -50,7 +50,7 @@ TEXT '768 @ 1.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ SWE ¦ 2 ¦ Meeting 1 ¦ SAU 2nd floor ¦ Fri 2 Jan, 10:00 AM ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 2.0x': [
   '740.0x486.0 | 57.0,35.5,170.6x69.0 | 626.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,688.0x144.0 | none',
@@ -68,7 +68,7 @@ TEXT '768 @ 2.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 1.0x': [
   '492.0x558.0 | 57.0,53.0,85.6x34.0 | 378.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x72.0 | none',
@@ -86,7 +86,7 @@ TEXT '1024 @ 1.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ SWE ¦ 2 ¦ Meeting 1 ¦ SAU 2nd floor ¦ Fri 2 Jan, 10:00 AM ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 2.0x': [
   '492.0x486.0 | 57.0,35.5,170.6x69.0 | 378.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x144.0 | none',
@@ -104,7 +104,7 @@ TEXT '1024 @ 2.0x': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 1.0x empty': [
   '572.0x234.0 | 57.0,26.0,85.6x34.0 | none | 72.0 | none | none',
@@ -119,10 +119,10 @@ EMPTY '600 @ 1.0x empty': [
   '34.0,92.0,243.1x96.0',
 ],
 TEXT '600 @ 1.0x empty': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 2.0x empty': [
   '572.0x293.0 | 57.0,26.0,170.6x69.0 | none | 107.0 | none | none',
@@ -137,10 +137,10 @@ EMPTY '600 @ 2.0x empty': [
   '34.0,127.0,479.0x120.0',
 ],
 TEXT '600 @ 2.0x empty': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 1.0x empty': [
   '740.0x234.0 | 57.0,26.0,85.6x34.0 | none | 72.0 | none | none',
@@ -155,10 +155,10 @@ EMPTY '768 @ 1.0x empty': [
   '34.0,92.0,243.1x96.0',
 ],
 TEXT '768 @ 1.0x empty': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 2.0x empty': [
   '740.0x293.0 | 57.0,26.0,170.6x69.0 | none | 107.0 | none | none',
@@ -173,10 +173,10 @@ EMPTY '768 @ 2.0x empty': [
   '34.0,127.0,479.0x120.0',
 ],
 TEXT '768 @ 2.0x empty': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 1.0x empty': [
   '492.0x234.0 | 57.0,26.0,85.6x34.0 | none | 72.0 | none | none',
@@ -191,10 +191,10 @@ EMPTY '1024 @ 1.0x empty': [
   '34.0,92.0,243.1x96.0',
 ],
 TEXT '1024 @ 1.0x empty': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 2.0x empty': [
   '492.0x293.0 | 57.0,26.0,170.6x69.0 | none | 107.0 | none | none',
@@ -209,10 +209,10 @@ EMPTY '1024 @ 2.0x empty': [
   '34.0,196.0,424.0x168.0',
 ],
 TEXT '1024 @ 2.0x empty': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 1.0x edit': [
   '572.0x558.0 | 57.0,53.0,85.6x34.0 | 340.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,520.0x72.0 | 438.0,54.0,32.0x32.0 476.0,54.0,32.0x32.0 514.0,54.0,32.0x32.0',
@@ -230,7 +230,7 @@ TEXT '600 @ 1.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ SWE ¦ 2 ¦ Meeting 1 ¦ SAU 2nd floor ¦ Fri 2 Jan, 10:00 AM ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 2.0x edit': [
   '572.0x486.0 | 57.0,35.5,170.6x69.0 | 340.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,520.0x144.0 | 438.0,54.0,32.0x32.0 476.0,54.0,32.0x32.0 514.0,54.0,32.0x32.0',
@@ -248,7 +248,7 @@ TEXT '600 @ 2.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 1.0x edit': [
   '740.0x558.0 | 57.0,53.0,85.6x34.0 | 508.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,688.0x72.0 | 606.0,54.0,32.0x32.0 644.0,54.0,32.0x32.0 682.0,54.0,32.0x32.0',
@@ -266,7 +266,7 @@ TEXT '768 @ 1.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ SWE ¦ 2 ¦ Meeting 1 ¦ SAU 2nd floor ¦ Fri 2 Jan, 10:00 AM ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 2.0x edit': [
   '740.0x486.0 | 57.0,35.5,170.6x69.0 | 508.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,688.0x144.0 | 606.0,54.0,32.0x32.0 644.0,54.0,32.0x32.0 682.0,54.0,32.0x32.0',
@@ -284,7 +284,7 @@ TEXT '768 @ 2.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 1.0x edit': [
   '492.0x558.0 | 57.0,53.0,85.6x34.0 | 260.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x72.0 | 358.0,54.0,32.0x32.0 396.0,54.0,32.0x32.0 434.0,54.0,32.0x32.0',
@@ -302,7 +302,7 @@ TEXT '1024 @ 1.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ SWE ¦ 2 ¦ Meeting 1 ¦ SAU 2nd floor ¦ Fri 2 Jan, 10:00 AM ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 2.0x edit': [
   '492.0x486.0 | 57.0,35.5,170.6x69.0 | 260.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x144.0 | 358.0,54.0,32.0x32.0 396.0,54.0,32.0x32.0 434.0,54.0,32.0x32.0',
@@ -320,7 +320,7 @@ TEXT '1024 @ 2.0x edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Meeting 0 ¦ Thu 1 Jan, 10:00 AM ¦ Thu 1 Jan, 10:00 AM ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 1.0x empty edit': [
   '572.0x234.0 | 57.0,26.0,85.6x34.0 | none | 72.0 | none | 438.0,27.0,32.0x32.0 476.0,27.0,32.0x32.0 514.0,27.0,32.0x32.0',
@@ -335,10 +335,10 @@ EMPTY '600 @ 1.0x empty edit': [
   '34.0,92.0,243.1x96.0',
 ],
 TEXT '600 @ 1.0x empty edit': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 2.0x empty edit': [
   '572.0x293.0 | 57.0,26.0,170.6x69.0 | none | 107.0 | none | 438.0,44.5,32.0x32.0 476.0,44.5,32.0x32.0 514.0,44.5,32.0x32.0',
@@ -353,10 +353,10 @@ EMPTY '600 @ 2.0x empty edit': [
   '34.0,127.0,479.0x120.0',
 ],
 TEXT '600 @ 2.0x empty edit': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 1.0x empty edit': [
   '740.0x234.0 | 57.0,26.0,85.6x34.0 | none | 72.0 | none | 606.0,27.0,32.0x32.0 644.0,27.0,32.0x32.0 682.0,27.0,32.0x32.0',
@@ -371,10 +371,10 @@ EMPTY '768 @ 1.0x empty edit': [
   '34.0,92.0,243.1x96.0',
 ],
 TEXT '768 @ 1.0x empty edit': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 2.0x empty edit': [
   '740.0x293.0 | 57.0,26.0,170.6x69.0 | none | 107.0 | none | 606.0,44.5,32.0x32.0 644.0,44.5,32.0x32.0 682.0,44.5,32.0x32.0',
@@ -389,10 +389,10 @@ EMPTY '768 @ 2.0x empty edit': [
   '34.0,127.0,479.0x120.0',
 ],
 TEXT '768 @ 2.0x empty edit': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 1.0x empty edit': [
   '492.0x234.0 | 57.0,26.0,85.6x34.0 | none | 72.0 | none | 358.0,27.0,32.0x32.0 396.0,27.0,32.0x32.0 434.0,27.0,32.0x32.0',
@@ -407,10 +407,10 @@ EMPTY '1024 @ 1.0x empty edit': [
   '34.0,92.0,243.1x96.0',
 ],
 TEXT '1024 @ 1.0x empty edit': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 2.0x empty edit': [
   '492.0x293.0 | 57.0,26.0,170.6x69.0 | none | 107.0 | none | 358.0,44.5,32.0x32.0 396.0,44.5,32.0x32.0 434.0,44.5,32.0x32.0',
@@ -425,10 +425,10 @@ EMPTY '1024 @ 2.0x empty edit': [
   '34.0,196.0,424.0x168.0',
 ],
 TEXT '1024 @ 2.0x empty edit': [
-  'Dining ¦ Dining is unavailable',
-  'Events ¦ Nothing scheduled today',
+  'Dining ¦ Dining unavailable',
+  'Events ¦ No events today',
   'Visiting Chefs ¦ No visiting chefs today',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 1.0x rows': [
   '572.0x558.0 | 57.0,53.0,85.6x34.0 | 458.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,520.0x72.0 | none',
@@ -446,7 +446,7 @@ TEXT '600 @ 1.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ SWE ¦ 2 ¦ Old meeting ¦ Sat 1 Jan, 10:00 AM ¦ Sat 1 Jan, 10:00 AM ¦ ENDED ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 2.0x rows': [
   '572.0x486.0 | 57.0,35.5,170.6x69.0 | 458.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,520.0x144.0 | none',
@@ -464,7 +464,7 @@ TEXT '600 @ 2.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 1.0x rows': [
   '740.0x558.0 | 57.0,53.0,85.6x34.0 | 626.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,688.0x72.0 | none',
@@ -482,7 +482,7 @@ TEXT '768 @ 1.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ SWE ¦ 2 ¦ Old meeting ¦ Sat 1 Jan, 10:00 AM ¦ Sat 1 Jan, 10:00 AM ¦ ENDED ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 2.0x rows': [
   '740.0x486.0 | 57.0,35.5,170.6x69.0 | 626.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,688.0x144.0 | none',
@@ -500,7 +500,7 @@ TEXT '768 @ 2.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 1.0x rows': [
   '492.0x558.0 | 57.0,53.0,85.6x34.0 | 378.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x72.0 | none',
@@ -518,7 +518,7 @@ TEXT '1024 @ 1.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ SWE ¦ 2 ¦ Old meeting ¦ Sat 1 Jan, 10:00 AM ¦ Sat 1 Jan, 10:00 AM ¦ ENDED ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 2.0x rows': [
   '492.0x486.0 | 57.0,35.5,170.6x69.0 | 378.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x144.0 | none',
@@ -536,7 +536,7 @@ TEXT '1024 @ 2.0x rows': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 1.0x rows edit': [
   '572.0x558.0 | 57.0,53.0,85.6x34.0 | 340.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,520.0x72.0 | 438.0,54.0,32.0x32.0 476.0,54.0,32.0x32.0 514.0,54.0,32.0x32.0',
@@ -554,7 +554,7 @@ TEXT '600 @ 1.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ SWE ¦ 2 ¦ Old meeting ¦ Sat 1 Jan, 10:00 AM ¦ Sat 1 Jan, 10:00 AM ¦ ENDED ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '600 @ 2.0x rows edit': [
   '572.0x486.0 | 57.0,35.5,170.6x69.0 | 340.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,520.0x144.0 | 438.0,54.0,32.0x32.0 476.0,54.0,32.0x32.0 514.0,54.0,32.0x32.0',
@@ -572,7 +572,7 @@ TEXT '600 @ 2.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 1.0x rows edit': [
   '740.0x558.0 | 57.0,53.0,85.6x34.0 | 508.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,688.0x72.0 | 606.0,54.0,32.0x32.0 644.0,54.0,32.0x32.0 682.0,54.0,32.0x32.0',
@@ -590,7 +590,7 @@ TEXT '768 @ 1.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ SWE ¦ 2 ¦ Old meeting ¦ Sat 1 Jan, 10:00 AM ¦ Sat 1 Jan, 10:00 AM ¦ ENDED ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '768 @ 2.0x rows edit': [
   '740.0x486.0 | 57.0,35.5,170.6x69.0 | 508.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,688.0x144.0 | 606.0,54.0,32.0x32.0 644.0,54.0,32.0x32.0 682.0,54.0,32.0x32.0',
@@ -608,7 +608,7 @@ TEXT '768 @ 2.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 1.0x rows edit': [
   '492.0x558.0 | 57.0,53.0,85.6x34.0 | 260.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x72.0 | 358.0,54.0,32.0x32.0 396.0,54.0,32.0x32.0 434.0,54.0,32.0x32.0',
@@ -626,7 +626,7 @@ TEXT '1024 @ 1.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ Place number 2 ¦ OPEN · until 6:00 PM ¦ Place number 3 ¦ OPEN · until 6:00 PM ¦ Place number 4 ¦ OPEN · until 6:00 PM ¦ +2 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ SWE ¦ 2 ¦ Old meeting ¦ Sat 1 Jan, 10:00 AM ¦ Sat 1 Jan, 10:00 AM ¦ ENDED ¦ +1 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],
 BASE '1024 @ 2.0x rows edit': [
   '492.0x486.0 | 57.0,35.5,170.6x69.0 | 260.0,26.0,88.0x88.0 | 126.0 | 26.0,126.0,440.0x144.0 | 358.0,54.0,32.0x32.0 396.0,54.0,32.0x32.0 434.0,54.0,32.0x32.0',
@@ -644,5 +644,5 @@ TEXT '1024 @ 2.0x rows edit': [
   'Dining ¦ 7 ¦ OPEN ¦ Place number 0 ¦ OPEN · until 6:00 PM ¦ Place number 1 ¦ OPEN · until 6:00 PM ¦ +5 open',
   'Events ¦ 0 ¦ TODAY ¦ Robotics Club ¦ 2 ¦ Career fair ¦ Gordon Field House ¦ ALL DAY ¦ +2 organizers',
   'Visiting Chefs ¦ 2 ¦ CHEFS TODAY ¦ Chef Marco ¦ Gracies ¦ Chef Ayana ¦ Crossroads',
-  'Mailing Address ¦ Housing areas are unavailable',
+  'Mailing Address ¦ Housing unavailable',
 ],

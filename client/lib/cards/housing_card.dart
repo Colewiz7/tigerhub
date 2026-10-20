@@ -108,7 +108,7 @@ class _HousingCardState extends State<HousingCard> {
         (true, _) => const PrimingPlaceholder(label: 'Loading housing areas'),
         (_, true) => const EmptyState(
           kind: EmptyKind.sourceDown,
-          title: 'Housing areas are unavailable',
+          title: 'Housing unavailable',
         ),
         // Never an empty card: it is either the picker or the answer.
         (_, _) when _address?.value == null => _AreaChips(

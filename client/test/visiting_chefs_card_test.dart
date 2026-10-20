@@ -206,20 +206,15 @@ void main() {
       expect(find.text('Menus unavailable'), findsNothing);
     });
 
-    testWidgets('a quiet day with an upcoming chef adds one Next line', (
+    testWidgets('a quiet day with an upcoming chef still shows only the title', (
       tester,
     ) async {
       await pumpState(tester, 'next');
       expect(find.text('No visiting chefs today'), findsOneWidget);
-      expect(
-        find.text(
-          'Next: Fri · Tandoor of India at The Cafe & Market at Crossroads',
-        ),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Next:'), findsNothing);
     });
 
-    testWidgets('tomorrow reads as Tomorrow', (tester) async {
+    testWidgets('tomorrow gets no Next line either', (tester) async {
       await _pump(
         tester,
         result: Result(
@@ -239,7 +234,7 @@ void main() {
         brightness: Brightness.light,
         scale: 1,
       );
-      expect(find.text('Next: Tomorrow · KO-BQ at RITZ'), findsOneWidget);
+      expect(find.textContaining('Next:'), findsNothing);
     });
 
     testWidgets('the time is never cut, at 1x or 2x', (tester) async {
@@ -327,7 +322,7 @@ void main() {
       expect(find.text('+1 chefs'), findsNothing);
     });
 
-    testWidgets('a first run outage says Never updated, not just now', (
+    testWidgets('a first run outage never says just now', (
       tester,
     ) async {
       // The fetch that failed just ran, so the result's own time is now.
@@ -347,7 +342,7 @@ void main() {
         scale: 1,
       );
       expect(find.text('Menus unavailable'), findsOneWidget);
-      expect(find.text('Never updated'), findsOneWidget);
+      expect(find.text('Never updated'), findsNothing);
       expect(find.textContaining('just now'), findsNothing);
     });
 
@@ -355,7 +350,7 @@ void main() {
       await pumpState(tester, 'unavailable');
       expect(find.text('Menus unavailable'), findsOneWidget);
       expect(find.text('No visiting chefs today'), findsNothing);
-      expect(find.text('Updated 5m ago'), findsOneWidget);
+      expect(find.text('Updated 5m ago'), findsNothing);
       expect(find.text('RIT dining menus'), findsOneWidget);
     });
   });
@@ -640,7 +635,7 @@ void main() {
         scale: 1,
       );
       expect(find.text('Menus unavailable'), findsOneWidget);
-      expect(find.text('Never updated'), findsOneWidget);
+      expect(find.text('Never updated'), findsNothing);
       expect(find.textContaining('updated just now'), findsNothing);
     });
 
@@ -677,9 +672,9 @@ void main() {
         scale: 1,
       );
       expect(find.text('Menus unavailable'), findsOneWidget);
-      expect(find.text('Never updated'), findsOneWidget);
+      expect(find.text('Never updated'), findsNothing);
       expect(find.textContaining('just now'), findsNothing,
-          reason: 'neither the header nor the detail may claim an update');
+          reason: 'the header may not claim an update');
       expect(find.text('No visiting chefs today'), findsNothing);
     });
 
@@ -744,7 +739,7 @@ void main() {
           scale: 1,
         );
         expect(find.text('Menus unavailable'), findsOneWidget);
-        expect(find.text('Never updated'), findsOneWidget);
+        expect(find.text('Never updated'), findsNothing);
         expect(find.textContaining('just now'), findsNothing);
         expect(find.text('No visiting chefs today'), findsNothing);
       });
@@ -797,7 +792,7 @@ void main() {
       );
       expect(find.text('No visiting chefs today'), findsOneWidget);
       expect(find.text('Menus unavailable'), findsNothing);
-      expect(find.text('Next: Tomorrow · KO-BQ at RITZ'), findsOneWidget);
+      expect(find.textContaining('Next:'), findsNothing);
     });
 
     testWidgets('a real source time is the age shown in the header', (
@@ -820,7 +815,7 @@ void main() {
         scale: 1,
       );
       expect(find.text('updated 40m ago'), findsOneWidget);
-      expect(find.text('Updated 40m ago'), findsOneWidget);
+      expect(find.text('Updated 40m ago'), findsNothing);
       expect(find.textContaining('just now'), findsNothing);
     });
   });

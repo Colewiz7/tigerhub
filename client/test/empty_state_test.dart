@@ -48,8 +48,7 @@ void main() {
           body: Center(
             child: EmptyState(
               kind: EmptyKind.sourceDown,
-              title: 'Dining is unavailable',
-              detail: 'Last checked a moment ago',
+              title: 'Dining unavailable',
             ),
           ),
         ),
@@ -57,10 +56,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Dining is unavailable'), findsOneWidget);
-    expect(find.text('Last checked a moment ago'), findsOneWidget);
+    expect(find.text('Dining unavailable'), findsOneWidget);
     expect(
-      find.text('This source is unavailable'),
+      find.text('Unavailable'),
       findsNothing,
       reason: 'an override should replace the default, not sit beside it',
     );
@@ -84,7 +82,7 @@ void main() {
     final handle = tester.ensureSemantics();
     expect(find.bySemanticsLabel(RegExp('no events')), findsNothing);
     expect(
-      find.bySemanticsLabel('Nothing scheduled today'),
+      find.bySemanticsLabel('No events today'),
       findsOneWidget,
       reason: 'the caption is what should be announced',
     );

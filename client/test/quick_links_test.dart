@@ -33,6 +33,7 @@ void main() {
     (label: 'Tiger Chat', url: 'https://tigerchat.app/'),
     (label: 'Service Center', url: 'https://help.rit.edu/'),
     (label: 'FMS requests', url: 'https://www.rit.edu/facilitiesmanagement/request-service'),
+    (label: 'Reserve', url: 'https://reserve.rit.edu/'),
   ];
 
   setUpAll(() async {
@@ -56,7 +57,7 @@ void main() {
   }
 
   testWidgets('every quick link renders, has semantics and opens externally', (tester) async {
-    expect(quickLinks, hasLength(7));
+    expect(quickLinks, hasLength(8));
     expect(quickLinks.map((link) => (label: link.label, url: link.url)).toList(), expectedLinks);
     for (final link in quickLinks) {
       final parsed = DateTime.tryParse(link.lastVerified);

@@ -190,7 +190,7 @@ void main() {
     await pumpCampus(tester);
     await tester.tap(find.text('Quick links'));
     await tester.pumpAndSettle();
-    for (final label in ['Tiger Spend', 'SIS', 'myCourses', 'eServices', 'Tiger Chat', 'Service Center', 'FMS requests']) {
+    for (final label in ['Tiger Spend', 'SIS', 'myCourses', 'eServices', 'Tiger Chat', 'Service Center', 'FMS requests', 'Reserve']) {
       expect(find.text(label), findsOneWidget);
     }
   });

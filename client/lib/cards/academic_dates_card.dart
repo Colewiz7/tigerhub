@@ -50,7 +50,7 @@ class AcademicDatesCard extends StatelessWidget {
       child: dates.isEmpty
           ? const EmptyState(
               kind: EmptyKind.noEvents,
-              title: 'No more dates in this academic year',
+              title: 'No more dates',
             )
           : BoundedList(
               itemCount: dates.length,

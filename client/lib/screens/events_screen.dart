@@ -117,8 +117,7 @@ class _EventsScreenState extends State<EventsScreen> {
               child: filtered.groups.isEmpty
                   ? const EmptyState(
                       kind: EmptyKind.notFound,
-                      title: 'No events match these filters',
-                      detail: 'Clear a filter or try another search.',
+                      title: 'No matching events',
                       compact: false,
                     )
                   : JumpList(

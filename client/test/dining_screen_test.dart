@@ -102,7 +102,7 @@ void main() {
   ) async {
     await pumpDining(tester, const []);
 
-    expect(find.text('No menu features are published today'), findsOneWidget);
+    expect(find.text('No menu features today'), findsOneWidget);
     expect(find.text('Crossroads'), findsOneWidget);
   });
 
@@ -140,10 +140,7 @@ void main() {
 
     expect(find.text('Tomato bisque'), findsOneWidget);
     expect(find.text('Crossroads'), findsNothing);
-    expect(
-      find.text('No dining locations match these filters'),
-      findsOneWidget,
-    );
+    expect(find.text('No matching locations'), findsOneWidget);
   });
 
   testWidgets('filters wrap cleanly on a phone-width screen', (tester) async {
