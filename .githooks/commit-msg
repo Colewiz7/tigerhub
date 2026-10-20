@@ -1,0 +1,12 @@
+#!/bin/sh
+# Rejects commit messages that carry a tool co-author trailer.
+
+msg="$1"
+pattern='^co-authored-by:.*(claude|codex|omnigent|noreply@anthropic\.com|noreply@openai\.com|noreply@omnigent\.ai)'
+
+bad=$(grep -v '^#' "$msg" | grep -i -E "$pattern" | head -n 1)
+if [ -n "$bad" ]; then
+    echo "commit-msg: rejected, remove this co-author trailer:" >&2
+    echo "  $bad" >&2
+    exit 1
+fi
