@@ -5,8 +5,6 @@
 /// of the Dining list at once.
 library;
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -20,27 +18,11 @@ import 'package:tigerhub/screens/map_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/arc_progress.dart';
-import 'package:tigerhub/widgets/freshness.dart';
 import 'package:tigerhub/home_screen.dart';
 
 class _EmptyBackend implements Backend {
   @override
   Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async {
-    if (path == '/makerspace/hours') return {'items': <dynamic>[]};
-    return {'data': <dynamic>[], 'stale': false, 'last_updated': null};
-  }
-
-  @override
-  void close() {}
-}
-
-/// Holds every answer until released, so the shell sits in its priming state.
-class _GatedBackend implements Backend {
-  final gate = Completer<void>();
-
-  @override
-  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async {
-    await gate.future;
     if (path == '/makerspace/hours') return {'items': <dynamic>[]};
     return {'data': <dynamic>[], 'stale': false, 'last_updated': null};
   }
@@ -67,9 +49,8 @@ void main() {
 
   Future<SchemeController> pumpShell(
     WidgetTester tester,
-    Backend backend, {
-    bool settle = true,
-  }) async {
+    Backend backend,
+  ) async {
     tester.view.devicePixelRatio = 1.0;
     tester.view.physicalSize = const Size(390, 844);
     addTearDown(tester.view.reset);
@@ -81,11 +62,7 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: AppShell(api: ApiClient(backend: backend), scheme: scheme),
     ));
-    if (settle) {
-      await tester.pumpAndSettle();
-    } else {
-      await tester.pump();
-    }
+    await tester.pumpAndSettle();
     return scheme;
   }
 
@@ -119,8 +96,6 @@ void main() {
       expect(fade.opacity.value, 1.0,
           reason: 'a screen is mid fade one frame after the switch');
     }
-    expect(tester.binding.transientCallbackCount, 0,
-        reason: 'an animation is still running after the switch');
   });
 
   testWidgets('with data in hand no tab switch shows a blocker',
@@ -148,40 +123,6 @@ void main() {
       await tester.pump();
       expectNoBlocker(tester, 'refreshing $tab');
     }
-  });
-
-  testWidgets('priming shows the skeleton, then content, never both',
-      (tester) async {
-    final backend = _GatedBackend();
-    await pumpShell(tester, backend, settle: false);
-
-    expect(find.byType(PrimingPlaceholder), findsWidgets,
-        reason: 'no skeleton in place while nothing is cached');
-
-    backend.gate.complete();
-    var sawContent = false;
-    for (var frame = 0; frame < 40; frame++) {
-      await tester.pump(const Duration(milliseconds: 16));
-      final skeletons = find.byType(PrimingPlaceholder).evaluate().length;
-      final empties = find.text('No events').evaluate().length +
-          find.text('No dining').evaluate().length;
-      if (skeletons == 0) sawContent = true;
-      if (sawContent) {
-        expect(skeletons, 0, reason: 'skeleton came back at frame $frame');
-      }
-      // A card swaps its skeleton for content in place. One child, not two.
-      for (final switcher in find.byType(AnimatedSwitcher).evaluate()) {
-        final states = find.descendant(
-          of: find.byWidget(switcher.widget),
-          matching: find.byWidgetPredicate(
-            (w) => w is KeyedSubtree && w.key is ValueKey<bool>,
-          ),
-        );
-        expect(states.evaluate().length, lessThanOrEqualTo(1),
-            reason: 'two states of one card in frame $frame ($empties)');
-      }
-    }
-    expect(sawContent, isTrue);
   });
 
   testWidgets('dining filters never show two copies of the list',

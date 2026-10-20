@@ -25,7 +25,6 @@ import 'services/api.dart';
 import 'widgets/wordmark.dart';
 import 'theme/dynamic_theme.dart';
 import 'theme/tokens.dart';
-import 'widgets/page_veil.dart';
 import 'widgets/tab_bar.dart';
 
 const List<TabSpec> _tabs = [
@@ -50,7 +49,6 @@ class _AppShellState extends State<AppShell>
     with WidgetsBindingObserver {
   int _index = 0;
   bool _showSettings = false;
-  bool _animateTabChange = true;
 
   Result<Collection<DiningLocation>> _dining = const Result(
     value: null,
@@ -163,10 +161,7 @@ class _AppShellState extends State<AppShell>
       );
   }
 
-  void _go(int index, {bool animate = true}) => setState(() {
-    _animateTabChange = animate;
-    _index = index;
-  });
+  void _go(int index) => setState(() => _index = index);
 
   /// First run only, and only once the areas are in hand.
   ///
@@ -214,7 +209,7 @@ class _AppShellState extends State<AppShell>
         body: CallbackShortcuts(
           bindings: {
             for (var i = 0; i < _tabs.length && i < _digits.length; i++)
-              SingleActivator(_digits[i]): () => _go(i, animate: false),
+              SingleActivator(_digits[i]): () => _go(i),
             // Conventional settings shortcut.
             const SingleActivator(
               LogicalKeyboardKey.comma,
@@ -243,7 +238,6 @@ class _AppShellState extends State<AppShell>
                           )
                         : _TabStack(
                             index: _index,
-                            animate: _animateTabChange,
                             children: [
                               HomeScreen(
                                 api: widget.api,
@@ -285,129 +279,37 @@ class _AppShellState extends State<AppShell>
   }
 }
 
-/// The four tabs, keeping every screen's state while only paying for the ones
-/// on screen.
+/// The tabs, keeping every screen's state while only painting the one shown.
 ///
-/// A plain Stack of all four laid out and composited every screen at once,
-/// which got noticeably worse when the campus map arrived: a map canvas was
-/// being laid out continuously while nobody was looking at it.
+/// Everything except the current tab is Offstage. Offstage keeps the State
+/// alive, and therefore scroll positions, subscriptions and any in progress
+/// edit, while skipping layout and paint entirely.
 ///
-/// So everything except the tab being shown, and the one being faded out, is
-/// Offstage. Offstage keeps the State alive, and therefore scroll positions,
-/// subscriptions and any in progress edit, while skipping layout and paint
-/// entirely. The crossfade the motion spec asks for still happens, because the
-/// outgoing tab stays on stage until it finishes.
-class _TabStack extends StatefulWidget {
-  const _TabStack({
-    required this.index,
-    required this.animate,
-    required this.children,
-  });
+/// A switch is instant. It used to crossfade the whole outgoing screen into the
+/// whole incoming one behind a spinner, which on a device showed both screens
+/// at partial opacity and covered loaded content with a dim.
+class _TabStack extends StatelessWidget {
+  const _TabStack({required this.index, required this.children});
 
   final int index;
-  final bool animate;
   final List<Widget> children;
 
   @override
-  State<_TabStack> createState() => _TabStackState();
-}
-
-class _TabStackState extends State<_TabStack> {
-  /// The tab fading out, kept on stage until the fade ends.
-  int? _outgoing;
-  Timer? _settle;
-
-  /// Covers the content while the incoming tab comes up. Without it you watch
-  /// a tab assemble, which looks broken. The Map tab is the
-  /// honest case: it lays out a canvas and builds its geometry from cold.
-  bool _veiled = false;
-  Timer? _unveil;
-
-  @override
-  void didUpdateWidget(_TabStack old) {
-    super.didUpdateWidget(old);
-    if (old.index == widget.index) return;
-
-    _settle?.cancel();
-    setState(() => _outgoing = old.index);
-
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
-
-    if (reduceMotion || !widget.animate) {
-      _outgoing = null;
-      return;
-    }
-
-    _veiled = true;
-    _unveil?.cancel();
-    _unveil = Timer(PageVeil.hold, () {
-      if (mounted) setState(() => _veiled = false);
-    });
-
-    _settle = Timer(const Duration(milliseconds: 180), () {
-      if (mounted) setState(() => _outgoing = null);
-    });
-  }
-
-  @override
-  void dispose() {
-    _settle?.cancel();
-    _unveil?.cancel();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
-    final duration = reduceMotion || !widget.animate
-        ? Duration.zero
-        : const Duration(milliseconds: 180);
-
     return Stack(
       fit: StackFit.expand,
       children: [
-        for (
-          var childIndex = 0;
-          childIndex < widget.children.length;
-          childIndex++
-        )
+        for (var childIndex = 0; childIndex < children.length; childIndex++)
           Offstage(
-            offstage: childIndex != widget.index && childIndex != _outgoing,
-            child: IgnorePointer(
-              ignoring: childIndex != widget.index,
-              child: ExcludeSemantics(
-                excluding: childIndex != widget.index,
-                child: TickerMode(
-                  enabled: childIndex == widget.index,
-                  child: AnimatedOpacity(
-                    opacity: childIndex == widget.index ? 1 : 0,
-                    duration: duration,
-                    curve: Curves.easeOutCubic,
-                    child: widget.children[childIndex],
-                  ),
-                ),
+            offstage: childIndex != index,
+            child: ExcludeSemantics(
+              excluding: childIndex != index,
+              child: TickerMode(
+                enabled: childIndex == index,
+                child: children[childIndex],
               ),
             ),
           ),
-        // Over everything, so the incoming tab assembles out of sight.
-        Positioned.fill(
-          child: IgnorePointer(
-            child: AnimatedOpacity(
-              opacity: _veiled ? 1 : 0,
-              duration: PageVeil.fade,
-              curve: Curves.easeOutCubic,
-              child: _veiled
-                  ? PageVeil(label: _tabs[widget.index].label)
-                  : const SizedBox.shrink(),
-            ),
-          ),
-        ),
       ],
     );
   }
