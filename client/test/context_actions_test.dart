@@ -5,6 +5,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/widgets/context_actions.dart';
 import 'package:tigerhub/widgets/phone_frame.dart';
 import 'package:tigerhub/widgets/status_row.dart';
@@ -241,6 +242,9 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pumpAndSettle();
     expect(tester.getRect(find.byKey(ContextActions.ringKey)), row.inflate(4));
+    final ring = tester.widget<DecoratedBox>(find.byKey(ContextActions.ringKey));
+    expect((ring.decoration as BoxDecoration).borderRadius, BorderRadius.circular(Shapes.innerRadius + ContextActions.ringGap));
+    expect(Shapes.innerRadius + ContextActions.ringGap, 22);
   });
 
   testWidgets('long press does not hijack a vertical scroll, and taps still land', (tester) async {

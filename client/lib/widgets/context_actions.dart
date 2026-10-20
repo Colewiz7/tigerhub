@@ -160,7 +160,7 @@ class _ContextActionsState extends State<ContextActions> {
                 child: DecoratedBox(
                   key: ContextActions.ringKey,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(Shapes.innerRadius + ContextActions.ringGap + ContextActions.ringWidth),
+                    borderRadius: BorderRadius.circular(Shapes.innerRadius + ContextActions.ringGap),
                     border: Border.all(color: Theme.of(context).colorScheme.primary, width: ContextActions.ringWidth),
                   ),
                 ),
