@@ -346,6 +346,44 @@ void main() {
     }
   });
 
+  testWidgets('the shell digit shortcuts still work from a focused tab',
+      (tester) async {
+    await pumpShell(tester);
+    expect(find.byType(HomeScreen), findsOneWidget);
+
+    await tester.tap(find.text('DINING'));
+    await tester.pump();
+    await tester.pump();
+
+    void expectFocusIn(Type screen) {
+      final owner = FocusManager.instance.primaryFocus?.context;
+      expect(owner?.widget, isA<Focus>());
+      expect(owner!.findAncestorWidgetOfExactType<CallbackShortcuts>(),
+          isNotNull,
+          reason: 'primary focus is not the tab\'s shortcut node');
+      expect(tabScope(tester, screen).hasFocus, isTrue);
+    }
+
+    expectFocusIn(DiningScreen);
+
+    // Digit 3 is Events, 2 is Dining, 1 is Today.
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(EventsScreen), findsOneWidget,
+        reason: 'digit 3 did not reach the shell from Dining');
+    expect(find.byType(DiningScreen), findsNothing);
+    expectFocusIn(EventsScreen);
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(DiningScreen), findsOneWidget,
+        reason: 'digit 2 did not reach the shell from Events');
+    expect(find.byType(EventsScreen), findsNothing);
+    expectFocusIn(DiningScreen);
+  });
+
   testWidgets('switching tabs never opens the keyboard', (tester) async {
     await pumpShell(tester);
 
