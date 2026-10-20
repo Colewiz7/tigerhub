@@ -65,6 +65,49 @@ class EmptyStateTests(unittest.TestCase):
     def test_class_declaration_is_skipped(self):
         self.assertEqual(names("class EmptyState(detail: 1)"), [])
 
+    def test_map_braces_in_interpolation_then_literal_passes(self):
+        self.assertEqual(names("""final s = '${ {'a': 1}['a'] } EmptyState(body: x)';"""), [])
+
+    def test_map_braces_in_interpolation_call_inside_fails(self):
+        self.assertEqual(names("""final s = '${ {'a': EmptyState(body: x)}['a'] }';"""), ["body"])
+
+    def test_set_braces_in_interpolation_then_literal_passes(self):
+        self.assertEqual(names("final s = '${ {1,2}.length } EmptyState(body: x)';"), [])
+
+    def test_set_braces_in_interpolation_call_inside_fails(self):
+        self.assertEqual(names("final s = '${ {1,2}.length + EmptyState(message: x) }';"), ["message"])
+
+    def test_short_interpolation_then_literal_passes(self):
+        self.assertEqual(names("final s = '$name EmptyState(body: x)';"), [])
+
+    def test_short_interpolation_beside_call_fails(self):
+        self.assertEqual(names("final s = '$name'; EmptyState(body: x);"), ["body"])
+
+    def test_escaped_dollar_is_literal_text(self):
+        self.assertEqual(names("final s = '\\${EmptyState(body: x)}';"), [])
+
+    def test_escaped_dollar_then_real_interpolation_fails(self):
+        self.assertEqual(names("final s = '\\$ ${EmptyState(detail: x)}';"), ["detail"])
+
+    def test_raw_string_is_literal_text(self):
+        self.assertEqual(names("final s = r'${EmptyState(body: x)}';"), [])
+
+    def test_raw_triple_string_is_literal_text(self):
+        self.assertEqual(names("final s = r'''\n${EmptyState(body: x)}\n''';"), [])
+
+    def test_identifier_ending_in_r_is_not_raw(self):
+        self.assertEqual(names("final s = bar'${EmptyState(body: x)}';"), ["body"])
+
+    def test_multiline_string_interpolation_fails(self):
+        self.assertEqual(names("final s = '''\nline\n${EmptyState(\n  body: x,\n)}\n''';"), ["body"])
+
+    def test_multiline_string_literal_text_passes(self):
+        self.assertEqual(names("final s = '''\nEmptyState(body: x)\n${a}\nEmptyState(message: y)\n''';"), [])
+
+    def test_multiline_string_reports_line_of_call(self):
+        src = "final s = '''\nline\n${EmptyState(\n  body: x,\n)}\n''';"
+        self.assertEqual(copy_style.empty_state_violations(src), [(3, "body")])
+
 
 class EmDashTests(unittest.TestCase):
     def test_code_and_string_fail(self):
@@ -82,6 +125,42 @@ class EmDashTests(unittest.TestCase):
 
     def test_dash_after_interpolation_fails(self):
         self.assertEqual(copy_style.em_dash_lines("s = '${a} —';\n"), [1])
+
+    def test_dash_after_map_braces_in_interpolation_fails(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '${ {'a': 1}['a'] } —';\n"), [1])
+
+    def test_dash_after_set_braces_in_interpolation_fails(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '${ {1,2}.length } —';\n"), [1])
+
+    def test_dash_in_string_literal_inside_interpolation_fails(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '${f('—')}';\n"), [1])
+
+    def test_dash_in_map_literal_inside_interpolation_fails(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '${ {'a': '—'}['a'] }';\n"), [1])
+
+    def test_dash_in_comment_inside_interpolation_passes(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '''${a // x — y\n}''';\n"), [])
+
+    def test_dash_in_block_comment_inside_interpolation_passes(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '${a /* x — y */}';\n"), [])
+
+    def test_dash_after_short_interpolation_fails(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '$name —';\n"), [1])
+
+    def test_dash_after_escaped_dollar_fails(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '\\${a} —';\n"), [1])
+
+    def test_dash_in_raw_string_fails(self):
+        self.assertEqual(copy_style.em_dash_lines("s = r'${a} —';\n"), [1])
+
+    def test_dash_in_multiline_string_reports_its_line(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '''\nline\n${a} —\n''';\n"), [3])
+
+    def test_dash_in_comment_after_multiline_string_passes(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '''\n${a}\n'''; // —\n"), [])
+
+    def test_comment_marker_in_interpolated_string_is_not_a_comment(self):
+        self.assertEqual(copy_style.em_dash_lines("s = '${a}//'; t = '—';\n"), [1])
 
 
 if __name__ == "__main__":
