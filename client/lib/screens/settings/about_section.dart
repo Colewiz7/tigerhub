@@ -1,11 +1,15 @@
 /// About: version, where the data comes from, and the disclaimer.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../config.dart';
+import '../../data/upstream.dart' show appVersion;
 import '../../theme/tokens.dart';
 import '../../widgets/status_row.dart';
+import 'frame_stats_screen.dart';
 
 const _sources = <({String name, String detail, IconData icon})>[
   (
@@ -42,6 +46,53 @@ const _sources = <({String name, String detail, IconData icon})>[
   ),
 ];
 
+/// The app version. Tapping it five times in a row opens the frame stats.
+/// Nothing on the row hints at that.
+class VersionRow extends StatefulWidget {
+  const VersionRow({super.key});
+
+  /// Taps needed to open the stats screen.
+  static const int taps = 5;
+
+  /// The longest pause between taps that still counts as the same run.
+  static const Duration window = Duration(milliseconds: 1000);
+
+  @override
+  State<VersionRow> createState() => _VersionRowState();
+}
+
+class _VersionRowState extends State<VersionRow> {
+  int _count = 0;
+  Timer? _reset;
+
+  @override
+  void dispose() {
+    _reset?.cancel();
+    super.dispose();
+  }
+
+  void _tap() {
+    _reset?.cancel();
+    _count++;
+    if (_count >= VersionRow.taps) {
+      _count = 0;
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const FrameStatsScreen()),
+      );
+      return;
+    }
+    _reset = Timer(VersionRow.window, () => _count = 0);
+  }
+
+  @override
+  Widget build(BuildContext context) => StatusRow(
+    icon: Icons.info_outline_rounded,
+    title: 'Version',
+    subtitle: appVersion,
+    onTap: _tap,
+  );
+}
+
 class AboutSection extends StatelessWidget {
   const AboutSection({super.key});
 
@@ -64,6 +115,7 @@ class AboutSection extends StatelessWidget {
             ],
           ),
         ),
+        const VersionRow(),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(

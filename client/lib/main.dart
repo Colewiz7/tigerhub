@@ -3,11 +3,16 @@ import 'package:flutter/material.dart';
 import 'app_shell.dart';
 import 'config.dart';
 import 'services/api.dart';
+import 'services/frame_monitor.dart';
 import 'theme/app_theme.dart';
 import 'theme/dynamic_theme.dart';
 import 'widgets/phone_frame.dart';
 
-void main() => runApp(const TigerHubApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  FrameMonitor.instance.start();
+  runApp(const TigerHubApp());
+}
 
 class TigerHubApp extends StatefulWidget {
   const TigerHubApp({super.key});

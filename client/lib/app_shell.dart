@@ -19,6 +19,7 @@ import 'screens/dining_screen.dart';
 import 'screens/events_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'services/cache.dart';
+import 'services/frame_monitor.dart';
 import 'services/subscriptions.dart';
 import 'services/preferences.dart';
 import 'services/api.dart';
@@ -163,10 +164,23 @@ class _AppShellState extends State<AppShell>
       );
   }
 
-  void _go(int index, {bool animate = true}) => setState(() {
-    _animateTabChange = animate;
-    _index = index;
-  });
+  void _go(int index, {bool animate = true}) {
+    if (index != _index) FrameMonitor.instance.tabSwitched(index);
+    setState(() {
+      _animateTabChange = animate;
+      _index = index;
+    });
+  }
+
+  /// Marks scrolls for the frame stats. Never handles the notification.
+  bool _onScroll(ScrollNotification n) {
+    if (n is ScrollStartNotification) {
+      FrameMonitor.instance.scrollStarted(_index);
+    } else if (n is ScrollEndNotification) {
+      FrameMonitor.instance.scrollEnded();
+    }
+    return false;
+  }
 
   /// First run only, and only once the areas are in hand.
   ///
@@ -241,7 +255,9 @@ class _AppShellState extends State<AppShell>
                             scheme: widget.scheme,
                             events: _events,
                           )
-                        : _TabStack(
+                        : NotificationListener<ScrollNotification>(
+                            onNotification: _onScroll,
+                            child: _TabStack(
                             index: _index,
                             animate: _animateTabChange,
                             children: [
@@ -264,6 +280,7 @@ class _AppShellState extends State<AppShell>
                               ),
                             ],
                           ),
+                        ),
                   ),
                   AppTabBar(
                     tabs: _tabs,
