@@ -1,8 +1,6 @@
 /// Drives a context menu end to end and checks what each item really does.
 library;
 
-import 'dart:io';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -111,17 +109,6 @@ ThemeData menuTheme({bool dark = false}) => AppTheme.from(
   ),
 );
 
-// test fonts are boxes, so review shots load the real ones
-Future<void> loadReviewFonts(WidgetTester tester) => tester.runAsync(() async {
-  final rubik = FontLoader('Rubik')..addFont(Future.value(ByteData.sublistView(File('assets/fonts/Rubik.ttf').readAsBytesSync())));
-  await rubik.load();
-  final icons = FontLoader('MaterialIcons')..addFont(Future.value(ByteData.sublistView(File('${Platform.environment['FLUTTER_ROOT']}/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf').readAsBytesSync())));
-  await icons.load();
-}) as Future<void>;
-
-// AppTheme replaces the text theme without a family, so Rubik is applied here for the shots
-ThemeData _withRubik(ThemeData theme) => theme.copyWith(textTheme: theme.textTheme.apply(fontFamily: 'Rubik'));
-
 Future<void> pumpSurface(
   WidgetTester tester,
   MenuSurface surface, {
@@ -129,9 +116,7 @@ Future<void> pumpSurface(
   bool dark = false,
   double textScale = 1.0,
   Key? boundaryKey,
-  bool realFonts = false,
 }) async {
-  if (realFonts) await loadReviewFonts(tester);
   tester.view.devicePixelRatio = 1.0;
   tester.view.physicalSize = size;
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
@@ -142,7 +127,7 @@ Future<void> pumpSurface(
       key: boundaryKey,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        theme: realFonts ? _withRubik(menuTheme(dark: dark)) : menuTheme(dark: dark),
+        theme: menuTheme(dark: dark),
         home: Scaffold(body: surface.build()),
       ),
     ),

@@ -12,6 +12,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 
+import 'golden_harness.dart';
 import 'support/context_menu_harness.dart';
 import 'support/context_menu_surfaces.dart';
 
@@ -33,10 +34,10 @@ void main() {
       for (final dark in [false, true]) {
         for (final scale in [1.0, 2.0]) {
           final name = '${surface.name.replaceAll(' ', '_')}_${size.width.toInt()}x${size.height.toInt()}_${dark ? 'dark' : 'light'}_${scale.toInt()}x';
-          testWidgets(name, (tester) async {
+          goldenWidgets(name, (tester) async {
             MenuProbe().install(tester);
             final key = GlobalKey();
-            await pumpSurface(tester, surface, size: size, dark: dark, textScale: scale, boundaryKey: key, realFonts: outDir != null);
+            await pumpSurface(tester, surface, size: size, dark: dark, textScale: scale, boundaryKey: key);
             await longPress(tester, surface.target());
             await expectMenuOpen(tester, surface.labels);
 

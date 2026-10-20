@@ -123,7 +123,7 @@ final menuSurfaces = <MenuSurface>[
   MenuSurface(
     name: 'academic dates card row',
     files: const ['lib/cards/academic_dates_card.dart'],
-    build: () => const Align(alignment: Alignment.topCenter, child: SizedBox(height: 760, child: AcademicDatesCard())),
+    build: () => const SingleChildScrollView(child: AcademicDatesCard()),
     target: () => find.text(_firstDate.title),
     labels: const ['Copy text'],
     effects: {'Copy text': Copies(_dateText(_firstDate, 'MMM d'))},
