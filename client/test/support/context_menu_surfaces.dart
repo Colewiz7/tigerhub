@@ -71,6 +71,7 @@ Future<void> prepareMenuEnvironment() async {
   SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
   RitClock.pin(CampusTime.wall(2026, 8, 30, 12));
   await Preferences.instance.setHome(area: 'global-village');
+  await Preferences.instance.setMuted('student-life', false);
 }
 
 Widget _campus() {
@@ -102,6 +103,18 @@ final _event = CampusEvent(
   url: 'https://example.edu/events/open-mic',
 );
 
+final _noLinkEvent = CampusEvent(
+  uid: 'open-mic',
+  source: 'test',
+  title: 'Open mic night',
+  startsAt: CampusTime.wall(2026, 8, 31, 19),
+  location: 'Ritz Sports Zone',
+  organizer: 'Student Life',
+  organizerKey: 'student-life',
+);
+
+Widget _eventRow(CampusEvent event) => Padding(padding: const EdgeInsets.all(8), child: Align(alignment: Alignment.topCenter, child: EventRow(event: event, now: CampusTime.wall(2026, 8, 30, 12))));
+
 AcademicMilestone get _firstDate => upcomingAcademicMilestones(now: _day).first;
 
 String _dateText(AcademicMilestone m, String pattern) => '${m.title}\n${DateFormat(pattern).format(m.date)}\n${m.detail}';
@@ -110,14 +123,40 @@ final menuSurfaces = <MenuSurface>[
   MenuSurface(
     name: 'event row',
     files: const ['lib/cards/event_row.dart'],
-    build: () => Padding(padding: const EdgeInsets.all(8), child: Align(alignment: Alignment.topCenter, child: EventRow(event: _event, now: CampusTime.wall(2026, 8, 30, 12)))),
+    build: () => _eventRow(_event),
     target: () => find.text('Open mic night'),
     labels: const ['Copy title', 'Copy details', 'Open page', 'Mute organizer'],
     effects: {
       'Copy title': const Copies('Open mic night'),
       'Copy details': Copies(eventShareText(_event, formatDayAndClock(_event.startsAt))),
       'Open page': const Launches('https://example.edu/events/open-mic'),
-      'Mute organizer': const Mutes('student-life'),
+      'Mute organizer': const Mutes('student-life', 'Student Life'),
+    },
+  ),
+  MenuSurface(
+    name: 'event row without a link',
+    files: const ['lib/cards/event_row.dart'],
+    build: () => _eventRow(_noLinkEvent),
+    target: () => find.text('Open mic night'),
+    labels: const ['Copy title', 'Copy details', 'Mute organizer'],
+    effects: {
+      'Copy title': const Copies('Open mic night'),
+      'Copy details': Copies(eventShareText(_noLinkEvent, formatDayAndClock(_noLinkEvent.startsAt))),
+      'Mute organizer': const Mutes('student-life', 'Student Life'),
+    },
+  ),
+  MenuSurface(
+    name: 'event row from a muted organizer',
+    files: const ['lib/cards/event_row.dart'],
+    build: () => _eventRow(_event),
+    arrange: () => Preferences.instance.setMuted('student-life', true),
+    target: () => find.text('Open mic night'),
+    labels: const ['Copy title', 'Copy details', 'Open page', 'Unmute organizer'],
+    effects: {
+      'Copy title': const Copies('Open mic night'),
+      'Copy details': Copies(eventShareText(_event, formatDayAndClock(_event.startsAt))),
+      'Open page': const Launches('https://example.edu/events/open-mic'),
+      'Unmute organizer': const Unmutes('student-life'),
     },
   ),
   MenuSurface(
@@ -154,6 +193,15 @@ final menuSurfaces = <MenuSurface>[
     target: () => find.text('Emergency call'),
     labels: const ['Call', 'Copy number'],
     effects: const {'Call': Launches('tel:5854753333'), 'Copy number': Copies('585-475-3333')},
+  ),
+  MenuSurface(
+    name: 'safety text contact row',
+    files: const ['lib/screens/campus_screen.dart'],
+    build: _campus,
+    prepare: _section('Safety'),
+    target: () => find.text('Emergency text'),
+    labels: const ['Text', 'Copy number'],
+    effects: const {'Text': Launches('sms:5852058333'), 'Copy number': Copies('585-205-8333')},
   ),
   MenuSurface(
     name: 'makerspace room row',

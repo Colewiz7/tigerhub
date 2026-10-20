@@ -1,10 +1,12 @@
 /// The ContextActions wrapper on its own: scope, keyboard, motion, scrolling, taps.
 library;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/widgets/context_actions.dart';
+import 'package:tigerhub/widgets/phone_frame.dart';
 import 'package:tigerhub/widgets/status_row.dart';
 
 import 'support/context_menu_harness.dart';
@@ -163,6 +165,82 @@ void main() {
     await tester.pumpWidget(app());
     await secondaryTap(tester, row());
     expect(ModalRoute.of(tester.element(menuItems))!.transitionDuration, greaterThan(Duration.zero));
+  });
+
+  testWidgets('in a centered phone frame the popup stays inside the frame', (tester) async {
+    MenuProbe().install(tester);
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(1000, 1000);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: menuTheme(),
+        builder: phoneModeBuilder(const PhoneMode()),
+        home: Scaffold(
+          body: ListView(
+            children: [
+              for (var i = 0; i < 30; i++)
+                StatusRow(
+                  icon: Icons.event_rounded,
+                  title: 'Row $i',
+                  actions: [
+                    MenuAction(label: 'Pick', icon: Icons.check_rounded, onSelected: (_) {}),
+                    MenuAction(label: 'Pick something longer', icon: Icons.check_rounded, onSelected: (_) {}),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final frame = tester.getRect(find.byType(SizedBox).first);
+    final phone = Rect.fromCenter(center: const Offset(500, 500), width: 390, height: 844);
+    expect(frame.size, phone.size);
+    const inset = 4.0;
+    final taps = {
+      'left': Offset(phone.left + inset, phone.top + 100),
+      'right': Offset(phone.right - inset, phone.top + 100),
+      'top': Offset(phone.center.dx, phone.top + inset),
+      'bottom': Offset(phone.center.dx, phone.bottom - inset),
+      'bottom right': Offset(phone.right - inset, phone.bottom - inset),
+    };
+    for (final MapEntry(:key, :value) in taps.entries) {
+      final gesture = await tester.startGesture(value, kind: PointerDeviceKind.mouse, buttons: kSecondaryMouseButton);
+      await gesture.up();
+      await tester.pumpAndSettle();
+      final menu = tester.getRect(find.ancestor(of: menuItems.first, matching: find.byType(Material)).first);
+      expect(phone.contains(menu.topLeft) && phone.contains(menu.bottomRight), isTrue, reason: '$key tap: menu $menu leaves the frame $phone');
+      expect(menu.inflate(8).contains(value), isTrue, reason: '$key tap: menu $menu is not anchored at $value');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle();
+    }
+  });
+
+  testWidgets('the keyboard focus ring sits 2px clear of the row', (tester) async {
+    MenuProbe().install(tester);
+    FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+    addTearDown(() => FocusManager.instance.highlightStrategy = FocusHighlightStrategy.automatic);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: menuTheme(),
+        home: Scaffold(
+          body: Center(
+            child: ContextActions(
+              focusable: true,
+              actions: [MenuAction(label: 'Pick', icon: Icons.check_rounded, onSelected: (_) {})],
+              child: const SizedBox(width: 200, height: 64, child: Text('Row')),
+            ),
+          ),
+        ),
+      ),
+    );
+    final row = tester.getRect(find.text('Row'));
+    expect(find.byKey(ContextActions.ringKey), findsNothing);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pumpAndSettle();
+    expect(tester.getRect(find.byKey(ContextActions.ringKey)), row.inflate(4));
   });
 
   testWidgets('long press does not hijack a vertical scroll, and taps still land', (tester) async {

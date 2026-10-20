@@ -69,6 +69,11 @@ class ContextActions extends StatefulWidget {
 
   static const double itemHeight = 48;
 
+  // focus ring tokens from the spec: 2px wide, 2px clear of the row
+  static const double ringWidth = 2;
+  static const double ringGap = 2;
+  static const ringKey = ValueKey('context-focus-ring');
+
   @override
   State<ContextActions> createState() => _ContextActionsState();
 }
@@ -80,6 +85,8 @@ class _ContextActionsState extends State<ContextActions> {
   Future<void> _show(Offset globalPosition) async {
     if (_open || !ContextActionsScope.enabledOf(context)) return;
     final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    // the overlay may sit inside a phone frame, so the pointer needs converting
+    final local = overlay.globalToLocal(globalPosition);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final media = MediaQuery.of(context);
@@ -91,7 +98,7 @@ class _ContextActionsState extends State<ContextActions> {
     final picked = await showMenu<int>(
       context: context,
       position: RelativeRect.fromRect(
-        Rect.fromLTWH(globalPosition.dx, globalPosition.dy, 0, 0),
+        Rect.fromPoints(local, local),
         Offset.zero & overlay.size,
       ),
       color: scheme.surfaceContainerHighest,
@@ -139,15 +146,27 @@ class _ContextActionsState extends State<ContextActions> {
     return Focus(
       canRequestFocus: enabled,
       onFocusChange: (focused) => setState(() => _focused = focused),
-      child: DecoratedBox(
-        position: DecorationPosition.foreground,
-        decoration: BoxDecoration(
-          borderRadius: Shapes.inner,
-          border: ring
-              ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
-              : null,
-        ),
-        child: widget.child,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          widget.child,
+          if (ring)
+            Positioned.fill(
+              left: -(ContextActions.ringGap + ContextActions.ringWidth),
+              top: -(ContextActions.ringGap + ContextActions.ringWidth),
+              right: -(ContextActions.ringGap + ContextActions.ringWidth),
+              bottom: -(ContextActions.ringGap + ContextActions.ringWidth),
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  key: ContextActions.ringKey,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(Shapes.innerRadius + ContextActions.ringGap + ContextActions.ringWidth),
+                    border: Border.all(color: Theme.of(context).colorScheme.primary, width: ContextActions.ringWidth),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -480,11 +480,12 @@ class _SafetySection extends StatelessWidget {
           ),
           actions: [
             MenuAction(
-              label: 'Call',
-              icon: Icons.call_rounded,
+              label: contact.isText ? 'Text' : 'Call',
+              icon: contact.isText ? Icons.sms_rounded : Icons.call_rounded,
               onSelected: (context) => openOrCopy(
                 context,
-                phoneUri(contact.number),
+                phoneUri(contact.number)
+                    .replace(scheme: contact.isText ? 'sms' : 'tel'),
                 label: '${contact.label} number',
                 copyText: contact.number,
               ),

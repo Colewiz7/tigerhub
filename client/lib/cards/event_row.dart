@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
+import '../services/clipboard.dart';
 import '../services/open_link.dart';
 import '../services/preferences.dart';
 import '../theme/semantic.dart';
@@ -79,7 +80,22 @@ class EventRow extends StatelessWidget {
         MenuAction(
           label: muted ? 'Unmute organizer' : 'Mute organizer',
           icon: muted ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-          onSelected: (_) => Preferences.instance.setMuted(key, !muted),
+          onSelected: (context) {
+            if (muted) {
+              Preferences.instance.setMuted(key, false);
+              return;
+            }
+            // the row leaves the list once muted, so speak first
+            showFeedback(
+              context,
+              'Muted ${event.organizer ?? key}',
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () => Preferences.instance.setMuted(key, false),
+              ),
+            );
+            Preferences.instance.setMuted(key, true);
+          },
         ),
     ];
   }

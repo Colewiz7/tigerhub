@@ -28,7 +28,13 @@ class Launches extends MenuEffect {
 }
 
 class Mutes extends MenuEffect {
-  const Mutes(this.key);
+  const Mutes(this.key, this.name);
+  final String key;
+  final String name;
+}
+
+class Unmutes extends MenuEffect {
+  const Unmutes(this.key);
   final String key;
 }
 
@@ -41,7 +47,11 @@ class MenuSurface {
     required this.labels,
     required this.effects,
     this.prepare,
+    this.arrange,
   });
+
+  // runs before the first build, for state a row reads once
+  final Future<void> Function()? arrange;
 
   final String name;
 
@@ -56,11 +66,12 @@ class MenuSurface {
 
 class _FakeLauncher extends MethodChannelUrlLauncher with MockPlatformInterfaceMixin {
   final launched = <String>[];
+  var succeeds = true;
 
   @override
   Future<bool> launchUrl(String url, LaunchOptions options) async {
     launched.add(url);
-    return true;
+    return succeeds;
   }
 }
 
@@ -72,6 +83,9 @@ class MenuProbe {
   final _launcher = _FakeLauncher();
 
   List<String> get launched => _launcher.launched;
+
+  // a platform with no dialer or mail client
+  set launcherWorks(bool works) => _launcher.succeeds = works;
 
   void install(WidgetTester tester) {
     final messenger = tester.binding.defaultBinaryMessenger;
@@ -122,6 +136,7 @@ Future<void> pumpSurface(
   tester.platformDispatcher.textScaleFactorTestValue = textScale;
   addTearDown(tester.view.reset);
   addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+  await surface.arrange?.call();
   await tester.pumpWidget(
     RepaintBoundary(
       key: boundaryKey,
@@ -221,13 +236,19 @@ void expectEffect(WidgetTester tester, MenuProbe probe, MenuEffect effect, Strin
     case Launches(:final url):
       expect(probe.launched, [url], reason: '$label launch');
       expect(probe.clipboard, isEmpty, reason: '$label should not fall back to copy');
-    case Mutes(:final key):
+    case Mutes(:final key, :final name):
       expect(Preferences.instance.mutedOrganizers, contains(key), reason: '$label mute');
+      expect(find.text('Muted $name'), findsOneWidget, reason: '$label snackbar');
+      expect(find.text('Undo'), findsOneWidget, reason: '$label undo');
+      expect(probe.announcements, ['Muted $name'], reason: '$label announcement');
+    case Unmutes(:final key):
+      expect(Preferences.instance.mutedOrganizers, isNot(contains(key)), reason: '$label unmute');
   }
 }
 
 Future<void> resetAfterEffect(WidgetTester tester, MenuProbe probe, MenuEffect effect) async {
   if (effect case Mutes(:final key)) await Preferences.instance.setMuted(key, false);
+  if (effect case Unmutes(:final key)) await Preferences.instance.setMuted(key, true);
   ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first)).removeCurrentSnackBar();
   await tester.pumpAndSettle();
   probe.clear();

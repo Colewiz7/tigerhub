@@ -3,10 +3,12 @@ library;
 
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/data/rit_clock.dart';
+import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/widgets/context_actions.dart';
 
 import 'support/context_menu_harness.dart';
@@ -45,10 +47,68 @@ void main() {
 
       final row = find.ancestor(of: surface.target(), matching: find.byType(ContextActions)).first;
       final ids = tester.getSemantics(row).getSemanticsData().customSemanticsActionIds!;
-      expect([for (final id in ids) CustomSemanticsAction.getAction(id)!.label], surface.labels);
+      // ids follow the order labels were first seen in the process, not the menu
+      expect([for (final id in ids) CustomSemanticsAction.getAction(id)!.label], unorderedEquals(surface.labels));
       handle.dispose();
     });
   }
+
+  testWidgets('mute hides the row and the snackbar undo brings it back', (tester) async {
+    final probe = MenuProbe()..install(tester);
+    final surface = menuSurfaces.firstWhere((s) => s.name == 'event row');
+    final row = surface.build();
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: menuTheme(),
+        home: Scaffold(
+          body: ListenableBuilder(
+            listenable: Preferences.instance,
+            builder: (context, _) => Preferences.instance.mutedOrganizers.contains('student-life') ? const SizedBox() : row,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await secondaryTap(tester, surface.target());
+    await tapMenuItem(tester, 'Mute organizer');
+    expect(surface.target(), findsNothing);
+    expect(Preferences.instance.mutedOrganizers, contains('student-life'));
+    expect(find.text('Muted Student Life'), findsOneWidget);
+    expect(probe.announcements, ['Muted Student Life']);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(Preferences.instance.mutedOrganizers, isEmpty);
+    expect(surface.target(), findsOneWidget);
+  });
+
+  testWidgets('the mute snackbar dismisses itself', (tester) async {
+    MenuProbe().install(tester);
+    final surface = menuSurfaces.firstWhere((s) => s.name == 'event row');
+    await pumpSurface(tester, surface);
+    await secondaryTap(tester, surface.target());
+    await tapMenuItem(tester, 'Mute organizer');
+    expect(find.text('Undo'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+    expect(find.text('Undo'), findsNothing);
+  });
+
+  testWidgets('a failed menu launch copies through the shared feedback', (tester) async {
+    final probe = MenuProbe()..install(tester);
+    probe.launcherWorks = false;
+    final surface = menuSurfaces.firstWhere((s) => s.name == 'event row');
+    await pumpSurface(tester, surface);
+    await secondaryTap(tester, surface.target());
+    await tapMenuItem(tester, 'Open page');
+    expect(probe.clipboard, ['https://example.edu/events/open-mic']);
+    expect(find.text('Event link copied'), findsOneWidget);
+    expect(probe.announcements, ['Event link copied']);
+  });
 
   test('every file that builds menu actions has a registry entry', () {
     final registered = {for (final surface in menuSurfaces) ...surface.files};
