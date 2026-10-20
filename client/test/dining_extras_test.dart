@@ -4,6 +4,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
@@ -258,6 +259,30 @@ void main() {
 
       expect(body['availability'], 'unavailable');
       expect(body['data'], isEmpty);
+    });
+  });
+
+  group('at 2x text', () {
+    testWidgets('scrolling to the trucks shows every place whole', (tester) async {
+      await pumpDining(tester, _body(_six), size: const Size(390, 844), scale: 2);
+      await tester.scrollUntilVisible(
+        find.text('+2 trucks'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(tester.takeException(), isNull);
+      final place = find.text('Today · 11 a.m. to 2 p.m. · Global Village Plaza');
+      expect(place, findsOneWidget);
+      expect(tester.renderObject<RenderParagraph>(place).didExceedMaxLines, isFalse);
+    });
+
+    testWidgets('ensureVisible on the last truck row does not throw', (tester) async {
+      await pumpDining(tester, _body(_six), size: const Size(390, 844), scale: 2);
+      await tester.ensureVisible(find.text('+2 trucks'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
     });
   });
 

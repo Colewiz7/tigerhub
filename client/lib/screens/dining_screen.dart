@@ -360,6 +360,7 @@ class _FoodTrucksGroup extends StatelessWidget {
             key: ValueKey('truck-${truck.date}-${truck.name}'),
             icon: Icons.local_shipping_rounded,
             dense: true,
+            subtitleMaxLines: null,
             title: truck.name,
             subtitle: [
               _day(truck.date, today),
