@@ -70,10 +70,6 @@ class CardShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
 
     return Material(
       elevation: 0,
@@ -121,18 +117,10 @@ class CardShell extends StatelessWidget {
             // is no height to divide and the content is laid out as it is.
             _FlexibleIfBounded(
               bounded: box.maxHeight.isFinite,
-              child: AnimatedSwitcher(
-                duration: reduceMotion
-                    ? Duration.zero
-                    : const Duration(milliseconds: 140),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeOutCubic,
-                transitionBuilder: (child, animation) =>
-                    FadeTransition(opacity: animation, child: child),
-                child: KeyedSubtree(
-                  key: ValueKey(state == DataState.priming),
-                  child: child,
-                ),
+              // Skeleton to content swaps in place, with no crossfade.
+              child: KeyedSubtree(
+                key: ValueKey(state == DataState.priming),
+                child: child,
               ),
             ),
           ],
