@@ -5,6 +5,8 @@
 /// department is "Dining" for every one).
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -53,18 +55,43 @@ class _DiningScreenState extends State<DiningScreen> {
     final at = trucks?.lastUpdated;
     if (trucks == null || at == null) return false;
     if (trucks.availability != Availability.available) return false;
+    // device clock skew is not handled
     return DateTime.now().difference(at) <= foodTrucksCadence * staleGraceMultiplier;
+  }
+
+  StreamSubscription<Result<Collection<FoodTruck>>>? _trucksSub;
+  bool _active = true;
+
+  // local snapshot only, replaced in place so nothing shifts
+  void _readTrucks() {
+    _trucksSub?.cancel();
+    _trucksSub = widget.api.foodTrucks().listen((result) {
+      if (!mounted) return;
+      if (result.value == null && _trucks.value != null) return;
+      setState(() => _trucks = result);
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final active = TickerMode.valuesOf(context).enabled;
+    if (active && !_active) _readTrucks();
+    _active = active;
+  }
+
+  // the shell hands over a new result on every tick and resume
+  @override
+  void didUpdateWidget(DiningScreen old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.result, widget.result)) _readTrucks();
   }
 
   @override
   void initState() {
     super.initState();
     _prefs.addListener(_onChanged);
-    _subscriptions.add(
-      widget.api.foodTrucks().listen((result) {
-        if (mounted) setState(() => _trucks = result);
-      }),
-    );
+    _readTrucks();
     _subscriptions.add(
       widget.api.diningFeatures().listen((result) {
         if (mounted) setState(() => _features = result);
@@ -75,6 +102,7 @@ class _DiningScreenState extends State<DiningScreen> {
   @override
   void dispose() {
     _prefs.removeListener(_onChanged);
+    _trucksSub?.cancel();
     _subscriptions.dispose();
     _search.dispose();
     _searchFocus.dispose();
@@ -121,7 +149,7 @@ class _DiningScreenState extends State<DiningScreen> {
               )
               .toList();
 
-    // cache shows at once while inside grace, so nothing pops in later
+    // cached trucks show at once
     final trucks = [
       if (_trucksFresh)
         for (final truck in _trucks.value!.data)

@@ -81,7 +81,27 @@ Map<String, dynamic> _body(
   'availability': availability,
 };
 
-/// Holds the trucks answer until [release], so the cached frame can be measured.
+// answers change between reads, optionally held at a gate
+class _Live implements Backend {
+  _Live(this.answer);
+
+  Map<String, dynamic> Function() answer;
+  Completer<void>? gate;
+  var reads = 0;
+
+  @override
+  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? query]) async {
+    if (path == '/dining/specials') return {'data': <dynamic>[], 'stale': false, 'last_updated': null};
+    reads++;
+    await gate?.future;
+    return answer();
+  }
+
+  @override
+  void close() {}
+}
+
+// holds the answer until release
 class _Slow implements Backend {
   _Slow(this.answer);
 
@@ -140,12 +160,31 @@ void main() {
     double scale = 1,
     Future<void> Function()? seedCache,
     Backend? backend,
+    ValueNotifier<int>? tick,
+    ValueNotifier<bool>? tabActive,
   }) async {
     await seedCache?.call();
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
     addTearDown(tester.view.reset);
     final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFF76902), brightness: brightness);
+    final api = ApiClient(backend: backend ?? _Backend(trucks));
+    // a new result object each build stands in for the shell's tick
+    Result<Collection<DiningLocation>> diningResult() => Result(
+      value: Collection(
+        data: const [
+          DiningLocation(
+            id: 23,
+            name: 'Crossroads',
+            category: 'food-court',
+            categoryName: 'Food courts',
+            isOpen: true,
+          ),
+        ],
+        stale: false,
+      ),
+      state: DataState.ok,
+    );
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -153,22 +192,11 @@ void main() {
         home: MediaQuery(
           data: MediaQueryData(size: size, textScaler: TextScaler.linear(scale)),
           child: Scaffold(
-            body: DiningScreen(
-              api: ApiClient(backend: backend ?? _Backend(trucks)),
-              result: const Result(
-                value: Collection(
-                  data: [
-                    DiningLocation(
-                      id: 23,
-                      name: 'Crossroads',
-                      category: 'food-court',
-                      categoryName: 'Food courts',
-                      isOpen: true,
-                    ),
-                  ],
-                  stale: false,
-                ),
-                state: DataState.ok,
+            body: ListenableBuilder(
+              listenable: Listenable.merge([?tick, ?tabActive]),
+              builder: (context, _) => TickerMode(
+                enabled: tabActive?.value ?? true,
+                child: DiningScreen(api: api, result: diningResult()),
               ),
             ),
           ),
@@ -338,24 +366,41 @@ void main() {
       expect(body['data'], hasLength(6));
     });
 
-    // every scrape fails (offline), the snapshot is read at a later clock
+    // clocks move together so the pacer lets the failing scrape run
+    var attempts = 0;
     Future<Map<String, dynamic>> readAfter(Duration age) async {
       await store.write(foodTrucksSource, snapshot());
-      final later = LocalBackend(
+      DateTime later() => DateTime.now().add(age);
+      foodTruckPacer.reset();
+      foodTruckPacer.useClock(later);
+      addTearDown(() {
+        foodTruckPacer.useClock(null);
+        foodTruckPacer.reset();
+      });
+      attempts = 0;
+      final backend = LocalBackend(
         upstream: Upstream(
-          client: MockClient((_) async => throw const SocketException('offline')),
+          client: MockClient((_) async {
+            attempts++;
+            throw const SocketException('offline');
+          }),
           maxRetries: 1,
         ),
         store: store,
-        clock: () => DateTime.now().add(age),
+        clock: later,
       );
-      addTearDown(later.close);
-      return later.fetch('/dining/food-trucks');
+      addTearDown(backend.close);
+      final body = await backend.fetch('/dining/food-trucks');
+      for (var i = 0; i < 50 && attempts == 0; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+      }
+      return body;
     }
 
     test('is unavailable with no rows when the snapshot is beyond grace and the scrape fails', () async {
       final body = await readAfter(const Duration(hours: 20));
 
+      expect(attempts, greaterThan(0));
       expect(body['stale'], isTrue);
       expect(body['availability'], 'unavailable');
       expect(body['data'], isEmpty);
@@ -364,6 +409,7 @@ void main() {
     test('keeps the last trucks inside grace when the scrape fails', () async {
       final body = await readAfter(const Duration(hours: 10));
 
+      expect(attempts, greaterThan(0));
       expect(body['stale'], isFalse);
       expect(body['availability'], 'available');
       expect(body['data'], hasLength(6));
@@ -398,6 +444,89 @@ void main() {
 
       expect(body['availability'], 'unavailable');
       expect(body['data'], isEmpty);
+    });
+  });
+
+  group('trucks re-read', () {
+    // the route answers by the campus month, as the backend does
+    Map<String, dynamic> byMonth() => isFoodTruckSeason(CampusTime.wallDate(), defaultFoodTruckSeasonMonths)
+        ? _body(_six)
+        : _body(const [], availability: 'unavailable');
+
+    final triggers = <String, void Function(ValueNotifier<int>, ValueNotifier<bool>)>{
+      'a tick': (tick, tab) => tick.value++,
+      'the tab becoming active': (tick, tab) {
+        tab.value = false;
+        tab.value = true;
+      },
+    };
+
+    for (final entry in triggers.entries) {
+      testWidgets('trucks fetched on Oct 31 are hidden on Nov 1 after ${entry.key}', (tester) async {
+        RitClock.pin(DateTime.utc(2026, 11, 1, 3));
+        final tick = ValueNotifier(0);
+        final tab = ValueNotifier(true);
+        await pumpDining(tester, null, backend: _Live(byMonth), tick: tick, tabActive: tab);
+        expect(find.text('Taco Loco'), findsOneWidget);
+
+        RitClock.pin(DateTime.utc(2026, 11, 1, 12));
+        await tester.pumpAndSettle();
+        expect(find.text('Taco Loco'), findsOneWidget);
+
+        entry.value(tick, tab);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Food trucks'), findsNothing);
+        expect(find.text('Crossroads'), findsOneWidget);
+      });
+    }
+
+    testWidgets('an aged out response is replaced by a newer available one', (tester) async {
+      final live = _Live(() => _body(_six, age: const Duration(hours: 20)));
+      final tick = ValueNotifier(0);
+      await pumpDining(tester, null, backend: live, tick: tick);
+      expect(find.text('Taco Loco'), findsNothing);
+
+      live.answer = () => _body(_six);
+      tick.value++;
+      await tester.pumpAndSettle();
+
+      expect(find.text('Taco Loco'), findsOneWidget);
+    });
+
+    testWidgets('a re-read with the same content moves nothing', (tester) async {
+      final live = _Live(() => _body(_six));
+      final tick = ValueNotifier(0);
+      await pumpDining(tester, null, backend: live, tick: tick);
+      final before = tester.getTopLeft(find.text('Crossroads'));
+      final reads = live.reads;
+
+      live.gate = Completer<void>();
+      tick.value++;
+      await tester.pump();
+      await tester.pump();
+
+      expect(live.reads, greaterThan(reads));
+      expect(find.text('Taco Loco'), findsOneWidget);
+      expect(tester.getTopLeft(find.text('Crossroads')), before);
+
+      live.gate!.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Taco Loco'), findsOneWidget);
+      expect(tester.getTopLeft(find.text('Crossroads')), before);
+    });
+
+    testWidgets('a tab that stays active does not re-read', (tester) async {
+      final live = _Live(() => _body(_six));
+      final tab = ValueNotifier(true);
+      await pumpDining(tester, null, backend: live, tabActive: tab);
+      final reads = live.reads;
+
+      tab.value = true;
+      await tester.pumpAndSettle();
+
+      expect(live.reads, reads);
     });
   });
 

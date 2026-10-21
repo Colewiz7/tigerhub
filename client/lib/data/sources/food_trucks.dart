@@ -287,9 +287,12 @@ Map<String, dynamic> unavailableFoodTrucks() => {
 class FoodTruckPacer {
   FoodTruckPacer({DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
 
-  final DateTime Function() _clock;
+  DateTime Function() _clock;
   DateTime? _attemptAt;
   bool _clean = true;
+
+  @visibleForTesting
+  void useClock(DateTime Function()? clock) => _clock = clock ?? DateTime.now;
 
   DateTime now() => _clock();
 
