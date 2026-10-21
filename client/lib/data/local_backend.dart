@@ -666,7 +666,7 @@ class LocalBackend implements Backend {
   Future<Map<String, dynamic>> _foodTrucks() async {
     final (snapshot, fetchedAt) = await _snapshot(foodTrucksSource);
     final view = foodTruckView(snapshot, CampusTime.wallDate());
-    // Old data is unknown data: a snapshot past its grace window shows nothing.
+    // a failed refresh keeps the last snapshot until grace runs out
     final show =
         !view.hidden && view.inSeason && !_isStale(foodTrucksSource, fetchedAt);
     return {

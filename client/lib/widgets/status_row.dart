@@ -196,8 +196,7 @@ class StatusRow extends StatelessWidget {
                                     subtitle!,
                                     style: subtitleStyle,
                                     maxLines: subtitleMaxLines,
-                                    // An ellipsis with no line cap collapses
-                                    // the text to one line.
+                                    // ellipsis without a cap forces one line
                                     overflow: subtitleMaxLines == null
                                         ? TextOverflow.clip
                                         : TextOverflow.ellipsis,
@@ -226,8 +225,7 @@ class StatusRow extends StatelessWidget {
                                 Text(
                                   subtitle!,
                                   style: subtitleStyle,
-                                  // The standard row keeps one line; only an
-                                  // explicit null lets it wrap whole.
+                                  // one line unless null
                                   maxLines: subtitleMaxLines == null ? null : 1,
                                   overflow: subtitleMaxLines == null
                                       ? TextOverflow.clip

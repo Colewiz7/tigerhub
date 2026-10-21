@@ -10,6 +10,8 @@ import 'package:flutter/services.dart';
 
 import '../cards/dining_card.dart';
 import '../data/campus_time.dart';
+import '../data/local_backend.dart' show staleGraceMultiplier;
+import '../data/sources/food_trucks.dart' show foodTrucksCadence;
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/jump_list.dart';
@@ -45,6 +47,14 @@ class _DiningScreenState extends State<DiningScreen> {
     value: null,
     state: DataState.priming,
   );
+
+  bool get _trucksFresh {
+    final trucks = _trucks.value;
+    final at = trucks?.lastUpdated;
+    if (trucks == null || at == null) return false;
+    if (trucks.availability != Availability.available) return false;
+    return DateTime.now().difference(at) <= foodTrucksCadence * staleGraceMultiplier;
+  }
 
   @override
   void initState() {
@@ -111,12 +121,9 @@ class _DiningScreenState extends State<DiningScreen> {
               )
               .toList();
 
-    // Only a fresh, successful read that has trucks shows the group. None,
-    // unavailable, off-season, cached and failed all hide it: anything short of
-    // a good read is unknown, never "empty".
+    // cache shows at once while inside grace, so nothing pops in later
     final trucks = [
-      if (_trucks.state == DataState.ok &&
-          _trucks.value?.availability == Availability.available)
+      if (_trucksFresh)
         for (final truck in _trucks.value!.data)
           if (truck.name.isNotEmpty &&
               (query.isEmpty ||

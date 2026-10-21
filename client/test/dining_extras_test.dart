@@ -1,6 +1,7 @@
 /// Dining food trucks group and the two header link-outs.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/campus_time.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/data/sources/food_trucks.dart';
 import 'package:tigerhub/data/static_config.dart';
@@ -68,12 +70,36 @@ Map<String, dynamic> _truck(String name, String date, {String? time, String? pla
   'location': place,
 };
 
-Map<String, dynamic> _body(List<Map<String, dynamic>> data, {String availability = 'available'}) => {
+Map<String, dynamic> _body(
+  List<Map<String, dynamic>> data, {
+  String availability = 'available',
+  Duration age = Duration.zero,
+}) => {
   'data': data,
   'stale': false,
-  'last_updated': null,
+  'last_updated': CampusTime.format(DateTime.now().subtract(age).toUtc()),
   'availability': availability,
 };
+
+/// Holds the trucks answer until [release], so the cached frame can be measured.
+class _Slow implements Backend {
+  _Slow(this.answer);
+
+  final Map<String, dynamic> answer;
+  final _gate = Completer<void>();
+
+  void release() => _gate.complete();
+
+  @override
+  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? query]) async {
+    if (path == '/dining/specials') return {'data': <dynamic>[], 'stale': false, 'last_updated': null};
+    await _gate.future;
+    return answer;
+  }
+
+  @override
+  void close() {}
+}
 
 // pinned to Wed Oct 14 2026, in season
 final _today = DateTime.utc(2026, 10, 14, 16);
@@ -113,6 +139,7 @@ void main() {
     Brightness brightness = Brightness.light,
     double scale = 1,
     Future<void> Function()? seedCache,
+    Backend? backend,
   }) async {
     await seedCache?.call();
     tester.view.devicePixelRatio = 1;
@@ -127,7 +154,7 @@ void main() {
           data: MediaQueryData(size: size, textScaler: TextScaler.linear(scale)),
           child: Scaffold(
             body: DiningScreen(
-              api: ApiClient(backend: _Backend(trucks)),
+              api: ApiClient(backend: backend ?? _Backend(trucks)),
               result: const Result(
                 value: Collection(
                   data: [
@@ -175,16 +202,56 @@ void main() {
       expect(rows, findsNWidgets(7));
     });
 
-    testWidgets('a cached read replayed after a failed refresh hides the group', (tester) async {
+    testWidgets('a cache inside grace shows when the refresh fails', (tester) async {
       await pumpDining(
         tester,
         null,
-        seedCache: () => ResponseCache.instance.write('/dining/food-trucks', _body(_six)),
+        seedCache: () => ResponseCache.instance.write('/dining/food-trucks', _body(_six, age: const Duration(hours: 10))),
+      );
+
+      expect(find.text('Taco Loco'), findsOneWidget);
+    });
+
+    testWidgets('a cache beyond grace stays hidden when the refresh fails', (tester) async {
+      await pumpDining(
+        tester,
+        null,
+        seedCache: () => ResponseCache.instance.write('/dining/food-trucks', _body(_six, age: const Duration(hours: 20))),
       );
 
       expect(find.text('Food trucks'), findsNothing);
       expect(find.text('Taco Loco'), findsNothing);
       expect(find.text('Crossroads'), findsOneWidget);
+    });
+
+    testWidgets('a cache inside grace paints on the first frame and nothing moves after', (tester) async {
+      final slow = _Slow(_body(_six));
+      await pumpDining(
+        tester,
+        null,
+        backend: slow,
+        seedCache: () => ResponseCache.instance.write('/dining/food-trucks', _body(_six, age: const Duration(hours: 10))),
+      );
+
+      expect(find.text('Taco Loco'), findsOneWidget);
+      final before = tester.getTopLeft(find.text('Crossroads'));
+
+      slow.release();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Taco Loco'), findsOneWidget);
+      expect(tester.getTopLeft(find.text('Crossroads')), before);
+    });
+
+    testWidgets('a fresh unavailable answer hides a cached available one', (tester) async {
+      await pumpDining(
+        tester,
+        _body(const [], availability: 'unavailable'),
+        seedCache: () => ResponseCache.instance.write('/dining/food-trucks', _body(_six)),
+      );
+
+      expect(find.text('Food trucks'), findsNothing);
+      expect(find.text('Taco Loco'), findsNothing);
     });
 
     testWidgets('a fresh successful read shows the group over an old cache', (tester) async {
@@ -198,8 +265,8 @@ void main() {
       expect(find.text('Pierogi Pals'), findsNothing);
     });
 
-    testWidgets('a read the backend calls stale hides the group', (tester) async {
-      await pumpDining(tester, {..._body(_six), 'stale': true});
+    testWidgets('an answer older than grace hides the group', (tester) async {
+      await pumpDining(tester, _body(_six, age: const Duration(hours: 20)));
 
       expect(find.text('Food trucks'), findsNothing);
     });
@@ -271,7 +338,8 @@ void main() {
       expect(body['data'], hasLength(6));
     });
 
-    test('is unavailable with no rows when the snapshot is stale', () async {
+    // every scrape fails (offline), the snapshot is read at a later clock
+    Future<Map<String, dynamic>> readAfter(Duration age) async {
       await store.write(foodTrucksSource, snapshot());
       final later = LocalBackend(
         upstream: Upstream(
@@ -279,14 +347,26 @@ void main() {
           maxRetries: 1,
         ),
         store: store,
-        clock: () => DateTime.now().add(const Duration(days: 3)),
+        clock: () => DateTime.now().add(age),
       );
       addTearDown(later.close);
-      final body = await later.fetch('/dining/food-trucks');
+      return later.fetch('/dining/food-trucks');
+    }
+
+    test('is unavailable with no rows when the snapshot is beyond grace and the scrape fails', () async {
+      final body = await readAfter(const Duration(hours: 20));
 
       expect(body['stale'], isTrue);
       expect(body['availability'], 'unavailable');
       expect(body['data'], isEmpty);
+    });
+
+    test('keeps the last trucks inside grace when the scrape fails', () async {
+      final body = await readAfter(const Duration(hours: 10));
+
+      expect(body['stale'], isFalse);
+      expect(body['availability'], 'available');
+      expect(body['data'], hasLength(6));
     });
 
     test('is unavailable with no rows off season', () async {
@@ -449,7 +529,11 @@ void main() {
       for (final label in ['Order online', 'Check balance']) {
         final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
         expect(paragraph.didExceedMaxLines, isFalse, reason: label);
-        expect(paragraph.size.width, lessThanOrEqualTo(320), reason: label);
+        final pill = tester.getRect(find.ancestor(of: find.text(label), matching: find.byType(InkWell)).first);
+        final text = tester.getRect(find.text(label));
+        expect(pill.inflate(0.5).contains(text.topLeft), isTrue, reason: label);
+        expect(pill.inflate(0.5).contains(text.bottomRight), isTrue, reason: label);
+        expect(pill.right, lessThanOrEqualTo(320), reason: label);
       }
     });
   });
