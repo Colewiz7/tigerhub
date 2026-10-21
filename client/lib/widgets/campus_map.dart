@@ -13,6 +13,8 @@ import 'package:flutter/services.dart';
 import '../data/campus_paths.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../services/frame_monitor.dart';
+import '../services/frame_stats.dart' show frameTabMap;
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import 'campus_event_mapper.dart';
@@ -52,8 +54,24 @@ class _CampusMapViewState extends State<CampusMapView> {
     });
   }
 
+  /// Pan and zoom are gestures, not scrolls, so the frame stats are told.
+  /// Balanced however the gestures overlap, and closed if the map goes away
+  /// mid gesture.
+  bool _interacting = false;
+
+  void _markInteraction(bool start) {
+    if (start == _interacting) return;
+    _interacting = start;
+    if (start) {
+      FrameMonitor.instance.scrollStarted(frameTabMap);
+    } else {
+      FrameMonitor.instance.scrollEnded();
+    }
+  }
+
   @override
   void dispose() {
+    _markInteraction(false);
     _transform.dispose();
     _mapFocus.dispose();
     super.dispose();
@@ -272,6 +290,10 @@ class _CampusMapViewState extends State<CampusMapView> {
                                 builder: (context, matrix, child) =>
                                     InteractiveViewer(
                                       transformationController: _transform,
+                                      onInteractionStart: (_) =>
+                                          _markInteraction(true),
+                                      onInteractionEnd: (_) =>
+                                          _markInteraction(false),
                                       minScale: 1,
                                       maxScale: _maxMapZoom,
                                       boundaryMargin: EdgeInsets.all(

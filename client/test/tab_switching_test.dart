@@ -16,6 +16,7 @@ import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/frame_monitor.dart';
+import 'package:tigerhub/services/frame_stats.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/page_veil.dart';
 
@@ -126,11 +127,17 @@ void main() {
     monitor.stats.recordFrame(atUs: monitor.nowUs, buildUs: 1000, rasterUs: 1000);
     expect(monitor.stats.tabSwitchSummary(2).frames, 1);
 
-    // Tapping the tab already shown is not a switch.
+    // Tapping the tab already shown is not a switch. A switch made now would
+    // open a window reaching past the first one's end, so a frame just beyond
+    // the first window shows whether one opened.
     await tester.pumpAndSettle();
+    final firstWindowEnd = monitor.nowUs + tabSwitchWindowUs;
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
     await tester.tap(find.text('EVENTS'));
     await tester.pump();
-    monitor.stats.recordFrame(atUs: monitor.nowUs + 2000000, buildUs: 1000, rasterUs: 1000);
+    monitor.stats.recordFrame(atUs: firstWindowEnd + 1, buildUs: 1000, rasterUs: 1000);
     expect(monitor.stats.tabSwitchSummary(2).frames, 1);
 
     await tester.tap(find.text('TODAY'));

@@ -16,6 +16,9 @@ import 'dart:typed_data';
 /// Tab names in the order the shell lists them.
 const List<String> frameTabNames = ['Today', 'Dining', 'Events', 'Map', 'Campus'];
 
+/// The Map tab's index, for the map's own gesture marks.
+const int frameTabMap = 3;
+
 /// What a frame has to beat to fit a 120Hz and a 60Hz display.
 const int frameBudget120Us = 8333;
 const int frameBudget60Us = 16667;
@@ -30,6 +33,7 @@ const int _eventCapacity = 256;
 class FrameSummary {
   const FrameSummary({
     required this.frames,
+    required this.retained,
     required this.over120,
     required this.over60,
     required this.worstUs,
@@ -44,6 +48,7 @@ class FrameSummary {
 
   static const empty = FrameSummary(
     frames: 0,
+    retained: 0,
     over120: 0,
     over60: 0,
     worstUs: 0,
@@ -58,6 +63,10 @@ class FrameSummary {
 
   /// Frames recorded since the last reset, including any the ring has dropped.
   final int frames;
+
+  /// Frames the ring still holds. The counts and the worst frame cover every
+  /// frame; the percentiles cover only these.
+  final int retained;
 
   /// Frames whose build plus raster time beat [frameBudget120Us].
   final int over120;
@@ -136,6 +145,7 @@ class _Ring {
     total.sort();
     return FrameSummary(
       frames: frames,
+      retained: _length,
       over120: over120,
       over60: over60,
       worstUs: worst,
@@ -165,6 +175,14 @@ class _Scroll {
   int? endUs;
 }
 
+class _Pause {
+  _Pause(this.startUs);
+  final int startUs;
+
+  /// Null while the pause is still on.
+  int? endUs;
+}
+
 class FrameStats {
   FrameStats({int capacity = 20000, int bucketCapacity = 4000, int tabs = 5})
     : _all = _Ring(capacity),
@@ -177,6 +195,7 @@ class FrameStats {
 
   final List<_Switch> _switches = [];
   final List<_Scroll> _scrolls = [];
+  final List<_Pause> _pauses = [];
   int _scrollDepth = 0;
 
   int get tabs => _switchRings.length;
@@ -213,12 +232,40 @@ class FrameStats {
     last.endUs ??= atUs;
   }
 
+  /// Frames that start from [atUs] on are ignored, until [resumed].
+  ///
+  /// By the frame's own start time rather than by when it is reported: the
+  /// engine delivers frames in batches about a second late, so a batch can
+  /// hold frames from both sides of the boundary.
+  void paused(int atUs) {
+    if (_pauses.isNotEmpty && _pauses.last.endUs == null) return;
+    if (_pauses.length == _eventCapacity) _pauses.removeAt(0);
+    _pauses.add(_Pause(atUs));
+  }
+
+  /// Frames that start from [atUs] on count again.
+  void resumed(int atUs) {
+    if (_pauses.isEmpty) return;
+    _pauses.last.endUs ??= atUs;
+  }
+
+  bool _isPaused(int atUs) {
+    for (var i = _pauses.length - 1; i >= 0; i--) {
+      final p = _pauses[i];
+      if (p.startUs > atUs) continue;
+      final end = p.endUs;
+      return end == null || atUs < end;
+    }
+    return false;
+  }
+
   /// Records one frame that started at [atUs].
   void recordFrame({
     required int atUs,
     required int buildUs,
     required int rasterUs,
   }) {
+    if (_pauses.isNotEmpty && _isPaused(atUs)) return;
     _all.add(buildUs, rasterUs);
 
     // Latest switch at or before the frame, if the frame is inside its window.
@@ -286,6 +333,9 @@ class FrameStats {
   static void _writeSummary(StringBuffer out, String title, FrameSummary s) {
     out.writeln(title);
     out.writeln('frames ${s.frames}');
+    if (s.retained < s.frames) {
+      out.writeln('percentiles over the last ${s.retained} frames');
+    }
     out.writeln('over 8.3 ms ${s.over120}');
     out.writeln('over 16.7 ms ${s.over60}');
     out.writeln('build p50 ${ms(s.buildP50)} p90 ${ms(s.buildP90)} p99 ${ms(s.buildP99)}');
@@ -294,8 +344,9 @@ class FrameStats {
   }
 
   static void _writeLine(StringBuffer out, String name, FrameSummary s) {
+    final window = s.retained < s.frames ? ' (p99 of last ${s.retained})' : '';
     out.writeln(
-      '$name: frames ${s.frames}, worst ${ms(s.worstUs)}, p99 ${ms(s.totalP99)}, '
+      '$name: frames ${s.frames}$window, worst ${ms(s.worstUs)}, p99 ${ms(s.totalP99)}, '
       'over 8.3 ${s.over120}, over 16.7 ${s.over60}',
     );
   }

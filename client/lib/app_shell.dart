@@ -173,14 +173,8 @@ class _AppShellState extends State<AppShell>
   }
 
   /// Marks scrolls for the frame stats. Never handles the notification.
-  bool _onScroll(ScrollNotification n) {
-    if (n is ScrollStartNotification) {
-      FrameMonitor.instance.scrollStarted(_index);
-    } else if (n is ScrollEndNotification) {
-      FrameMonitor.instance.scrollEnded();
-    }
-    return false;
-  }
+  bool _onScroll(ScrollNotification n) =>
+      FrameMonitor.instance.onScroll(n, _index);
 
   /// First run only, and only once the areas are in hand.
   ///

@@ -12,7 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../data/upstream.dart' show appVersion;
+import '../../config.dart';
 import '../../services/frame_monitor.dart';
 import '../../services/frame_stats.dart';
 import '../../theme/tokens.dart';
@@ -25,7 +25,7 @@ class FrameStatsScreen extends StatefulWidget {
   /// A recorder to read instead of the app's own, for tests.
   final FrameStats? stats;
 
-  /// Device lines to show instead of reading them, for tests.
+  /// The OS and refresh rate lines to show instead of reading them, for tests.
   final List<String>? device;
 
   @override
@@ -44,7 +44,7 @@ class _FrameStatsScreenState extends State<FrameStatsScreen> {
     super.initState();
     // Reading the stats sorts the rings. Frames drawn while this screen is up
     // would be its own cost, so they are not counted.
-    FrameMonitor.instance.paused = true;
+    FrameMonitor.instance.pause();
     _refresh = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
@@ -52,14 +52,13 @@ class _FrameStatsScreenState extends State<FrameStatsScreen> {
 
   @override
   void dispose() {
-    FrameMonitor.instance.paused = false;
+    FrameMonitor.instance.resume();
     _refresh?.cancel();
     _copiedTimer?.cancel();
     super.dispose();
   }
 
   List<String> _header(BuildContext context) {
-    if (widget.device != null) return widget.device!;
     final scale = MediaQuery.textScalerOf(context).scale(100) / 100;
     final display = View.of(context).display;
     final mode = kReleaseMode
@@ -68,9 +67,12 @@ class _FrameStatsScreenState extends State<FrameStatsScreen> {
         ? 'profile'
         : 'debug';
     return [
-      'TigerHub $appVersion',
-      '${Platform.operatingSystem} ${Platform.operatingSystemVersion}',
-      'Refresh ${display.refreshRate.toStringAsFixed(0)} Hz',
+      '${AppConfig.appName} ${AppConfig.buildVersion}',
+      ...(widget.device ??
+          [
+            '${Platform.operatingSystem} ${Platform.operatingSystemVersion}',
+            'Refresh ${display.refreshRate.toStringAsFixed(0)} Hz',
+          ]),
       'Text scale ${scale.toStringAsFixed(2)}',
       'Build $mode',
     ];
@@ -156,6 +158,8 @@ class _FrameStatsScreenState extends State<FrameStatsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _Metric('Frames', '${all.frames}'),
+                  if (all.retained < all.frames)
+                    _Metric('Percentiles over last', '${all.retained}'),
                   _Metric('Over 8.3 ms', '${all.over120}'),
                   _Metric('Over 16.7 ms', '${all.over60}'),
                   _Metric(
@@ -307,7 +311,8 @@ class _Bucket extends StatelessWidget {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
     final detail =
         'Worst ${FrameStats.ms(summary.worstUs)}, p99 ${FrameStats.ms(summary.totalP99)}, '
-        '${summary.frames} frames';
+        '${summary.frames} frames'
+        '${summary.retained < summary.frames ? ', p99 of last ${summary.retained}' : ''}';
     return Semantics(
       label: '$name, $detail',
       child: ExcludeSemantics(

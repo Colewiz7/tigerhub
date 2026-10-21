@@ -222,6 +222,85 @@ void main() {
     });
   });
 
+  group('pause', () {
+    test('no pause drops nothing', () {
+      final s = FrameStats();
+      for (var i = 0; i < 10; i++) {
+        frame(s, i * 1000);
+      }
+      expect(s.summary().frames, 10);
+    });
+
+    test('a late batch across the open boundary keeps the early frames', () {
+      final s = FrameStats();
+      s.paused(5000); // the screen opened, then the batch arrived
+      frame(s, 3000);
+      frame(s, 4999);
+      frame(s, 5000);
+      frame(s, 6000);
+      expect(s.summary().frames, 2);
+    });
+
+    test('a late batch across the close boundary keeps the later frames', () {
+      final s = FrameStats();
+      s.paused(1000);
+      s.resumed(5000);
+      frame(s, 4000);
+      frame(s, 4999);
+      frame(s, 5000);
+      frame(s, 7000);
+      expect(s.summary().frames, 2);
+    });
+
+    test('two pauses leave the time between them counted', () {
+      final s = FrameStats();
+      s.paused(0);
+      s.resumed(100);
+      s.paused(200);
+      s.resumed(300);
+      frame(s, 50);
+      frame(s, 150);
+      frame(s, 250);
+      frame(s, 350);
+      expect(s.summary().frames, 2);
+    });
+
+    test('a second pause call while paused changes nothing', () {
+      final s = FrameStats();
+      s.paused(100);
+      s.paused(900);
+      frame(s, 500);
+      expect(s.summary().frames, 0);
+    });
+
+    test('paused frames are in no bucket either', () {
+      final s = FrameStats();
+      s.tabSwitched(1, 0);
+      s.paused(100);
+      frame(s, 200);
+      expect(s.tabSwitchSummary(1).frames, 0);
+    });
+  });
+
+  group('retained window', () {
+    test('the summary says how many frames the percentiles cover', () {
+      final s = FrameStats(capacity: 3);
+      for (var i = 0; i < 5; i++) {
+        frame(s, i);
+      }
+      final sum = s.summary();
+      expect(sum.frames, 5);
+      expect(sum.retained, 3);
+      expect(s.report(['x']), contains('percentiles over the last 3 frames'));
+    });
+
+    test('no label before the ring wraps', () {
+      final s = FrameStats(capacity: 3);
+      frame(s, 0);
+      expect(s.report(['x']), isNot(contains('percentiles over')));
+    });
+  });
+
   group('reset and report', () {
     test('reset empties every bucket', () {
       final s = FrameStats();

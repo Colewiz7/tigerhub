@@ -167,13 +167,19 @@ void main() {
     testWidgets('refreshes on a timer and pauses recording while open', (tester) async {
       final stats = FrameStats();
       await pumpScreen(tester, stats);
-      expect(FrameMonitor.instance.paused, isTrue);
+      final monitor = FrameMonitor.instance;
+      monitor.stats.reset();
+      // A frame that starts while the screen is open is not counted.
+      monitor.stats.recordFrame(atUs: monitor.nowUs + 1000, buildUs: 1, rasterUs: 1);
+      expect(monitor.stats.summary().frames, 0);
       stats.recordFrame(atUs: 0, buildUs: 1000, rasterUs: 1000);
       expect(find.text('1'), findsNothing);
       await tester.pump(const Duration(seconds: 1));
       expect(find.text('1'), findsWidgets);
       await tester.pumpWidget(const SizedBox());
-      expect(FrameMonitor.instance.paused, isFalse);
+      monitor.stats.recordFrame(atUs: monitor.nowUs + 1000000, buildUs: 1, rasterUs: 1);
+      expect(monitor.stats.summary().frames, 1);
+      monitor.stats.reset();
     });
 
     testWidgets('buttons are at least 48pt with labels', (tester) async {
@@ -217,13 +223,7 @@ void main() {
           await tester.pumpWidget(app(
             FrameStatsScreen(
               stats: sampleStats(),
-              device: const [
-                'TigerHub 0.1.0',
-                'ios 18.2',
-                'Refresh 120 Hz',
-                'Text scale 1.00',
-                'Build release',
-              ],
+              device: const ['ios 18.2', 'Refresh 120 Hz'],
             ),
             brightness: brightness,
             scale: scale,

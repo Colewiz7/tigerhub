@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../config.dart';
-import '../../data/upstream.dart' show appVersion;
 import '../../theme/tokens.dart';
 import '../../widgets/status_row.dart';
 import 'frame_stats_screen.dart';
@@ -88,7 +87,7 @@ class _VersionRowState extends State<VersionRow> {
   Widget build(BuildContext context) => StatusRow(
     icon: Icons.info_outline_rounded,
     title: 'Version',
-    subtitle: appVersion,
+    subtitle: AppConfig.buildVersion,
     onTap: _tap,
   );
 }

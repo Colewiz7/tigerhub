@@ -10,6 +10,7 @@ import 'dart:developer' show Timeline;
 import 'dart:ui' show FrameTiming, FramePhase;
 
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 
 import 'frame_stats.dart';
 
@@ -22,10 +23,6 @@ class FrameMonitor {
 
   bool _started = false;
 
-  /// While true, frames are dropped. The stats screen sets it so its own
-  /// refresh work does not count.
-  bool paused = false;
-
   void start() {
     if (_started) return;
     _started = true;
@@ -33,7 +30,6 @@ class FrameMonitor {
   }
 
   void _onTimings(List<FrameTiming> timings) {
-    if (paused) return;
     for (var i = 0; i < timings.length; i++) {
       final t = timings[i];
       stats.recordFrame(
@@ -50,4 +46,21 @@ class FrameMonitor {
   void tabSwitched(int tab) => stats.tabSwitched(tab, nowUs);
   void scrollStarted(int tab) => stats.scrollStarted(tab, nowUs);
   void scrollEnded() => stats.scrollEnded(nowUs);
+
+  /// The stats screen is open: its own frames are not counted.
+  void pause() => stats.paused(nowUs);
+  void resume() => stats.resumed(nowUs);
+
+  /// Marks a tab's own vertical scrolls, for a notification listener at the
+  /// shell. Horizontal scrollables and ones nested in another scrollable
+  /// (a chip row in a list) are not the tab scrolling. Never handles it.
+  bool onScroll(ScrollNotification n, int tab) {
+    if (n.depth != 0 || n.metrics.axis != Axis.vertical) return false;
+    if (n is ScrollStartNotification) {
+      scrollStarted(tab);
+    } else if (n is ScrollEndNotification) {
+      scrollEnded();
+    }
+    return false;
+  }
 }

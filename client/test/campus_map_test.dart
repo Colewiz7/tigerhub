@@ -9,6 +9,8 @@ import 'package:tigerhub/data/campus_time.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/frame_monitor.dart';
+import 'package:tigerhub/services/frame_stats.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/campus_map.dart';
 
@@ -340,6 +342,38 @@ void main() {
     expect(open.edge, isNull, reason: 'ground has no walls');
     expect(open.fill!.color, isNot(built.fill!.color));
     expect(parking.edge!.color, isNot(built.edge!.color));
+  });
+
+  testWidgets('pan and zoom count in the Map scroll bucket', (tester) async {
+    final monitor = FrameMonitor.instance;
+    monitor.stats.reset();
+    void frameNow() => monitor.stats
+        .recordFrame(atUs: monitor.nowUs, buildUs: 1000, rasterUs: 1000);
+
+    await tester.pumpWidget(app());
+    final g = await tester.startGesture(tester.getCenter(find.byType(InteractiveViewer)));
+    await g.moveBy(const Offset(40, 20));
+    await tester.pump();
+    frameNow();
+    expect(monitor.stats.scrollSummary(frameTabMap).frames, 1);
+    await g.up();
+    await tester.pumpAndSettle();
+    expect(monitor.stats.tabSwitchSummary(frameTabMap).frames, 0);
+    // The window is closed: a frame a moment later is not counted.
+    monitor.stats
+        .recordFrame(atUs: monitor.nowUs + 1000, buildUs: 1000, rasterUs: 1000);
+    expect(monitor.stats.scrollSummary(frameTabMap).frames, 1);
+
+    // Leaving the map mid gesture does not leave a window open.
+    final g2 = await tester.startGesture(tester.getCenter(find.byType(InteractiveViewer)));
+    await g2.moveBy(const Offset(40, 20));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpAndSettle();
+    monitor.stats
+        .recordFrame(atUs: monitor.nowUs + 1000000, buildUs: 1000, rasterUs: 1000);
+    expect(monitor.stats.scrollSummary(frameTabMap).frames, 1);
+    monitor.stats.reset();
   });
 
   testWidgets('double click and keyboard controls zoom the map', (
