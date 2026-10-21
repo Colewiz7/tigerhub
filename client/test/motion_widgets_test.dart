@@ -27,20 +27,14 @@ void main() {
     expect(find.byType(Container), findsWidgets);
   });
 
-  testWidgets('card transition is disabled with reduced motion', (
+  testWidgets('a card swaps skeleton and content without a transition', (
     tester,
   ) async {
     await tester.pumpWidget(
-      wrap(
-        const CardShell(title: 'Dining', child: Text('Ready')),
-        reduceMotion: true,
-      ),
+      wrap(const CardShell(title: 'Dining', child: Text('Ready'))),
     );
 
-    final switcher = tester.widget<AnimatedSwitcher>(
-      find.byType(AnimatedSwitcher),
-    );
-    expect(switcher.duration, Duration.zero);
+    expect(find.byType(AnimatedSwitcher), findsNothing);
   });
 
   testWidgets('badge value transition is disabled with reduced motion', (

@@ -334,9 +334,7 @@ void main() {
                 tester.getRect(
                   within(
                     find.byWidgetPredicate(
-                      (w) =>
-                          w is AnimatedSwitcher &&
-                          w.duration == const Duration(milliseconds: 140),
+                      (w) => w is KeyedSubtree && w.key is ValueKey<bool>,
                     ),
                   ).first,
                 ),
