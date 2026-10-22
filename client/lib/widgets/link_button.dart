@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../services/open_link.dart';
 import '../theme/tokens.dart';
-import 'more_row.dart';
+import 'focus_ring.dart';
 import 'touch_target.dart';
 
 class LinkButton extends StatelessWidget {

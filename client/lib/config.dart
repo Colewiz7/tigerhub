@@ -24,4 +24,8 @@ class AppConfig {
       'Institute of Technology. Student built and student maintained.';
 
   static const String appName = 'TigerHub';
+
+  /// The version the build ships as, the name part of `version:` in
+  /// pubspec.yaml. A test fails when they differ.
+  static const String buildVersion = '1.0.0';
 }
