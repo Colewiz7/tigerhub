@@ -15,6 +15,8 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/frame_monitor.dart';
+import 'package:tigerhub/services/frame_stats.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 
 /// Answers every path with an empty but well formed envelope, so the shell
@@ -110,6 +112,48 @@ void main() {
             reason: 'round $round threw on $tab');
       }
     }
+    scheme.dispose();
+  });
+
+  testWidgets('tab switches and scrolls are marked for the frame stats',
+      (tester) async {
+    final scheme = await pumpShell(tester);
+    final monitor = FrameMonitor.instance;
+    monitor.stats.reset();
+
+    await tester.tap(find.text('EVENTS'));
+    await tester.pump();
+    monitor.stats.recordFrame(atUs: monitor.nowUs, buildUs: 1000, rasterUs: 1000);
+    expect(monitor.stats.tabSwitchSummary(2).frames, 1);
+
+    // Tapping the tab already shown is not a switch. A switch made now would
+    // open a window reaching past the first one's end, so a frame just beyond
+    // the first window shows whether one opened.
+    await tester.pumpAndSettle();
+    final firstWindowEnd = monitor.nowUs + tabSwitchWindowUs;
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.tap(find.text('EVENTS'));
+    await tester.pump();
+    monitor.stats.recordFrame(atUs: firstWindowEnd + 1, buildUs: 1000, rasterUs: 1000);
+    expect(monitor.stats.tabSwitchSummary(2).frames, 1);
+
+    await tester.tap(find.text('TODAY'));
+    await tester.pumpAndSettle();
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(CustomScrollView).first),
+    );
+    await gesture.moveBy(const Offset(0, -80));
+    await tester.pump();
+    monitor.stats.recordFrame(atUs: monitor.nowUs, buildUs: 1000, rasterUs: 1000);
+    expect(monitor.stats.scrollSummary(0).frames, 1);
+    await gesture.up();
+    await tester.pumpAndSettle();
+    monitor.stats.recordFrame(atUs: monitor.nowUs + 1000, buildUs: 1000, rasterUs: 1000);
+    expect(monitor.stats.scrollSummary(0).frames, 1);
+
+    monitor.stats.reset();
     scheme.dispose();
   });
 

@@ -19,6 +19,7 @@ import 'screens/dining_screen.dart';
 import 'screens/events_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'services/cache.dart';
+import 'services/frame_monitor.dart';
 import 'services/subscriptions.dart';
 import 'services/preferences.dart';
 import 'services/api.dart';
@@ -161,7 +162,14 @@ class _AppShellState extends State<AppShell>
       );
   }
 
-  void _go(int index) => setState(() => _index = index);
+  void _go(int index) {
+    if (index != _index) FrameMonitor.instance.tabSwitched(index);
+    setState(() => _index = index);
+  }
+
+  /// Marks scrolls for the frame stats. Never handles the notification.
+  bool _onScroll(ScrollNotification n) =>
+      FrameMonitor.instance.onScroll(n, _index);
 
   /// First run only, and only once the areas are in hand.
   ///
@@ -236,27 +244,30 @@ class _AppShellState extends State<AppShell>
                             scheme: widget.scheme,
                             events: _events,
                           )
-                        : _TabStack(
-                            index: _index,
-                            children: [
-                              HomeScreen(
-                                api: widget.api,
-                                dining: _dining,
-                                events: _events,
-                                chefs: _chefs,
-                                areas: _areas,
-                                onRefresh: _refreshFromUser,
-                                onGoToTab: _go,
-                              ),
-                              DiningScreen(result: _dining, api: widget.api),
-                              EventsScreen(result: _events),
-                              MapScreen(api: widget.api, events: _events),
-                              CampusScreen(
-                                api: widget.api,
-                                areas: _areas,
-                                events: _events,
-                              ),
-                            ],
+                        : NotificationListener<ScrollNotification>(
+                            onNotification: _onScroll,
+                            child: _TabStack(
+                              index: _index,
+                              children: [
+                                HomeScreen(
+                                  api: widget.api,
+                                  dining: _dining,
+                                  events: _events,
+                                  chefs: _chefs,
+                                  areas: _areas,
+                                  onRefresh: _refreshFromUser,
+                                  onGoToTab: _go,
+                                ),
+                                DiningScreen(result: _dining, api: widget.api),
+                                EventsScreen(result: _events),
+                                MapScreen(api: widget.api, events: _events),
+                                CampusScreen(
+                                  api: widget.api,
+                                  areas: _areas,
+                                  events: _events,
+                                ),
+                              ],
+                            ),
                           ),
                   ),
                   AppTabBar(

@@ -36,10 +36,10 @@ const _mapFile = 'map_screen_golden_test.dart';
 const _stripFix = 'A+B: map card strip fits at 2x text. Until then these goldens '
     'deliberately show the overflow stripe: it is the documented baseline.';
 // Two cards are visible in the strip, and each overflows.
-const _strip = [ExpectedOverflow('lib/widgets/campus_map.dart:901', 'bottom', 24, count: 2)];
+const _strip = [ExpectedOverflow('lib/widgets/campus_map.dart:923', 'bottom', 24, count: 2)];
 
 /// Keyed by (test file basename, exact test description): the same description
-/// in another file does not match. The card strip Column (campus_map.dart:901)
+/// in another file does not match. The card strip Column (campus_map.dart:923)
 /// sits in a fixed-height box, so 2x text overruns it.
 const knownOverflows = <(String, String), KnownOverflow>{
   (_mapFile, 'map screen 390x844 light 2.0x'): KnownOverflow(_strip, _stripFix),
