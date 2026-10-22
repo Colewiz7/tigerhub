@@ -194,7 +194,7 @@ class ApiClient {
     (j) => Collection.fromJson(j, MenuItem.fromJson),
   );
 
-  /// Upcoming truck stops. An unavailable body means unknown, not none.
+  /// unavailable means unknown, not none
   Stream<Result<Collection<FoodTruck>>> foodTrucks() => watch(
     '/dining/food-trucks',
     (j) => Collection.fromJson(j, FoodTruck.fromJson),

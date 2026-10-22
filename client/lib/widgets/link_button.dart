@@ -1,8 +1,7 @@
-/// A pill that opens a web page outside the app.
+/// pill that opens a web page
 ///
-/// 48 tall at least, so the whole pill is the touch target. The label wraps
-/// rather than truncating, so large text grows the pill instead of cutting
-/// the words. Keyboard focus draws the shared 2px ring.
+/// 48 tall minimum for touch
+/// label wraps, never truncates
 library;
 
 import 'package:flutter/material.dart';

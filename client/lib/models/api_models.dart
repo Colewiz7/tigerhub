@@ -338,7 +338,7 @@ class MenuItem {
   );
 }
 
-/// One scheduled truck stop. [date] is a campus calendar day, y-m-d.
+/// one truck stop, date is campus day
 class FoodTruck {
   const FoodTruck({
     required this.name,

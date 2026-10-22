@@ -97,11 +97,8 @@ class _JumpListState extends State<JumpList> {
 
   bool _syncQueued = false;
 
-  /// A scroll notification can arrive in the middle of layout, when the list
-  /// has dropped children whose keys still resolve to inactive elements or
-  /// boxes not yet laid out (a jump that leaves the offset past the new end
-  /// restarts the scroll from inside performLayout). Reading render objects
-  /// there throws, so the sync waits for the frame to finish.
+  /// scroll can fire mid-layout
+  /// render reads throw, so wait a frame
   void _queueSync() {
     if (_syncQueued) return;
     _syncQueued = true;

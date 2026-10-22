@@ -661,12 +661,11 @@ class LocalBackend implements Backend {
 
   // --- food trucks ---
 
-  /// Upcoming trucks, or an unavailable body with no rows. No trucks, a failed
-  /// read and off-season all read as unavailable: zero is unknown, never empty.
+  /// zero trucks reads as unavailable, never empty
   Future<Map<String, dynamic>> _foodTrucks() async {
     final (snapshot, fetchedAt) = await _snapshot(foodTrucksSource);
     final view = foodTruckView(snapshot, CampusTime.wallDate());
-    // a failed refresh keeps the last snapshot until grace runs out
+    // failed refresh keeps last snapshot
     final show =
         !view.hidden && view.inSeason && !_isStale(foodTrucksSource, fetchedAt);
     return {

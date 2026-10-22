@@ -62,7 +62,7 @@ class _DiningScreenState extends State<DiningScreen> {
   StreamSubscription<Result<Collection<FoodTruck>>>? _trucksSub;
   bool _active = true;
 
-  // local snapshot only, replaced in place so nothing shifts
+  // local snapshot, swapped in place
   void _readTrucks() {
     _trucksSub?.cancel();
     _trucksSub = widget.api.foodTrucks().listen((result) {
@@ -80,7 +80,7 @@ class _DiningScreenState extends State<DiningScreen> {
     _active = active;
   }
 
-  // the shell hands over a new result on every tick and resume
+  // shell hands over fresh result each tick
   @override
   void didUpdateWidget(DiningScreen old) {
     super.didUpdateWidget(old);
@@ -363,7 +363,7 @@ class _FoodTrucksGroup extends StatelessWidget {
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
   ];
 
-  // "Today", "Tomorrow", then "Fri, Oct 16"; the campus date, not the device's
+  // campus date, not the devices
   static String _day(String ymd, DateTime today) {
     final date = DateTime.tryParse(ymd);
     if (date == null) return '';
