@@ -7,6 +7,10 @@
 /// style. The theme layer (lib/theme/) is exempt: its styles are merged onto
 /// the base text theme, which carries Rubik. Anything else goes in
 /// [_allowed], with the reason.
+///
+/// Weight: Rubik weighs by its wght axis, which SF on iOS may ignore. Every
+/// `fontVariations: X` in lib/, theme included, must sit next to
+/// `fontWeight: AppTheme.weight(X)` with the same X.
 library;
 
 import 'dart:io';
@@ -123,7 +127,107 @@ List<String> styleProblems(String file, String source) => [
           ' has no fontFamily',
 ];
 
+/// The top level arguments of the call whose parenthesis opens at [open],
+/// whitespace dropped.
+List<String> _arguments(String s, int open) {
+  final args = <String>[];
+  var depth = 0;
+  var start = open + 1;
+  for (var i = open; i < s.length; i++) {
+    final c = s[i];
+    if (c == '(' || c == '[' || c == '{') depth++;
+    if (c == ')' || c == ']' || c == '}') depth--;
+    if ((c == ',' && depth == 1) || depth == 0) {
+      args.add(s.substring(start, i).replaceAll(RegExp(r'\s'), ''));
+      start = i + 1;
+    }
+    if (depth == 0) break;
+  }
+  return args;
+}
+
+/// Index of the parenthesis that opens the argument list holding [at].
+int _openOf(String s, int at) {
+  var depth = 0;
+  for (var i = at - 1; i >= 0; i--) {
+    final c = s[i];
+    if (c == ')' || c == ']' || c == '}') depth++;
+    if (c == '(' || c == '[' || c == '{') {
+      if (depth == 0) return i;
+      depth--;
+    }
+  }
+  return -1;
+}
+
+/// Each `fontVariations:` in [source] with no matching `fontWeight:` beside it.
+List<String> weightProblems(String file, String source) {
+  final code = blank(source);
+  final problems = <String>[];
+  for (final m in RegExp(r'\bfontVariations\s*:').allMatches(code)) {
+    final line = '\n'.allMatches(code.substring(0, m.start)).length + 1;
+    final args = _arguments(code, _openOf(code, m.start));
+    String? arg(String name) => args.where((a) => a.startsWith('$name:')).map((a) => a.substring(name.length + 1)).firstOrNull;
+    final variation = arg('fontVariations')!;
+    final weight = arg('fontWeight');
+    if (weight != 'AppTheme.weight($variation)' && weight != 'weight($variation)') {
+      problems.add('$file:$line: fontVariations $variation needs fontWeight: AppTheme.weight($variation), has ${weight ?? 'none'}');
+    }
+  }
+  return problems;
+}
+
 void main() {
+  group('weight scanner', () {
+    test('flags a variation with no weight', () {
+      const src = '''
+final s = text.bodySmall?.copyWith(color: c, fontVariations: Weights.medium);''';
+      expect(weightProblems('a.dart', src), ['a.dart:1: fontVariations Weights.medium needs fontWeight: AppTheme.weight(Weights.medium), has none']);
+    });
+
+    test('flags a weight that does not match', () {
+      const src = '''
+final s = TextStyle(
+  fontWeight: AppTheme.weight(Weights.medium),
+  fontVariations: Weights.bold,
+);
+final t = TextStyle(fontWeight: FontWeight.w700, fontVariations: Weights.bold);''';
+      expect(weightProblems('a.dart', src), hasLength(2));
+    });
+
+    test('accepts the pair, a ternary across lines, and weight() in the theme', () {
+      const src = '''
+final a = TextStyle(fontWeight: AppTheme.weight(Weights.medium), fontVariations: Weights.medium);
+final b = base.copyWith(
+  fontWeight: AppTheme.weight(today ? Weights.bold : Weights.medium),
+  fontVariations: today
+      ? Weights.bold
+      : Weights.medium,
+);
+final c = TextStyle(fontSize: 9, fontWeight: weight(Weights.light), fontVariations: Weights.light);''';
+      expect(weightProblems('a.dart', src), isEmpty);
+    });
+
+    test('a weight in a nested call does not count', () {
+      const src = '''
+final s = TextStyle(fontVariations: Weights.medium, shadows: [Shadow(color: f(fontWeight: AppTheme.weight(Weights.medium)))]);''';
+      expect(weightProblems('a.dart', src), hasLength(1));
+    });
+  });
+
+  test('every wght variation in lib/ also sets a matching fontWeight', () {
+    final files = Directory('lib').listSync(recursive: true).whereType<File>().where((f) => f.path.endsWith('.dart'));
+    var sites = 0;
+    final problems = <String>[];
+    for (final f in files) {
+      final src = f.readAsStringSync();
+      sites += RegExp(r'\bfontVariations\s*:').allMatches(blank(src)).length;
+      problems.addAll(weightProblems(f.path, src));
+    }
+    expect(sites, greaterThan(15), reason: 'the scan found too few variations to be right');
+    expect(problems, isEmpty, reason: 'SF on iOS may ignore the wght axis. Add fontWeight: AppTheme.weight(...).');
+  });
+
   group('scanner', () {
     test('flags a canvas style with no family', () {
       const src = '''

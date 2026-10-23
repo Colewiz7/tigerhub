@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
 class TabSpec {
@@ -308,7 +309,7 @@ class _GlassItem extends StatelessWidget {
       fontSize: 11,
       height: 1.2,
       letterSpacing: 0,
-      fontWeight: FontWeight.w500,
+      fontWeight: AppTheme.weight(Weights.medium),
       fontVariations: Weights.medium,
       color: color,
     );

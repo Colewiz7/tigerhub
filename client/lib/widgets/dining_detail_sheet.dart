@@ -13,6 +13,7 @@ import '../services/api.dart';
 import '../services/open_link.dart';
 import '../services/preferences.dart';
 import '../theme/semantic.dart';
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import '../widgets/freshness.dart';
 import '../widgets/menu_section.dart';
@@ -144,6 +145,7 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                     textAlign: TextAlign.center,
                     style: text.displayMedium?.copyWith(
                       fontSize: 24,
+                      fontWeight: AppTheme.weight(Weights.medium),
                       fontVariations: Weights.medium,
                       color: open ? semantic.open : semantic.closed,
                     ),

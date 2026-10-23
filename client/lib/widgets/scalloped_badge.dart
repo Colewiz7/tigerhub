@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
 /// A card's one hero number. On phones (under 600pt) it is an inline 28pt pill
@@ -60,6 +61,7 @@ class CardHero extends StatelessWidget {
                 color: foreground,
                 fontSize: 14,
                 letterSpacing: 0,
+                fontWeight: AppTheme.weight(Weights.medium),
                 fontVariations: Weights.medium,
               ),
             ),
@@ -152,6 +154,7 @@ class ScallopedBadge extends StatelessWidget {
                       // The display scale is deliberately light, but at badge
                       // size that reads as thin and washed out against the
                       // filled accent, so this one steps up.
+                      fontWeight: AppTheme.weight(Weights.medium),
                       fontVariations: Weights.medium,
                     ),
                     maxLines: 1,
@@ -171,6 +174,7 @@ class ScallopedBadge extends StatelessWidget {
                         fontSize: size * 0.135,
                         height: 1.1,
                         letterSpacing: 0.6,
+                        fontWeight: AppTheme.weight(Weights.bold),
                         fontVariations: Weights.bold,
                       ),
                       maxLines: 1,

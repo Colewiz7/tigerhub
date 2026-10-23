@@ -7,6 +7,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../services/open_link.dart';
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import 'focus_ring.dart';
 import 'touch_target.dart';
@@ -49,6 +50,7 @@ class LinkButton extends StatelessWidget {
                         label,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: scheme.onSurface,
+                          fontWeight: AppTheme.weight(Weights.medium),
                           fontVariations: Weights.medium,
                         ),
                       ),

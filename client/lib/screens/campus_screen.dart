@@ -21,6 +21,7 @@ import '../services/open_link.dart';
 import '../services/preferences.dart';
 import '../services/academic_dates.dart';
 import '../theme/semantic.dart';
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import '../widgets/context_actions.dart';
 import '../widgets/freshness.dart';
@@ -802,6 +803,7 @@ class _TodayLine extends StatelessWidget {
             '$label \u00b7 $detail',
             style: text.bodySmall?.copyWith(
               color: today.isOpen ? accent : scheme.onSurfaceVariant,
+              fontWeight: AppTheme.weight(Weights.medium),
               fontVariations: Weights.medium,
             ),
           ),
@@ -1183,6 +1185,7 @@ class _DaySpans extends StatelessWidget {
             style: text.displayMedium?.copyWith(
               fontSize: 34,
               height: 1.15,
+              fontWeight: AppTheme.weight(Weights.medium),
               fontVariations: Weights.medium,
               color: scheme.onSurface,
             ),

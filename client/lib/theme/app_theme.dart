@@ -24,9 +24,18 @@ class AppTheme {
   /// null, so no SF files are ever bundled. Canvas text uses this too.
   static String? get uiFont => defaultTargetPlatform == TargetPlatform.iOS ? null : fontFamily;
 
+  /// The FontWeight that goes with a [Weights] variation, so a style that
+  /// sets one sets both. SF on iOS may ignore the wght axis. Null off iOS:
+  /// Rubik already weighs by the axis, and a FontWeight on top of it moves
+  /// pixels, so Android and Linux render as before.
+  static FontWeight? weight(List<FontVariation> wght) {
+    if (uiFont != null) return null;
+    final value = wght.singleWhere((v) => v.axis == 'wght').value;
+    return FontWeight.values.firstWhere((w) => w.value == value);
+  }
+
   /// Build the theme from whatever scheme is currently in force.
   static ThemeData from(ColorScheme scheme) {
-    final ios = uiFont == null;
     final base = ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
@@ -36,8 +45,6 @@ class AppTheme {
 
     final onSurface = scheme.onSurface;
     final muted = scheme.onSurfaceVariant;
-    // sf takes real weights, rubik takes the wght axis alone
-    FontWeight? weight(FontWeight w) => ios ? w : null;
 
     return base.copyWith(
       // Status colours harmonized against this scheme, so they never clash
@@ -59,14 +66,15 @@ class AppTheme {
         thickness: 1,
       ),
       // Merged onto the base text theme, which already carries the family
-      // (Rubik, or the iOS system font) on all 15 slots. Passing a bare TextTheme here would replace it and drop the
-      // family from every slot this file does not restyle.
+      // (Rubik, or the iOS system font) on all 15 slots. Passing a bare
+      // TextTheme here would replace it and drop the family from every slot
+      // this file does not restyle.
       textTheme: base.textTheme.merge(TextTheme(
         // The one oversized, light-weight number per card.
         displayLarge: TextStyle(
           fontSize: 68,
           height: 1.0,
-          fontWeight: weight(FontWeight.w300),
+          fontWeight: weight(Weights.light),
           fontVariations: Weights.light,
           letterSpacing: -1.5,
           color: onSurface,
@@ -74,39 +82,41 @@ class AppTheme {
         displayMedium: TextStyle(
           fontSize: 46,
           height: 1.05,
-          fontWeight: weight(FontWeight.w300),
+          fontWeight: weight(Weights.light),
           fontVariations: Weights.light,
           letterSpacing: -0.8,
           color: onSurface,
         ),
         titleLarge: TextStyle(
           fontSize: 27,
-          fontWeight: weight(FontWeight.w600),
+          fontWeight: weight(Weights.semibold),
           fontVariations: Weights.semibold,
           letterSpacing: 0.1,
           color: onSurface,
         ),
         titleMedium: TextStyle(
           fontSize: 18,
-          fontWeight: weight(FontWeight.w500),
+          fontWeight: weight(Weights.medium),
           fontVariations: Weights.medium,
           color: onSurface,
         ),
         bodyMedium: TextStyle(
           fontSize: 17,
           height: 1.4,
+          fontWeight: weight(Weights.regular),
           fontVariations: Weights.regular,
           color: onSurface,
         ),
         bodySmall: TextStyle(
           fontSize: 14.5,
+          fontWeight: weight(Weights.regular),
           fontVariations: Weights.regular,
           color: muted,
         ),
         // Small, muted, wide. The label under a big number.
         labelSmall: TextStyle(
           fontSize: 12.5,
-          fontWeight: weight(FontWeight.w500),
+          fontWeight: weight(Weights.medium),
           fontVariations: Weights.medium,
           letterSpacing: 1.1,
           color: muted,

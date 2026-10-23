@@ -10,6 +10,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import 'focus_ring.dart';
 import 'touch_target.dart';
@@ -71,6 +72,7 @@ class MoreRow extends StatelessWidget {
                                 color: muted,
                                 fontSize: 14,
                                 letterSpacing: 0,
+                                fontWeight: AppTheme.weight(Weights.medium),
                                 fontVariations: Weights.medium,
                               ),
                         ),
@@ -120,6 +122,7 @@ class MoreRow extends StatelessWidget {
                         '+$hidden $noun',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: muted,
+                          fontWeight: AppTheme.weight(Weights.medium),
                           fontVariations: Weights.medium,
                         ),
                       ),

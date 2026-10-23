@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
 class HiddenFooter extends StatelessWidget {
@@ -65,6 +66,7 @@ class HiddenFooter extends StatelessWidget {
                       expanded ? 'Hide $count again' : '$count $noun',
                       style: text.bodySmall?.copyWith(
                         color: scheme.onSurface,
+                        fontWeight: AppTheme.weight(Weights.medium),
                         fontVariations: Weights.medium,
                       ),
                     ),

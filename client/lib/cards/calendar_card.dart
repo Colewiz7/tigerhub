@@ -17,6 +17,7 @@ import 'package:flutter/material.dart';
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
@@ -277,6 +278,7 @@ class _DayCell extends StatelessWidget {
                     '${fields.day}',
                     style: text.bodyMedium?.copyWith(
                       color: selected ? scheme.primary : scheme.onSurface,
+                      fontWeight: AppTheme.weight(day.isToday ? Weights.bold : Weights.medium),
                       fontVariations: day.isToday
                           ? Weights.bold
                           : Weights.medium,
