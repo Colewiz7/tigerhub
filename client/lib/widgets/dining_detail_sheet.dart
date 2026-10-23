@@ -90,6 +90,7 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
 
     return SafeArea(
       child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

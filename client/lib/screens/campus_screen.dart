@@ -328,6 +328,7 @@ class _ShuttleSection extends StatelessWidget {
               .toList();
 
     return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
       children: [
         _Heading(
@@ -386,6 +387,7 @@ class _AcademicDatesSection extends StatelessWidget {
     final formatter = DateFormat('EEE, MMM d');
 
     return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
       children: [
         const _Heading(
@@ -453,6 +455,7 @@ class _SafetySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
     children: [
       const _Heading(
@@ -515,6 +518,7 @@ class _MailSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
     children: [
       HousingCard(areas: areas, api: api),
@@ -545,6 +549,7 @@ class _FindSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
     children: [
       _Heading(
@@ -592,6 +597,7 @@ class _RecreationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
     children: [
       _Heading(
@@ -620,6 +626,7 @@ class _ShedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
     children: [
       _Heading(

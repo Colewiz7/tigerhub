@@ -141,6 +141,7 @@ class _JumpListState extends State<JumpList> {
             return false;
           },
           child: ListView.builder(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             controller: _controller,
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
             itemCount: widget.groups.length + 1,
@@ -202,6 +203,7 @@ class _Rail extends StatelessWidget {
     final text = Theme.of(context).textTheme;
 
     return ListView.builder(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(14, 6, 6, 24),
       itemCount: groups.length,
       itemBuilder: (context, index) {

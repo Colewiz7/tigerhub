@@ -74,6 +74,7 @@ class _SetupScreenState extends State<SetupScreen> {
       backgroundColor: scheme.surface,
       body: Center(
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.all(28),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 560),
@@ -127,6 +128,7 @@ class _SetupScreenState extends State<SetupScreen> {
                       ),
                     ),
                     onSubmitted: (_) => _finish(skipped: false),
+                    onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                   ),
                   const SizedBox(height: 8),
                   Text(

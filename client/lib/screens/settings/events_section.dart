@@ -45,6 +45,7 @@ class _EventsSectionState extends State<EventsSection> {
     final muted = _prefs.mutedOrganizers;
 
     return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
       children: [
         _SectionHeading(
@@ -300,6 +301,7 @@ class _KeywordEditorState extends State<_KeywordEditor> {
                     enabled: widget.enabled,
                     decoration: InputDecoration(hintText: 'Add a ${widget.title.toLowerCase()} keyword'),
                     onSubmitted: (_) => _add(),
+                    onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
                   ),
                 ),
                 const SizedBox(width: 8),

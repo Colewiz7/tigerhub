@@ -55,6 +55,7 @@ class ResponsiveList extends StatelessWidget {
         if (!twoUp) {
           return ContentColumn(
             child: ListView.builder(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: padding,
               itemCount: itemCount,
               itemBuilder: itemBuilder,
@@ -71,6 +72,7 @@ class ResponsiveList extends StatelessWidget {
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: columnWidth * 2 + 16),
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: padding,
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -575,6 +575,7 @@ class _EventStrip extends StatelessWidget {
                 ),
               )
             : ListView.separated(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 scrollDirection: Axis.horizontal,
                 itemCount: result.groups.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
@@ -639,6 +640,7 @@ class _SelectedEventGroup extends StatelessWidget {
         children: [
           Expanded(
             child: ListView.separated(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               itemCount: group.events.length,
               separatorBuilder: (_, _) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
@@ -738,6 +740,7 @@ class _MapSearchDelegate extends SearchDelegate<CampusMapFeature?> {
       return const Center(child: Text('No campus places match that search.'));
     }
     return ListView.builder(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       itemCount: matches.length,
       itemBuilder: (context, index) {
         final feature = matches[index];
@@ -881,6 +884,7 @@ class _KindStrip extends StatelessWidget {
       ..sort((a, b) => a.value.name.compareTo(b.value.name));
 
     return ListView.separated(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       scrollDirection: Axis.horizontal,
       itemCount: entries.length,
       separatorBuilder: (_, _) => const SizedBox(width: 8),
@@ -964,6 +968,7 @@ class _PlaceStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView.separated(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     scrollDirection: Axis.horizontal,
     itemCount: features.length,
     separatorBuilder: (_, _) => const SizedBox(width: 8),

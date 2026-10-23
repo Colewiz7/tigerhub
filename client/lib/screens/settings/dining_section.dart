@@ -41,6 +41,7 @@ class _DiningSectionState extends State<DiningSection> {
     final semantic = Semantic.of(context);
 
     return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
       children: [
         Padding(

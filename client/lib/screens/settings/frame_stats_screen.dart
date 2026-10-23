@@ -105,6 +105,7 @@ class _FrameStatsScreenState extends State<FrameStatsScreen> {
       backgroundColor: scheme.surfaceContainerLowest,
       body: SafeArea(
         child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(
             Insets.phoneMargin,
             6,

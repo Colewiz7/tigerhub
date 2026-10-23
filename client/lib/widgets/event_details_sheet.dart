@@ -114,6 +114,7 @@ class _EventDetailsSheet extends StatelessWidget {
 
     return SafeArea(
       child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: EdgeInsets.fromLTRB(
           22,
           2,

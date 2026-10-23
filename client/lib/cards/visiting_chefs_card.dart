@@ -301,6 +301,7 @@ class _ChefsSheet extends StatelessWidget {
           ),
           Flexible(
             child: ListView.separated(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(
                 Insets.cardPadding,
                 4,
@@ -333,6 +334,7 @@ class _Centered extends StatelessWidget {
     builder: (context, box) {
       if (!box.maxHeight.isFinite) return child;
       return SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         primary: false,
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: box.maxHeight),

@@ -9,6 +9,7 @@ class QuickLinksSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
     children: [
       for (final link in quickLinks)

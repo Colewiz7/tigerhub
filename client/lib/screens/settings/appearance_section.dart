@@ -40,6 +40,7 @@ class _AppearanceSectionState extends State<AppearanceSection> {
     final scheme = Theme.of(context).colorScheme;
 
     return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
       children: [
         Padding(

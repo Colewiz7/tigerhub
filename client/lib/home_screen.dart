@@ -506,6 +506,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: RefreshIndicator(
             onRefresh: widget.onRefresh,
             child: CustomScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               controller: _scrollController,
               slivers: [
                 SliverPadding(
@@ -623,6 +624,7 @@ class _EditBar extends StatelessWidget {
       showDragHandle: true,
       builder: (context) => SafeArea(
         child: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           shrinkWrap: true,
           padding: const EdgeInsets.fromLTRB(18, 4, 18, 24),
           children: [

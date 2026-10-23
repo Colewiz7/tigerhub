@@ -200,6 +200,8 @@ class _AppShellState extends State<AppShell>
     // place. Desktop is unaffected: there is no system back gesture there, and
     // the tab digits and the tab strip are untouched.
     final atHome = !_showSettings && _index == 0;
+    // read above the Scaffold, which zeroes it for the body
+    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
     return PopScope(
       canPop: atHome,
       onPopInvokedWithResult: (didPop, _) {
@@ -270,16 +272,18 @@ class _AppShellState extends State<AppShell>
                             ),
                           ),
                   ),
-                  AppTabBar(
-                    tabs: _tabs,
-                    index: _showSettings ? -1 : _index,
-                    onSelect: (i) {
-                      if (_showSettings) {
-                        setState(() => _showSettings = false);
-                      }
-                      _go(i);
-                    },
-                  ),
+                  // the bar never rides on top of the keyboard
+                  if (!keyboardUp)
+                    AppTabBar(
+                      tabs: _tabs,
+                      index: _showSettings ? -1 : _index,
+                      onSelect: (i) {
+                        if (_showSettings) {
+                          setState(() => _showSettings = false);
+                        }
+                        _go(i);
+                      },
+                    ),
                 ],
               ),
             ),
@@ -331,21 +335,24 @@ class _TabStackState extends State<_TabStack> {
 
   /// A hidden tab cannot take its autofocus, so the active one asks for it
   /// when it appears. A screen with no autofocus node focuses its own scope,
-  /// which keeps Tab traversal and the shell's key bindings working. Never the
-  /// search field, so no keyboard opens, and never while focus is already in
+  /// which keeps Tab traversal and the shell's key bindings working. Never a
+  /// text field, so no keyboard opens, and never while focus is already in
   /// the tab.
   void _focusActive() {
     if (!mounted) return;
     final scope = _scopes[widget.index];
     if (scope.hasFocus) return;
     for (final node in scope.descendants) {
-      final focus = node.context?.widget;
-      if (focus is Focus && focus.autofocus && node.canRequestFocus) {
+      final context = node.context;
+      final focus = context?.widget;
+      final text = context?.findAncestorWidgetOfExactType<EditableText>() != null;
+      if (focus is Focus && focus.autofocus && !text && node.canRequestFocus) {
         node.requestFocus();
         return;
       }
     }
-    scope.requestFocus();
+    // requestFocus would walk back into a remembered search field
+    scope.requestScopeFocus();
   }
 
   @override

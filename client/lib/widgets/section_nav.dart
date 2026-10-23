@@ -170,6 +170,7 @@ class _NavList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
     children: [
       for (final section in sections)

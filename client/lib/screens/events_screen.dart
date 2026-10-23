@@ -18,6 +18,7 @@ import '../widgets/jump_list.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
 import '../widgets/hidden_footer.dart';
+import '../widgets/search_field.dart';
 import '../widgets/status_row.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -215,25 +216,11 @@ class _EventFilters extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
       child: Column(
         children: [
-          TextField(
+          SearchField(
             controller: controller,
             focusNode: focusNode,
+            hintText: 'Search events, clubs, or places',
             onChanged: onQueryChanged,
-            textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
-              hintText: 'Search events, clubs, or places',
-              prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: controller.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: 'Clear search',
-                      onPressed: () {
-                        controller.clear();
-                        onQueryChanged('');
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-            ),
           ),
           const SizedBox(height: 8),
           Wrap(

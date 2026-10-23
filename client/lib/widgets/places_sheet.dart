@@ -102,6 +102,7 @@ class _PlacesSheetState extends State<PlacesSheet> {
                 prefixIcon: Icon(Icons.search_rounded, size: 18),
               ),
               onChanged: (value) => setState(() => _query = value),
+              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
             ),
             const SizedBox(height: 12),
             if (_result?.isPriming ?? true)
@@ -111,6 +112,7 @@ class _PlacesSheetState extends State<PlacesSheet> {
             else
               Flexible(
                 child: ListView.builder(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   shrinkWrap: true,
                   itemCount: buildings.length,
                   itemBuilder: (context, index) {
