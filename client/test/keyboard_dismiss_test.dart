@@ -4,6 +4,8 @@
 /// and Dining and nothing dismissed it.
 library;
 
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -17,8 +19,11 @@ import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/screens/events_screen.dart';
 import 'package:tigerhub/screens/map_screen.dart';
 import 'package:tigerhub/home_screen.dart';
+import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
+import 'package:tigerhub/widgets/campus_map.dart';
+import 'package:tigerhub/widgets/places_sheet.dart';
 import 'package:tigerhub/widgets/tab_bar.dart';
 import 'package:tigerhub/widgets/wordmark.dart';
 
@@ -54,6 +59,21 @@ class _Backend implements Backend {
     }
     return {'data': data, 'stale': false, 'last_updated': null};
   }
+
+  @override
+  void close() {}
+}
+
+class _PlacesBackend implements Backend {
+  @override
+  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async => {
+    'data': [
+      {'id': 1, 'kind': 'water', 'kind_name': 'Water fountains', 'name': 'Golisano fountain', 'building': 'GOL', 'note': 'By the Golisano stairs'},
+      {'id': 2, 'kind': 'water', 'kind_name': 'Water fountains', 'name': 'Shed fountain', 'building': 'SHED', 'note': 'By the Shed doors'},
+    ],
+    'stale': false,
+    'last_updated': null,
+  };
 
   @override
   void close() {}
@@ -166,16 +186,36 @@ void main() {
       expectNoField(tester, 'after pressing ${digit.keyLabel}');
     }
 
-    // a field used earlier is not brought back by a switch
-    await focusDiningSearch(tester);
-    for (final tab in ['TODAY', 'DINING', 'EVENTS', 'DINING']) {
-      FocusManager.instance.primaryFocus?.unfocus();
+    // leave Dining with the field still focused, so its scope remembers it
+    // onSelect skips the tap outside that would unfocus it first
+    AppTabBar bar() => tester.widget<AppTabBar>(find.byType(AppTabBar));
+    Future<void> select(int index) async {
+      bar().onSelect(index);
       await tester.pump();
-      await tester.tap(find.text(tab));
       await tester.pump();
-      await tester.pump();
-      expectNoField(tester, 'after returning to $tab');
     }
+
+    await focusDiningSearch(tester);
+    await select(0);
+    expectNoField(tester, 'after leaving Dining focused');
+    await select(1);
+    expectNoField(tester, 'after returning to Dining');
+    expect(focused(tester, search(DiningScreen)), isFalse);
+
+    await tester.tap(search(DiningScreen));
+    await tester.pump();
+    await select(2);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(DiningScreen), findsOneWidget);
+    expectNoField(tester, 'after returning to Dining by digit');
+    await tester.tap(find.text('EVENTS'));
+    await tester.pump();
+    await tester.tap(find.text('DINING'));
+    await tester.pump();
+    await tester.pump();
+    expectNoField(tester, 'after returning to Dining by tap');
   }, variant: _platforms);
 
   testWidgets('tapping outside a search field unfocuses it', (tester) async {
@@ -246,8 +286,11 @@ void main() {
     expect(find.text('Cancel'), findsNothing);
     await focusDiningSearch(tester);
 
+    final first = find.text(_Backend.name(0));
+    expect(first, findsOneWidget);
     await tester.enterText(search(DiningScreen), 'number 1');
     await tester.pump();
+    expect(first, findsNothing, reason: 'the query did not filter');
     expect(find.text('Cancel'), findsOneWidget);
 
     await tester.tap(find.text('Cancel'));
@@ -255,8 +298,185 @@ void main() {
     expect(tester.widget<TextField>(search(DiningScreen)).controller!.text, isEmpty);
     expect(focused(tester, search(DiningScreen)), isFalse);
     expect(find.text('Cancel'), findsNothing);
+    expect(first, findsOneWidget, reason: 'the list stayed filtered');
     expectNoField(tester, 'after cancel');
   }, variant: _platforms);
+
+  group('map search', () {
+    const west = CampusMapFeature(
+      id: 1,
+      kind: 'water',
+      kindName: 'Water fountains',
+      name: 'West fountain',
+      geometryType: 'Point',
+      coordinates: [
+        [GeoCoordinate(-77.68, 43.08)],
+      ],
+      building: 'GOL',
+    );
+    const east = CampusMapFeature(
+      id: 2,
+      kind: 'aed',
+      kindName: 'Defibrillators',
+      name: 'East AED',
+      geometryType: 'Point',
+      coordinates: [
+        [GeoCoordinate(-77.67, 43.09)],
+      ],
+      building: 'SHED',
+    );
+
+    Future<void> pumpMap(WidgetTester tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 800,
+            height: 600,
+            child: CampusMapView(
+              result: Result(
+                value: const Collection(data: [west, east], stale: false),
+                state: DataState.ok,
+              ),
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> openSearch(WidgetTester tester) async {
+      await tester.tap(find.byTooltip('Search campus places (Ctrl+F)'));
+      await tester.pumpAndSettle();
+    }
+
+    final field = find.byType(TextField);
+    bool fieldFocused(WidgetTester tester) =>
+        tester.state<EditableTextState>(find.byType(EditableText)).widget.focusNode.hasFocus;
+
+    testWidgets('opening it does not focus the field', (tester) async {
+      await pumpMap(tester);
+      await openSearch(tester);
+      expect(field, findsOneWidget);
+      expect(fieldFocused(tester), isFalse);
+      expectNoField(tester, 'after opening map search');
+    }, variant: _platforms);
+
+    testWidgets('a tap focuses the field and a drag dismisses it',
+        (tester) async {
+      await pumpMap(tester);
+      await openSearch(tester);
+      await tester.tap(field);
+      await tester.pump();
+      expect(fieldFocused(tester), isTrue);
+      expect(tester.testTextInput.hasAnyClients, isTrue);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -100));
+      await tester.pumpAndSettle();
+      expectNoField(tester, 'after dragging the results');
+    }, variant: _platforms);
+
+    testWidgets('cancel clears the query, unfocuses and shows every place',
+        (tester) async {
+      await pumpMap(tester);
+      await openSearch(tester);
+      await tester.tap(field);
+      await tester.pump();
+      await tester.enterText(field, 'East');
+      await tester.pump();
+      expect(find.widgetWithText(ListTile, 'West fountain'), findsNothing);
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pump();
+      expect(tester.widget<TextField>(field).controller!.text, isEmpty);
+      expect(fieldFocused(tester), isFalse);
+      expect(find.text('Cancel'), findsNothing);
+      expect(find.widgetWithText(ListTile, 'West fountain'), findsOneWidget);
+      expect(find.widgetWithText(ListTile, 'East AED'), findsOneWidget);
+      expectNoField(tester, 'after cancel');
+    }, variant: _platforms);
+
+    testWidgets('picking a result moves the camera inside the pan bounds',
+        (tester) async {
+      await pumpMap(tester);
+      await openSearch(tester);
+      await tester.tap(field);
+      await tester.enterText(field, 'East AED');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(ListTile, 'East AED'));
+      await tester.pumpAndSettle();
+
+      final viewer = find.byType(InteractiveViewer);
+      final matrix = tester.widget<InteractiveViewer>(viewer).transformationController!.value;
+      final size = tester.getSize(viewer);
+      const scale = 2.4;
+      expect(matrix.getMaxScaleOnAxis(), scale);
+      expect(matrix.entry(0, 3), inInclusiveRange(size.width * (1 - scale) - 80, 80));
+      expect(matrix.entry(1, 3), inInclusiveRange(size.height * (1 - scale) - 80, 80));
+      expect(find.text('East AED'), findsWidgets, reason: 'the pick is not selected');
+      expectNoField(tester, 'after picking a result');
+    }, variant: _platforms);
+  });
+
+  testWidgets('the places sheet search has cancel', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: PlacesSheet(
+          api: ApiClient(backend: _PlacesBackend()),
+          kind: 'water',
+          title: 'Water fountains',
+          icon: Icons.water_drop_rounded,
+        ),
+      ),
+    ));
+    await tester.pumpAndSettle();
+    final field = find.byType(TextField);
+    final shed = find.text('By the Shed doors');
+    expect(shed, findsOneWidget);
+    expect(find.text('Cancel'), findsNothing);
+
+    await tester.tap(field);
+    await tester.pump();
+    await tester.enterText(field, 'Golisano');
+    await tester.pump();
+    expect(shed, findsNothing, reason: 'the query did not filter');
+    expect(find.text('Cancel'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pump();
+    expect(tester.widget<TextField>(field).controller!.text, isEmpty);
+    expect(find.text('Cancel'), findsNothing);
+    expect(shed, findsOneWidget, reason: 'the list stayed filtered');
+    expectNoField(tester, 'after cancel in the places sheet');
+  }, variant: _platforms);
+
+  test('every scroll view in lib dismisses the keyboard on drag', () {
+    final constructor = RegExp(r'\b(ListView|GridView|CustomScrollView|SingleChildScrollView|ReorderableListView)(\.\w+)?\(');
+    final missing = <String>[];
+    var seen = 0;
+    for (final file in Directory('lib').listSync(recursive: true).whereType<File>()) {
+      if (!file.path.endsWith('.dart')) continue;
+      final source = file.readAsLinesSync().map((l) => l.trimLeft().startsWith('//') ? '' : l).join('\n');
+      for (final match in constructor.allMatches(source)) {
+        seen++;
+        // only the constructor's own arguments, not nested ones
+        var depth = 0;
+        var found = false;
+        for (var i = match.end - 1; i < source.length; i++) {
+          final c = source[i];
+          if (c == '(' || c == '[' || c == '{') depth++;
+          if (c == ')' || c == ']' || c == '}') depth--;
+          if (depth == 0) break;
+          if (depth == 1 && source.startsWith('keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag', i)) found = true;
+        }
+        if (!found) {
+          final line = '\n'.allMatches(source.substring(0, match.start)).length + 1;
+          missing.add('${file.path}:$line ${match.group(0)}');
+        }
+      }
+    }
+    expect(seen, greaterThan(30), reason: 'the scan found too few scroll views to be right');
+    expect(missing, isEmpty, reason: 'scroll views without keyboardDismissBehavior: onDrag');
+  });
 
   testWidgets('the tab bar never sits above the keyboard', (tester) async {
     await pumpShell(tester);

@@ -1,4 +1,4 @@
-/// search box for the Dining and Events tabs
+/// every search box in the app
 ///
 /// cancel shows while focused, like ios
 /// tapping outside drops focus on every platform
