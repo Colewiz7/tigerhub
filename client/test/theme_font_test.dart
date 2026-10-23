@@ -1,4 +1,5 @@
-/// Every piece of text the theme can reach resolves to Rubik.
+/// Every piece of text the theme can reach resolves to Rubik, except on iOS,
+/// where it resolves to the system font (SF Pro) and never to Rubik.
 ///
 /// AppTheme.from used to set fontFamily on the base ThemeData and then replace
 /// the text theme with styles that carried none, so themed text fell through to
@@ -16,6 +17,7 @@
 library;
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/theme/app_theme.dart';
@@ -33,7 +35,18 @@ const _allowedFamilies = <String>{
   'packages/cupertino_icons/CupertinoIcons',
 };
 
-bool _ok(String? family) => family == _rubik || _allowedFamilies.contains(family);
+/// What Material and Cupertino name the iOS system font. A null family on iOS
+/// also paints in it.
+const _system = <String>{'CupertinoSystemText', 'CupertinoSystemDisplay'};
+
+bool get _ios => defaultTargetPlatform == TargetPlatform.iOS;
+
+// the family a theme slot must carry on this platform
+bool _expected(String? family) => _ios ? _system.contains(family) : family == _rubik;
+
+bool _ok(String? family) => _allowedFamilies.contains(family) || (_ios ? family == null || _system.contains(family) : family == _rubik);
+
+final _platforms = TargetPlatformVariant({TargetPlatform.android, TargetPlatform.linux, TargetPlatform.iOS});
 
 ColorScheme _scheme(Brightness b) =>
     ColorScheme.fromSeed(seedColor: const Color(0xFFF76902), brightness: b);
@@ -186,7 +199,7 @@ Future<void> _pump(WidgetTester tester, Brightness b, Widget home) async {
 void main() {
   for (final b in Brightness.values) {
     group('${b.name} theme', () {
-      testWidgets('every text slot and component style is Rubik', (tester) async {
+      testWidgets('every text slot and component style is the platform font', (tester) async {
         late ThemeData theme;
         late CupertinoThemeData cupertino;
         await _pump(
@@ -223,13 +236,13 @@ void main() {
             if ((e.key.startsWith('textTheme.') ||
                     e.key.startsWith('primaryTextTheme.') ||
                     e.key.startsWith('cupertino.')) &&
-                e.value?.fontFamily != _rubik)
+                !_expected(e.value?.fontFamily))
               e.key,
         ];
         expect(unset, isEmpty);
-      });
+      }, variant: _platforms);
 
-      testWidgets('Material widgets paint in Rubik', (tester) async {
+      testWidgets('Material widgets paint in the platform font', (tester) async {
         await _pump(
           tester,
           b,
@@ -380,9 +393,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('dialog title'), findsOneWidget);
         expect(_nonRubik(tester), isEmpty, reason: 'dialog');
-      });
+      }, variant: _platforms);
 
-      testWidgets('the search delegate and error states paint in Rubik', (tester) async {
+      testWidgets('the search delegate and error states paint in the platform font', (tester) async {
         await _pump(
           tester,
           b,
@@ -399,9 +412,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('suggestion'), findsOneWidget);
         expect(_nonRubik(tester), isEmpty);
-      });
+      }, variant: _platforms);
 
-      testWidgets('Cupertino widgets paint in Rubik', (tester) async {
+      testWidgets('Cupertino widgets paint in the platform font', (tester) async {
         await _pump(
           tester,
           b,
@@ -456,9 +469,14 @@ void main() {
           ),
         );
         expect(_nonRubik(tester), isEmpty);
-      });
+      }, variant: _platforms);
     });
   }
+
+  // map labels paint on a canvas, which inherits nothing
+  testWidgets('canvas text names the platform font', (tester) async {
+    expect(AppTheme.uiFont, _ios ? isNull : _rubik);
+  }, variant: _platforms);
 }
 
 void _ignore(int? _) {}

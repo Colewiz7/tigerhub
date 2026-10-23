@@ -9,6 +9,7 @@
 library;
 
 import 'package:flutter/cupertino.dart' show CupertinoTextThemeData, CupertinoThemeData;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 
 import 'semantic.dart';
@@ -19,17 +20,24 @@ class AppTheme {
 
   static const String fontFamily = 'Rubik';
 
+  /// Rubik off iOS. iOS gets the system font (SF Pro) by leaving the family
+  /// null, so no SF files are ever bundled. Canvas text uses this too.
+  static String? get uiFont => defaultTargetPlatform == TargetPlatform.iOS ? null : fontFamily;
+
   /// Build the theme from whatever scheme is currently in force.
   static ThemeData from(ColorScheme scheme) {
+    final ios = uiFont == null;
     final base = ThemeData(
       colorScheme: scheme,
       useMaterial3: true,
-      fontFamily: fontFamily,
+      fontFamily: uiFont,
       brightness: scheme.brightness,
     );
 
     final onSurface = scheme.onSurface;
     final muted = scheme.onSurfaceVariant;
+    // sf takes real weights, rubik takes the wght axis alone
+    FontWeight? weight(FontWeight w) => ios ? w : null;
 
     return base.copyWith(
       // Status colours harmonized against this scheme, so they never clash
@@ -50,14 +58,15 @@ class AppTheme {
         space: 1,
         thickness: 1,
       ),
-      // Merged onto the base text theme, which already carries Rubik on all 15
-      // slots. Passing a bare TextTheme here would replace it and drop the
+      // Merged onto the base text theme, which already carries the family
+      // (Rubik, or the iOS system font) on all 15 slots. Passing a bare TextTheme here would replace it and drop the
       // family from every slot this file does not restyle.
       textTheme: base.textTheme.merge(TextTheme(
         // The one oversized, light-weight number per card.
         displayLarge: TextStyle(
           fontSize: 68,
           height: 1.0,
+          fontWeight: weight(FontWeight.w300),
           fontVariations: Weights.light,
           letterSpacing: -1.5,
           color: onSurface,
@@ -65,18 +74,21 @@ class AppTheme {
         displayMedium: TextStyle(
           fontSize: 46,
           height: 1.05,
+          fontWeight: weight(FontWeight.w300),
           fontVariations: Weights.light,
           letterSpacing: -0.8,
           color: onSurface,
         ),
         titleLarge: TextStyle(
           fontSize: 27,
+          fontWeight: weight(FontWeight.w600),
           fontVariations: Weights.semibold,
           letterSpacing: 0.1,
           color: onSurface,
         ),
         titleMedium: TextStyle(
           fontSize: 18,
+          fontWeight: weight(FontWeight.w500),
           fontVariations: Weights.medium,
           color: onSurface,
         ),
@@ -94,6 +106,7 @@ class AppTheme {
         // Small, muted, wide. The label under a big number.
         labelSmall: TextStyle(
           fontSize: 12.5,
+          fontWeight: weight(FontWeight.w500),
           fontVariations: Weights.medium,
           letterSpacing: 1.1,
           color: muted,
@@ -126,6 +139,8 @@ class AppTheme {
   /// iOS size, weight and colour and only swaps the family.
   static CupertinoThemeData _cupertino(ColorScheme scheme) {
     final d = CupertinoTextThemeData(primaryColor: scheme.primary);
+    // ios keeps the cupertino system styles as they are
+    if (uiFont == null) return CupertinoThemeData(textTheme: d);
     TextStyle rubik(TextStyle s) => s.copyWith(fontFamily: fontFamily);
     return CupertinoThemeData(
       textTheme: CupertinoTextThemeData(

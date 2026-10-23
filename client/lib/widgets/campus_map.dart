@@ -1854,7 +1854,7 @@ class CampusMapPainter extends CustomPainter {
       text: TextSpan(
         text: metres >= 1000 ? '${metres ~/ 1000} km' : '$metres m',
         style: TextStyle(
-          fontFamily: AppTheme.fontFamily,
+          fontFamily: AppTheme.uiFont,
           color: scheme.onSurfaceVariant,
           fontSize: 9 / zoom,
           fontWeight: FontWeight.w600,
@@ -1961,7 +1961,7 @@ class CampusMapPainter extends CustomPainter {
       text: TextSpan(
         text: count,
         style: TextStyle(
-          fontFamily: AppTheme.fontFamily,
+          fontFamily: AppTheme.uiFont,
           color: color,
           fontSize: 9 * scale,
           fontWeight: FontWeight.w800,
@@ -2060,8 +2060,8 @@ class _MapGeometry {
           text: TextSpan(text: abbreviation, style: style),
           textDirection: TextDirection.ltr,
         )..layout();
-        const base = TextStyle(
-          fontFamily: AppTheme.fontFamily,
+        final base = TextStyle(
+          fontFamily: AppTheme.uiFont,
           fontSize: labelBaseSize,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2,

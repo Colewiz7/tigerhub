@@ -203,7 +203,7 @@ final b = TextSpan(style: TextStyle(fontFamily: 'Rubik'));''';
     expect(
       problems,
       isEmpty,
-      reason: 'Canvas text does not inherit Rubik. Set fontFamily: AppTheme.fontFamily.',
+      reason: 'Canvas text does not inherit the theme font. Set fontFamily: AppTheme.uiFont.',
     );
   });
 }
