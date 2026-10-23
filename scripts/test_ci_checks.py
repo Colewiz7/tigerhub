@@ -1,5 +1,7 @@
 """Self-test for the copy style scanners. Run by ci-checks.py."""
 import importlib.util
+import shutil
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -161,6 +163,22 @@ class EmDashTests(unittest.TestCase):
 
     def test_comment_marker_in_interpolated_string_is_not_a_comment(self):
         self.assertEqual(copy_style.em_dash_lines("s = '${a}//'; t = '—';\n"), [1])
+
+
+
+class RulesInCodeTests(unittest.TestCase):
+    # rules live in copy_style.py, no repo doc
+    def test_scanners_run_with_no_docs_beside_them(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            lone = Path(tmp) / "copy_style.py"
+            shutil.copy(Path(__file__).resolve().parent / "copy_style.py", lone)
+            self.assertEqual([p.name for p in Path(tmp).iterdir()], ["copy_style.py"])
+            spec = importlib.util.spec_from_file_location("lone_copy_style", lone)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            self.assertEqual(mod.BANNED_ARGS, {"body", "message", "detail"})
+            self.assertEqual([n for _, n in mod.empty_state_violations("EmptyState(body: 'x')")], ["body"])
+            self.assertEqual(mod.em_dash_lines("s = 'a — b';\n"), [1])
 
 
 if __name__ == "__main__":

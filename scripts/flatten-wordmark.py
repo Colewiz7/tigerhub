@@ -7,9 +7,7 @@ right, but **flutter_svg does not apply a clipPath whose content is text**, so
 in the app the stripes drew as three free-floating bars above the letters while
 the letters stayed unstriped.
 
-`assets/generated/SPEC.md` already anticipated this: "Convert text to paths
-before packaging if exact cross-platform metrics are required." This does that,
-mechanically, from the same font the app bundles. It is a packaging step, not a
+This converts text to paths, mechanically, from the same font the app bundles. It is a packaging step, not a
 design change: the geometry, colours and stripe positions are untouched.
 
 Converting also removes a second, quieter risk. Text SVG depends on the renderer

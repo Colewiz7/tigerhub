@@ -1,0 +1,21 @@
+#!/bin/sh
+# Rejects agent docs, specs, plans and notes. Deletions still go through.
+
+git diff --cached --name-only --diff-filter=ACMRT | {
+    bad=0
+    while IFS= read -r path; do
+        case "$path" in
+            AGENTS.md|*/AGENTS.md|CLAUDE.md|*/CLAUDE.md|GEMINI.md|*/GEMINI.md|SKILLS.md|*/SKILLS.md) ;;
+            .claude/*|*/.claude/*|.agents/*|*/.agents/*|.codex/*|*/.codex/*) ;;
+            docs/*spec*.md|docs/*plan*.md|docs/*notes*.md|docs/*backlog*.md) ;;
+            docs/scallop-overrides.md|docs/copy-style.md) ;;
+            recon/*|*/recon/*) ;;
+            design/STYLE.md|SPEC.md|*/SPEC.md) ;;
+            *) continue ;;
+        esac
+        echo "pre-commit: rejected $path" >&2
+        echo "  this belongs in ~/knowledge-base/tigerhub/, not the repo" >&2
+        bad=1
+    done
+    exit $bad
+}
