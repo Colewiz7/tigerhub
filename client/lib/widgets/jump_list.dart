@@ -12,6 +12,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import 'tab_bar.dart';
 
 class JumpGroup {
   const JumpGroup({
@@ -143,7 +144,7 @@ class _JumpListState extends State<JumpList> {
           child: ListView.builder(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             controller: _controller,
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+            padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(16, 6, 16, 24)),
             itemCount: widget.groups.length + 1,
             itemBuilder: (context, index) {
               if (index == widget.groups.length) {
@@ -204,7 +205,7 @@ class _Rail extends StatelessWidget {
 
     return ListView.builder(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(14, 6, 6, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(14, 6, 6, 24)),
       itemCount: groups.length,
       itemBuilder: (context, index) {
         final on = index == active;

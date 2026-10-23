@@ -9,6 +9,7 @@ import '../../services/filter_profiles.dart';
 import '../../services/preferences.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/status_row.dart';
+import '../../widgets/tab_bar.dart';
 
 class EventsSection extends StatefulWidget {
   const EventsSection({super.key, required this.events});
@@ -46,7 +47,7 @@ class _EventsSectionState extends State<EventsSection> {
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         _SectionHeading(
           title: 'Profile',

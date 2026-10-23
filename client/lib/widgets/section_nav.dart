@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 import 'glyph.dart';
 import 'status_row.dart';
+import 'tab_bar.dart';
 
 class SectionSpec {
   const SectionSpec({
@@ -171,7 +172,7 @@ class _NavList extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(16, 6, 16, 24)),
     children: [
       for (final section in sections)
         SectionNavRow(

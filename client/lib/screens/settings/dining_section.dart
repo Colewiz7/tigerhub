@@ -7,6 +7,7 @@ import '../../services/preferences.dart';
 import '../../theme/semantic.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/menu_section.dart';
+import '../../widgets/tab_bar.dart';
 
 class DiningSection extends StatefulWidget {
   const DiningSection({super.key});
@@ -42,7 +43,7 @@ class _DiningSectionState extends State<DiningSection> {
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 12, top: 4),

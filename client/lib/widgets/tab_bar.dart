@@ -1,19 +1,44 @@
 /// The tab bar.
 ///
-/// Icon stacked above label, accent underline on the active tab, muted when
-/// inactive. No pill backgrounds and no boxes: the underline is the only
-/// indicator, which keeps it quiet the way an editor's tab strip is.
+/// iOS gets a floating glass capsule with a sliding selection pill. Android
+/// and Linux keep a Material NavigationBar. Content scrolls under both, and
+/// [TabBarInset] tells each scrollable how far to pad its end.
 library;
 
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/tokens.dart';
 
 class TabSpec {
-  const TabSpec({required this.icon, required this.label});
+  const TabSpec({required this.icon, required this.selectedIcon, required this.label});
 
   final IconData icon;
+  final IconData selectedIcon;
   final String label;
+}
+
+/// Space the floating bar takes from the bottom of the content area.
+/// Zero outside the shell, or while the bar is hidden.
+class TabBarInset extends InheritedWidget {
+  const TabBarInset({super.key, required this.bottom, required super.child});
+
+  final double bottom;
+
+  static double of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<TabBarInset>()?.bottom ?? 0;
+
+  // the bar's inset replaces the list's own end padding
+  static EdgeInsets pad(BuildContext context, EdgeInsets base) {
+    final bottom = of(context);
+    return bottom == 0 ? base : base.copyWith(bottom: bottom);
+  }
+
+  @override
+  bool updateShouldNotify(TabBarInset old) => old.bottom != bottom;
 }
 
 class AppTabBar extends StatelessWidget {
@@ -22,92 +47,290 @@ class AppTabBar extends StatelessWidget {
     required this.tabs,
     required this.index,
     required this.onSelect,
+    this.active = true,
+    this.minimized = false,
   });
 
   final List<TabSpec> tabs;
   final int index;
   final ValueChanged<int> onSelect;
 
+  /// False while a screen outside the tabs (Settings) covers them.
+  final bool active;
+
+  /// iOS only: icons alone in a shorter capsule.
+  final bool minimized;
+
+  static const double capsuleHeight = 60;
+  static const double minimizedHeight = 48;
+  static const double sideInset = 16;
+  static const double materialHeight = 80;
+
+  /// Gap between the bar and the last row a list can scroll to.
+  static const double contentGap = 8;
+
+  /// Off until a device test says otherwise. Build with
+  /// --dart-define=MINIMIZE_TAB_BAR=true to try it.
+  static const bool minimizeOnScroll = bool.fromEnvironment('MINIMIZE_TAB_BAR');
+
+  static bool glass(BuildContext context) => Theme.of(context).platform == TargetPlatform.iOS;
+
+  // above the home indicator, or a side inset off the edge without one
+  static double capsuleBottom(BuildContext context) => math.max(MediaQuery.paddingOf(context).bottom, sideInset);
+
+  /// Height from the bottom of the screen to the top of the bar.
+  static double overlap(BuildContext context) =>
+      glass(context) ? capsuleHeight + capsuleBottom(context) : materialHeight + MediaQuery.paddingOf(context).bottom;
+
+  @override
+  Widget build(BuildContext context) {
+    if (glass(context)) {
+      return _GlassTabBar(tabs: tabs, index: index, onSelect: onSelect, active: active, minimized: minimized);
+    }
+    return NavigationBar(
+      height: materialHeight,
+      selectedIndex: index,
+      onDestinationSelected: onSelect,
+      labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      // no selection shown while settings covers the tabs
+      indicatorColor: active ? null : Colors.transparent,
+      destinations: [
+        for (final tab in tabs)
+          NavigationDestination(
+            icon: Icon(tab.icon),
+            selectedIcon: Icon(active ? tab.selectedIcon : tab.icon),
+            label: tab.label,
+          ),
+      ],
+    );
+  }
+}
+
+class _GlassTabBar extends StatefulWidget {
+  const _GlassTabBar({
+    required this.tabs,
+    required this.index,
+    required this.onSelect,
+    required this.active,
+    required this.minimized,
+  });
+
+  final List<TabSpec> tabs;
+  final int index;
+  final ValueChanged<int> onSelect;
+  final bool active;
+  final bool minimized;
+
+  @override
+  State<_GlassTabBar> createState() => _GlassTabBarState();
+}
+
+class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderStateMixin {
+  // mass 1, stiffness 450, critically damped
+  static final _spring = SpringDescription.withDampingRatio(mass: 1, stiffness: 450, ratio: 1);
+  static const double _pad = 4;
+
+  // pill position in tabs, fractional mid slide or mid scrub
+  late final AnimationController _pill = AnimationController.unbounded(vsync: this, value: widget.index.toDouble());
+
+  bool _scrubbing = false;
+  int _lastTab = 0;
+
+  bool get _reduceMotion {
+    final media = MediaQuery.maybeOf(context);
+    return (media?.disableAnimations ?? false) || (media?.accessibleNavigation ?? false);
+  }
+
+  @override
+  void didUpdateWidget(_GlassTabBar old) {
+    super.didUpdateWidget(old);
+    if (old.index != widget.index && !_scrubbing) _settle(widget.index);
+  }
+
+  @override
+  void dispose() {
+    _pill.dispose();
+    super.dispose();
+  }
+
+  void _settle(int tab) {
+    if (_reduceMotion) {
+      _pill.value = tab.toDouble();
+      return;
+    }
+    // the spring stops within tolerance, land exactly
+    _pill.animateWith(SpringSimulation(_spring, _pill.value, tab.toDouble(), _pill.velocity)).then((_) => _pill.value = tab.toDouble());
+  }
+
+  double _itemWidth(double width) => (width - _pad * 2) / widget.tabs.length;
+
+  // the pill centre sits under the finger
+  double _positionAt(double x, double width) => ((x - _pad) / _itemWidth(width) - 0.5).clamp(0, widget.tabs.length - 1).toDouble();
+
+  void _scrubTo(double x, double width) {
+    _pill.value = _positionAt(x, width);
+    final tab = _pill.value.round();
+    for (var i = 0; i < (tab - _lastTab).abs(); i++) {
+      HapticFeedback.selectionClick();
+    }
+    if (tab != _lastTab) setState(() => _lastTab = tab);
+  }
+
+  void _endScrub() {
+    if (!_scrubbing) return;
+    final tab = _pill.value.round();
+    setState(() => _scrubbing = false);
+    _settle(tab);
+    if (tab != widget.index || !widget.active) widget.onSelect(tab);
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final height = widget.minimized ? AppTabBar.minimizedHeight : AppTabBar.capsuleHeight;
+    final radius = BorderRadius.circular(height / 2);
+    final count = widget.tabs.length;
+    final highlighted = _scrubbing ? _lastTab : (widget.active ? widget.index : -1);
 
-    return Container(
-      color: scheme.surfaceContainerLowest,
-      padding: const EdgeInsets.only(top: 4),
-      child: Row(
-        children: [
-          for (var i = 0; i < tabs.length; i++)
-            Expanded(
-              child: _Tab(
-                spec: tabs[i],
-                active: i == index,
-                onTap: () => onSelect(i),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(AppTabBar.sideInset, 0, AppTabBar.sideInset, AppTabBar.capsuleBottom(context)),
+      child: SizedBox(
+        height: height,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final itemWidth = _itemWidth(width);
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapUp: (d) {
+                final tab = ((d.localPosition.dx - _pad) / itemWidth).floor().clamp(0, count - 1);
+                widget.onSelect(tab);
+              },
+              // horizontal only, so a vertical swipe never starts a scrub
+              onHorizontalDragStart: (d) {
+                _pill.stop();
+                setState(() {
+                  _scrubbing = true;
+                  _lastTab = widget.index;
+                });
+                _scrubTo(d.localPosition.dx, width);
+              },
+              onHorizontalDragUpdate: (d) => _scrubTo(d.localPosition.dx, width),
+              onHorizontalDragEnd: (_) => _endScrub(),
+              onHorizontalDragCancel: _endScrub,
+              // claims vertical moves, or horizontal wins them by default
+              onVerticalDragStart: (_) {},
+              child: Semantics(
+                role: ui.SemanticsRole.tabBar,
+                container: true,
+                explicitChildNodes: true,
+                child: ClipRRect(
+                  borderRadius: radius,
+                  child: BackdropFilter(
+                    filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainer.withValues(alpha: 0.7),
+                        borderRadius: radius,
+                        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.3), width: 0.5),
+                      ),
+                      child: Stack(
+                        children: [
+                          if (widget.active || _scrubbing)
+                            AnimatedBuilder(
+                              animation: _pill,
+                              builder: (context, child) => Positioned(
+                                key: const ValueKey('tab-pill'),
+                                left: _pad + _pill.value * itemWidth,
+                                top: _pad,
+                                bottom: _pad,
+                                width: itemWidth,
+                                child: child!,
+                              ),
+                              child: DecoratedBox(
+                                decoration: ShapeDecoration(color: scheme.secondaryContainer, shape: Shapes.pill),
+                              ),
+                            ),
+                          Padding(
+                            padding: const EdgeInsets.all(_pad),
+                            child: Row(
+                              children: [
+                                for (var i = 0; i < count; i++)
+                                  Expanded(
+                                    child: _GlassItem(
+                                      spec: widget.tabs[i],
+                                      position: i,
+                                      count: count,
+                                      selected: i == highlighted,
+                                      minimized: widget.minimized,
+                                      onTap: () => widget.onSelect(i),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
-            ),
-        ],
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-class _Tab extends StatelessWidget {
-  const _Tab({required this.spec, required this.active, required this.onTap});
+class _GlassItem extends StatelessWidget {
+  const _GlassItem({
+    required this.spec,
+    required this.position,
+    required this.count,
+    required this.selected,
+    required this.minimized,
+    required this.onTap,
+  });
 
   final TabSpec spec;
-  final bool active;
+  final int position;
+  final int count;
+  final bool selected;
+  final bool minimized;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final color = active ? scheme.primary : scheme.onSurfaceVariant;
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
+    final color = selected ? scheme.primary : scheme.onSurfaceVariant;
+    final label = Theme.of(context).textTheme.labelSmall?.copyWith(
+      fontSize: 11,
+      height: 1.2,
+      letterSpacing: 0,
+      fontWeight: FontWeight.w500,
+      fontVariations: Weights.medium,
+      color: color,
+    );
 
     return Semantics(
-      button: true,
-      selected: active,
-      label: '${spec.label} tab',
-      child: InkWell(
-        onTap: onTap,
+      container: true,
+      role: ui.SemanticsRole.tab,
+      selected: selected,
+      label: '${spec.label}, tab ${position + 1} of $count',
+      onTap: onTap,
+      excludeSemantics: true,
+      // a fixed 60pt capsule, so labels stop growing at 1.3x
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.3,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SizedBox(height: 11),
-            Icon(spec.icon, size: 29, color: color),
-            const SizedBox(height: 6),
-            Text(
-              spec.label,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: color,
-                fontVariations: active ? Weights.semibold : Weights.regular,
-              ),
-            ),
-            const SizedBox(height: 8),
-            // The underline is the whole indicator.
-            TweenAnimationBuilder<double>(
-              tween: Tween(end: active ? 1 : 0),
-              duration: reduceMotion
-                  ? Duration.zero
-                  : const Duration(milliseconds: 160),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, child) => Opacity(
-                opacity: value,
-                child: Transform.scale(scaleX: value, child: child),
-              ),
-              child: Container(
-                height: 3,
-                width: 34,
-                decoration: BoxDecoration(
-                  color: scheme.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 6),
+            Icon(selected ? spec.selectedIcon : spec.icon, size: 24, color: color),
+            if (!minimized) ...[
+              const SizedBox(height: 2),
+              Text(spec.label, style: label, maxLines: 1, softWrap: false, overflow: TextOverflow.fade),
+            ],
           ],
         ),
       ),

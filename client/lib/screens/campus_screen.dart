@@ -28,6 +28,7 @@ import '../widgets/status_row.dart';
 import '../widgets/places_sheet.dart';
 import '../widgets/glyph.dart';
 import '../widgets/section_nav.dart';
+import '../widgets/tab_bar.dart';
 import '../widgets/week_grid.dart';
 import '../services/subscriptions.dart';
 import 'quick_links_section.dart';
@@ -329,7 +330,7 @@ class _ShuttleSection extends StatelessWidget {
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         _Heading(
           title: laborDay
@@ -388,7 +389,7 @@ class _AcademicDatesSection extends StatelessWidget {
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         const _Heading(
           title: 'What is next',
@@ -456,7 +457,7 @@ class _SafetySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       const _Heading(
         title: 'RIT Public Safety',
@@ -519,7 +520,7 @@ class _MailSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       HousingCard(areas: areas, api: api),
       const SizedBox(height: 22),
@@ -550,7 +551,7 @@ class _FindSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       _Heading(
         title: 'Find on campus',
@@ -598,7 +599,7 @@ class _RecreationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       _Heading(
         title: 'Gym and pool',
@@ -627,7 +628,7 @@ class _ShedSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       _Heading(
         glyph: GlyphKind.makerspace,

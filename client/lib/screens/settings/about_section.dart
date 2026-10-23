@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../../config.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/status_row.dart';
+import '../../widgets/tab_bar.dart';
 import 'frame_stats_screen.dart';
 
 const _sources = <({String name, String detail, IconData icon})>[
@@ -102,7 +103,7 @@ class AboutSection extends StatelessWidget {
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 14, top: 4),

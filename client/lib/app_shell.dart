@@ -7,7 +7,9 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart';
 
 import 'home_screen.dart';
@@ -28,19 +30,34 @@ import 'theme/dynamic_theme.dart';
 import 'theme/tokens.dart';
 import 'widgets/tab_bar.dart';
 
-const List<TabSpec> _tabs = [
-  TabSpec(icon: Icons.grid_view_rounded, label: 'TODAY'),
-  TabSpec(icon: Icons.restaurant_rounded, label: 'DINING'),
-  TabSpec(icon: Icons.event_note_rounded, label: 'EVENTS'),
-  TabSpec(icon: Icons.map_rounded, label: 'MAP'),
-  TabSpec(icon: Icons.location_city_rounded, label: 'CAMPUS'),
+const List<TabSpec> _materialTabs = [
+  TabSpec(icon: Icons.grid_view_outlined, selectedIcon: Icons.grid_view_rounded, label: 'Today'),
+  TabSpec(icon: Icons.restaurant_outlined, selectedIcon: Icons.restaurant_rounded, label: 'Dining'),
+  TabSpec(icon: Icons.event_note_outlined, selectedIcon: Icons.event_note_rounded, label: 'Events'),
+  TabSpec(icon: Icons.map_outlined, selectedIcon: Icons.map_rounded, label: 'Map'),
+  TabSpec(icon: Icons.location_city_outlined, selectedIcon: Icons.location_city_rounded, label: 'Campus'),
+];
+
+// cupertino has no fork and knife, so dining borrows material's
+const List<TabSpec> _iosTabs = [
+  TabSpec(icon: CupertinoIcons.square_grid_2x2, selectedIcon: CupertinoIcons.square_grid_2x2_fill, label: 'Today'),
+  TabSpec(icon: Icons.restaurant_outlined, selectedIcon: Icons.restaurant_rounded, label: 'Dining'),
+  TabSpec(icon: CupertinoIcons.tickets, selectedIcon: CupertinoIcons.tickets_fill, label: 'Events'),
+  TabSpec(icon: CupertinoIcons.map, selectedIcon: CupertinoIcons.map_fill, label: 'Map'),
+  TabSpec(icon: CupertinoIcons.compass, selectedIcon: CupertinoIcons.compass_fill, label: 'Campus'),
 ];
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.api, required this.scheme});
+  const AppShell({
+    super.key,
+    required this.api,
+    required this.scheme,
+    this.minimizeTabBarOnScroll = AppTabBar.minimizeOnScroll,
+  });
 
   final ApiClient api;
   final SchemeController scheme;
+  final bool minimizeTabBarOnScroll;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -50,6 +67,7 @@ class _AppShellState extends State<AppShell>
     with WidgetsBindingObserver {
   int _index = 0;
   bool _showSettings = false;
+  bool _barMinimized = false;
 
   Result<Collection<DiningLocation>> _dining = const Result(
     value: null,
@@ -168,8 +186,18 @@ class _AppShellState extends State<AppShell>
   }
 
   /// Marks scrolls for the frame stats. Never handles the notification.
-  bool _onScroll(ScrollNotification n) =>
-      FrameMonitor.instance.onScroll(n, _index);
+  bool _onScroll(ScrollNotification n) {
+    if (widget.minimizeTabBarOnScroll && n is UserScrollNotification && n.metrics.axis == Axis.vertical) {
+      // reverse is the finger pushing content up
+      final minimized = switch (n.direction) {
+        ScrollDirection.reverse => true,
+        ScrollDirection.forward => false,
+        ScrollDirection.idle => _barMinimized,
+      };
+      if (minimized != _barMinimized) setState(() => _barMinimized = minimized);
+    }
+    return FrameMonitor.instance.onScroll(n, _index);
+  }
 
   /// First run only, and only once the areas are in hand.
   ///
@@ -184,6 +212,7 @@ class _AppShellState extends State<AppShell>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final tabs = AppTabBar.glass(context) ? _iosTabs : _materialTabs;
 
     if (_needsSetup) {
       return SetupScreen(
@@ -218,7 +247,7 @@ class _AppShellState extends State<AppShell>
         // makes the UI drivable for screenshots.
         body: CallbackShortcuts(
           bindings: {
-            for (var i = 0; i < _tabs.length && i < _digits.length; i++)
+            for (var i = 0; i < tabs.length && i < _digits.length; i++)
               SingleActivator(_digits[i]): () => _go(i),
             // Conventional settings shortcut.
             const SingleActivator(
@@ -231,7 +260,9 @@ class _AppShellState extends State<AppShell>
           },
           child: Focus(
             autofocus: true,
+            // the bar handles the bottom safe area itself
             child: SafeArea(
+              bottom: false,
               child: Column(
                 children: [
                   _Masthead(
@@ -241,49 +272,68 @@ class _AppShellState extends State<AppShell>
                         setState(() => _showSettings = !_showSettings),
                   ),
                   Expanded(
-                    child: _showSettings
-                        ? SettingsScreen(
-                            scheme: widget.scheme,
-                            events: _events,
-                          )
-                        : NotificationListener<ScrollNotification>(
-                            onNotification: _onScroll,
-                            child: _TabStack(
-                              index: _index,
-                              children: [
-                                HomeScreen(
-                                  api: widget.api,
-                                  dining: _dining,
-                                  events: _events,
-                                  chefs: _chefs,
-                                  areas: _areas,
-                                  onRefresh: _refreshFromUser,
-                                  onGoToTab: _go,
-                                ),
-                                DiningScreen(result: _dining, api: widget.api),
-                                EventsScreen(result: _events),
-                                MapScreen(api: widget.api, events: _events),
-                                CampusScreen(
-                                  api: widget.api,
-                                  areas: _areas,
-                                  events: _events,
-                                ),
-                              ],
+                    // content runs to the screen bottom, under the bar
+                    child: Builder(
+                      builder: (context) => Stack(
+                        children: [
+                          Positioned.fill(
+                            child: TabBarInset(
+                              bottom: keyboardUp ? 0 : AppTabBar.overlap(context) + AppTabBar.contentGap,
+                              child: _showSettings
+                                  ? SettingsScreen(
+                                      scheme: widget.scheme,
+                                      events: _events,
+                                    )
+                                  : NotificationListener<ScrollNotification>(
+                                      onNotification: _onScroll,
+                                      child: _TabStack(
+                                        index: _index,
+                                        children: [
+                                          HomeScreen(
+                                            api: widget.api,
+                                            dining: _dining,
+                                            events: _events,
+                                            chefs: _chefs,
+                                            areas: _areas,
+                                            onRefresh: _refreshFromUser,
+                                            onGoToTab: _go,
+                                          ),
+                                          DiningScreen(result: _dining, api: widget.api),
+                                          EventsScreen(result: _events),
+                                          MapScreen(api: widget.api, events: _events),
+                                          CampusScreen(
+                                            api: widget.api,
+                                            areas: _areas,
+                                            events: _events,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                             ),
                           ),
-                  ),
-                  // the bar never rides on top of the keyboard
-                  if (!keyboardUp)
-                    AppTabBar(
-                      tabs: _tabs,
-                      index: _showSettings ? -1 : _index,
-                      onSelect: (i) {
-                        if (_showSettings) {
-                          setState(() => _showSettings = false);
-                        }
-                        _go(i);
-                      },
+                          // the bar never rides on top of the keyboard
+                          if (!keyboardUp)
+                            Positioned(
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              child: AppTabBar(
+                                tabs: tabs,
+                                index: _index,
+                                active: !_showSettings,
+                                minimized: _barMinimized,
+                                onSelect: (i) {
+                                  if (_showSettings) {
+                                    setState(() => _showSettings = false);
+                                  }
+                                  _go(i);
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
+                  ),
                 ],
               ),
             ),

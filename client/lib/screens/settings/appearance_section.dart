@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../theme/dynamic_theme.dart';
 import '../../theme/scheme_source.dart';
 import '../../widgets/status_row.dart';
+import '../../widgets/tab_bar.dart';
 
 class AppearanceSection extends StatefulWidget {
   const AppearanceSection({super.key, required this.scheme});
@@ -41,7 +42,7 @@ class _AppearanceSectionState extends State<AppearanceSection> {
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 12, top: 4),

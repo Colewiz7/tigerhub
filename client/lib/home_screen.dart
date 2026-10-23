@@ -26,6 +26,7 @@ import 'services/dashboard.dart';
 import 'theme/tokens.dart';
 import 'widgets/card_shell.dart' show editControlsWidth;
 import 'widgets/context_actions.dart' show ContextActionsScope;
+import 'widgets/tab_bar.dart';
 import 'widgets/touch_target.dart';
 
 /// The icon each module type shows in the card library and the hidden chips.
@@ -563,6 +564,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SliverToBoxAdapter(child: _Colophon()),
+                SliverToBoxAdapter(child: SizedBox(height: TabBarInset.of(context))),
               ],
             ),
           ),

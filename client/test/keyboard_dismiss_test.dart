@@ -27,6 +27,8 @@ import 'package:tigerhub/widgets/places_sheet.dart';
 import 'package:tigerhub/widgets/tab_bar.dart';
 import 'package:tigerhub/widgets/wordmark.dart';
 
+import 'support/tabs.dart';
+
 class _Backend implements Backend {
   static String name(int id) => 'Place number $id';
 
@@ -105,11 +107,11 @@ class _Platforms extends TestVariant<TargetPlatform?> {
 const _platforms = _Platforms();
 
 const _tabs = <String, Type>{
-  'TODAY': HomeScreen,
-  'DINING': DiningScreen,
-  'EVENTS': EventsScreen,
-  'MAP': MapScreen,
-  'CAMPUS': CampusScreen,
+  'Today': HomeScreen,
+  'Dining': DiningScreen,
+  'Events': EventsScreen,
+  'Map': MapScreen,
+  'Campus': CampusScreen,
 };
 
 const _digits = [
@@ -157,7 +159,7 @@ void main() {
       tester.widget<TextField>(field).focusNode!.hasFocus;
 
   Future<void> focusDiningSearch(WidgetTester tester) async {
-    await tester.tap(find.text('DINING'));
+    await tester.tap(tabLabel('Dining'));
     await tester.pumpAndSettle();
     await tester.tap(search(DiningScreen));
     await tester.pump();
@@ -174,7 +176,7 @@ void main() {
     await pumpShell(tester);
 
     for (final tab in [..._tabs.keys, ..._tabs.keys]) {
-      await tester.tap(find.text(tab));
+      await tester.tap(tabLabel(tab));
       await tester.pump();
       await tester.pump();
       expectNoField(tester, 'after tapping $tab');
@@ -210,9 +212,9 @@ void main() {
     await tester.pump();
     expect(find.byType(DiningScreen), findsOneWidget);
     expectNoField(tester, 'after returning to Dining by digit');
-    await tester.tap(find.text('EVENTS'));
+    await tester.tap(tabLabel('Events'));
     await tester.pump();
-    await tester.tap(find.text('DINING'));
+    await tester.tap(tabLabel('Dining'));
     await tester.pump();
     await tester.pump();
     expectNoField(tester, 'after returning to Dining by tap');
@@ -259,7 +261,7 @@ void main() {
     }
 
     for (final tab in _tabs.keys) {
-      await tester.tap(find.text(tab));
+      await tester.tap(tabLabel(tab));
       await tester.pumpAndSettle();
       check(tab);
     }
