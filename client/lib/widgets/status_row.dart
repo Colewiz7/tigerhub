@@ -29,8 +29,13 @@ class StatusRow extends StatelessWidget {
     this.onTap,
     this.semanticHint,
     this.dense = false,
+    this.subtitleMaxLines = 2,
     this.actions = const [],
   });
+
+  /// max subtitle lines, null shows all
+  /// null only outside BoundedList
+  final int? subtitleMaxLines;
 
   /// The dashboard's condensed row on phones (under 600pt): 52 tall with a 4
   /// gap, a 32 icon circle, title 17 and subtitle 14 with no tracking. Wider
@@ -188,8 +193,11 @@ class StatusRow extends StatelessWidget {
                                 : Text(
                                     subtitle!,
                                     style: subtitleStyle,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: subtitleMaxLines,
+                                    // ellipsis needs a cap
+                                    overflow: subtitleMaxLines == null
+                                        ? TextOverflow.clip
+                                        : TextOverflow.ellipsis,
                                   ),
                             trailing: trailing,
                           ),
@@ -215,8 +223,11 @@ class StatusRow extends StatelessWidget {
                                 Text(
                                   subtitle!,
                                   style: subtitleStyle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                  // one line unless null
+                                  maxLines: subtitleMaxLines == null ? null : 1,
+                                  overflow: subtitleMaxLines == null
+                                      ? TextOverflow.clip
+                                      : TextOverflow.ellipsis,
                                 ),
                               ],
                             ],

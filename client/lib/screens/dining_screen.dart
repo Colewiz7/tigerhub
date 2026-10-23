@@ -5,13 +5,19 @@
 /// department is "Dining" for every one).
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../cards/dining_card.dart';
+import '../data/campus_time.dart';
+import '../data/local_backend.dart' show staleGraceMultiplier;
+import '../data/sources/food_trucks.dart' show foodTrucksCadence;
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../widgets/jump_list.dart';
+import '../widgets/link_button.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
 import '../services/preferences.dart';
@@ -39,11 +45,53 @@ class _DiningScreenState extends State<DiningScreen> {
     value: null,
     state: DataState.priming,
   );
+  Result<Collection<FoodTruck>> _trucks = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+
+  bool get _trucksFresh {
+    final trucks = _trucks.value;
+    final at = trucks?.lastUpdated;
+    if (trucks == null || at == null) return false;
+    if (trucks.availability != Availability.available) return false;
+    // device clock skew is not handled
+    return DateTime.now().difference(at) <= foodTrucksCadence * staleGraceMultiplier;
+  }
+
+  StreamSubscription<Result<Collection<FoodTruck>>>? _trucksSub;
+  bool _active = true;
+
+  // local snapshot, swapped in place
+  void _readTrucks() {
+    _trucksSub?.cancel();
+    _trucksSub = widget.api.foodTrucks().listen((result) {
+      if (!mounted) return;
+      if (result.value == null && _trucks.value != null) return;
+      setState(() => _trucks = result);
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final active = TickerMode.valuesOf(context).enabled;
+    if (active && !_active) _readTrucks();
+    _active = active;
+  }
+
+  // shell hands over fresh result each tick
+  @override
+  void didUpdateWidget(DiningScreen old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.result, widget.result)) _readTrucks();
+  }
 
   @override
   void initState() {
     super.initState();
     _prefs.addListener(_onChanged);
+    _readTrucks();
     _subscriptions.add(
       widget.api.diningFeatures().listen((result) {
         if (mounted) setState(() => _features = result);
@@ -54,6 +102,7 @@ class _DiningScreenState extends State<DiningScreen> {
   @override
   void dispose() {
     _prefs.removeListener(_onChanged);
+    _trucksSub?.cancel();
     _subscriptions.dispose();
     _search.dispose();
     _searchFocus.dispose();
@@ -100,6 +149,17 @@ class _DiningScreenState extends State<DiningScreen> {
               )
               .toList();
 
+    // cached trucks show at once
+    final trucks = [
+      if (_trucksFresh)
+        for (final truck in _trucks.value!.data)
+          if (truck.name.isNotEmpty &&
+              (query.isEmpty ||
+                  truck.name.toLowerCase().contains(query) ||
+                  (truck.location?.toLowerCase().contains(query) ?? false)))
+            truck,
+    ];
+
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyF, control: true): () {
@@ -143,6 +203,13 @@ class _DiningScreenState extends State<DiningScreen> {
                       filtering: query.isNotEmpty,
                     ),
                   ),
+                  if (trucks.isNotEmpty)
+                    JumpGroup(
+                      label: 'Food trucks',
+                      icon: Icons.local_shipping_rounded,
+                      count: trucks.length,
+                      builder: (context) => _FoodTrucksGroup(trucks: trucks),
+                    ),
                   if (groups.isEmpty)
                     JumpGroup(
                       label: 'No matches',
@@ -182,6 +249,11 @@ class _DiningScreenState extends State<DiningScreen> {
     );
   }
 }
+
+const orderOnlineLabel = 'Order online';
+const checkBalanceLabel = 'Check balance';
+final orderOnlineUrl = Uri.parse('https://ondemand.rit.edu/');
+final checkBalanceUrl = Uri.parse('https://tigerspend.rit.edu/');
 
 class _DiningFilters extends StatelessWidget {
   const _DiningFilters({
@@ -238,6 +310,16 @@ class _DiningFilters extends StatelessWidget {
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              LinkButton(label: orderOnlineLabel, url: orderOnlineUrl),
+              LinkButton(label: checkBalanceLabel, url: checkBalanceUrl),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
             runSpacing: 6,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
@@ -266,6 +348,59 @@ class _DiningFilters extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _FoodTrucksGroup extends StatelessWidget {
+  const _FoodTrucksGroup({required this.trucks});
+
+  final List<FoodTruck> trucks;
+
+  static const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  static const _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  // campus date, not the devices
+  static String _day(String ymd, DateTime today) {
+    final date = DateTime.tryParse(ymd);
+    if (date == null) return '';
+    final days = DateTime.utc(date.year, date.month, date.day)
+        .difference(DateTime.utc(today.year, today.month, today.day))
+        .inDays;
+    if (days == 0) return 'Today';
+    if (days == 1) return 'Tomorrow';
+    final weekday = _weekdays[DateTime.utc(date.year, date.month, date.day).weekday - 1];
+    return '$weekday, ${_months[date.month - 1]} ${date.day}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final today = CampusTime.wallDate();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GroupHeader(
+          icon: Icons.local_shipping_rounded,
+          title: 'Food trucks',
+          count: trucks.length,
+        ),
+        for (final truck in trucks)
+          StatusRow(
+            key: ValueKey('truck-${truck.date}-${truck.name}'),
+            icon: Icons.local_shipping_rounded,
+            dense: true,
+            subtitleMaxLines: null,
+            title: truck.name,
+            subtitle: [
+              _day(truck.date, today),
+              if (truck.timeText?.trim().isNotEmpty ?? false) truck.timeText!,
+              if (truck.location?.trim().isNotEmpty ?? false) truck.location!,
+            ].where((part) => part.isNotEmpty).join(' · '),
+          ),
+      ],
     );
   }
 }

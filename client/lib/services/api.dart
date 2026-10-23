@@ -194,6 +194,12 @@ class ApiClient {
     (j) => Collection.fromJson(j, MenuItem.fromJson),
   );
 
+  /// unavailable means unknown, not none
+  Stream<Result<Collection<FoodTruck>>> foodTrucks() => watch(
+    '/dining/food-trucks',
+    (j) => Collection.fromJson(j, FoodTruck.fromJson),
+  );
+
   Stream<Result<Collection<PostOffice>>> postOffices() => watch(
     '/post-offices',
     (j) => Collection.fromJson(j, PostOffice.fromJson),

@@ -95,6 +95,20 @@ class _JumpListState extends State<JumpList> {
     }
   }
 
+  bool _syncQueued = false;
+
+  /// scroll can fire mid-layout
+  /// render reads throw, so wait a frame
+  void _queueSync() {
+    if (_syncQueued) return;
+    _syncQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _syncQueued = false;
+      if (mounted) _syncActive();
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
   /// Which group the viewport is currently showing, so the rail tracks the
   /// scroll rather than only responding to clicks.
   void _syncActive() {
@@ -123,7 +137,7 @@ class _JumpListState extends State<JumpList> {
 
         final list = NotificationListener<ScrollNotification>(
           onNotification: (_) {
-            _syncActive();
+            _queueSync();
             return false;
           },
           child: ListView.builder(
