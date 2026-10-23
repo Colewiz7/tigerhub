@@ -9,9 +9,9 @@ import '../config.dart';
 /// tapered stripes cut through the letterforms, and "Hub" is the quiet half,
 /// which is the reverse of what this used to do.
 ///
-/// The wide mark needs 230 logical pixels and the compact one 184, per
-/// `assets/generated/SPEC.md`, so the masthead picks by the width it actually
-/// gets rather than by window size: it sits in a Row with the settings and
+/// The wide mark needs 230 logical pixels and the compact one 184, so the
+/// masthead picks by the width it actually gets rather than by window size:
+/// it sits in a Row with the settings and
 /// palette buttons, so the window is not the space available.
 class Wordmark extends StatelessWidget {
   const Wordmark({super.key, this.height});

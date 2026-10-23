@@ -51,7 +51,7 @@ scripts/dev test      # analyze and test
 scripts/dev data      # what has been scraped and how old it is
 scripts/dev reset     # wipe the snapshots
 scripts/dev package   # single-file AppImage in dist/
-git config core.hooksPath .githooks
+git config core.hooksPath .githooks # pre-commit keeps agent docs out
 ```
 
 `scripts/dev package` produces one executable AppImage of about 11 MB that needs nothing installed beyond the usual desktop libraries.
@@ -72,5 +72,4 @@ Unset, empty, `0` or `false` is off, and a bad `WxH` falls back to 390x844. `TIG
 - `client/test/golden/` has pinned parser output and captured upstream payloads.
 - `client/assets/config/` holds hand-maintained JSON, each file with a last-verified date.
 - `assets/` has the wordmark, glyphs and icon art.
-- `design/` has the UI tokens.
 - `scripts/` has dev tooling, and the repo also carries CI and Codemagic config for the Android and iOS builds.
