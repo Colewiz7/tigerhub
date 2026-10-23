@@ -20,6 +20,7 @@ import '../theme/tokens.dart';
 import 'campus_event_mapper.dart';
 import 'empty_state.dart';
 import 'freshness.dart';
+import 'search_field.dart';
 
 const double _maxMapZoom = 20;
 const double _mapPanMargin = 80;
@@ -119,8 +120,9 @@ class _CampusMapViewState extends State<CampusMapView> {
 
   Future<void> _searchPlaces(
     List<CampusMapFeature> all,
-    List<CampusMapFeature> backdrop,
-  ) async {
+    List<CampusMapFeature> backdrop, {
+    bool focusField = false,
+  }) async {
     final searchable = [
       for (final feature in all)
         if ((feature.geometryType == 'Point' &&
@@ -128,9 +130,10 @@ class _CampusMapViewState extends State<CampusMapView> {
             (feature.kind == '_campus' && feature.building != null))
           feature,
     ];
-    final feature = await showSearch<CampusMapFeature?>(
-      context: context,
-      delegate: _MapSearchDelegate(searchable),
+    final feature = await Navigator.of(context).push<CampusMapFeature>(
+      MaterialPageRoute(
+        builder: (_) => _MapSearchPage(features: searchable, focusField: focusField),
+      ),
     );
     if (feature == null || !mounted) return;
     setState(() {
@@ -207,7 +210,7 @@ class _CampusMapViewState extends State<CampusMapView> {
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyF, control: true): () =>
-            _searchPlaces(all, backdrop),
+            _searchPlaces(all, backdrop, focusField: true),
       },
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -575,6 +578,7 @@ class _EventStrip extends StatelessWidget {
                 ),
               )
             : ListView.separated(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 scrollDirection: Axis.horizontal,
                 itemCount: result.groups.length,
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
@@ -639,6 +643,7 @@ class _SelectedEventGroup extends StatelessWidget {
         children: [
           Expanded(
             child: ListView.separated(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               itemCount: group.events.length,
               separatorBuilder: (_, _) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
@@ -675,14 +680,42 @@ class _SelectedEventGroup extends StatelessWidget {
   );
 }
 
-class _MapSearchDelegate extends SearchDelegate<CampusMapFeature?> {
-  _MapSearchDelegate(this.features)
-    : super(searchFieldLabel: 'Building, room, or campus place');
+// no autofocus, the keyboard waits for a tap on the field
+class _MapSearchPage extends StatefulWidget {
+  const _MapSearchPage({required this.features, required this.focusField});
 
   final List<CampusMapFeature> features;
+  final bool focusField;
+
+  @override
+  State<_MapSearchPage> createState() => _MapSearchPageState();
+}
+
+class _MapSearchPageState extends State<_MapSearchPage> {
+  final _query = TextEditingController();
+  final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // ctrl+f asked for the field, the search button didnt
+    if (widget.focusField) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focus.requestFocus();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _query.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
 
   List<CampusMapFeature> get _matches {
-    final needle = query.trim().toLowerCase();
+    final needle = _query.text.trim().toLowerCase();
+    final features = widget.features;
     final matches = features.where((feature) {
       final haystack = [
         feature.name,
@@ -710,27 +743,35 @@ class _MapSearchDelegate extends SearchDelegate<CampusMapFeature?> {
   }
 
   @override
-  List<Widget>? buildActions(BuildContext context) => [
-    if (query.isNotEmpty)
-      IconButton(
-        tooltip: 'Clear search',
-        onPressed: () => query = '',
-        icon: const Icon(Icons.close_rounded),
+  Widget build(BuildContext context) => Scaffold(
+    body: SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 6, 16, 10),
+            child: Row(
+              children: [
+                IconButton(
+                  tooltip: 'Back to map',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                ),
+                Expanded(
+                  child: SearchField(
+                    controller: _query,
+                    focusNode: _focus,
+                    hintText: 'Building, room, or campus place',
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: _results(context)),
+        ],
       ),
-  ];
-
-  @override
-  Widget? buildLeading(BuildContext context) => IconButton(
-    tooltip: 'Back to map',
-    onPressed: () => close(context, null),
-    icon: const Icon(Icons.arrow_back_rounded),
+    ),
   );
-
-  @override
-  Widget buildResults(BuildContext context) => _results(context);
-
-  @override
-  Widget buildSuggestions(BuildContext context) => _results(context);
 
   Widget _results(BuildContext context) {
     final matches = _matches;
@@ -738,6 +779,7 @@ class _MapSearchDelegate extends SearchDelegate<CampusMapFeature?> {
       return const Center(child: Text('No campus places match that search.'));
     }
     return ListView.builder(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       itemCount: matches.length,
       itemBuilder: (context, index) {
         final feature = matches[index];
@@ -761,7 +803,7 @@ class _MapSearchDelegate extends SearchDelegate<CampusMapFeature?> {
                 ? feature.kindName
                 : '${feature.kindName} · $location',
           ),
-          onTap: () => close(context, feature),
+          onTap: () => Navigator.of(context).pop(feature),
         );
       },
     );
@@ -881,6 +923,7 @@ class _KindStrip extends StatelessWidget {
       ..sort((a, b) => a.value.name.compareTo(b.value.name));
 
     return ListView.separated(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       scrollDirection: Axis.horizontal,
       itemCount: entries.length,
       separatorBuilder: (_, _) => const SizedBox(width: 8),
@@ -964,6 +1007,7 @@ class _PlaceStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListView.separated(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     scrollDirection: Axis.horizontal,
     itemCount: features.length,
     separatorBuilder: (_, _) => const SizedBox(width: 8),

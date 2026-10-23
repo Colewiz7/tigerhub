@@ -13,6 +13,7 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../theme/tokens.dart';
 import '../widgets/freshness.dart';
+import '../widgets/search_field.dart';
 import '../widgets/status_row.dart';
 import '../services/subscriptions.dart';
 
@@ -37,6 +38,8 @@ class PlacesSheet extends StatefulWidget {
 class _PlacesSheetState extends State<PlacesSheet> {
   Result<Collection<CampusPlace>>? _result;
   String _query = '';
+  final _search = TextEditingController();
+  final _searchFocus = FocusNode();
 
   /// Held so they can be cancelled. Dangling subscriptions let a previous
   /// visit's results land after the current ones and overwrite them.
@@ -53,6 +56,8 @@ class _PlacesSheetState extends State<PlacesSheet> {
   @override
   void dispose() {
     _subscriptions.dispose();
+    _search.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -96,11 +101,10 @@ class _PlacesSheetState extends State<PlacesSheet> {
               ],
             ),
             const SizedBox(height: 12),
-            TextField(
-              decoration: const InputDecoration(
-                hintText: 'Filter by building or description',
-                prefixIcon: Icon(Icons.search_rounded, size: 18),
-              ),
+            SearchField(
+              controller: _search,
+              focusNode: _searchFocus,
+              hintText: 'Filter by building or description',
               onChanged: (value) => setState(() => _query = value),
             ),
             const SizedBox(height: 12),
@@ -111,6 +115,7 @@ class _PlacesSheetState extends State<PlacesSheet> {
             else
               Flexible(
                 child: ListView.builder(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   shrinkWrap: true,
                   itemCount: buildings.length,
                   itemBuilder: (context, index) {

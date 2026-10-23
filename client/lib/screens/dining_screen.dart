@@ -20,6 +20,7 @@ import '../widgets/jump_list.dart';
 import '../widgets/link_button.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
+import '../widgets/search_field.dart';
 import '../services/preferences.dart';
 import '../services/subscriptions.dart';
 import '../widgets/status_row.dart';
@@ -287,25 +288,11 @@ class _DiningFilters extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
       child: Column(
         children: [
-          TextField(
+          SearchField(
             controller: controller,
             focusNode: focusNode,
+            hintText: 'Search dining or today’s menu',
             onChanged: onQueryChanged,
-            textInputAction: TextInputAction.search,
-            decoration: InputDecoration(
-              hintText: 'Search dining or today’s menu',
-              prefixIcon: const Icon(Icons.search_rounded),
-              suffixIcon: controller.text.isEmpty
-                  ? null
-                  : IconButton(
-                      tooltip: 'Clear search',
-                      onPressed: () {
-                        controller.clear();
-                        onQueryChanged('');
-                      },
-                      icon: const Icon(Icons.close_rounded),
-                    ),
-            ),
           ),
           const SizedBox(height: 8),
           Wrap(
