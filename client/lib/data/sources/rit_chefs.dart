@@ -21,6 +21,10 @@
 /// parser dependency.
 library;
 
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+
 import '../campus_time.dart';
 import '../upstream.dart';
 import 'recreation.dart' show textOf;
@@ -45,48 +49,91 @@ const String availabilityUnavailable = 'unavailable';
 String _withoutComments(String html) =>
     html.replaceAll(RegExp(r'<!--.*?-->', dotAll: true), '');
 
-final RegExp _chefAnchorRe = RegExp(
-  r'chefid="(\d+)-(\d+)"[^>]*>\s*<em>(.*?)</em>',
-  dotAll: true,
-);
+final RegExp _chefIdRe = RegExp(r'chefid="([^"]+)"');
 final RegExp _locationNameRe = RegExp(
   r'<p class="h5[^"]*">(.*?)</p>',
   dotAll: true,
 );
 
-const String _time = r'\d{1,2}(?::\d{2})?\s*[ap]\.?m\.?';
+/// One side of a range: "11", "11am", "11 a.m.", "11:30 AM" or "noon". The
+/// meridiem is optional here because "4-7 p.m." writes it once.
+const String _clockToken =
+    r'(?:\d{1,2}(?::\d{2})?(?:\s*[ap]\.?\s*m\.?)?|noon)';
 final RegExp _chefTextRe = RegExp(
-  '^(.*?)\\s*:\\s*($_time)\\s*[-–\\u2014]\\s*($_time)\\s*\$',
+  '^(.*?)\\s*:\\s*($_clockToken)\\s*(?:[-–\\u2014]|to)\\s*($_clockToken)\\s*\$',
   caseSensitive: false,
   dotAll: true,
 );
+final RegExp _clockRe = RegExp(
+  r'^(\d{1,2})(?::(\d{2}))?\s*(?:([ap])\.?\s*m\.?)?$',
+  caseSensitive: false,
+);
 
-/// '11:00 am' becomes '11:00'. Null when it is not a clock time.
-String? _clock(String token) {
-  final m = RegExp(r'^(\d{1,2})(?::(\d{2}))?\s*([ap])', caseSensitive: false)
-      .firstMatch(token.trim());
+/// Hour 1 to 12 and minute, with the meridiem when it was written.
+({int hour, int minute, bool? pm})? _clockOf(String token) {
+  final t = token.trim().toLowerCase();
+  if (t == 'noon') return (hour: 12, minute: 0, pm: true);
+  final m = _clockRe.firstMatch(t);
   if (m == null) return null;
-  var hour = int.parse(m.group(1)!);
+  final hour = int.parse(m.group(1)!);
   final minute = int.parse(m.group(2) ?? '0');
-  final pm = m.group(3)!.toLowerCase() == 'p';
   if (hour < 1 || hour > 12 || minute > 59) return null;
-  if (pm && hour != 12) hour += 12;
-  if (!pm && hour == 12) hour = 0;
-  return '${hour.toString().padLeft(2, '0')}:'
-      '${minute.toString().padLeft(2, '0')}';
+  final meridiem = m.group(3);
+  return (
+    hour: hour,
+    minute: minute,
+    pm: meridiem == null ? null : meridiem == 'p',
+  );
+}
+
+int _minutes(({int hour, int minute, bool? pm}) c, bool pm) =>
+    (c.hour % 12 + (pm ? 12 : 0)) * 60 + c.minute;
+
+String _hhmm(int minutes) => '${(minutes ~/ 60).toString().padLeft(2, '0')}:'
+    '${(minutes % 60).toString().padLeft(2, '0')}';
+
+/// '11 a.m.' and '2 p.m.' become ('11:00', '14:00'). Null when either side is
+/// not a clock time or neither side says a.m. or p.m.
+///
+/// A side without a meridiem takes the other side's, unless that would put
+/// the start after the end, in which case the start is a.m. and the end p.m.:
+/// "4-7 p.m." is 4 PM to 7 PM, "11-2 p.m." is 11 AM to 2 PM.
+({String start, String end})? parseTimeRange(String from, String to) {
+  final a = _clockOf(from);
+  final b = _clockOf(to);
+  if (a == null || b == null) return null;
+  var startPm = a.pm;
+  var endPm = b.pm;
+  if (startPm == null && endPm == null) return null;
+  if (startPm == null) {
+    startPm = endPm!;
+    if (_minutes(a, startPm) > _minutes(b, endPm)) {
+      if (!endPm) return null;
+      startPm = false;
+    }
+  } else if (endPm == null) {
+    endPm = startPm;
+    if (_minutes(b, endPm) < _minutes(a, startPm)) {
+      if (startPm) return null;
+      endPm = true;
+    }
+  }
+  return (start: _hhmm(_minutes(a, startPm)), end: _hhmm(_minutes(b, endPm)));
 }
 
 /// Splits "Chef: 11:00 am - 2:00 pm" on the colon that precedes the time
-/// range, so a name that itself holds a colon survives.
+/// range, so a name that itself holds a colon survives. A time that cannot be
+/// read still ends the name at the first colon followed by a digit, and the
+/// chef goes without a time.
 ({String name, String? start, String? end}) splitChefText(String text) {
   final m = _chefTextRe.firstMatch(text);
-  if (m == null) return (name: text.trim(), start: null, end: null);
-  final start = _clock(m.group(2)!);
-  final end = _clock(m.group(3)!);
-  if (start == null || end == null) {
-    return (name: text.trim(), start: null, end: null);
+  final range = m == null ? null : parseTimeRange(m.group(2)!, m.group(3)!);
+  if (range != null) {
+    return (name: m!.group(1)!.trim(), start: range.start, end: range.end);
   }
-  return (name: m.group(1)!.trim(), start: start, end: end);
+  final garbled = RegExp(r'^(.*?)\s*:\s*\d', dotAll: true).firstMatch(text);
+  final name = garbled?.group(1)!.trim() ?? '';
+  return (name: name.isEmpty ? text.trim() : name, start: null, end: null);
 }
 
 /// What the "Today's Visiting Chefs" block of `/dining/menus` says.
@@ -94,13 +141,31 @@ String? _clock(String token) {
 /// [found] means at least one chef was parsed, and nothing else. No chefs,
 /// whether the heading is missing, the markup changed or the day is genuinely
 /// quiet, is not found: this page can say who is cooking, never that nobody is.
-({bool found, List<Map<String, dynamic>> chefs}) parseTodayChefs(String source) {
+///
+/// Each chef is read on its own, so one entry that cannot be read is counted
+/// in [skipped] and the rest still come through. [untimed] counts chefs kept
+/// without a time. [reason] says why nothing was found.
+({
+  bool found,
+  List<Map<String, dynamic>> chefs,
+  int skipped,
+  int untimed,
+  String? reason,
+}) parseTodayChefs(String source) {
   final html = _withoutComments(source);
   final heading = RegExp(
     r"<h2[^>]*>(?:(?!</h2>).)*Today(?:'|&#0?39;|’)s Visiting Chefs",
     dotAll: true,
   ).firstMatch(html);
-  if (heading == null) return (found: false, chefs: const []);
+  if (heading == null) {
+    return (
+      found: false,
+      chefs: const [],
+      skipped: 0,
+      untimed: 0,
+      reason: 'no heading',
+    );
+  }
 
   var end = html.length;
   for (final stop in ['<script', '<h2']) {
@@ -117,10 +182,21 @@ String? _clock(String token) {
   ];
 
   final chefs = <Map<String, dynamic>>[];
-  for (final m in _chefAnchorRe.allMatches(section)) {
-    final locationId = int.parse(m.group(1)!);
-    final chefId = '${m.group(1)}-${m.group(2)}';
-    final text = splitChefText(textOf(m.group(3)!));
+  var skipped = 0;
+  var untimed = 0;
+  final ids = _chefIdRe.allMatches(section).toList();
+  for (var i = 0; i < ids.length; i++) {
+    final m = ids[i];
+    final chefId = m.group(1)!;
+    // The chefid prefix is the TigerCenter location id. An id that is not one
+    // costs the id and nothing else; the projection matches the name instead.
+    final locationId = int.tryParse(chefId.split('-').first);
+
+    // The anchor's own text, before the next chef starts.
+    final end = i + 1 < ids.length ? ids[i + 1].start : section.length;
+    final anchor = RegExp(r'^[^>]*>\s*<em[^>]*>(.*?)</em>', dotAll: true)
+        .firstMatch(section.substring(m.end, end));
+    final text = splitChefText(anchor == null ? '' : textOf(anchor.group(1)!));
 
     String? locationName;
     for (final (at, name) in names) {
@@ -130,7 +206,7 @@ String? _clock(String token) {
     // The popup holds the display name and the cuisine. Its span is
     // preferred because the anchor text is "name: times".
     final holder = RegExp(
-      'id="$chefId-chef-holder"(.*?)</div>',
+      'id="${RegExp.escape(chefId)}-chef-holder"(.*?)</div>',
       dotAll: true,
     ).firstMatch(section);
     String? holderName;
@@ -145,7 +221,11 @@ String? _clock(String token) {
     }
 
     final name = (holderName?.isNotEmpty ?? false) ? holderName! : text.name;
-    if (name.isEmpty) continue;
+    if (name.isEmpty) {
+      skipped++;
+      continue;
+    }
+    if (text.start == null) untimed++;
     chefs.add({
       'chef_id': chefId,
       'location_id': locationId,
@@ -160,7 +240,17 @@ String? _clock(String token) {
   // This page is never read as a quiet day: a changed layout, a comment, a
   // bare heading and a real quiet day all look alike from here, so only the
   // schedule page may say "none today".
-  return (found: chefs.isNotEmpty, chefs: chefs);
+  return (
+    found: chefs.isNotEmpty,
+    chefs: chefs,
+    skipped: skipped,
+    untimed: untimed,
+    reason: chefs.isNotEmpty
+        ? null
+        : ids.isEmpty
+        ? 'no chef entries'
+        : 'no entry readable',
+  );
 }
 
 final RegExp _dayRe = RegExp(
@@ -220,7 +310,8 @@ Map<String, Map<String, dynamic>> parseChefSchedule(String source) {
 /// the previous snapshot's copy, so cached chefs still show, but is marked
 /// failed (`today_ok`, `schedule_ok`) so that copy cannot confirm a quiet day.
 /// `today_at` and `schedule_at` are when each part last really succeeded,
-/// which needs a page that parsed, not just an HTTP 200.
+/// which needs a page that parsed, not just an HTTP 200. `diagnostics` says
+/// what each page returned and how it parsed.
 ///
 /// Never throws: a total failure is recorded in the snapshot too, because
 /// leaving the old snapshot untouched would leave its "ok" flags standing.
@@ -236,34 +327,67 @@ Future<Map<String, dynamic>> scrapeRitChefs(
   var scheduleAt = previous?['schedule_at'];
   var todayOk = false;
   var scheduleOk = false;
+  final at = CampusTime.format(now);
+  Map<String, dynamic> menusReport;
+  Map<String, dynamic> scheduleReport;
 
+  // Anything thrown, a parser bug included, costs that page and is recorded,
+  // so the other page and the previous copy still stand.
   try {
-    final parsed = parseTodayChefs(await http.getText(ritMenusUrl));
+    final page = await _fetchPage(http, ritMenusUrl);
+    final parsed = parseTodayChefs(page.text);
+    menusReport = {
+      'at': at,
+      'status': page.status,
+      'bytes': page.bytes,
+      'parsed': parsed.chefs.length,
+      'skipped': parsed.skipped,
+      'untimed': parsed.untimed,
+      'reason': parsed.reason,
+    };
     // A 200 is not a read. Only a page that yielded chefs counts. Anything
     // else, including a real quiet day, keeps the previous copy and time and
     // is flagged failed like a network error, so it is retried after five
     // minutes and never advances "last updated".
     if (parsed.found) {
       todayPart = {'date': today, 'found': true, 'chefs': parsed.chefs};
-      todayAt = CampusTime.format(now);
+      todayAt = at;
       todayOk = true;
     }
-  } on UpstreamError {
-    // Kept as previous, flagged failed below.
+  } catch (error) {
+    menusReport = _failureReport(at, error);
   }
   try {
-    final parsed = parseChefSchedule(await http.getText(ritVisitingChefsUrl));
+    final page = await _fetchPage(http, ritVisitingChefsUrl);
+    final parsed = parseChefSchedule(page.text);
     // Usable means today's own block was read, as chefs or an explicit
     // empty. Another day parsing says nothing about today, so it neither
     // replaces the snapshot nor advances "last updated".
     final todayBlock = parsed[today];
+    scheduleReport = {
+      'at': at,
+      'status': page.status,
+      'bytes': page.bytes,
+      'parsed': (todayBlock?['chefs'] as List<dynamic>?)?.length ?? 0,
+      'reason': todayBlock == null
+          ? 'today missing'
+          : todayBlock['unknown'] == true
+          ? 'today unreadable'
+          : null,
+    };
     if (todayBlock != null && todayBlock['unknown'] != true) {
       schedule = parsed;
-      scheduleAt = CampusTime.format(now);
+      scheduleAt = at;
       scheduleOk = true;
     }
-  } on UpstreamError {
-    // Kept as previous, flagged failed below.
+  } catch (error) {
+    scheduleReport = _failureReport(at, error);
+  }
+
+  final diagnostics = {'menus': menusReport, 'schedule': scheduleReport};
+  chefsDiagnostics.value = diagnostics;
+  if (!todayOk || (menusReport['skipped'] as int? ?? 0) > 0) {
+    debugPrint('rit_chefs: ${chefsDiagnosticsLines(diagnostics).first}');
   }
 
   return {
@@ -274,7 +398,74 @@ Future<Map<String, dynamic>> scrapeRitChefs(
     'schedule_ok': scheduleOk,
     'today_at': todayAt,
     'schedule_at': scheduleAt,
+    'diagnostics': diagnostics,
   };
+}
+
+/// rit.edu sends UTF-8. `Response.body` throws on a single bad byte, which
+/// used to take the whole scrape down with it, so the bytes are decoded here
+/// with the bad ones replaced.
+Future<({String text, int status, int bytes})> _fetchPage(
+  Upstream http,
+  String url,
+) async {
+  final response = await http.request('GET', url);
+  return (
+    text: utf8.decode(response.bodyBytes, allowMalformed: true),
+    status: response.statusCode,
+    bytes: response.bodyBytes.length,
+  );
+}
+
+/// A failed page, by status and error type only. No URL and no body, so the
+/// report is safe to copy anywhere.
+Map<String, dynamic> _failureReport(String at, Object error) => {
+  'at': at,
+  'status': error is UpstreamError ? error.status : null,
+  'error': error is UpstreamError
+      ? error.cause ?? (error.status == null ? 'UpstreamError' : 'HTTP')
+      : error.runtimeType.toString(),
+};
+
+/// The last chefs fetch report, for the frame stats screen. Set by each scrape
+/// and by the backend whenever it reads the snapshot, so a stored report shows
+/// after a restart.
+final ValueNotifier<Map<String, dynamic>?> chefsDiagnostics = ValueNotifier(
+  null,
+);
+
+/// "at 2026-10-23 16:32" on the campus clock. The space lets a narrow line
+/// wrap there rather than inside an ISO stamp.
+String? _readAt(Object? raw) {
+  final at = _stamp(raw);
+  if (at == null) return null;
+  final stamp = CampusTime.format(at);
+  return 'at ${stamp.substring(0, 10)} ${stamp.substring(11, 16)}';
+}
+
+/// [chefsDiagnostics] as text, one line per page, for the screen and the
+/// copied report.
+List<String> chefsDiagnosticsLines(Map<String, dynamic>? report) {
+  if (report == null) return const ['No chefs fetch yet'];
+  String line(String page, Object? raw) {
+    if (raw is! Map) return '$page: not read';
+    final parts = <String>[
+      if (raw['status'] != null) 'HTTP ${raw['status']}',
+      if (raw['error'] != null) 'failed, ${raw['error']}',
+      if (raw['bytes'] != null) '${raw['bytes']} bytes',
+      if (raw['parsed'] != null) '${raw['parsed']} chefs',
+      if (raw['skipped'] != null) '${raw['skipped']} skipped',
+      if (raw['untimed'] != null) '${raw['untimed']} without a time',
+      if (raw['reason'] != null) '${raw['reason']}',
+      ?_readAt(raw['at']),
+    ];
+    return '$page: ${parts.join(', ')}';
+  }
+
+  return [
+    line('Menus page', report['menus']),
+    line('Schedule page', report['schedule']),
+  ];
 }
 
 /// Whether this snapshot is not a clean read of both pages: the last attempt
@@ -313,10 +504,34 @@ DateTime? chefsLastUpdated({
 /// Lower case, ampersand as "and", letters and digits only, no leading "the".
 /// The visiting chefs page matches locations by name alone.
 String normalizeLocationName(String name) {
-  var value = name.toLowerCase().replaceAll('&', ' and ');
+  var value = name.toLowerCase().replaceAll('&', ' and ').replaceAll('é', 'e');
   value = value.replaceAll(RegExp(r'[^a-z0-9 ]'), ' ');
   value = value.replaceAll(RegExp(r'\s+'), ' ').trim();
   return value.startsWith('the ') ? value.substring(4) : value;
+}
+
+/// Names RIT has used for the same location, TigerCenter's first. rit.edu
+/// pages have used new names before TigerCenter did, and a chef there must
+/// still find its location.
+const List<List<String>> locationAliases = [
+  ['Kitchen at Brick City', 'Brick City Cafe', 'Brick City'],
+  ['RITZ', 'RITZ Sports Zone', 'Ritz Sports Zone'],
+  ['The Cafe & Market at Crossroads', 'Crossroads', 'Cafe at Crossroads',
+    'Market at Crossroads', 'Crossroads Cafe'],
+  ["Gracie's", 'Gracies'],
+];
+
+final Map<String, String> _aliasKeys = {
+  for (final names in locationAliases)
+    for (final name in names)
+      normalizeLocationName(name): normalizeLocationName(names.first),
+};
+
+/// One key per location, whichever name it goes by. An unknown name is its
+/// own key, so a chef there still shows under RIT's name.
+String locationKey(String name) {
+  final normal = normalizeLocationName(name);
+  return _aliasKeys[normal] ?? normal;
 }
 
 String? _isoOn(String date, String? clock) {
@@ -362,8 +577,7 @@ Map<String, dynamic> visitingChefsView({
   final locationIds = <String, int>{};
   for (final raw in tigerCenter?['locations'] as List<dynamic>? ?? const []) {
     final loc = raw as Map<String, dynamic>;
-    locationIds[normalizeLocationName(loc['name'] as String? ?? '')] =
-        loc['id'] as int;
+    locationIds[locationKey(loc['name'] as String? ?? '')] = loc['id'] as int;
   }
 
   final menusPart = rit?['today'] as Map<String, dynamic>?;
@@ -406,7 +620,9 @@ Map<String, dynamic> visitingChefsView({
       : const <Map<String, dynamic>>[];
   for (final c in fromMenus) {
     add({
-      'location_id': c['location_id'],
+      'location_id':
+          c['location_id'] ??
+          locationIds[locationKey(c['location_name'] as String? ?? '')],
       'location_name': c['location_name'] ?? '',
       'name': c['name'],
       'description': null,
@@ -423,7 +639,7 @@ Map<String, dynamic> visitingChefsView({
         .cast<Map<String, dynamic>>()) {
       final name = c['location_name'] as String;
       add({
-        'location_id': locationIds[normalizeLocationName(name)],
+        'location_id': locationIds[locationKey(name)],
         'location_name': name,
         'name': c['name'],
         'description': null,
@@ -437,7 +653,7 @@ Map<String, dynamic> visitingChefsView({
   }
 
   String key(Object? locationId, Object? locationName, Object? chef) =>
-      '${locationId ?? normalizeLocationName('$locationName')}|'
+      '${locationId ?? locationKey('$locationName')}|'
       '${normalizeLocationName('$chef')}';
   final seen = {
     for (final i in items) key(i['location_id'], i['location_name'], i['name']),

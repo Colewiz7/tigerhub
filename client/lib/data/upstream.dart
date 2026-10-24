@@ -32,8 +32,15 @@ const int httpMaxRetries = 3;
 const Set<int> retryStatuses = {429, 500, 502, 503, 504};
 
 class UpstreamError implements Exception {
-  UpstreamError(this.message);
+  UpstreamError(this.message, {this.status, this.cause});
   final String message;
+
+  /// The HTTP status, when the failure was a response rather than transport.
+  final int? status;
+
+  /// The type of the last transport error, such as `TimeoutException`. A type
+  /// name only, so a diagnostics report never carries a URL or a body.
+  final String? cause;
   @override
   String toString() => 'UpstreamError: $message';
 }
@@ -74,11 +81,17 @@ class Upstream {
         if (!retryStatuses.contains(response.statusCode)) {
           if (response.statusCode >= 400) {
             // A real answer, even if a bad one. Do not retry it.
-            throw UpstreamError('${response.statusCode} from $url');
+            throw UpstreamError(
+              '${response.statusCode} from $url',
+              status: response.statusCode,
+            );
           }
           return response;
         }
-        last = UpstreamError('${response.statusCode} from $url');
+        last = UpstreamError(
+          '${response.statusCode} from $url',
+          status: response.statusCode,
+        );
       } on UpstreamError {
         rethrow;
       } catch (error) {
@@ -92,6 +105,8 @@ class Upstream {
 
     throw UpstreamError(
       '$method $url failed after $_maxRetries attempts: $last',
+      status: last is UpstreamError ? last.status : null,
+      cause: last is UpstreamError ? null : last.runtimeType.toString(),
     );
   }
 
