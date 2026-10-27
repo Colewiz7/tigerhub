@@ -858,50 +858,53 @@ class _MapToolbar extends StatelessWidget {
           icon: Icon(AppIconKind.search.of(context)),
         ),
         const SizedBox(width: 8),
+        // the filter gives way first, the round buttons keep their 48
         if (kinds.isNotEmpty)
-          PopupMenuButton<String>(
-            tooltip: 'Filter map places',
-            onSelected: (value) => onKindChanged(value.isEmpty ? null : value),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: '',
-                child: ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(AppIconKind.allPlaces.of(context)),
-                  title: Text('All places'),
-                ),
-              ),
-              for (final entry
-                  in kinds.entries.toList()
-                    ..sort((a, b) => a.value.compareTo(b.value)))
+          Flexible(
+            child: PopupMenuButton<String>(
+              tooltip: 'Filter map places',
+              onSelected: (value) => onKindChanged(value.isEmpty ? null : value),
+              itemBuilder: (context) => [
                 PopupMenuItem(
-                  value: entry.key,
+                  value: '',
                   child: ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(mapPlaceIcon(entry.key).of(context)),
-                    title: Text(entry.value),
+                    leading: Icon(AppIconKind.allPlaces.of(context)),
+                    title: Text('All places'),
                   ),
                 ),
-            ],
-            child: Material(
-              color: scheme.surfaceContainerHigh,
-              shape: Shapes.pill,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 11,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(selectedIcon.of(context), size: 19),
-                    const SizedBox(width: 8),
-                    Text(selectedLabel),
-                    const SizedBox(width: 4),
-                    Icon(AppIconKind.expand.of(context), size: 18),
-                  ],
+                for (final entry
+                    in kinds.entries.toList()
+                      ..sort((a, b) => a.value.compareTo(b.value)))
+                  PopupMenuItem(
+                    value: entry.key,
+                    child: ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(mapPlaceIcon(entry.key).of(context)),
+                      title: Text(entry.value),
+                    ),
+                  ),
+              ],
+              child: Material(
+                color: scheme.surfaceContainerHigh,
+                shape: Shapes.pill,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 11,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(selectedIcon.of(context), size: 19),
+                      const SizedBox(width: 8),
+                      Flexible(child: Text(selectedLabel)),
+                      const SizedBox(width: 4),
+                      Icon(AppIconKind.expand.of(context), size: 18),
+                    ],
+                  ),
                 ),
               ),
             ),

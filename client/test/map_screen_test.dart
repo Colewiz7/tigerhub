@@ -76,7 +76,7 @@ void main() {
   // real fonts, the test font is wider than Rubik
   group('map chrome', () {
   setUpAll(loadGoldenFonts);
-  // lines of the legend and the zoom row, other parts of the screen have their own tests
+  // lines of the toolbar, legend and zoom row, the card strip has its own entry
   final source = File('lib/widgets/campus_map.dart').readAsLinesSync();
   bool inClass(String name, int line) {
     final start = source.indexWhere((l) => l.startsWith('class $name ')) + 1;
@@ -85,11 +85,11 @@ void main() {
   }
   bool chrome(Overflow o) {
     final line = int.parse(o.where.split(':').last);
-    return o.where.startsWith('lib/widgets/campus_map.dart') && (inClass('_MapLegend', line) || inClass('_MapZoomControls', line));
+    return o.where.startsWith('lib/widgets/campus_map.dart') && (inClass('_MapToolbar', line) || inClass('_MapLegend', line) || inClass('_MapZoomControls', line));
   }
   for (final size in const [Size(390, 844), Size(440, 956)]) {
     for (final textScale in const [1.0, 2.0]) {
-      testWidgets('${size.width.toInt()} wide at ${textScale}x: the zoom hint stays in view and the legend clears north', (tester) async {
+      testWidgets('${size.width.toInt()} wide at ${textScale}x: nothing in the chrome overflows, the zoom hint stays in view and the legend clears north', (tester) async {
         tester.view.devicePixelRatio = 1;
         tester.view.physicalSize = size;
         addTearDown(tester.view.reset);
