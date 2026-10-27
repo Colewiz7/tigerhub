@@ -80,6 +80,21 @@ void main() {
     }
   });
 
+  test('settle stops within half a pixel at under 5 px/s', () {
+    final sim = settle(0, 120, 2400, const Duration(milliseconds: 180));
+    expect(sim.tolerance.distance, 0.5);
+    expect(sim.tolerance.velocity, 5);
+    var done = 0.0;
+    for (var frame = 0; frame <= 240; frame++) {
+      final t = frame / 240;
+      final resting = (sim.x(t) - 120).abs() < 0.5 && sim.dx(t).abs() < 5;
+      expect(sim.isDone(t), resting, reason: 't $t');
+      if (resting && done == 0) done = t;
+    }
+    expect(done, greaterThan(0));
+    expect(done, lessThan(0.5), reason: 'not held for the default 0.001 px');
+  });
+
   test('without the clamp a fast release overshoots', () {
     final sim = SpringSimulation(spring(0.18, 0), 0, 40, 2 * 2 * 3.141592653589793 / 0.18 * 40);
     final peak = [for (var f = 0; f <= 120; f++) sim.x(f / 240)].reduce((a, b) => a > b ? a : b);
