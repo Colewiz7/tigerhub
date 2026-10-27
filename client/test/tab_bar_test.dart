@@ -215,15 +215,17 @@ void main() {
       at = x;
       await gesture.moveTo(Offset(at, y));
       await tester.pump(const Duration(milliseconds: 16));
+      // the pill catches up
+      await tester.pump(const Duration(milliseconds: 300));
     }
 
     await to(_pillAt(1.3) + _itemWidth / 2);
-    expect(_pillLeft(tester), moreOrLessEquals(_pillAt(1.3)), reason: 'the pill sits between tabs mid scrub');
+    expect(_pillLeft(tester), moreOrLessEquals(_pillAt(1.3), epsilon: 0.01), reason: 'the pill sits between tabs mid scrub');
     expect(haptics, ['HapticFeedbackType.selectionClick']);
     expect(selected, isEmpty, reason: 'nothing commits before release');
 
     await to(_tabCentre(4));
-    expect(_pillLeft(tester), moreOrLessEquals(_pillAt(4)));
+    expect(_pillLeft(tester), moreOrLessEquals(_pillAt(4), epsilon: 0.01));
     expect(haptics, hasLength(4));
     await to(_tabCentre(2));
     expect(haptics, hasLength(6));
@@ -274,7 +276,7 @@ void main() {
     expect(_pillLeft(tester), _pillAt(3));
   });
 
-  testWidgets('the pill moves with the finger from touch down, no catch up jump', (tester) async {
+  testWidgets('from touch down the pill chases the finger on a spring, no jump', (tester) async {
     final selected = <int>[];
     await _pumpBar(tester, selected: selected);
     final y = tester.getCenter(find.byType(BackdropFilter)).dy;
@@ -282,15 +284,40 @@ void main() {
     // off centre, still on tab 0
     final down = _tabCentre(0) + 25;
     final gesture = await tester.startGesture(Offset(down, y));
+    var last = _pillLeft(tester);
+    var step = 0.0;
     for (var dx = 5.0; dx <= 40; dx += 5) {
       await gesture.moveTo(Offset(down + dx, y));
       await tester.pump(const Duration(milliseconds: 16));
-      if (dx >= 20) expect(_pillLeft(tester), moreOrLessEquals(_pillAt(0) + dx), reason: 'moved $dx');
+      step = math.max(step, _pillLeft(tester) - last);
+      last = _pillLeft(tester);
     }
+    expect(step, lessThan(10), reason: 'no catch up at the slop');
+    expect(last, greaterThan(_pillAt(0)), reason: 'already moving');
+    for (var frame = 0; frame < 6; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(_pillLeft(tester), moreOrLessEquals(_pillAt(0) + 40, epsilon: 2), reason: '1:1 within a few frames');
     await tester.pump(const Duration(milliseconds: 100));
+    expect(_pillLeft(tester), moreOrLessEquals(_pillAt(0) + 40, epsilon: 0.5));
+
     await gesture.up();
     await tester.pumpAndSettle();
     expect(selected, [1]);
+  });
+
+  testWidgets('under Reduce Motion the pill sits on the finger mid scrub', (tester) async {
+    await _pumpBar(tester, reduceMotion: true);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    final gesture = await tester.startGesture(Offset(_tabCentre(0), y));
+    for (var dx = 5.0; dx <= 40; dx += 5) {
+      await gesture.moveTo(Offset(_tabCentre(0) + dx, y));
+      await tester.pump();
+      if (dx >= 20) expect(_pillLeft(tester), moreOrLessEquals(_pillAt(0) + dx), reason: 'moved $dx');
+    }
+    expect(tester.hasRunningAnimations, isFalse);
+    await gesture.up();
   });
 
   testWidgets('a short 42 px flick still carries momentum', (tester) async {

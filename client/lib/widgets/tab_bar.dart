@@ -142,6 +142,8 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   int _lastTab = 0;
   double _downX = 0;
   double _downPill = 0;
+  double _finger = 0;
+  _Chase? _chase;
   final _tracker = ReleaseTracker();
   double _upTime = 0;
   late int _target;
@@ -178,9 +180,14 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   double _itemWidth(double width) => (width - _pad * 2) / widget.tabs.length;
 
   void _startScrub(double x) {
+    final velocity = _pill.velocity;
     _pill.stop();
     _downX = x;
     _downPill = _pill.value;
+    _finger = _pill.value;
+    final chase = reduceMotion(context) ? null : _Chase(_pill.value, velocity);
+    if (chase != null) _pill.animateWith(chase);
+    _chase = chase;
     setState(() {
       _scrubbing = true;
       _lastTab = _pill.value.round();
@@ -189,8 +196,15 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
 
   // 1:1 with the finger since touch down
   void _scrubTo(double x, double width) {
-    _pill.value = (_downPill + (x - _downX) / _itemWidth(width)).clamp(0, widget.tabs.length - 1).toDouble();
-    final tab = _pill.value.round();
+    final itemWidth = _itemWidth(width);
+    _finger = (_downPill + (x - _downX) / itemWidth).clamp(0, widget.tabs.length - 1).toDouble();
+    final chase = _chase;
+    if (chase == null) {
+      _pill.value = _finger;
+    } else {
+      chase.retarget(_finger, (_pill.lastElapsedDuration?.inMicroseconds ?? 0) / 1e6);
+    }
+    final tab = _finger.round();
     for (var i = 0; i < (tab - _lastTab).abs(); i++) {
       HapticFeedback.selectionClick();
     }
@@ -201,7 +215,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
 
   void _endScrub(double itemWidth, double velocity) {
     if (!_scrubbing) return;
-    final tab = (_pill.value + project(velocity, 0.99) / itemWidth).round().clamp(0, widget.tabs.length - 1);
+    final tab = (_finger + project(velocity, 0.99) / itemWidth).round().clamp(0, widget.tabs.length - 1);
     setState(() => _scrubbing = false);
     _target = tab;
     if (tab != widget.index) HapticFeedback.lightImpact();
@@ -316,6 +330,31 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
       ),
     );
   }
+}
+
+// chases the finger until release
+class _Chase extends Simulation {
+  _Chase(double from, double velocity) : _sim = SpringSimulation(_spring, from, from, velocity);
+
+  static final _spring = SpringDescription.withDurationAndBounce(duration: const Duration(milliseconds: 150));
+
+  SpringSimulation _sim;
+  double _t0 = 0;
+
+  // retargets keep the pill's velocity
+  void retarget(double target, double now) {
+    _sim = SpringSimulation(_spring, x(now), target, dx(now));
+    _t0 = now;
+  }
+
+  @override
+  double x(double time) => _sim.x(time - _t0);
+
+  @override
+  double dx(double time) => _sim.dx(time - _t0);
+
+  @override
+  bool isDone(double time) => false;
 }
 
 // settle is pixels, pill is tabs
