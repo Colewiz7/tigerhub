@@ -407,6 +407,35 @@ void main() {
     expect(_pillLeft(tester), _pillAt(2));
   });
 
+  testWidgets('a second finger moving mid scrub does not change the released tab', (tester) async {
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    final first = await tester.createGesture();
+    await first.down(Offset(_tabCentre(0), y));
+    for (var i = 1; i <= 20; i++) {
+      await first.moveTo(Offset(_tabCentre(0) + 5 * i, y), timeStamp: Duration(milliseconds: 16 * i));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await tester.pump(const Duration(milliseconds: 300));
+
+    // a fast leftward swipe with a second finger, just before the first lifts
+    final second = await tester.createGesture();
+    await second.down(Offset(_tabCentre(3), y), timeStamp: const Duration(milliseconds: 600));
+    for (var i = 1; i <= 4; i++) {
+      await second.moveTo(Offset(_tabCentre(3) - 40.0 * i, y), timeStamp: Duration(milliseconds: 600 + 10 * i));
+    }
+    await first.up(timeStamp: const Duration(milliseconds: 650));
+    await tester.pump();
+    expect(selected, [1], reason: 'the first finger rested at 1.4 tabs');
+
+    await second.up(timeStamp: const Duration(milliseconds: 660));
+    await tester.pumpAndSettle();
+    expect(selected, [1]);
+    expect(_pillLeft(tester), _pillAt(1));
+  });
+
   testWidgets('a slow release lands on the nearest tab, no release haptic', (tester) async {
     final haptics = _haptics(tester);
     final selected = <int>[];

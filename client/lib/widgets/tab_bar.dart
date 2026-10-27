@@ -146,7 +146,10 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   // taps settle outside layout
   double _laidOutItemWidth = 0;
   final _tracker = ReleaseTracker();
-  double _upTime = 0;
+  // the first finger down owns the scrub
+  int? _owner;
+  double _ownerDownX = 0;
+  double _ownerX = 0;
   late int _target;
 
   @override
@@ -196,6 +199,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
 
   // 1:1 with the finger since touch down
   void _scrubTo(double x, double width) {
+    if (!_scrubbing) return;
     final itemWidth = _itemWidth(width);
     final px = _downPill * itemWidth + x - _downX;
     final end = (widget.tabs.length - 1) * itemWidth;
@@ -255,10 +259,10 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
               // slop lands in first update
               dragStartBehavior: DragStartBehavior.down,
               // horizontal only, so a vertical swipe never starts a scrub
-              onHorizontalDragStart: (d) => _startScrub(d.localPosition.dx),
-              onHorizontalDragUpdate: (d) => _scrubTo(d.localPosition.dx, width),
-              // flutter zeroes short flicks
-              onHorizontalDragEnd: (_) => _endScrub(itemWidth, _tracker.velocity(_upTime)),
+              onHorizontalDragStart: (_) => _startScrub(_ownerDownX),
+              onHorizontalDragUpdate: (_) => _scrubTo(_ownerX, width),
+              // the owner lifting already ended it
+              onHorizontalDragEnd: (_) => _endScrub(itemWidth, 0),
               onHorizontalDragCancel: () => _endScrub(itemWidth, 0),
               // claims vertical moves, or horizontal wins them by default
               onVerticalDragStart: (_) {},
@@ -320,11 +324,29 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
             );
             return Listener(
               onPointerDown: (e) {
+                if (_owner != null) return;
+                _owner = e.pointer;
+                _ownerDownX = _ownerX = e.localPosition.dx;
                 _tracker.clear();
-                _tracker.add(e.localPosition.dx, _ms(e.timeStamp));
+                _tracker.add(_ownerX, _ms(e.timeStamp));
               },
-              onPointerMove: (e) => _tracker.add(e.localPosition.dx, _ms(e.timeStamp)),
-              onPointerUp: (e) => _upTime = _ms(e.timeStamp),
+              onPointerMove: (e) {
+                if (e.pointer != _owner) return;
+                _ownerX = e.localPosition.dx;
+                _tracker.add(_ownerX, _ms(e.timeStamp));
+              },
+              // flutter zeroes short flicks
+              onPointerUp: (e) {
+                if (e.pointer != _owner) return;
+                _owner = null;
+                _endScrub(itemWidth, _tracker.velocity(_ms(e.timeStamp)));
+              },
+              onPointerCancel: (e) {
+                if (e.pointer != _owner) return;
+                _owner = null;
+                _tracker.clear();
+                _endScrub(itemWidth, 0);
+              },
               child: bar,
             );
           },
