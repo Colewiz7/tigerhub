@@ -27,7 +27,7 @@ enum AppIconKind {
   map(CupertinoIcons.map, Icons.map_rounded),
   mailbox(CupertinoIcons.envelope_badge, Icons.markunread_mailbox_rounded),
   widgets(CupertinoIcons.rectangle_grid_2x2, Icons.widgets_rounded),
-  walk(CupertinoIcons.person_alt, Icons.directions_walk_rounded),
+  walk(Icons.directions_walk_rounded, Icons.directions_walk_rounded),
 
   // --- events ---
   event(CupertinoIcons.calendar_today, Icons.event_rounded),
@@ -39,7 +39,7 @@ enum AppIconKind {
   hidden(CupertinoIcons.eye_slash, Icons.visibility_off_rounded),
   past(CupertinoIcons.arrow_counterclockwise, Icons.history_rounded),
   boost(CupertinoIcons.star_fill, Icons.star_rounded),
-  celebration(CupertinoIcons.star, Icons.celebration_rounded),
+  celebration(CupertinoIcons.sparkles, Icons.celebration_rounded),
   school(CupertinoIcons.book, Icons.school_rounded),
   groups(CupertinoIcons.person_3, Icons.groups_rounded),
   muted(CupertinoIcons.bell_slash, Icons.notifications_off_rounded),
@@ -48,7 +48,7 @@ enum AppIconKind {
   everything(CupertinoIcons.infinite, Icons.all_inclusive_rounded),
   spiritual(CupertinoIcons.heart, Icons.self_improvement_rounded),
   blood(CupertinoIcons.drop_fill, Icons.bloodtype_rounded),
-  outreach(CupertinoIcons.speaker_3, Icons.campaign_rounded),
+  outreach(Icons.campaign_rounded, Icons.campaign_rounded),
   volunteer(CupertinoIcons.hand_raised, Icons.volunteer_activism_rounded),
   housing(CupertinoIcons.house, Icons.home_rounded),
 
@@ -63,7 +63,7 @@ enum AppIconKind {
   rowing(CupertinoIcons.sportscourt_fill, Icons.rowing_rounded),
   climbing(CupertinoIcons.triangle, Icons.terrain_rounded),
   running(CupertinoIcons.hare, Icons.directions_run_rounded),
-  swimming(CupertinoIcons.waveform, Icons.pool_rounded),
+  swimming(Icons.pool_rounded, Icons.pool_rounded),
   office(CupertinoIcons.person_crop_rectangle, Icons.badge_rounded),
 
   // --- dining. cupertino has no food glyphs at all, so these stay material ---
@@ -79,7 +79,7 @@ enum AppIconKind {
   bakery(Icons.bakery_dining_rounded, Icons.bakery_dining_rounded),
   market(CupertinoIcons.cart, Icons.storefront_rounded),
   globe(CupertinoIcons.globe, Icons.public_rounded),
-  truck(CupertinoIcons.car, Icons.local_shipping_rounded),
+  truck(Icons.local_shipping_rounded, Icons.local_shipping_rounded),
   pinned(CupertinoIcons.pin_fill, Icons.push_pin_rounded),
 
   // --- places and safety ---
@@ -88,7 +88,7 @@ enum AppIconKind {
   support(CupertinoIcons.headphones, Icons.support_agent_rounded),
   water(CupertinoIcons.drop, Icons.water_drop_rounded),
   aed(CupertinoIcons.waveform_path_ecg, Icons.monitor_heart_rounded),
-  restroom(CupertinoIcons.person_2, Icons.wc_rounded),
+  restroom(Icons.wc_rounded, Icons.wc_rounded),
   entrance(CupertinoIcons.square_arrow_right, Icons.door_front_door_rounded),
   atm(CupertinoIcons.money_dollar_circle, Icons.local_atm_rounded),
   evCharge(CupertinoIcons.bolt_fill, Icons.ev_station_rounded),
@@ -96,7 +96,8 @@ enum AppIconKind {
   place(CupertinoIcons.map_pin, Icons.place_rounded),
   campus(CupertinoIcons.building_2_fill, Icons.location_city_rounded),
   allPlaces(CupertinoIcons.square_grid_2x2, Icons.apps_rounded),
-  blueLight(CupertinoIcons.staroflife_fill, Icons.emergency_share_rounded),
+  // a call box, not a medical post
+  blueLight(CupertinoIcons.phone_circle_fill, Icons.emergency_share_rounded),
   reload(CupertinoIcons.creditcard_fill, Icons.add_card_rounded),
   timeClock(CupertinoIcons.clock_fill, Icons.punch_clock_rounded),
   printer(CupertinoIcons.printer, Icons.print_rounded),
@@ -185,8 +186,9 @@ enum AppIconKind {
   IconData on(TargetPlatform platform) => platform == TargetPlatform.iOS ? cupertino : material;
 
   /// Kinds that stay Material on iOS because CupertinoIcons has nothing for
-  /// them: no food or drink, no wheelchair, bicycle or baby. Tests hold every
-  /// other kind, and every icon iOS renders, to the Cupertino font.
+  /// them: no food or drink, no wheelchair, bicycle or baby, no toilet sign,
+  /// walker, truck, pool or megaphone. Tests hold every other kind, and every
+  /// icon iOS renders, to the Cupertino font.
   static const materialOnIos = {
     dining,
     diningTab,
@@ -205,6 +207,11 @@ enum AppIconKind {
     bike,
     changingTable,
     lactation,
+    restroom,
+    walk,
+    truck,
+    swimming,
+    outreach,
   };
 }
 

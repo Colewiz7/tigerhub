@@ -184,7 +184,7 @@ class _PlaceRow extends StatelessWidget {
 /// Icon per kind. Falls back rather than guessing wrong.
 AppIconKind iconForPlaceKind(String kind) => switch (kind) {
       'water' => AppIconKind.water,
-      'blue_light' => AppIconKind.emergency,
+      'blue_light' => AppIconKind.blueLight,
       'aed' => AppIconKind.aed,
       'restroom_all_gender' => AppIconKind.restroom,
       'restroom_accessible' => AppIconKind.accessible,

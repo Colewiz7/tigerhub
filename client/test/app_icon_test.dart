@@ -3,6 +3,7 @@ library;
 
 import 'dart:math' as math;
 
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -11,6 +12,7 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
+import 'package:tigerhub/widgets/places_sheet.dart' show iconForPlaceKind;
 import 'package:tigerhub/widgets/section_nav.dart';
 import 'package:tigerhub/widgets/status_row.dart';
 
@@ -100,6 +102,21 @@ void main() {
         await _expectInkInsideCircle(tester, icon, 29, 58);
         await _expectInkInsideCircle(tester, icon, 38, 76);
       }
+    }
+  });
+
+  test('iOS glyphs say what the place or event is', () {
+    expect(AppIconKind.restroom.cupertino, Icons.wc_rounded);
+    expect(AppIconKind.blueLight.cupertino, CupertinoIcons.phone_circle_fill);
+    expect(iconForPlaceKind('blue_light'), AppIconKind.blueLight, reason: 'a call box, not first aid');
+    expect(AppIconKind.walk.cupertino, Icons.directions_walk_rounded);
+    expect(AppIconKind.truck.cupertino, Icons.local_shipping_rounded);
+    expect(AppIconKind.swimming.cupertino, Icons.pool_rounded);
+    expect(AppIconKind.outreach.cupertino, Icons.campaign_rounded);
+    expect(AppIconKind.celebration.cupertino, CupertinoIcons.sparkles, reason: 'boost has the star');
+    // medical marks stay on medical kinds
+    for (final kind in AppIconKind.values) {
+      if ({CupertinoIcons.staroflife, CupertinoIcons.staroflife_fill}.contains(kind.cupertino)) expect(kind, AppIconKind.emergency, reason: kind.name);
     }
   });
 
