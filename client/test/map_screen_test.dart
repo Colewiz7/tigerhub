@@ -18,7 +18,7 @@ import 'package:tigerhub/screens/map_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 
-import 'golden_harness.dart' show Overflow, captureOverflows, loadGoldenFonts;
+import 'golden_harness.dart' show captureOverflows, loadGoldenFonts;
 
 class _MapBackend implements Backend {
   @override
@@ -76,20 +76,9 @@ void main() {
   // real fonts, the test font is wider than Rubik
   group('map chrome', () {
   setUpAll(loadGoldenFonts);
-  // lines of the toolbar, legend and zoom row, the card strip has its own entry
-  final source = File('lib/widgets/campus_map.dart').readAsLinesSync();
-  bool inClass(String name, int line) {
-    final start = source.indexWhere((l) => l.startsWith('class $name ')) + 1;
-    final end = source.indexWhere((l) => l.startsWith('class '), start) + 1;
-    return line >= start && line < end;
-  }
-  bool chrome(Overflow o) {
-    final line = int.parse(o.where.split(':').last);
-    return o.where.startsWith('lib/widgets/campus_map.dart') && (inClass('_MapToolbar', line) || inClass('_MapLegend', line) || inClass('_MapZoomControls', line));
-  }
   for (final size in const [Size(390, 844), Size(440, 956)]) {
     for (final textScale in const [1.0, 2.0]) {
-      testWidgets('${size.width.toInt()} wide at ${textScale}x: nothing in the chrome overflows, the zoom hint stays in view and the legend clears north', (tester) async {
+      testWidgets('${size.width.toInt()} wide at ${textScale}x: nothing on the map screen overflows, the zoom hint stays in view and the legend clears north', (tester) async {
         tester.view.devicePixelRatio = 1;
         tester.view.physicalSize = size;
         addTearDown(tester.view.reset);
@@ -105,7 +94,7 @@ void main() {
           );
           await tester.pumpAndSettle();
         });
-        expect(overflows.where(chrome), isEmpty);
+        expect(overflows, isEmpty);
 
         final map = tester.getRect(find.byType(InteractiveViewer));
         bool inside(Rect r) => r.left >= map.left && r.right <= map.right && r.top >= map.top && r.bottom <= map.bottom;

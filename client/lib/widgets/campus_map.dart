@@ -411,7 +411,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                 selected == null &&
                     selectedBuilding == null &&
                     selectedEvent == null
-                ? 92
+                ? _stripHeight(context)
                 : 146,
             child: _showEvents
                 ? selectedEvent == null
@@ -626,6 +626,8 @@ class _EventStrip extends StatelessWidget {
                               const SizedBox(height: 3),
                               Text(
                                 group.building,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
@@ -920,6 +922,27 @@ class _MapToolbar extends StatelessWidget {
   }
 }
 
+// tall enough for the tallest strip card at this text size, never under 92
+double _stripHeight(BuildContext context) {
+  final text = Theme.of(context).textTheme;
+  final scaler = MediaQuery.textScalerOf(context);
+  double lines(TextStyle? style, int count) {
+    final painter = TextPainter(
+      text: TextSpan(text: List.filled(count, 'Ag').join('\n'), style: style),
+      textScaler: scaler,
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final height = painter.height;
+    painter.dispose();
+    return height;
+  }
+
+  final kinds = 16 + math.max(38.0, lines(text.titleSmall?.copyWith(height: 1.05), 2) + 3 + lines(text.bodySmall, 1));
+  final places = 20 + math.max(38.0, lines(text.titleSmall, 2) + 3 + lines(text.bodySmall, 1));
+  final events = lines(text.bodySmall, 1) + 6 + 16 + lines(text.titleSmall, 1) + 3 + lines(text.bodySmall, 1);
+  return [92.0, kinds, places, events].reduce(math.max).ceilToDouble();
+}
+
 class _KindStrip extends StatelessWidget {
   const _KindStrip({required this.features, required this.onSelect});
 
@@ -991,6 +1014,8 @@ class _KindStrip extends StatelessWidget {
                           Text(
                             '${entry.value.count} '
                             '${entry.value.count == 1 ? 'place' : 'places'}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
