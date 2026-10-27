@@ -98,7 +98,7 @@ void main() {
   test('release velocity reads the last 100 ms, zero after a rest', () {
     final tracker = ReleaseTracker();
     for (var t = 0; t <= 300; t += 10) {
-      // slow then fast, only the fast part counts
+      // only the fast part counts
       tracker.add(t < 200 ? t * 0.1 : 20 + (t - 200) * 2.0, t.toDouble());
     }
     expect(tracker.velocity(300), closeTo(2000, 1e-9));

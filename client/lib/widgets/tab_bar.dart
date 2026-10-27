@@ -246,7 +246,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
     final list = root == null ? null : _listAt(root, down.position);
     if (list == null) return;
     _listPhysics = list.position.physics;
-    // velocity from touch down, like the list's own drag
+    // velocity from touch down
     final tracker = ScrollConfiguration.of(list.context).velocityTrackerBuilder(list.context)(down);
     for (final event in since) {
       tracker.addPosition(event.timeStamp, event.position);

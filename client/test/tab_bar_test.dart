@@ -512,7 +512,7 @@ void main() {
     for (var t = 0; t < 12; t++) {
       await tester.pump(const Duration(milliseconds: 16));
     }
-    // stiffness 450 is still 24 px out here
+    // 450 still 24 px out
     expect(_pillLeft(tester), moreOrLessEquals(_pillAt(3), epsilon: 5));
     await tester.pumpAndSettle();
     expect(_pillLeft(tester), _pillAt(3));
