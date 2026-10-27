@@ -182,11 +182,21 @@ workflows:
           xcrun simctl bootstatus "$UDID" -b
           echo "SIM_UDID=$UDID" >> "$CM_ENV"
       # one run per appearance keeps each drive's screenshot payload small
-      - name: Screenshots, light
+      - name: Screenshots and a tab bar scrub video, light
         script: |
+          set -euo pipefail
           cd client
           xcrun simctl ui "$SIM_UDID" appearance light
-          flutter drive --driver=test_driver/integration_test.dart --target=integration_test/ios_screens_test.dart -d "$SIM_UDID" --dart-define=SCREENS_APPEARANCE=light
+          trap 'pkill -INT -f "simctl io $SIM_UDID recordVideo" || true' EXIT
+          # records between the tests log lines, not the minutes of build
+          flutter drive --driver=test_driver/integration_test.dart --target=integration_test/ios_screens_test.dart -d "$SIM_UDID" --dart-define=SCREENS_APPEARANCE=light 2>&1 | while IFS= read -r line || [ -n "$line" ]; do
+            echo "$line"
+            case "$line" in
+              *"tab scrub start"*) xcrun simctl io "$SIM_UDID" recordVideo --codec=h264 --force build/tab_scrub.mp4 & rec=$! ;;
+              *"tab scrub end"*) kill -INT "$rec"; wait "$rec" ;;
+            esac
+          done
+          test -s build/tab_scrub.mp4
       - name: Screenshots, dark
         script: |
           cd client
@@ -204,4 +214,5 @@ workflows:
           done
     artifacts:
       - client/build/ios_screens/*.png
+      - client/build/tab_scrub.mp4
       - /tmp/xcodebuild_logs/*.log

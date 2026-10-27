@@ -147,10 +147,11 @@ Future<void> _settle(WidgetTester tester) async {
   await tester.pumpAndSettle(const Duration(milliseconds: 100), EnginePhase.sendSemanticsUpdate, timeout);
 }
 
+// case blind, labels go sentence case soon
+Finder _tab(String label) => find.descendant(of: find.byType(AppTabBar), matching: find.textContaining(RegExp('^$label\$', caseSensitive: false))).first;
+
 Future<void> _openTab(WidgetTester tester, String label) async {
-  // case blind, labels go sentence case soon
-  final tab = find.descendant(of: find.byType(AppTabBar), matching: find.textContaining(RegExp('^$label\$', caseSensitive: false)));
-  await tester.tap(tab.first);
+  await tester.tap(_tab(label));
   await _settle(tester);
 }
 
@@ -273,4 +274,41 @@ void main() {
 
     binding.platformDispatcher.clearPlatformBrightnessTestValue();
   });
+
+  // the workflow records the screen between the two log lines
+  testWidgets('tab bar scrub', (tester) async {
+    await Preferences.instance.markSetupSeen();
+    final scheme = SchemeController()..restore();
+    addTearDown(scheme.dispose);
+    binding.platformDispatcher.platformBrightnessTestValue = Brightness.light;
+    await tester.pumpWidget(_app(ApiClient(backend: _FixtureBackend()), scheme));
+    await _settle(tester);
+
+    final start = tester.getCenter(_tab('today'));
+    final end = tester.getCenter(_tab('campus'));
+    final back = tester.getCenter(_tab('dining'));
+    debugPrint('tab scrub start');
+    // recordVideo takes a moment to start
+    await tester.pump(const Duration(milliseconds: 1500));
+
+    final gesture = await tester.startGesture(start);
+    var at = start.dx;
+    // small steps, a finger never skips a tab
+    Future<void> to(double x) async {
+      while ((x - at).abs() > 5) {
+        at += x > at ? 5 : -5;
+        await gesture.moveTo(Offset(at, start.dy));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await tester.pump(const Duration(milliseconds: 400));
+    }
+
+    await to(end.dx);
+    await to(back.dx);
+    await gesture.up();
+    await _settle(tester);
+    await tester.pump(const Duration(milliseconds: 800));
+    debugPrint('tab scrub end');
+    binding.platformDispatcher.clearPlatformBrightnessTestValue();
+  }, skip: !_appearances.contains(Brightness.light));
 }
