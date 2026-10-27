@@ -12,6 +12,7 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/motion/gesture.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
@@ -304,6 +305,51 @@ void main() {
     await gesture.up();
     await tester.pumpAndSettle();
     expect(selected, [1]);
+  });
+
+  for (final (from, dx) in const [(4, 100.0), (0, -100.0)]) {
+    testWidgets('past tab $from the pill rubber bands and springs back', (tester) async {
+      final selected = <int>[];
+      await _pumpBar(tester, selected: selected);
+      final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+      await tester.tapAt(Offset(_tabCentre(from), y));
+      await tester.pumpAndSettle();
+
+      final gesture = await tester.startGesture(Offset(_tabCentre(from), y));
+      for (var i = 1; i <= 20; i++) {
+        await gesture.moveTo(Offset(_tabCentre(from) + dx * i / 20, y));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      await tester.pump(const Duration(milliseconds: 300));
+      // c 0.55, d the 358 wide bar
+      final band = rubberband(dx, 358);
+      expect(band.abs(), lessThan(dx.abs() / 2));
+      expect(_pillLeft(tester), moreOrLessEquals(_pillAt(from.toDouble()) + band, epsilon: 0.01));
+
+      await gesture.up();
+      var past = 0.0;
+      for (var t = 0; t < 30; t++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        past = math.max(past, (_pillLeft(tester) - _pillAt(from.toDouble())) * dx.sign);
+      }
+      expect(past, lessThan(band.abs()), reason: 'heads back, never further out');
+      await tester.pumpAndSettle();
+      expect(_pillLeft(tester), _pillAt(from.toDouble()));
+      expect(selected, [from], reason: 'only the tap selects');
+    });
+  }
+
+  testWidgets('a tap moves the pill on the 0.18 s settle spring', (tester) async {
+    await _pumpBar(tester);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+    await tester.tapAt(Offset(_tabCentre(3), y));
+    for (var t = 0; t < 12; t++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    // stiffness 450 is still 24 px out here
+    expect(_pillLeft(tester), moreOrLessEquals(_pillAt(3), epsilon: 5));
+    await tester.pumpAndSettle();
+    expect(_pillLeft(tester), _pillAt(3));
   });
 
   testWidgets('under Reduce Motion the pill sits on the finger mid scrub', (tester) async {

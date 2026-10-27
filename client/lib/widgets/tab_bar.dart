@@ -131,8 +131,6 @@ class _GlassTabBar extends StatefulWidget {
 }
 
 class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderStateMixin {
-  // mass 1, stiffness 450, critically damped
-  static final _spring = SpringDescription.withDampingRatio(mass: 1, stiffness: 450, ratio: 1);
   static const double _pad = 4;
 
   // pill position in tabs, fractional mid slide or mid scrub
@@ -144,6 +142,8 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   double _downPill = 0;
   double _finger = 0;
   _Chase? _chase;
+  // taps settle outside layout
+  double _laidOutItemWidth = 0;
   final _tracker = ReleaseTracker();
   double _upTime = 0;
   late int _target;
@@ -167,14 +167,16 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
     super.dispose();
   }
 
-  void _settle(int tab) {
+  void _settle(int tab, [double? velocity]) {
     _target = tab;
-    if (reduceMotion(context)) {
+    final itemWidth = _laidOutItemWidth;
+    if (reduceMotion(context) || itemWidth == 0) {
       _pill.value = tab.toDouble();
       return;
     }
+    final px = settle(_pill.value * itemWidth, tab * itemWidth, velocity ?? _pill.velocity * itemWidth, const Duration(milliseconds: 180));
     // the spring stops within tolerance, land exactly
-    _pill.animateWith(SpringSimulation(_spring, _pill.value, tab.toDouble(), _pill.velocity)).then((_) => _pill.value = tab.toDouble());
+    _pill.animateWith(_InTabs(px, itemWidth)).then((_) => _pill.value = tab.toDouble());
   }
 
   double _itemWidth(double width) => (width - _pad * 2) / widget.tabs.length;
@@ -197,14 +199,16 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   // 1:1 with the finger since touch down
   void _scrubTo(double x, double width) {
     final itemWidth = _itemWidth(width);
-    _finger = (_downPill + (x - _downX) / itemWidth).clamp(0, widget.tabs.length - 1).toDouble();
+    final px = _downPill * itemWidth + x - _downX;
+    final end = (widget.tabs.length - 1) * itemWidth;
+    _finger = (px < 0 ? rubberband(px, width) : (px > end ? end + rubberband(px - end, width) : px)) / itemWidth;
     final chase = _chase;
     if (chase == null) {
       _pill.value = _finger;
     } else {
       chase.retarget(_finger, (_pill.lastElapsedDuration?.inMicroseconds ?? 0) / 1e6);
     }
-    final tab = _finger.round();
+    final tab = _finger.round().clamp(0, widget.tabs.length - 1);
     for (var i = 0; i < (tab - _lastTab).abs(); i++) {
       HapticFeedback.selectionClick();
     }
@@ -217,14 +221,8 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
     if (!_scrubbing) return;
     final tab = (_finger + project(velocity, 0.99) / itemWidth).round().clamp(0, widget.tabs.length - 1);
     setState(() => _scrubbing = false);
-    _target = tab;
     if (tab != widget.index) HapticFeedback.lightImpact();
-    if (reduceMotion(context)) {
-      _pill.value = tab.toDouble();
-    } else {
-      final px = settle(_pill.value * itemWidth, tab * itemWidth, velocity, const Duration(milliseconds: 180));
-      _pill.animateWith(_InTabs(px, itemWidth)).then((_) => _pill.value = tab.toDouble());
-    }
+    _settle(tab, velocity);
     if (tab != widget.index || !widget.active) widget.onSelect(tab);
   }
 
@@ -243,7 +241,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
         child: LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
-            final itemWidth = _itemWidth(width);
+            final itemWidth = _laidOutItemWidth = _itemWidth(width);
             final bar = GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTapUp: (d) {
