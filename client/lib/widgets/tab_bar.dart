@@ -142,6 +142,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   double _downPill = 0;
   double _finger = 0;
   _Chase? _chase;
+  double _carry = 0;
   // taps settle outside layout
   double _laidOutItemWidth = 0;
   final _tracker = ReleaseTracker();
@@ -182,14 +183,11 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   double _itemWidth(double width) => (width - _pad * 2) / widget.tabs.length;
 
   void _startScrub(double x) {
-    final velocity = _pill.velocity;
+    _carry = _pill.velocity;
     _pill.stop();
     _downX = x;
     _downPill = _pill.value;
     _finger = _pill.value;
-    final chase = reduceMotion(context) ? null : _Chase(_pill.value, velocity);
-    if (chase != null) _pill.animateWith(chase);
-    _chase = chase;
     setState(() {
       _scrubbing = true;
       _lastTab = _pill.value.round();
@@ -203,10 +201,16 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
     final end = (widget.tabs.length - 1) * itemWidth;
     _finger = (px < 0 ? rubberband(px, width) : (px > end ? end + rubberband(px - end, width) : px)) / itemWidth;
     final chase = _chase;
-    if (chase == null) {
+    if (reduceMotion(context)) {
       _pill.value = _finger;
-    } else {
+    } else if (chase != null && _pill.isAnimating) {
       chase.retarget(_finger, (_pill.lastElapsedDuration?.inMicroseconds ?? 0) / 1e6);
+    } else {
+      // at rest on the finger, start a fresh chase
+      final fresh = _Chase(_pill.value, _carry, itemWidth)..retarget(_finger, 0);
+      _chase = fresh;
+      _carry = 0;
+      _pill.animateWith(fresh).then((_) => _pill.value = fresh.target);
     }
     final tab = _finger.round().clamp(0, widget.tabs.length - 1);
     for (var i = 0; i < (tab - _lastTab).abs(); i++) {
@@ -332,16 +336,19 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
 
 // chases the finger until release
 class _Chase extends Simulation {
-  _Chase(double from, double velocity) : _sim = SpringSimulation(_spring, from, from, velocity);
+  _Chase(double from, double velocity, this.itemWidth) : target = from, _sim = SpringSimulation(_spring, from, from, velocity);
 
   static final _spring = SpringDescription.withDurationAndBounce(duration: const Duration(milliseconds: 150));
 
+  final double itemWidth;
+  double target;
   SpringSimulation _sim;
   double _t0 = 0;
 
   // retargets keep the pill's velocity
   void retarget(double target, double now) {
     _sim = SpringSimulation(_spring, x(now), target, dx(now));
+    this.target = target;
     _t0 = now;
   }
 
@@ -351,8 +358,9 @@ class _Chase extends Simulation {
   @override
   double dx(double time) => _sim.dx(time - _t0);
 
+  // settle tolerance is pixels
   @override
-  bool isDone(double time) => false;
+  bool isDone(double time) => ((x(time) - target) * itemWidth).abs() < settleTolerance.distance && (dx(time) * itemWidth).abs() < settleTolerance.velocity;
 }
 
 // settle is pixels, pill is tabs

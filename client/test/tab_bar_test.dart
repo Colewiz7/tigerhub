@@ -352,6 +352,35 @@ void main() {
     expect(_pillLeft(tester), _pillAt(3));
   });
 
+  testWidgets('a finger held still stops the frames, the next move restarts the chase', (tester) async {
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    final gesture = await tester.startGesture(Offset(_tabCentre(0), y));
+    for (var dx = 5.0; dx <= 40; dx += 5) {
+      await gesture.moveTo(Offset(_tabCentre(0) + dx, y));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    for (var frame = 0; frame < 60; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    expect(tester.binding.hasScheduledFrame, isFalse, reason: 'held still for 1 s');
+    expect(_pillLeft(tester), _pillAt(0) + 40, reason: 'lands on the finger');
+
+    await gesture.moveTo(Offset(_tabCentre(0) + 50, y));
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(tester.binding.hasScheduledFrame, isTrue);
+    expect(_pillLeft(tester), inExclusiveRange(_pillAt(0) + 40, _pillAt(0) + 50), reason: 'springs from rest');
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(_pillLeft(tester), _pillAt(0) + 50);
+    expect(tester.binding.hasScheduledFrame, isFalse);
+
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(selected, [1]);
+  });
+
   testWidgets('under Reduce Motion the pill sits on the finger mid scrub', (tester) async {
     await _pumpBar(tester, reduceMotion: true);
     final y = tester.getCenter(find.byType(BackdropFilter)).dy;

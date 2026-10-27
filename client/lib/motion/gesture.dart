@@ -3,7 +3,6 @@ library;
 
 import 'dart:math' as math;
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/physics.dart';
 
 // rate 0.99 pages, 0.998 scrolls free
@@ -23,9 +22,6 @@ double clampVelocity(double velocity, double distance, double duration) {
 }
 
 const settleTolerance = Tolerance(distance: 0.5, velocity: 5);
-
-double releaseVelocityX(DragEndDetails details) =>
-    details.velocity.pixelsPerSecond.dx;
 
 // the last 100 ms of moves, times in ms
 class ReleaseTracker {
