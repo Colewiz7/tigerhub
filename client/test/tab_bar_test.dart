@@ -273,6 +273,25 @@ void main() {
     expect(_pillLeft(tester), _pillAt(3));
   });
 
+  testWidgets('the pill moves with the finger from touch down, no catch up jump', (tester) async {
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    // off centre, still on tab 0
+    final down = _tabCentre(0) + 25;
+    final gesture = await tester.startGesture(Offset(down, y));
+    for (var dx = 5.0; dx <= 40; dx += 5) {
+      await gesture.moveTo(Offset(down + dx, y));
+      await tester.pump(const Duration(milliseconds: 16));
+      if (dx >= 20) expect(_pillLeft(tester), moreOrLessEquals(_pillAt(0) + dx), reason: 'moved $dx');
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(selected, [1]);
+  });
+
   testWidgets('a slow release lands on the nearest tab, no release haptic', (tester) async {
     final haptics = _haptics(tester);
     final selected = <int>[];

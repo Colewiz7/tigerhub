@@ -8,6 +8,7 @@ library;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
@@ -138,6 +139,8 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
 
   bool _scrubbing = false;
   int _lastTab = 0;
+  double _downX = 0;
+  double _downPill = 0;
   late int _target;
 
   @override
@@ -171,11 +174,19 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
 
   double _itemWidth(double width) => (width - _pad * 2) / widget.tabs.length;
 
-  // the pill centre sits under the finger
-  double _positionAt(double x, double width) => ((x - _pad) / _itemWidth(width) - 0.5).clamp(0, widget.tabs.length - 1).toDouble();
+  void _startScrub(double x) {
+    _pill.stop();
+    _downX = x;
+    _downPill = _pill.value;
+    setState(() {
+      _scrubbing = true;
+      _lastTab = _pill.value.round();
+    });
+  }
 
+  // 1:1 with the finger since touch down
   void _scrubTo(double x, double width) {
-    _pill.value = _positionAt(x, width);
+    _pill.value = (_downPill + (x - _downX) / _itemWidth(width)).clamp(0, widget.tabs.length - 1).toDouble();
     final tab = _pill.value.round();
     for (var i = 0; i < (tab - _lastTab).abs(); i++) {
       HapticFeedback.selectionClick();
@@ -220,15 +231,10 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
                 final tab = ((d.localPosition.dx - _pad) / itemWidth).floor().clamp(0, count - 1);
                 widget.onSelect(tab);
               },
+              // starts at the down point, the slop arrives as the first update
+              dragStartBehavior: DragStartBehavior.down,
               // horizontal only, so a vertical swipe never starts a scrub
-              onHorizontalDragStart: (d) {
-                _pill.stop();
-                setState(() {
-                  _scrubbing = true;
-                  _lastTab = widget.index;
-                });
-                _scrubTo(d.localPosition.dx, width);
-              },
+              onHorizontalDragStart: (d) => _startScrub(d.localPosition.dx),
               onHorizontalDragUpdate: (d) => _scrubTo(d.localPosition.dx, width),
               onHorizontalDragEnd: (d) => _endScrub(itemWidth, releaseVelocityX(d)),
               onHorizontalDragCancel: () => _endScrub(itemWidth, 0),
