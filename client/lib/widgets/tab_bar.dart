@@ -5,6 +5,7 @@
 /// [TabBarInset] tells each scrollable how far to pad its end.
 library;
 
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -251,22 +252,18 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
           builder: (context, constraints) {
             final width = constraints.maxWidth;
             final itemWidth = _laidOutItemWidth = _itemWidth(width);
-            final bar = GestureDetector(
+            final bar = RawGestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTapUp: (d) {
-                final tab = ((d.localPosition.dx - _pad) / itemWidth).floor().clamp(0, count - 1);
-                widget.onSelect(tab);
+              gestures: {
+                _BarGestures: GestureRecognizerFactoryWithHandlers<_BarGestures>(_BarGestures.new, (bar) {
+                  bar.onTap = (x) => widget.onSelect(((x - _pad) / itemWidth).floor().clamp(0, count - 1));
+                  // starts from touch down, the slop lands in the first update
+                  bar.onScrubStart = () => _startScrub(_ownerDownX);
+                  bar.onScrubUpdate = () => _scrubTo(_ownerX, width);
+                  // the owner lifting already ended it
+                  bar.onScrubEnd = () => _endScrub(itemWidth, 0);
+                }),
               },
-              // slop lands in first update
-              dragStartBehavior: DragStartBehavior.down,
-              // horizontal only, so a vertical swipe never starts a scrub
-              onHorizontalDragStart: (_) => _startScrub(_ownerDownX),
-              onHorizontalDragUpdate: (_) => _scrubTo(_ownerX, width),
-              // the owner lifting already ended it
-              onHorizontalDragEnd: (_) => _endScrub(itemWidth, 0),
-              onHorizontalDragCancel: () => _endScrub(itemWidth, 0),
-              // rows under the bar never long press
-              onLongPress: () {},
               child: Semantics(
                 role: ui.SemanticsRole.tabBar,
                 container: true,
@@ -356,6 +353,113 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
       ),
     );
   }
+}
+
+// tap and scrub in one, so the bar can claim a touch before a row lights up
+class _BarGestures extends OneSequenceGestureRecognizer {
+  // just under kPressTimeout, when a row beneath would light
+  static const _claim = Duration(milliseconds: 90);
+
+  ValueChanged<double>? onTap;
+  VoidCallback? onScrubStart;
+  VoidCallback? onScrubUpdate;
+  VoidCallback? onScrubEnd;
+
+  int? _primary;
+  Offset _down = Offset.zero;
+  bool _moved = false;
+  bool _won = false;
+  bool _scrubbing = false;
+  Timer? _timer;
+  // a tap lifted before the arena chose
+  int? _upPointer;
+  double _upX = 0;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    startTrackingPointer(event.pointer, event.transform);
+    if (_primary != null) {
+      // extra fingers are the bar's and do nothing
+      resolvePointer(event.pointer, GestureDisposition.accepted);
+      return;
+    }
+    _primary = event.pointer;
+    _down = event.localPosition;
+    _moved = false;
+    _won = false;
+    _scrubbing = false;
+    _upPointer = null;
+    _timer = Timer(_claim, () {
+      final primary = _primary;
+      if (primary != null && !_moved) resolvePointer(primary, GestureDisposition.accepted);
+    });
+  }
+
+  @override
+  void handleEvent(PointerEvent event) {
+    if (event.pointer != _primary) {
+      if (event is PointerUpEvent || event is PointerCancelEvent) stopTrackingPointer(event.pointer);
+      return;
+    }
+    final d = event.localPosition - _down;
+    final slop = computeHitSlop(event.kind, gestureSettings);
+    if (event is PointerMoveEvent) {
+      if (!_moved && d.distance > slop) {
+        _moved = true;
+        _timer?.cancel();
+        // clear sideways intent scrubs, anything else is the list's or nothing
+        final sideways = d.dx.abs() > d.dy.abs() * 1.5;
+        if (!_won) resolvePointer(event.pointer, sideways ? GestureDisposition.accepted : GestureDisposition.rejected);
+        if (_won && sideways) {
+          _scrubbing = true;
+          onScrubStart?.call();
+        }
+      }
+      if (_scrubbing) onScrubUpdate?.call();
+    } else if (event is PointerUpEvent || event is PointerCancelEvent) {
+      _timer?.cancel();
+      if (_scrubbing) {
+        onScrubEnd?.call();
+      } else if (event is PointerUpEvent && _won && !_moved) {
+        onTap?.call(event.localPosition.dx);
+      } else if (event is PointerUpEvent && !_moved) {
+        _upPointer = event.pointer;
+        _upX = event.localPosition.dx;
+      }
+      _primary = null;
+      stopTrackingPointer(event.pointer);
+    }
+  }
+
+  @override
+  void acceptGesture(int pointer) {
+    if (pointer == _primary) {
+      _won = true;
+      _timer?.cancel();
+    } else if (pointer == _upPointer) {
+      _upPointer = null;
+      onTap?.call(_upX);
+    }
+  }
+
+  @override
+  void rejectGesture(int pointer) {
+    if (pointer == _primary) _timer?.cancel();
+    if (pointer == _upPointer) _upPointer = null;
+    super.rejectGesture(pointer);
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {}
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  String get debugDescription => 'tab bar';
 }
 
 // the list below gets the pointer too, so vertical swipes scroll it

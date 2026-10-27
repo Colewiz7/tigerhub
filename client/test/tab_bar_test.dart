@@ -265,6 +265,35 @@ void main() {
     expect(_pillLeft(tester), moreOrLessEquals(_pillAt(2)));
   });
 
+  testWidgets('a held press or a scrub on the bar never lights the row beneath', (tester) async {
+    _phone(tester, const Size(390, 844));
+    await _pumpShell(tester);
+    await tester.tap(tabLabel('Dining'));
+    await tester.pumpAndSettle();
+    await tester.dragFrom(tester.getCenter(find.byType(BackdropFilter)), const Offset(0, -300));
+    await tester.pumpAndSettle();
+    final at = tester.getCenter(tabLabel('Dining'));
+    // highlights and splashes add ink features, the bar has none of its own
+    int ink() => tester.allRenderObjects.where((r) => r.runtimeType.toString() == '_RenderInkFeatures').fold(0, (n, r) => n + (((r as dynamic).debugInkFeatures as List?)?.length ?? 0));
+    final resting = ink();
+
+    final press = await tester.startGesture(at);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(ink(), resting, reason: 'held still');
+    await press.up();
+    await tester.pumpAndSettle();
+
+    final scrub = await tester.startGesture(at);
+    await tester.pump(const Duration(milliseconds: 120));
+    for (var i = 1; i <= 8; i++) {
+      await scrub.moveTo(at + Offset(5.0 * i, 0));
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(ink(), resting, reason: 'scrubbing');
+    }
+    await scrub.up();
+    await tester.pumpAndSettle();
+  }, variant: _ios);
+
   testWidgets('a tap selects, a vertical drag never scrubs', (tester) async {
     final haptics = _haptics(tester);
     final selected = <int>[];
@@ -432,6 +461,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(selected, [2]);
     expect(_pillLeft(tester), _pillAt(2));
+  });
+
+  testWidgets('a second finger tapping mid scrub selects nothing', (tester) async {
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    final first = await tester.startGesture(Offset(_tabCentre(0), y));
+    for (var i = 1; i <= 8; i++) {
+      await first.moveTo(Offset(_tabCentre(0) + 5 * i, y));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await tester.tapAt(Offset(_tabCentre(4), y));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(selected, isEmpty, reason: 'the second finger tapped tab 5');
+
+    await first.up();
+    await tester.pumpAndSettle();
+    expect(selected, [1]);
+  });
+
+  testWidgets('a diagonal swipe with no list below never scrubs', (tester) async {
+    final haptics = _haptics(tester);
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    // 50 across, 100 up: past the slop sideways, but mostly vertical
+    await tester.dragFrom(Offset(_tabCentre(0), y), const Offset(50, -100));
+    await tester.pumpAndSettle();
+    expect(selected, isEmpty);
+    expect(haptics, isEmpty);
+    expect(_pillLeft(tester), _pillAt(0));
   });
 
   testWidgets('a second finger moving mid scrub does not change the released tab', (tester) async {
