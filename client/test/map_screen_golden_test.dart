@@ -103,6 +103,27 @@ void main() {
     }
   }
 
+  // the map chrome on iOS: segment, zoom, search, fit
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final brightness in Brightness.values) {
+      final name = 'map_ios_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_text1.png';
+      goldenWidgets(name, (tester) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = size;
+        addTearDown(tester.view.reset);
+        await _loadPaths(tester);
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902), brightness: brightness)).copyWith(platform: TargetPlatform.iOS),
+            home: Scaffold(body: MapScreen(api: ApiClient(backend: _MapBackend()))),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
+      });
+    }
+  }
+
   goldenWidgets('map screen 390x844 light at 20x', (tester) async {
     const size = Size(390, 844);
     tester.view.devicePixelRatio = 1;

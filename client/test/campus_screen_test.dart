@@ -304,6 +304,21 @@ void main() {
     }
   }
 
+  // the pushed section on iOS: back chevron, call and text marks
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final brightness in Brightness.values) {
+      for (final textScale in const [1.0, 2.0]) {
+        final name = 'campus_safety_ios_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${textScale.toInt()}x.png';
+        goldenWidgets(name, (tester) async {
+          await pumpCampus(tester, size: size, brightness: brightness, textScale: textScale, platform: TargetPlatform.iOS);
+          await tester.tap(find.text('Safety'));
+          await tester.pumpAndSettle();
+          await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
+        });
+      }
+    }
+  }
+
   for (final size in const [Size(390, 844), Size(440, 956)]) {
     for (final brightness in Brightness.values) {
       for (final textScale in const [1.0, 2.0]) {
