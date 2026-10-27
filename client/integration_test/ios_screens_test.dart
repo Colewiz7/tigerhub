@@ -2,6 +2,7 @@
 library;
 
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/gestures.dart' show kTouchSlop;
@@ -40,6 +41,9 @@ final _appearances = [
   for (final b in [Brightness.light, Brightness.dark])
     if (_only.isEmpty || b.name == _only) b,
 ];
+
+// only the workflow answers the device shot lines
+const _deviceShots = bool.fromEnvironment('DEVICE_SHOTS');
 
 const _scrollBy = 600.0;
 const _detailId = 23;
@@ -219,9 +223,24 @@ void main() {
     }
 
     // the workflow takes a simctl screenshot on this line, status bar and all
-    Future<void> deviceShot(String name) async {
-      debugPrint('device shot $name');
-      await tester.pump(const Duration(milliseconds: 1500));
+    Future<void> deviceShot(String name, Type screen) async {
+      if (!_deviceShots) return;
+      final tab = _tabs.indexWhere((t) => t.$2 == screen);
+      expect(tester.widget<AppTabBar>(find.byType(AppTabBar)).index, tab, reason: 'wrong tab selected for $name');
+      expect(find.byType(screen), findsOneWidget, reason: 'wrong screen for $name');
+      // a fresh name, an old ack never counts
+      final done = File('${Directory.systemTemp.path}/$name.${DateTime.now().microsecondsSinceEpoch}.done');
+      debugPrint('device shot $name ${done.path}');
+      // the log line lands seconds late, wait for the hosts ack
+      final acked = await tester.runAsync(() async {
+        final deadline = DateTime.now().add(const Duration(seconds: 30));
+        while (!done.existsSync() && DateTime.now().isBefore(deadline)) {
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        }
+        return done.existsSync();
+      });
+      // runAsync only logs a throw, this stops the run
+      expect(acked, isTrue, reason: 'no device shot of $name');
     }
 
     // skips the first run setup screen
@@ -244,7 +263,7 @@ void main() {
           await tester.tap(find.byTooltip('Fit campus'));
           await _settle(tester);
           await tabShot('map_${mode}_top');
-          if (appearance == Brightness.light) await deviceShot('map_${mode}_top');
+          if (appearance == Brightness.light) await deviceShot('map_${mode}_top', type);
           final viewer = find.descendant(of: root, matching: find.byType(InteractiveViewer));
           await _drag(tester, viewer, const Offset(-120, -160));
           await tabShot('map_${mode}_panned');
@@ -253,7 +272,7 @@ void main() {
 
         await _toTop(tester, root);
         await tabShot('${name}_${mode}_top');
-        if (appearance == Brightness.light) await deviceShot('${name}_${mode}_top');
+        if (appearance == Brightness.light) await deviceShot('${name}_${mode}_top', type);
         await _scrollDown(tester, root);
         await tabShot('${name}_${mode}_scrolled');
 
