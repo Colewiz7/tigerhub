@@ -52,7 +52,7 @@ class _MapBackend extends _Backend {
   }
 }
 
-final _ios =TargetPlatformVariant.only(TargetPlatform.iOS);
+final _ios = TargetPlatformVariant.only(TargetPlatform.iOS);
 final _material = TargetPlatformVariant({TargetPlatform.android, TargetPlatform.linux});
 final _all = TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android, TargetPlatform.linux});
 
