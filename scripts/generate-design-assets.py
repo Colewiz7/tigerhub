@@ -68,28 +68,6 @@ def wordmarks() -> None:
     write("wordmark/tigerhub-monochrome.svg", svg("0 0 230 60", mono, label="TigerHub"))
 
 
-GLYPHS = {
-    "dining": '<path d="M6 3v8M4 3v5a2 2 0 0 0 4 0V3M6 11v10M15 3v18M15 3c4 2 5 7 0 10"/>',
-    "events": '<rect x="3" y="5" width="18" height="16" rx="4"/><path d="M7 3v4M17 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01"/>',
-    "calendar": '<rect x="2.5" y="3.5" width="19" height="18" rx="4"/><path d="M7 2v4M17 2v4M3 9h18M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2M15 17h2"/>',
-    "housing": '<path d="M3 10 12 3l9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M7 13h10v6H7zM8 13l4 3 4-3"/>',
-    "post-office": '<path d="M4 10h11a4 4 0 0 1 4 4v7H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/><path d="M8 10v11M19 14h3v5M14 6h5v4M14 6v8"/>',
-    "makerspace": '<path d="M5 4h14v5H5zM8 9v4l4 3 4-3V9M12 16v5M8 21h8"/><circle cx="12" cy="12" r="1"/>',
-    "buildings": '<path d="M3 21V9l9-6 9 6v12M2 21h20M7 11h3v3H7zM14 11h3v3h-3zM10 21v-4h4v4"/>',
-    "market": '<path d="M3 5h2l2.2 10h10.9l2-7H6M9 11h9M9 20h.01M17 20h.01"/>',
-    "visiting-chef": '<path d="M7 10a4 4 0 1 1 2-7 4 4 0 0 1 6 0 4 4 0 1 1 2 7Z"/><path d="M7 10v8h10v-8M9 14h6M9 18v3M15 18v3"/>',
-}
-
-
-def glyphs() -> None:
-    symbols = []
-    for name, paths in GLYPHS.items():
-        group = f'<g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">{paths}</g>'
-        write(f"glyphs/{name}.svg", svg("0 0 24 24", "  " + group, label=name.replace("-", " ")))
-        symbols.append(f'  <symbol id="{name}" viewBox="0 0 24 24">{group}</symbol>')
-    write("glyphs/section-glyphs.svg", svg("0 0 24 24", "\n".join(symbols), label="TigerHub section glyph sprite"))
-
-
 EMPTY_PROPS = {
     "no-events": '<rect x="100" y="48" width="68" height="62" rx="16"/><path d="M114 42v14M153 42v14M101 67h66M121 82h26"/>',
     "all-closed": '<circle cx="134" cy="76" r="34"/><path d="M134 56v22l15 10M111 108l46-64"/>',
@@ -206,7 +184,6 @@ def dashboard_mockups() -> None:
 
 def main() -> None:
     wordmarks()
-    glyphs()
     empty_states()
     dining()
     post_office_mockups()

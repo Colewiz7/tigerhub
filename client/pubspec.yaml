@@ -76,7 +76,6 @@ flutter:
     - assets/map/
     - assets/icons/
     - assets/generated/empty-states/
-    - assets/generated/glyphs/
     - assets/generated/wordmark/
     - assets/generated/dining-placeholder/
     - assets/fonts/
