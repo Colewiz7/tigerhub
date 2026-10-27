@@ -142,6 +142,8 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   int _lastTab = 0;
   double _downX = 0;
   double _downPill = 0;
+  final _tracker = ReleaseTracker();
+  double _upTime = 0;
   late int _target;
 
   @override
@@ -195,6 +197,8 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
     if (tab != _lastTab) setState(() => _lastTab = tab);
   }
 
+  double _ms(Duration time) => time.inMicroseconds / 1000;
+
   void _endScrub(double itemWidth, double velocity) {
     if (!_scrubbing) return;
     final tab = (_pill.value + project(velocity, 0.99) / itemWidth).round().clamp(0, widget.tabs.length - 1);
@@ -226,7 +230,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
           builder: (context, constraints) {
             final width = constraints.maxWidth;
             final itemWidth = _itemWidth(width);
-            return GestureDetector(
+            final bar = GestureDetector(
               behavior: HitTestBehavior.opaque,
               onTapUp: (d) {
                 final tab = ((d.localPosition.dx - _pad) / itemWidth).floor().clamp(0, count - 1);
@@ -237,7 +241,8 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
               // horizontal only, so a vertical swipe never starts a scrub
               onHorizontalDragStart: (d) => _startScrub(d.localPosition.dx),
               onHorizontalDragUpdate: (d) => _scrubTo(d.localPosition.dx, width),
-              onHorizontalDragEnd: (d) => _endScrub(itemWidth, releaseVelocityX(d)),
+              // flutter zeroes short flicks
+              onHorizontalDragEnd: (_) => _endScrub(itemWidth, _tracker.velocity(_upTime)),
               onHorizontalDragCancel: () => _endScrub(itemWidth, 0),
               // claims vertical moves, or horizontal wins them by default
               onVerticalDragStart: (_) {},
@@ -296,6 +301,15 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
                   ),
                 ),
               ),
+            );
+            return Listener(
+              onPointerDown: (e) {
+                _tracker.clear();
+                _tracker.add(e.localPosition.dx, _ms(e.timeStamp));
+              },
+              onPointerMove: (e) => _tracker.add(e.localPosition.dx, _ms(e.timeStamp)),
+              onPointerUp: (e) => _upTime = _ms(e.timeStamp),
+              child: bar,
             );
           },
         ),

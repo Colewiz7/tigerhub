@@ -95,6 +95,20 @@ void main() {
     expect(done, lessThan(0.5), reason: 'not held for the default 0.001 px');
   });
 
+  test('release velocity reads the last 100 ms, zero after a rest', () {
+    final tracker = ReleaseTracker();
+    for (var t = 0; t <= 300; t += 10) {
+      // slow then fast, only the fast part counts
+      tracker.add(t < 200 ? t * 0.1 : 20 + (t - 200) * 2.0, t.toDouble());
+    }
+    expect(tracker.velocity(300), closeTo(2000, 1e-9));
+    expect(tracker.velocity(351), 0, reason: 'rested before lifting');
+    tracker.clear();
+    tracker.add(0, 5);
+    tracker.add(10, 5);
+    expect(tracker.velocity(5), 0);
+  });
+
   test('without the clamp a fast release overshoots', () {
     final sim = SpringSimulation(spring(0.18, 0), 0, 40, 2 * 2 * 3.141592653589793 / 0.18 * 40);
     final peak = [for (var f = 0; f <= 120; f++) sim.x(f / 240)].reduce((a, b) => a > b ? a : b);

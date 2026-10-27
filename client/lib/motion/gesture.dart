@@ -27,6 +27,30 @@ const settleTolerance = Tolerance(distance: 0.5, velocity: 5);
 double releaseVelocityX(DragEndDetails details) =>
     details.velocity.pixelsPerSecond.dx;
 
+// the last 100 ms of moves, times in ms
+class ReleaseTracker {
+  final _samples = <({double x, double t})>[];
+
+  void clear() => _samples.clear();
+
+  void add(double x, double t) {
+    _samples.add((x: x, t: t));
+    while (_samples.length > 1 && t - _samples.first.t > 100) {
+      _samples.removeAt(0);
+    }
+  }
+
+  double velocity(double now) {
+    if (_samples.length < 2) return 0;
+    final a = _samples.first;
+    final b = _samples.last;
+    if (now - b.t > 50) return 0; // rested before lifting
+    final dt = b.t - a.t;
+    if (dt <= 0) return 0; // samples share a timestamp
+    return (b.x - a.x) / dt * 1000;
+  }
+}
+
 SpringSimulation settle(double from, double to, double velocity, Duration duration) {
   final seconds = duration.inMilliseconds / 1000;
   final spring = SpringDescription.withDurationAndBounce(duration: duration);

@@ -293,6 +293,18 @@ void main() {
     expect(selected, [1]);
   });
 
+  testWidgets('a short 42 px flick still carries momentum', (tester) async {
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    // 0.6 tabs plus 1.7 projected
+    await tester.flingFrom(Offset(_tabCentre(0), y), const Offset(42, 0), 1200);
+    await tester.pumpAndSettle();
+    expect(selected, [2]);
+    expect(_pillLeft(tester), _pillAt(2));
+  });
+
   testWidgets('a slow release lands on the nearest tab, no release haptic', (tester) async {
     final haptics = _haptics(tester);
     final selected = <int>[];
