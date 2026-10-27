@@ -103,6 +103,11 @@ void main() {
         final hint = find.text('Zoom in for walking paths');
         expect(inside(tester.getRect(find.ancestor(of: hint, matching: find.byType(Material)).first)), isTrue);
         expect(inside(tester.getRect(hint)), isTrue);
+        // wraps, never cut short
+        final paragraph = tester.renderObject<RenderParagraph>(hint);
+        expect(paragraph.didExceedMaxLines, isFalse);
+        // the longest word fits the box
+        expect(paragraph.getMinIntrinsicWidth(double.infinity), lessThanOrEqualTo(paragraph.size.width + 0.5));
 
         final legend = tester.getRect(find.byWidgetPredicate((w) => w.runtimeType.toString() == '_MapLegend'));
         final north = tester.getRect(find.byTooltip('North up'));

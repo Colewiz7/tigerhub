@@ -2,6 +2,7 @@
 /// elsewhere, with content scrolling under both.
 library;
 
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' show SemanticsRole;
 
@@ -12,6 +13,7 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/sources/campus_places.dart';
 import 'package:tigerhub/motion/gesture.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
@@ -40,7 +42,17 @@ class _Backend implements Backend {
   void close() {}
 }
 
-final _ios = TargetPlatformVariant.only(TargetPlatform.iOS);
+// the captured campus, so a pan crosses real buildings
+class _MapBackend extends _Backend {
+  @override
+  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async {
+    if (path != '/campus/map') return super.fetch(path, q);
+    final features = parseCampusMapFeatures(File('test/fixtures/maps_category_35.data').readAsStringSync());
+    return {'data': features, 'stale': false, 'last_updated': null};
+  }
+}
+
+final _ios =TargetPlatformVariant.only(TargetPlatform.iOS);
 final _material = TargetPlatformVariant({TargetPlatform.android, TargetPlatform.linux});
 final _all = TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android, TargetPlatform.linux});
 
@@ -61,11 +73,11 @@ void _phone(WidgetTester tester, Size size, {double top = 47}) {
   addTearDown(tester.view.reset);
 }
 
-Future<void> _pumpShell(WidgetTester tester, {bool minimize = false}) async {
+Future<void> _pumpShell(WidgetTester tester, {bool minimize = false, Backend? backend}) async {
   final scheme = SchemeController();
   await scheme.load();
   addTearDown(scheme.dispose);
-  await tester.pumpWidget(MaterialApp(home: AppShell(api: ApiClient(backend: _Backend()), scheme: scheme, minimizeTabBarOnScroll: minimize)));
+  await tester.pumpWidget(MaterialApp(home: AppShell(api: ApiClient(backend: backend ?? _Backend()), scheme: scheme, minimizeTabBarOnScroll: minimize)));
   await tester.pumpAndSettle();
 }
 
@@ -792,5 +804,29 @@ void main() {
     await tester.drag(list(), const Offset(0, 100));
     await tester.pumpAndSettle();
     expect(tabLabel('Dining'), findsOneWidget);
+  }, variant: _ios);
+
+  // the ios-screens pan, step for step
+  testWidgets('panning the map keeps the bar on top', (tester) async {
+    _phone(tester, const Size(440, 956), top: 62);
+    await _pumpShell(tester, backend: _MapBackend());
+    await tester.tap(tabLabel('Map'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Fit campus'));
+    await tester.pumpAndSettle();
+
+    final viewer = find.byType(InteractiveViewer);
+    final gesture = await tester.startGesture(tester.getCenter(viewer));
+    for (var i = 0; i < 20; i++) {
+      await gesture.moveBy(const Offset(-120, -160) / 20);
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await tester.pump(const Duration(milliseconds: 300));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppTabBar).hitTestable(), findsOneWidget);
+    expect(tester.getRect(find.byType(BackdropFilter)).bottom, 956 - 34, reason: 'not minimized or moved');
+    expect(Navigator.of(tester.element(viewer)).canPop(), isFalse, reason: 'nothing pushed over the shell');
   }, variant: _ios);
 }
