@@ -2,7 +2,6 @@
 """Generate TigerHub's deterministic SVG design assets without dependencies."""
 
 from pathlib import Path
-from math import cos, pi, sin
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "assets" / "generated"
@@ -18,21 +17,6 @@ def svg(viewbox: str, body: str, *, label: str) -> str:
     return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="{viewbox}" role="img" aria-label="{label}">
 {body}
 </svg>'''
-
-
-def scallop(cx: float, cy: float, radius: float) -> str:
-    points = []
-    for i in range(14):
-        angle = -pi / 2 + i * pi / 7
-        r = radius if i % 2 == 0 else radius * 0.93
-        points.append((cx + cos(angle) * r, cy + sin(angle) * r))
-    # Quadratic mid-point smoothing makes the alternating radii read as lobes.
-    mids = [((points[i][0] + points[(i + 1) % 14][0]) / 2,
-             (points[i][1] + points[(i + 1) % 14][1]) / 2) for i in range(14)]
-    path = f"M {mids[-1][0]:.2f} {mids[-1][1]:.2f} "
-    for point, mid in zip(points, mids):
-        path += f"Q {point[0]:.2f} {point[1]:.2f} {mid[0]:.2f} {mid[1]:.2f} "
-    return path + "Z"
 
 
 def wordmarks() -> None:
@@ -68,54 +52,12 @@ def wordmarks() -> None:
     write("wordmark/tigerhub-monochrome.svg", svg("0 0 230 60", mono, label="TigerHub"))
 
 
-EMPTY_PROPS = {
-    "no-events": '<rect x="100" y="48" width="68" height="62" rx="16"/><path d="M114 42v14M153 42v14M101 67h66M121 82h26"/>',
-    "all-closed": '<circle cx="134" cy="76" r="34"/><path d="M134 56v22l15 10M111 108l46-64"/>',
-    "offline": '<path d="M104 88c18-20 42-20 60 0M114 100c12-12 28-12 40 0M129 112a7 7 0 0 1 10 0M106 45l56 72"/>',
-    "source-down": '<path d="M105 55h58v50h-58zM116 68h36M116 81h28M116 94h18M99 111h70"/>',
-    "not-found": '<circle cx="132" cy="76" r="30"/><path d="m154 98 22 22M120 76h24"/>',
-    "no-visiting-chefs": '<path d="M103 91h66M111 91a25 25 0 0 1 50 0M130 60v-9M101 103h70"/>',
-}
-
-
-def empty_states() -> None:
-    tiger = '''  <g stroke="#512B20" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
-    <path fill="#F76902" d="M23 104V72c0-23 18-41 41-41h13c19 0 35 15 35 35v42H40c-9 0-17-2-17-4Z"/>
-    <path fill="#F76902" d="M31 45 24 24l25 11M91 37l19-15-2 27"/>
-    <path fill="#FFF1DE" d="M55 76c12-12 31-10 39 3v25H49c-2-11 0-20 6-28Z"/>
-    <path fill="none" d="M50 54h1M84 54h1M63 71c5 4 10 4 15 0M51 39v10M82 38v10M35 66l14 2"/>
-    <path fill="#F76902" d="M41 101c-10 0-18 7-18 17h34c0-10-6-17-16-17ZM92 101c-10 0-17 7-17 17h34c0-10-7-17-17-17Z"/>
-  </g>'''
-    for name, prop in EMPTY_PROPS.items():
-        body = f'''{tiger}
-  <g fill="none" stroke="#512B20" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">{prop}</g>'''
-        write(f"empty-states/{name}.svg", svg("0 0 200 140", body, label=name.replace("-", " ")))
-
-
-def dining() -> None:
-    themes = {
-        "light": ("#FFF8F3", "#F1D9CA", "#E4B99E"),
-        "dark": ("#241A17", "#51372D", "#77513E"),
-    }
-    for theme, (background, badge, line) in themes.items():
-        for ratio, width, height in (("16x9", 1600, 900), ("4x3", 1200, 900)):
-            badge_path = scallop(width * 0.76, height * 0.50, height * 0.52)
-            body = f'''  <rect width="{width}" height="{height}" fill="{background}"/>
-  <path d="{badge_path}" fill="{badge}"/>
-  <g fill="none" stroke="{line}" stroke-width="{height * .045:.0f}" stroke-linecap="round">
-    <path d="M {width*.08:.0f} {height*.38:.0f} H {width*.49:.0f}"/>
-    <path d="M {width*.08:.0f} {height*.50:.0f} H {width*.41:.0f}"/>
-    <path d="M {width*.08:.0f} {height*.62:.0f} H {width*.46:.0f}"/>
-  </g>'''
-            write(f"dining-placeholder/dining-placeholder-{ratio}-{theme}.svg", svg(f"0 0 {width} {height}", body, label="abstract dining placeholder"))
-
-
 def post_office_mockups() -> None:
     themes = {
         "light": ("#FFF8F5", "#FFF1E8", "#FFE4D3", "#2B1710", "#76584A", "#F76902", "#512B20"),
         "dark": ("#1B110E", "#261814", "#35231C", "#FFEDE5", "#CDB1A4", "#F76902", "#512B20"),
     }
-    mailbox = GLYPHS["post-office"]
+    mailbox = '<path d="M4 10h11a4 4 0 0 1 4 4v7H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/><path d="M8 10v11M19 14h3v5M14 6h5v4M14 6v8"/>'
     for mode, (bg, card, module, ink, muted, orange, stripe) in themes.items():
         body = f'''  <rect width="1440" height="900" fill="{bg}"/>
   <text x="96" y="104" fill="{ink}" font-family="Rubik, sans-serif" font-size="42" font-weight="650">Post offices</text>
@@ -184,8 +126,6 @@ def dashboard_mockups() -> None:
 
 def main() -> None:
     wordmarks()
-    empty_states()
-    dining()
     post_office_mockups()
     dashboard_mockups()
 
