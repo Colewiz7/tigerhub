@@ -550,10 +550,14 @@ class _MapZoomControls extends StatelessWidget {
               ),
               SizedBox(
                 width: 38,
-                child: Text(
-                  '${zoom.toStringAsFixed(1).replaceFirst('.0', '')}×',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.labelMedium,
+                // one line, shrunk to fit at large text
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '${zoom.toStringAsFixed(1).replaceFirst('.0', '')}×',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                 ),
               ),
               IconButton(

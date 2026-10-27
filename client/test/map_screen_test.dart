@@ -9,6 +9,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
@@ -172,6 +173,11 @@ void main() {
           });
           expect(find.byTooltip(close), findsOneWidget, reason: 'the $what panel is open');
           expect(overflows, isEmpty);
+          // selecting zooms in, and 2.4× must stay one line
+          final readout = tester.renderObject<RenderParagraph>(find.textContaining('×'));
+          final oneLine = TextPainter(text: TextSpan(text: '1×', style: readout.text.style), textScaler: readout.textScaler, textDirection: TextDirection.ltr)..layout();
+          expect(readout.size.height, oneLine.height);
+          oneLine.dispose();
           // the close button has its own small Material, the panel is the wide one
           final panel = [
             for (final e in find.ancestor(of: find.byTooltip(close), matching: find.byType(Material)).evaluate())
