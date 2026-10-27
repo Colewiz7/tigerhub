@@ -17,6 +17,7 @@ import '../../services/frame_monitor.dart';
 import '../../services/frame_stats.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/focus_ring.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/touch_target.dart';
 
 class FrameStatsScreen extends StatefulWidget {
@@ -355,7 +356,7 @@ class _BackButton extends StatelessWidget {
               padding: const EdgeInsets.all(6),
               child: ExcludeSemantics(
                 child: Icon(
-                  Icons.arrow_back_rounded,
+                  AppIconKind.back.of(context),
                   size: 24,
                   color: scheme.onSurfaceVariant,
                 ),

@@ -230,7 +230,7 @@ class _AreaPicker extends StatelessWidget {
                 children: [
                   Expanded(child: Text(area.name)),
                   if (area.id == selected)
-                    Icon(Icons.check_rounded, color: scheme.primary),
+                    Icon(AppIconKind.check.of(context), color: scheme.primary),
                 ],
               ),
             ),
@@ -268,7 +268,7 @@ class _AreaPicker extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(11),
                 child: Icon(
-                  Icons.expand_more_rounded,
+                  AppIconKind.expand.of(context),
                   size: 19,
                   color: scheme.onPrimary,
                 ),
@@ -331,7 +331,7 @@ class _CautionPill extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.error_outline_rounded,
+              AppIconKind.error.of(context),
               size: 13,
               color: scheme.onErrorContainer,
             ),

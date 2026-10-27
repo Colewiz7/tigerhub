@@ -7,6 +7,7 @@ import '../../services/preferences.dart';
 import '../../theme/semantic.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/menu_section.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/tab_bar.dart';
 
 class DiningSection extends StatefulWidget {
@@ -125,7 +126,7 @@ class _DiningSectionState extends State<DiningSection> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Icon(
-                Icons.warning_amber_rounded,
+                AppIconKind.warning.of(context),
                 size: 18,
                 color: semantic.closed,
               ),
@@ -183,7 +184,7 @@ class _Toggle extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  selected ? Icons.check_rounded : Icons.add_rounded,
+                  (selected ? AppIconKind.check : AppIconKind.add).of(context),
                   size: 15,
                   color: selected ? selectedColor : scheme.onSurfaceVariant,
                 ),

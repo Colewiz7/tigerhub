@@ -17,12 +17,13 @@ import '../motion/gesture.dart';
 import '../motion/reduce_motion.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 
 class TabSpec {
   const TabSpec({required this.icon, required this.selectedIcon, required this.label});
 
-  final IconData icon;
-  final IconData selectedIcon;
+  final AppIconKind icon;
+  final AppIconKind selectedIcon;
   final String label;
 }
 
@@ -101,8 +102,8 @@ class AppTabBar extends StatelessWidget {
       destinations: [
         for (final tab in tabs)
           NavigationDestination(
-            icon: Icon(tab.icon),
-            selectedIcon: Icon(active ? tab.selectedIcon : tab.icon),
+            icon: Icon(tab.icon.of(context)),
+            selectedIcon: Icon((active ? tab.selectedIcon : tab.icon).of(context)),
             label: tab.label,
           ),
       ],
@@ -363,7 +364,7 @@ class _GlassItem extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(selected ? spec.selectedIcon : spec.icon, size: 24, color: color),
+            Icon((selected ? spec.selectedIcon : spec.icon).of(context), size: 24, color: color),
             if (!minimized) ...[
               const SizedBox(height: 2),
               Text(spec.label, style: label, maxLines: 1, softWrap: false, overflow: TextOverflow.fade),

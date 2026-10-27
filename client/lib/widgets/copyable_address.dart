@@ -26,6 +26,7 @@ import 'package:flutter/services.dart';
 
 import '../motion/reduce_motion.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 
 class CopyableAddress extends StatefulWidget {
   const CopyableAddress({
@@ -274,7 +275,7 @@ class _CopyMark extends StatelessWidget {
         ),
       ),
       child: Icon(
-        copied ? Icons.check_rounded : Icons.copy_rounded,
+        (copied ? AppIconKind.check : AppIconKind.copy).of(context),
         key: ValueKey(copied),
         size: size,
         color: color,

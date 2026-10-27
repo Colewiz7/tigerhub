@@ -466,7 +466,7 @@ class _SafetySection extends StatelessWidget {
           title: contact.label,
           subtitle: contact.number,
           trailing: Icon(
-            contact.isText ? Icons.sms_rounded : Icons.call_rounded,
+            (contact.isText ? AppIconKind.text : AppIconKind.call).of(context),
             size: 18,
           ),
           semanticHint:
@@ -481,7 +481,7 @@ class _SafetySection extends StatelessWidget {
           actions: [
             MenuAction(
               label: contact.isText ? 'Text' : 'Call',
-              icon: contact.isText ? Icons.sms_rounded : Icons.call_rounded,
+              icon: contact.isText ? AppIconKind.text : AppIconKind.call,
               onSelected: (context) => openOrCopy(
                 context,
                 phoneUri(contact.number)
@@ -578,7 +578,7 @@ class _FindSection extends StatelessWidget {
               ),
             ),
             trailing: Icon(
-              Icons.chevron_right_rounded,
+              AppIconKind.chevron.of(context),
               size: 18,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -904,12 +904,12 @@ class _PostOfficeBlock extends StatelessWidget {
                 children: [
                   if (office.phone != null)
                     _ContactChip(
-                      icon: Icons.call_rounded,
+                      icon: AppIconKind.call,
                       label: office.phone!,
                     ),
                   if (office.email != null)
                     _ContactChip(
-                      icon: Icons.mail_rounded,
+                      icon: AppIconKind.email,
                       label: office.email!,
                     ),
                 ],
@@ -1244,7 +1244,7 @@ class _WavyPainter extends CustomPainter {
 class _ContactChip extends StatelessWidget {
   const _ContactChip({required this.icon, required this.label});
 
-  final IconData icon;
+  final AppIconKind icon;
   final String label;
 
   @override
@@ -1259,7 +1259,7 @@ class _ContactChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: scheme.onSurfaceVariant),
+            Icon(icon.of(context), size: 14, color: scheme.onSurfaceVariant),
             const SizedBox(width: 7),
             Text(label, style: Theme.of(context).textTheme.bodySmall),
           ],
@@ -1323,7 +1323,7 @@ class _RecreationRow extends StatelessWidget {
       trailing: facility.days.length < 2
           ? null
           : Icon(
-              Icons.chevron_right_rounded,
+              AppIconKind.chevron.of(context),
               size: 18,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),

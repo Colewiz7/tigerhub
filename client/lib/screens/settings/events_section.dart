@@ -141,7 +141,7 @@ class _ProfilePicker extends StatelessWidget {
               keywordsEnabled: profile.keywordsEnabled,
             ),
             trailing: active?.id == profile.id
-                ? Icon(Icons.check_circle_rounded,
+                ? Icon(AppIconKind.checkCircle.of(context),
                     color: Theme.of(context).colorScheme.primary)
                 : null,
           ),
@@ -150,7 +150,7 @@ class _ProfilePicker extends StatelessWidget {
             icon: AppIconKind.tune,
             title: 'Custom',
             subtitle: 'Your own rules, edited below',
-            trailing: Icon(Icons.check_circle_rounded,
+            trailing: Icon(AppIconKind.checkCircle.of(context),
                 color: Theme.of(context).colorScheme.primary),
           ),
       ],
@@ -309,7 +309,7 @@ class _KeywordEditorState extends State<_KeywordEditor> {
                 const SizedBox(width: 8),
                 IconButton.filled(
                   onPressed: widget.enabled ? _add : null,
-                  icon: const Icon(Icons.add_rounded),
+                  icon: Icon(AppIconKind.add.of(context)),
                 ),
               ],
             ),

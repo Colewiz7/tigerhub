@@ -72,7 +72,7 @@ class _AppearanceSectionState extends State<AppearanceSection> {
           onTap: () => widget.scheme.setForceSeed(true),
           trailing: state.isDynamic
               ? null
-              : Icon(Icons.check_circle_rounded, color: scheme.primary),
+              : Icon(AppIconKind.checkCircle.of(context), color: scheme.primary),
         ),
         // Desktop only, and hidden rather than merely disabled elsewhere.
         // Following the wallpaper reads a scheme file that a Linux desktop
@@ -89,7 +89,7 @@ class _AppearanceSectionState extends State<AppearanceSection> {
             emphasis: state.isDynamic ? RowEmphasis.normal : RowEmphasis.dimmed,
             onTap: () => widget.scheme.setForceSeed(false),
             trailing: state.isDynamic
-                ? Icon(Icons.check_circle_rounded, color: scheme.primary)
+                ? Icon(AppIconKind.checkCircle.of(context), color: scheme.primary)
                 : null,
           ),
         const SizedBox(height: 18),

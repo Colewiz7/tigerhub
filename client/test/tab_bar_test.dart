@@ -15,6 +15,7 @@ import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/tab_bar.dart';
 
 import 'support/tabs.dart';
@@ -43,11 +44,11 @@ final _material = TargetPlatformVariant({TargetPlatform.android, TargetPlatform.
 final _all = TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android, TargetPlatform.linux});
 
 const _tabs = [
-  TabSpec(icon: Icons.grid_view_outlined, selectedIcon: Icons.grid_view_rounded, label: 'Today'),
-  TabSpec(icon: Icons.restaurant_outlined, selectedIcon: Icons.restaurant_rounded, label: 'Dining'),
-  TabSpec(icon: Icons.event_note_outlined, selectedIcon: Icons.event_note_rounded, label: 'Events'),
-  TabSpec(icon: Icons.map_outlined, selectedIcon: Icons.map_rounded, label: 'Map'),
-  TabSpec(icon: Icons.location_city_outlined, selectedIcon: Icons.location_city_rounded, label: 'Campus'),
+  TabSpec(icon: AppIconKind.todayTab, selectedIcon: AppIconKind.todayTabSelected, label: 'Today'),
+  TabSpec(icon: AppIconKind.diningTab, selectedIcon: AppIconKind.dining, label: 'Dining'),
+  TabSpec(icon: AppIconKind.eventsTab, selectedIcon: AppIconKind.eventsTabSelected, label: 'Events'),
+  TabSpec(icon: AppIconKind.mapTab, selectedIcon: AppIconKind.mapTabSelected, label: 'Map'),
+  TabSpec(icon: AppIconKind.campusTab, selectedIcon: AppIconKind.campusTabSelected, label: 'Campus'),
 ];
 
 // an iphone with a home indicator, 34 at the bottom

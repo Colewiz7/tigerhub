@@ -45,26 +45,6 @@ Finder _glyph(Finder icon) => find.descendant(of: icon, matching: find.byType(Ri
 
 IconData _expected(AppIconKind kind) => debugDefaultTargetPlatformOverride == TargetPlatform.iOS ? kind.cupertino : kind.material;
 
-// cupertino has no food, drink, wheelchair, bicycle or baby glyphs
-const _materialOnIos = {
-  AppIconKind.drink,
-  AppIconKind.accessibleEntrance,
-  AppIconKind.lactation,
-  AppIconKind.dining,
-  AppIconKind.cutlery,
-  AppIconKind.menu,
-  AppIconKind.visitingChef,
-  AppIconKind.roomService,
-  AppIconKind.cafe,
-  AppIconKind.iceCream,
-  AppIconKind.salad,
-  AppIconKind.breakfast,
-  AppIconKind.bakery,
-  AppIconKind.accessible,
-  AppIconKind.bike,
-  AppIconKind.changingTable,
-};
-
 // advances vary per glyph, the ink test covers the fit
 void _expectGlyphSize(Size glyph, double size) {
   expect(glyph.height, size);
@@ -125,7 +105,7 @@ void main() {
 
   test('iOS draws from CupertinoIcons except where it has no glyph', () {
     for (final kind in AppIconKind.values) {
-      final family = _materialOnIos.contains(kind) ? 'MaterialIcons' : 'CupertinoIcons';
+      final family = AppIconKind.materialOnIos.contains(kind) ? 'MaterialIcons' : 'CupertinoIcons';
       expect(kind.cupertino.fontFamily, family, reason: kind.name);
       expect(kind.material.fontFamily, 'MaterialIcons', reason: kind.name);
     }

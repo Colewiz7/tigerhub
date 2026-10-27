@@ -74,13 +74,13 @@ enum AppIconKind {
   roomService(Icons.room_service_rounded, Icons.room_service_rounded),
   cafe(Icons.local_cafe_rounded, Icons.local_cafe_rounded),
   iceCream(Icons.icecream_rounded, Icons.icecream_rounded),
-  salad(Icons.eco_rounded, Icons.eco_rounded),
+  plant(Icons.eco_rounded, Icons.eco_rounded),
   breakfast(Icons.egg_alt_rounded, Icons.egg_alt_rounded),
   bakery(Icons.bakery_dining_rounded, Icons.bakery_dining_rounded),
   market(CupertinoIcons.cart, Icons.storefront_rounded),
   globe(CupertinoIcons.globe, Icons.public_rounded),
   truck(CupertinoIcons.car, Icons.local_shipping_rounded),
-  pinned(CupertinoIcons.pin, Icons.push_pin_rounded),
+  pinned(CupertinoIcons.pin_fill, Icons.push_pin_rounded),
 
   // --- places and safety ---
   emergency(CupertinoIcons.staroflife, Icons.emergency_rounded),
@@ -123,6 +123,52 @@ enum AppIconKind {
   vinyl(CupertinoIcons.scissors, Icons.content_cut_rounded),
   tools(CupertinoIcons.wrench, Icons.build_rounded),
 
+  // --- tabs, outline then selected ---
+  todayTab(CupertinoIcons.square_grid_2x2, Icons.grid_view_outlined),
+  todayTabSelected(CupertinoIcons.square_grid_2x2_fill, Icons.grid_view_rounded),
+  diningTab(Icons.restaurant_outlined, Icons.restaurant_outlined),
+  eventsTab(CupertinoIcons.tickets, Icons.event_note_outlined),
+  eventsTabSelected(CupertinoIcons.tickets_fill, Icons.event_note_rounded),
+  mapTab(CupertinoIcons.map, Icons.map_outlined),
+  mapTabSelected(CupertinoIcons.map_fill, Icons.map_rounded),
+  campusTab(CupertinoIcons.compass, Icons.location_city_outlined),
+  campusTabSelected(CupertinoIcons.compass_fill, Icons.location_city_rounded),
+
+  // --- chrome: buttons, trailing marks, menus ---
+  close(CupertinoIcons.xmark, Icons.close_rounded),
+  settings(CupertinoIcons.gear_alt, Icons.settings_rounded),
+  lock(CupertinoIcons.lock, Icons.lock_outline_rounded),
+  add(CupertinoIcons.add, Icons.add_rounded),
+  minus(CupertinoIcons.minus, Icons.remove_rounded),
+  check(CupertinoIcons.checkmark, Icons.check_rounded),
+  checkCircle(CupertinoIcons.checkmark_circle_fill, Icons.check_circle_rounded),
+  // the framework defaults, so android draws exactly what it did
+  selected(CupertinoIcons.checkmark, Icons.check),
+  dropdown(CupertinoIcons.chevron_down, Icons.arrow_drop_down),
+  navBack(CupertinoIcons.back, Icons.arrow_back),
+  back(CupertinoIcons.back, Icons.arrow_back_rounded),
+  forward(CupertinoIcons.forward, Icons.arrow_forward_rounded),
+  chevron(CupertinoIcons.chevron_right, Icons.chevron_right_rounded),
+  expand(CupertinoIcons.chevron_down, Icons.expand_more_rounded),
+  dragHandle(CupertinoIcons.line_horizontal_3, Icons.drag_indicator_rounded),
+  more(CupertinoIcons.ellipsis, Icons.more_horiz_rounded),
+  search(CupertinoIcons.search, Icons.search_rounded),
+  copy(CupertinoIcons.doc_on_doc, Icons.copy_rounded),
+  share(CupertinoIcons.share, Icons.ios_share_rounded),
+  linkChain(CupertinoIcons.link, Icons.link_rounded),
+  call(CupertinoIcons.phone, Icons.call_rounded),
+  email(CupertinoIcons.envelope, Icons.mail_rounded),
+  visible(CupertinoIcons.eye, Icons.visibility_rounded),
+  unpinned(CupertinoIcons.pin, Icons.push_pin_outlined),
+  today(CupertinoIcons.calendar_today, Icons.today_rounded),
+  speakerOn(CupertinoIcons.speaker_2, Icons.volume_up_rounded),
+  speakerOff(CupertinoIcons.speaker_slash, Icons.volume_off_rounded),
+  warning(CupertinoIcons.exclamationmark_triangle, Icons.warning_amber_rounded),
+  error(CupertinoIcons.exclamationmark_circle, Icons.error_outline_rounded),
+  navigation(CupertinoIcons.location_north_fill, Icons.navigation_rounded),
+  route(CupertinoIcons.arrow_branch, Icons.route_rounded),
+  recenter(CupertinoIcons.scope, Icons.center_focus_strong_rounded),
+
   // --- empty states ---
   notFound(CupertinoIcons.search, Icons.search_off_rounded),
   offline(CupertinoIcons.wifi_slash, Icons.cloud_off_rounded),
@@ -137,6 +183,29 @@ enum AppIconKind {
 
   // painters have no context
   IconData on(TargetPlatform platform) => platform == TargetPlatform.iOS ? cupertino : material;
+
+  /// Kinds that stay Material on iOS because CupertinoIcons has nothing for
+  /// them: no food or drink, no wheelchair, bicycle or baby. Tests hold every
+  /// other kind, and every icon iOS renders, to the Cupertino font.
+  static const materialOnIos = {
+    dining,
+    diningTab,
+    cutlery,
+    menu,
+    visitingChef,
+    roomService,
+    cafe,
+    iceCream,
+    plant,
+    breakfast,
+    bakery,
+    drink,
+    accessible,
+    accessibleEntrance,
+    bike,
+    changingTable,
+    lactation,
+  };
 }
 
 class AppIcon extends StatelessWidget {

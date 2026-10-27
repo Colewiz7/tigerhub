@@ -12,6 +12,7 @@ import 'package:flutter/cupertino.dart' show CupertinoTextThemeData, CupertinoTh
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 
+import '../widgets/app_icon.dart';
 import 'semantic.dart';
 import 'tokens.dart';
 
@@ -54,6 +55,13 @@ class AppTheme {
       // Shadows are disabled globally rather than per widget, so a stray
       // elevation cannot reintroduce one.
       shadowColor: Colors.transparent,
+      // the framework default draws a material chevron on iOS
+      actionIconTheme: ActionIconThemeData(
+        backButtonIconBuilder: (context) => Icon(
+          AppIconKind.navBack.of(context),
+          semanticLabel: defaultTargetPlatform == TargetPlatform.android ? MaterialLocalizations.of(context).backButtonTooltip : null,
+        ),
+      ),
       cardTheme: CardThemeData(
         elevation: 0,
         color: scheme.surfaceContainerLow,

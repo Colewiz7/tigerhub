@@ -219,16 +219,17 @@ class _CampusMapViewState extends State<CampusMapView> {
           LayoutBuilder(
             builder: (context, constraints) {
               final mode = SegmentedButton<bool>(
-                segments: const [
+                selectedIcon: Icon(AppIconKind.selected.of(context)),
+                segments: [
                   ButtonSegment(
                     value: false,
-                    icon: Icon(Icons.place_rounded),
-                    label: Text('Places'),
+                    icon: Icon(AppIconKind.place.of(context)),
+                    label: const Text('Places'),
                   ),
                   ButtonSegment(
                     value: true,
-                    icon: Icon(Icons.event_rounded),
-                    label: Text('Events'),
+                    icon: Icon(AppIconKind.event.of(context)),
+                    label: const Text('Events'),
                   ),
                 ],
                 selected: {_showEvents},
@@ -464,7 +465,7 @@ class _NorthIndicator extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Icon(
-                    Icons.navigation_rounded,
+                    AppIconKind.navigation.of(context),
                     size: 25,
                     color: scheme.primary,
                   ),
@@ -514,7 +515,7 @@ class _MapZoomControls extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.route_rounded, size: 16, color: scheme.primary),
+                  Icon(AppIconKind.route.of(context), size: 16, color: scheme.primary),
                   const SizedBox(width: 7),
                   const Text('Zoom in for walking paths'),
                 ],
@@ -533,7 +534,7 @@ class _MapZoomControls extends StatelessWidget {
               IconButton(
                 tooltip: 'Zoom out',
                 onPressed: zoom > 1.01 ? onZoomOut : null,
-                icon: const Icon(Icons.remove_rounded),
+                icon: Icon(AppIconKind.minus.of(context)),
               ),
               SizedBox(
                 width: 38,
@@ -546,7 +547,7 @@ class _MapZoomControls extends StatelessWidget {
               IconButton(
                 tooltip: 'Zoom in',
                 onPressed: zoom < _maxMapZoom - 0.01 ? onZoomIn : null,
-                icon: const Icon(Icons.add_rounded),
+                icon: Icon(AppIconKind.add.of(context)),
               ),
             ],
           ),
@@ -674,7 +675,7 @@ class _SelectedEventGroup extends StatelessWidget {
           IconButton(
             tooltip: 'Close event details',
             onPressed: onClose,
-            icon: const Icon(Icons.close_rounded),
+            icon: Icon(AppIconKind.close.of(context)),
           ),
         ],
       ),
@@ -756,7 +757,7 @@ class _MapSearchPageState extends State<_MapSearchPage> {
                 IconButton(
                   tooltip: 'Back to map',
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: Icon(AppIconKind.back.of(context)),
                 ),
                 Expanded(
                   child: SearchField(
@@ -843,7 +844,7 @@ class _MapToolbar extends StatelessWidget {
         IconButton.filledTonal(
           tooltip: 'Search campus places (Ctrl+F)',
           onPressed: onSearch,
-          icon: const Icon(Icons.search_rounded),
+          icon: Icon(AppIconKind.search.of(context)),
         ),
         const SizedBox(width: 8),
         if (kinds.isNotEmpty)
@@ -888,7 +889,7 @@ class _MapToolbar extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(selectedLabel),
                     const SizedBox(width: 4),
-                    const Icon(Icons.expand_more_rounded, size: 18),
+                    Icon(AppIconKind.expand.of(context), size: 18),
                   ],
                 ),
               ),
@@ -898,7 +899,7 @@ class _MapToolbar extends StatelessWidget {
         IconButton.filledTonal(
           tooltip: 'Fit campus',
           onPressed: onFit,
-          icon: const Icon(Icons.center_focus_strong_rounded),
+          icon: Icon(AppIconKind.recenter.of(context)),
         ),
       ],
     );
@@ -1111,7 +1112,7 @@ class _SelectedPlace extends StatelessWidget {
           IconButton(
             tooltip: 'Close details',
             onPressed: onClose,
-            icon: const Icon(Icons.close_rounded),
+            icon: Icon(AppIconKind.close.of(context)),
           ),
         ],
       ),

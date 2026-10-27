@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 import 'focus_ring.dart';
 import 'touch_target.dart';
 
@@ -79,7 +80,7 @@ class MoreRow extends StatelessWidget {
                       ),
                       if (onTap != null)
                         Icon(
-                          Icons.chevron_right_rounded,
+                          AppIconKind.chevron.of(context),
                           size: 18,
                           color: muted,
                         ),
@@ -129,7 +130,7 @@ class MoreRow extends StatelessWidget {
                     ),
                     if (onTap != null) ...[
                       const SizedBox(width: 3),
-                      Icon(Icons.chevron_right_rounded, size: 15, color: muted),
+                      Icon(AppIconKind.chevron.of(context), size: 15, color: muted),
                     ],
                   ],
                 ),

@@ -313,7 +313,7 @@ class _DiningFilters extends StatelessWidget {
             children: [
               FilterChip(
                 label: const Text('Open'),
-                avatar: const Icon(Icons.schedule_rounded, size: 17),
+                avatar: Icon(AppIconKind.time.of(context), size: 17),
                 selected: openOnly,
                 onSelected: onOpenChanged,
               ),
@@ -321,7 +321,7 @@ class _DiningFilters extends StatelessWidget {
                 label: Text(
                   'Pinned${pinnedCount == 0 ? '' : ' ($pinnedCount)'}',
                 ),
-                avatar: const Icon(Icons.push_pin_rounded, size: 17),
+                avatar: Icon(AppIconKind.pinned.of(context), size: 17),
                 selected: pinnedOnly,
                 onSelected: pinnedCount == 0 ? null : onPinnedChanged,
               ),
@@ -447,7 +447,7 @@ class _TodayMenuGroup extends StatelessWidget {
   static AppIconKind _menuIcon(String? category) {
     final value = category?.toLowerCase() ?? '';
     if (value.contains('soup')) return AppIconKind.visitingChef;
-    if (value.contains('salad')) return AppIconKind.salad;
+    if (value.contains('salad')) return AppIconKind.plant;
     if (value.contains('breakfast')) return AppIconKind.breakfast;
     if (value.contains('dessert') || value.contains('bakery')) {
       return AppIconKind.bakery;

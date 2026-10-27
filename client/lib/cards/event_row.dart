@@ -74,13 +74,13 @@ class EventRow extends StatelessWidget {
       if (link != null)
         MenuAction(
           label: 'Open page',
-          icon: Icons.open_in_new_rounded,
+          icon: AppIconKind.link,
           onSelected: (context) => openOrCopy(context, link, label: 'Event link', copyText: event.url),
         ),
       if (key != null)
         MenuAction(
           label: muted ? 'Unmute organizer' : 'Mute organizer',
-          icon: muted ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+          icon: muted ? AppIconKind.speakerOn : AppIconKind.speakerOff,
           onSelected: (context) {
             if (muted) {
               Preferences.instance.setMuted(key, false);

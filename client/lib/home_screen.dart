@@ -654,7 +654,7 @@ class _EditBar extends StatelessWidget {
                   ModuleType.academicDates => 'Keep the next deadline visible',
                   _ => 'Add another ${moduleLabels[type]!.toLowerCase()} card',
                 }),
-                trailing: const Icon(Icons.add_rounded),
+                trailing: Icon(AppIconKind.add.of(context)),
                 onTap: () => Navigator.pop(context, type),
               ),
           ],
@@ -683,7 +683,7 @@ class _EditBar extends StatelessWidget {
             children: [
               _BarPill(
                 onTap: onToggle,
-                icon: editing ? Icons.check_rounded : Icons.tune_rounded,
+                icon: editing ? AppIconKind.check : AppIconKind.tune,
                 label: editing ? 'Done' : 'Customize',
                 background: editing
                     ? scheme.primary
@@ -694,7 +694,7 @@ class _EditBar extends StatelessWidget {
               if (editing) ...[
                 _BarPill(
                   onTap: () => _showLibrary(context),
-                  icon: Icons.add_rounded,
+                  icon: AppIconKind.add,
                   label: 'Add module',
                   background: scheme.primaryContainer,
                   iconColor: scheme.onPrimaryContainer,
@@ -730,12 +730,12 @@ class _EditBar extends StatelessWidget {
                         IconButton(
                           tooltip: 'Move up',
                           onPressed: () => onMove(-1),
-                          icon: const Icon(Icons.arrow_back_rounded),
+                          icon: Icon(AppIconKind.back.of(context)),
                         ),
                         IconButton(
                           tooltip: 'Move down',
                           onPressed: () => onMove(1),
-                          icon: const Icon(Icons.arrow_forward_rounded),
+                          icon: Icon(AppIconKind.forward.of(context)),
                         ),
                       ],
                     ),
@@ -762,6 +762,7 @@ class _EditBar extends StatelessWidget {
                       Text('DINING CATEGORY', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
+                        icon: Icon(AppIconKind.dropdown.of(context)),
                         initialValue:
                             diningCategories.any(
                               (item) => item.key == selected!.scope,
@@ -798,6 +799,7 @@ class _EditBar extends StatelessWidget {
                       Text('ORGANIZATION', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
+                        icon: Icon(AppIconKind.dropdown.of(context)),
                         initialValue:
                             organizers.any((o) => o.key == selected!.scope)
                             ? selected!.scope
@@ -830,6 +832,7 @@ class _EditBar extends StatelessWidget {
                       Text('FACILITY', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
+                        icon: Icon(AppIconKind.dropdown.of(context)),
                         initialValue:
                             facilities.any(
                               (item) => item.key == selected!.scope,
@@ -889,7 +892,7 @@ class _EditBar extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.add_rounded,
+                              AppIconKind.add.of(context),
                               size: 17,
                               color: scheme.primary,
                             ),
@@ -936,7 +939,7 @@ class _BarPill extends StatelessWidget {
   });
 
   final VoidCallback onTap;
-  final IconData icon;
+  final AppIconKind icon;
   final String label;
   final Color background;
   final Color iconColor;
@@ -965,7 +968,7 @@ class _BarPill extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 18, color: iconColor, applyTextScaling: true),
+                Icon(icon.of(context), size: 18, color: iconColor, applyTextScaling: true),
                 const SizedBox(width: 8),
                 Text(
                   label,
@@ -1005,7 +1008,7 @@ class _RemoveButton extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(7),
               child: Icon(
-                Icons.close_rounded,
+                AppIconKind.close.of(context),
                 size: 18,
                 color: scheme.onErrorContainer,
               ),
@@ -1044,7 +1047,7 @@ class _InspectButton extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(7),
               child: Icon(
-                Icons.tune_rounded,
+                AppIconKind.tune.of(context),
                 size: 18,
                 color: scheme.onSurface,
               ),
@@ -1167,7 +1170,7 @@ class _DragHandleState extends State<_DragHandle> {
                     : const Duration(milliseconds: 130),
                 curve: Curves.easeOutCubic,
                 child: Icon(
-                  Icons.drag_indicator_rounded,
+                  AppIconKind.dragHandle.of(context),
                   size: 17,
                   color: scheme.onSurfaceVariant,
                 ),

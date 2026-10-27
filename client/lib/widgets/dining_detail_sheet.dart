@@ -20,6 +20,7 @@ import '../widgets/menu_section.dart';
 import '../data/campus_time.dart';
 import '../widgets/occupancy_chart.dart';
 import '../services/subscriptions.dart';
+import 'app_icon.dart';
 
 class DiningDetailSheet extends StatefulWidget {
   const DiningDetailSheet({
@@ -216,7 +217,7 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
             if (location.mapsUrl != null) ...[
               const SizedBox(height: 18),
               _LinkRow(
-                icon: Icons.map_rounded,
+                icon: AppIconKind.map,
                 label: 'Open on the RIT campus map',
                 url: location.mapsUrl!,
               ),
@@ -262,7 +263,7 @@ class _PinButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  pinned ? Icons.push_pin_rounded : Icons.push_pin_outlined,
+                  (pinned ? AppIconKind.pinned : AppIconKind.unpinned).of(context),
                   size: 16,
                   color: pinned ? scheme.onPrimary : scheme.onSurfaceVariant,
                 ),
@@ -285,7 +286,7 @@ class _PinButton extends StatelessWidget {
 class _LinkRow extends StatelessWidget {
   const _LinkRow({required this.icon, required this.label, required this.url});
 
-  final IconData icon;
+  final AppIconKind icon;
   final String label;
   final String url;
 
@@ -304,7 +305,7 @@ class _LinkRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
               children: [
-                Icon(icon, size: 18, color: scheme.primary),
+                Icon(icon.of(context), size: 18, color: scheme.primary),
                 const SizedBox(width: 11),
                 Expanded(
                   child: Column(

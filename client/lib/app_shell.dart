@@ -7,7 +7,6 @@ library;
 
 import 'dart:async';
 
-import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart';
@@ -25,26 +24,18 @@ import 'services/frame_monitor.dart';
 import 'services/subscriptions.dart';
 import 'services/preferences.dart';
 import 'services/api.dart';
+import 'widgets/app_icon.dart';
 import 'widgets/wordmark.dart';
 import 'theme/dynamic_theme.dart';
 import 'theme/tokens.dart';
 import 'widgets/tab_bar.dart';
 
-const List<TabSpec> _materialTabs = [
-  TabSpec(icon: Icons.grid_view_outlined, selectedIcon: Icons.grid_view_rounded, label: 'Today'),
-  TabSpec(icon: Icons.restaurant_outlined, selectedIcon: Icons.restaurant_rounded, label: 'Dining'),
-  TabSpec(icon: Icons.event_note_outlined, selectedIcon: Icons.event_note_rounded, label: 'Events'),
-  TabSpec(icon: Icons.map_outlined, selectedIcon: Icons.map_rounded, label: 'Map'),
-  TabSpec(icon: Icons.location_city_outlined, selectedIcon: Icons.location_city_rounded, label: 'Campus'),
-];
-
-// cupertino has no fork and knife, so dining borrows material's
-const List<TabSpec> _iosTabs = [
-  TabSpec(icon: CupertinoIcons.square_grid_2x2, selectedIcon: CupertinoIcons.square_grid_2x2_fill, label: 'Today'),
-  TabSpec(icon: Icons.restaurant_outlined, selectedIcon: Icons.restaurant_rounded, label: 'Dining'),
-  TabSpec(icon: CupertinoIcons.tickets, selectedIcon: CupertinoIcons.tickets_fill, label: 'Events'),
-  TabSpec(icon: CupertinoIcons.map, selectedIcon: CupertinoIcons.map_fill, label: 'Map'),
-  TabSpec(icon: CupertinoIcons.compass, selectedIcon: CupertinoIcons.compass_fill, label: 'Campus'),
+const List<TabSpec> _tabs = [
+  TabSpec(icon: AppIconKind.todayTab, selectedIcon: AppIconKind.todayTabSelected, label: 'Today'),
+  TabSpec(icon: AppIconKind.diningTab, selectedIcon: AppIconKind.dining, label: 'Dining'),
+  TabSpec(icon: AppIconKind.eventsTab, selectedIcon: AppIconKind.eventsTabSelected, label: 'Events'),
+  TabSpec(icon: AppIconKind.mapTab, selectedIcon: AppIconKind.mapTabSelected, label: 'Map'),
+  TabSpec(icon: AppIconKind.campusTab, selectedIcon: AppIconKind.campusTabSelected, label: 'Campus'),
 ];
 
 class AppShell extends StatefulWidget {
@@ -212,7 +203,7 @@ class _AppShellState extends State<AppShell>
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final tabs = AppTabBar.glass(context) ? _iosTabs : _materialTabs;
+    const tabs = _tabs;
 
     if (_needsSetup) {
       return SetupScreen(
@@ -486,7 +477,7 @@ class _Masthead extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(6),
                   child: Icon(
-                    settingsOpen ? Icons.close_rounded : Icons.settings_rounded,
+                    (settingsOpen ? AppIconKind.close : AppIconKind.settings).of(context),
                     size: 24,
                     color: settingsOpen
                         ? colors.primary
@@ -516,9 +507,7 @@ class _Masthead extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(6),
                   child: Icon(
-                    state.isDynamic
-                        ? Icons.palette_rounded
-                        : Icons.lock_outline_rounded,
+                    (state.isDynamic ? AppIconKind.appearance : AppIconKind.lock).of(context),
                     size: 24,
                     color: state.isDynamic
                         ? colors.primary

@@ -289,7 +289,7 @@ class _ChefsSheet extends StatelessWidget {
                     width: 48,
                     height: 48,
                   ),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: Icon(AppIconKind.close.of(context)),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],

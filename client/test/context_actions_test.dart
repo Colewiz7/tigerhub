@@ -45,7 +45,7 @@ void main() {
                   actions: [
                     MenuAction(
                       label: 'Pick',
-                      icon: Icons.check_rounded,
+                      icon: AppIconKind.check,
                       onSelected: (_) => picked++,
                     ),
                   ],
@@ -112,7 +112,7 @@ void main() {
             icon: AppIconKind.event,
             title: 'Row',
             onTap: () {},
-            actions: [MenuAction(label: 'Pick', icon: Icons.check_rounded, onSelected: (_) {})],
+            actions: [MenuAction(label: 'Pick', icon: AppIconKind.check, onSelected: (_) {})],
           ),
         ),
       ),
@@ -195,8 +195,8 @@ void main() {
                   icon: AppIconKind.event,
                   title: 'Row $i',
                   actions: [
-                    MenuAction(label: 'Pick', icon: Icons.check_rounded, onSelected: (_) {}),
-                    MenuAction(label: 'Pick something longer', icon: Icons.check_rounded, onSelected: (_) {}),
+                    MenuAction(label: 'Pick', icon: AppIconKind.check, onSelected: (_) {}),
+                    MenuAction(label: 'Pick something longer', icon: AppIconKind.check, onSelected: (_) {}),
                   ],
                 ),
             ],
@@ -240,7 +240,7 @@ void main() {
           body: Center(
             child: ContextActions(
               focusable: true,
-              actions: [MenuAction(label: 'Pick', icon: Icons.check_rounded, onSelected: (_) {})],
+              actions: [MenuAction(label: 'Pick', icon: AppIconKind.check, onSelected: (_) {})],
               child: const SizedBox(width: 200, height: 64, child: Text('Row')),
             ),
           ),
