@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
+import '../motion/gesture.dart';
 import '../motion/reduce_motion.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
@@ -137,11 +138,19 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
 
   bool _scrubbing = false;
   int _lastTab = 0;
+  late int _target;
+
+  @override
+  void initState() {
+    super.initState();
+    _target = widget.index;
+  }
 
   @override
   void didUpdateWidget(_GlassTabBar old) {
     super.didUpdateWidget(old);
-    if (old.index != widget.index && !_scrubbing) _settle(widget.index);
+    // a release already sent the pill to its tab
+    if (old.index != widget.index && !_scrubbing && widget.index != _target) _settle(widget.index);
   }
 
   @override
@@ -151,6 +160,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   }
 
   void _settle(int tab) {
+    _target = tab;
     if (reduceMotion(context)) {
       _pill.value = tab.toDouble();
       return;
@@ -173,11 +183,18 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
     if (tab != _lastTab) setState(() => _lastTab = tab);
   }
 
-  void _endScrub() {
+  void _endScrub(double itemWidth, double velocity) {
     if (!_scrubbing) return;
-    final tab = _pill.value.round();
+    final tab = (_pill.value + project(velocity, 0.99) / itemWidth).round().clamp(0, widget.tabs.length - 1);
     setState(() => _scrubbing = false);
-    _settle(tab);
+    _target = tab;
+    if (tab != widget.index) HapticFeedback.lightImpact();
+    if (reduceMotion(context)) {
+      _pill.value = tab.toDouble();
+    } else {
+      final px = settle(_pill.value * itemWidth, tab * itemWidth, velocity, const Duration(milliseconds: 180));
+      _pill.animateWith(_InTabs(px, itemWidth)).then((_) => _pill.value = tab.toDouble());
+    }
     if (tab != widget.index || !widget.active) widget.onSelect(tab);
   }
 
@@ -213,8 +230,8 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
                 _scrubTo(d.localPosition.dx, width);
               },
               onHorizontalDragUpdate: (d) => _scrubTo(d.localPosition.dx, width),
-              onHorizontalDragEnd: (_) => _endScrub(),
-              onHorizontalDragCancel: _endScrub,
+              onHorizontalDragEnd: (d) => _endScrub(itemWidth, releaseVelocityX(d)),
+              onHorizontalDragCancel: () => _endScrub(itemWidth, 0),
               // claims vertical moves, or horizontal wins them by default
               onVerticalDragStart: (_) {},
               child: Semantics(
@@ -278,6 +295,23 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
       ),
     );
   }
+}
+
+// settle stops in pixels, the pill moves in tabs
+class _InTabs extends Simulation {
+  _InTabs(this.px, this.itemWidth);
+
+  final Simulation px;
+  final double itemWidth;
+
+  @override
+  double x(double time) => px.x(time) / itemWidth;
+
+  @override
+  double dx(double time) => px.dx(time) / itemWidth;
+
+  @override
+  bool isDone(double time) => px.isDone(time);
 }
 
 class _GlassItem extends StatelessWidget {

@@ -2,6 +2,7 @@
 /// elsewhere, with content scrolling under both.
 library;
 
+import 'dart:math' as math;
 import 'dart:ui' show SemanticsRole;
 
 import 'package:flutter/material.dart';
@@ -249,6 +250,71 @@ void main() {
     expect(selected, [3]);
     expect(haptics, isEmpty);
     expect(_pillLeft(tester), moreOrLessEquals(_pillAt(3)));
+  });
+
+  testWidgets('a flick picks the tab its momentum reaches and springs there', (tester) async {
+    final haptics = _haptics(tester);
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    // released at 1.4 tabs, project(1200, 0.99) adds 1.7 more
+    await tester.flingFrom(Offset(_tabCentre(0), y), const Offset(100, 0), 1200);
+    expect(selected, [3], reason: 'commits at release, past the nearest tab');
+    expect(haptics.where((h) => h == 'HapticFeedbackType.lightImpact'), hasLength(1));
+
+    var peak = 0.0;
+    for (var t = 0; t < 30; t++) {
+      await tester.pump(const Duration(milliseconds: 16));
+      peak = math.max(peak, _pillLeft(tester));
+    }
+    expect(peak, lessThanOrEqualTo(_pillAt(3) + 0.01), reason: 'never passes the tab');
+    await tester.pumpAndSettle();
+    expect(_pillLeft(tester), _pillAt(3));
+  });
+
+  testWidgets('a slow release lands on the nearest tab, no release haptic', (tester) async {
+    final haptics = _haptics(tester);
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    final gesture = await tester.startGesture(Offset(_tabCentre(0), y));
+    for (var dx = 5.0; dx <= 30; dx += 5) {
+      await gesture.moveTo(Offset(_tabCentre(0) + dx, y));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await tester.pump(const Duration(milliseconds: 100));
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(selected, isEmpty);
+    expect(haptics, isEmpty);
+    expect(_pillLeft(tester), _pillAt(0));
+  });
+
+  testWidgets('a tap during the settle wins', (tester) async {
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    await tester.flingFrom(Offset(_tabCentre(0), y), const Offset(100, 0), 1200);
+    await tester.pump(const Duration(milliseconds: 16));
+    await tester.tapAt(Offset(_tabCentre(1), y));
+    await tester.pumpAndSettle();
+    expect(selected, [3, 1]);
+    expect(_pillLeft(tester), moreOrLessEquals(_pillAt(1)));
+  });
+
+  testWidgets('under Reduce Motion a flick jumps the pill to its tab', (tester) async {
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected, reduceMotion: true);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    await tester.flingFrom(Offset(_tabCentre(0), y), const Offset(100, 0), 1200);
+    await tester.pump();
+    expect(selected, [3]);
+    expect(_pillLeft(tester), _pillAt(3));
+    expect(tester.hasRunningAnimations, isFalse);
   });
 
   testWidgets('the pill springs to a new tab, and jumps under Reduce Motion', (tester) async {
