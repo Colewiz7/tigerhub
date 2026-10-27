@@ -368,11 +368,16 @@ class _CampusMapViewState extends State<CampusMapView> {
                         ),
                         // Fixed, and outside the InteractiveViewer, so it does not
                         // zoom the way the scale bar deliberately does.
+                        // wraps short of the north indicator
                         Positioned(
                           left: 12,
                           top: 12,
-                          child: _MapLegend(
-                            scheme: Theme.of(context).colorScheme,
+                          right: 12 + _NorthIndicator.size + 8,
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: _MapLegend(
+                              scheme: Theme.of(context).colorScheme,
+                            ),
                           ),
                         ),
                         const Positioned(
@@ -381,6 +386,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                           child: _NorthIndicator(),
                         ),
                         Positioned(
+                          left: 12,
                           right: 12,
                           bottom: 12,
                           child: ValueListenableBuilder<Matrix4>(
@@ -448,6 +454,8 @@ class _CampusMapViewState extends State<CampusMapView> {
 class _NorthIndicator extends StatelessWidget {
   const _NorthIndicator();
 
+  static const double size = 46;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -460,7 +468,7 @@ class _NorthIndicator extends StatelessWidget {
             color: scheme.surface.withValues(alpha: 0.92),
             shape: const CircleBorder(),
             child: SizedBox.square(
-              dimension: 46,
+              dimension: size,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -503,13 +511,18 @@ class _MapZoomControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    // the hint takes its own row when both dont fit
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
       children: [
-        if (zoom < 1.15) ...[
+        if (zoom < 1.15)
           Material(
             color: scheme.surface.withValues(alpha: 0.92),
-            shape: Shapes.pill,
+            // a pill on one line, rounded when the text wraps
+            borderRadius: Shapes.inner,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
               child: Row(
@@ -517,13 +530,11 @@ class _MapZoomControls extends StatelessWidget {
                 children: [
                   Icon(AppIconKind.route.of(context), size: 16, color: scheme.primary),
                   const SizedBox(width: 7),
-                  const Text('Zoom in for walking paths'),
+                  const Flexible(child: Text('Zoom in for walking paths')),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 8),
-        ],
         Material(
           color: scheme.surface.withValues(alpha: 0.92),
           borderRadius: Shapes.inner,
@@ -2196,7 +2207,8 @@ class _MapLegend extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surface.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(999),
+        // a pill on one row, rounded when it wraps
+        borderRadius: Shapes.inner,
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Padding(
@@ -2228,13 +2240,15 @@ class _MapLegend extends StatelessWidget {
         painter: _LegendSwatch(family: family, scheme: scheme),
       ),
       const SizedBox(width: 7),
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          height: 1.1,
-          fontWeight: FontWeight.w600,
-          color: scheme.onSurfaceVariant,
+      Flexible(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            height: 1.1,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
       ),
     ],
@@ -2254,13 +2268,15 @@ class _MapLegend extends StatelessWidget {
         ),
       ),
       const SizedBox(width: 6),
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          height: 1.1,
-          fontWeight: FontWeight.w600,
-          color: scheme.onSurfaceVariant,
+      Flexible(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            height: 1.1,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
       ),
     ],
