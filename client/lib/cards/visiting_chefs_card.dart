@@ -20,6 +20,7 @@ import '../services/open_link.dart';
 import '../theme/tokens.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
+import '../widgets/focus_ring.dart';
 import '../widgets/glyph.dart';
 import '../widgets/freshness.dart';
 import '../widgets/scalloped_badge.dart';
@@ -353,29 +354,37 @@ class _DiningLink extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    void open() =>
+        openOrCopy(context, Uri.parse(ritDiningPageUrl), label: 'Link');
+    // excludeSemantics drops the InkWell's own tap action, so the link
+    // carries it here or a screen reader could not follow it.
     return Semantics(
       link: true,
-      label: 'Open RIT dining menus',
+      label: 'View on RIT',
+      onTap: open,
       excludeSemantics: true,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(24),
-        onTap: () =>
-            openOrCopy(context, Uri.parse(ritDiningPageUrl), label: 'Link'),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 48),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Center(
-              widthFactor: 1,
-              child: Text(
-                'RIT dining menus',
-                textAlign: TextAlign.center,
-                // bodyMedium, because AppTheme defines only some of the
-                // scale and titleSmall is not one of them.
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: scheme.primary,
-                  decoration: TextDecoration.underline,
-                  decorationColor: scheme.primary,
+      child: FocusRing(
+        radius: 24,
+        builder: (onFocusChange) => InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onFocusChange: onFocusChange,
+          onTap: open,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                widthFactor: 1,
+                child: Text(
+                  'View on RIT',
+                  textAlign: TextAlign.center,
+                  // bodyMedium, because AppTheme defines only some of the
+                  // scale and titleSmall is not one of them.
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: scheme.primary,
+                    decoration: TextDecoration.underline,
+                    decorationColor: scheme.primary,
+                  ),
                 ),
               ),
             ),
