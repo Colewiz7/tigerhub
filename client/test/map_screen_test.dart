@@ -14,6 +14,7 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
+import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/map_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
@@ -107,6 +108,79 @@ void main() {
         expect(inside(legend), isTrue);
         expect(legend.overlaps(north), isFalse, reason: '$legend under $north');
       }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+    }
+  }
+
+  // the longest names in the capture, so the panel has the most to fit
+  final features = parseCampusMapFeatures(File('test/fixtures/maps_category_35.data').readAsStringSync()).map(CampusMapFeature.fromJson).toList();
+  String longest(Iterable<CampusMapFeature> some) => some.map((f) => f.name).reduce((a, b) => a.length >= b.length ? a : b);
+  final place = longest(features.where((f) => f.geometryType == 'Point' && !f.kind.startsWith('_')));
+  final buildings = features.where((f) => f.kind == '_campus' && (f.building?.length ?? 0) >= 2);
+  final building = longest(buildings);
+  final code = buildings.first.building!;
+  final now = DateTime.now();
+  final events = Result(
+    value: Collection<CampusEvent>(
+      data: [
+        for (var i = 0; i < 3; i++)
+          CampusEvent(uid: 'e$i', source: 'test', title: 'Student government open forum on dining and housing $i', startsAt: now, location: 'Room 2000 $code', organizer: 'Student Government Association'),
+      ],
+      stale: false,
+    ),
+    state: DataState.ok,
+  );
+
+  Future<void> search(WidgetTester tester, String name) async {
+    await tester.tap(find.byTooltip('Search campus places (Ctrl+F)'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), name);
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: find.byType(ListTile), matching: find.text(name)).first);
+    await tester.pumpAndSettle();
+  }
+
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final textScale in const [1.0, 2.0]) {
+      for (final (what, close) in const [('place', 'Close details'), ('building', 'Close details'), ('event', 'Close event details')]) {
+        testWidgets('${size.width.toInt()} wide at ${textScale}x: a selected $what panel fits its text', (tester) async {
+          tester.view.devicePixelRatio = 1;
+          tester.view.physicalSize = size;
+          addTearDown(tester.view.reset);
+          final overflows = await captureOverflows(() async {
+            await tester.pumpWidget(
+              MaterialApp(
+                theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902))),
+                home: MediaQuery(
+                  data: MediaQueryData(size: size, textScaler: TextScaler.linear(textScale)),
+                  child: Scaffold(body: MapScreen(api: ApiClient(backend: _MapBackend()), events: events)),
+                ),
+              ),
+            );
+            await tester.pumpAndSettle();
+            switch (what) {
+              case 'place':
+                await search(tester, place);
+              case 'building':
+                await search(tester, building);
+              default:
+                await tester.tap(find.text('Events'));
+                await tester.pumpAndSettle();
+                // three at one building make one card
+                await tester.tap(find.text('3 events'));
+                await tester.pumpAndSettle();
+            }
+          });
+          expect(find.byTooltip(close), findsOneWidget, reason: 'the $what panel is open');
+          expect(overflows, isEmpty);
+          // the close button has its own small Material, the panel is the wide one
+          final panel = [
+            for (final e in find.ancestor(of: find.byTooltip(close), matching: find.byType(Material)).evaluate())
+              if (e.renderObject case final RenderBox box) box.localToGlobal(Offset.zero) & box.size,
+          ].firstWhere((r) => r.width > 200);
+          expect(panel.height, greaterThanOrEqualTo(146));
+          expect(panel.bottom, lessThanOrEqualTo(size.height));
+        }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+      }
     }
   }
   });

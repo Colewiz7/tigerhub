@@ -406,13 +406,14 @@ class _CampusMapViewState extends State<CampusMapView> {
             ),
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            height:
+          // a strip is a fixed row of cards, a selected panel grows with its text
+          ConstrainedBox(
+            constraints:
                 selected == null &&
                     selectedBuilding == null &&
                     selectedEvent == null
-                ? _stripHeight(context)
-                : 146,
+                ? BoxConstraints.tightFor(height: _stripHeight(context, events: _showEvents))
+                : BoxConstraints(minHeight: 146, maxHeight: selectedEvent == null ? _placePanelMax(context) : _eventPanelHeight(context)),
             child: _showEvents
                 ? selectedEvent == null
                       ? _EventStrip(
@@ -580,6 +581,8 @@ class _EventStrip extends StatelessWidget {
     children: [
       Text(
         '${result.mapped} mapped · ${result.unmapped} without a location',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.bodySmall,
       ),
       const SizedBox(height: 6),
@@ -660,6 +663,7 @@ class _SelectedEventGroup extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              shrinkWrap: true,
               itemCount: group.events.length,
               separatorBuilder: (_, _) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
@@ -922,25 +926,39 @@ class _MapToolbar extends StatelessWidget {
   }
 }
 
-// tall enough for the tallest strip card at this text size, never under 92
-double _stripHeight(BuildContext context) {
-  final text = Theme.of(context).textTheme;
-  final scaler = MediaQuery.textScalerOf(context);
-  double lines(TextStyle? style, int count) {
-    final painter = TextPainter(
-      text: TextSpan(text: List.filled(count, 'Ag').join('\n'), style: style),
-      textScaler: scaler,
-      textDirection: TextDirection.ltr,
-    )..layout();
-    final height = painter.height;
-    painter.dispose();
-    return height;
-  }
+double _lines(BuildContext context, TextStyle? style, int count) {
+  final painter = TextPainter(
+    text: TextSpan(text: List.filled(count, 'Ag').join('\n'), style: style),
+    textScaler: MediaQuery.textScalerOf(context),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  final height = painter.height;
+  painter.dispose();
+  return height;
+}
 
+// past a third of the screen the details scroll, the map keeps the rest
+double _placePanelMax(BuildContext context) => math.max(146.0, MediaQuery.sizeOf(context).height / 3).floorToDouble();
+
+// two events show at once, more scroll, never under 146
+double _eventPanelHeight(BuildContext context) {
+  final text = Theme.of(context).textTheme;
+  final event = _lines(context, text.titleSmall, 1) + _lines(context, text.bodySmall, 1);
+  return math.max(146.0, 20 + event * 2 + 6).ceilToDouble();
+}
+
+// tall enough for the tallest strip card at this text size, never under 92
+double _stripHeight(BuildContext context, {required bool events}) {
+  final text = Theme.of(context).textTheme;
+  double lines(TextStyle? style, int count) => _lines(context, style, count);
+
+  if (events) {
+    // the mapped count line is held to two
+    return math.max(92.0, lines(text.bodySmall, 2) + 6 + 16 + lines(text.titleSmall, 1) + 3 + lines(text.bodySmall, 1)).ceilToDouble();
+  }
   final kinds = 16 + math.max(38.0, lines(text.titleSmall?.copyWith(height: 1.05), 2) + 3 + lines(text.bodySmall, 1));
   final places = 20 + math.max(38.0, lines(text.titleSmall, 2) + 3 + lines(text.bodySmall, 1));
-  final events = lines(text.bodySmall, 1) + 6 + 16 + lines(text.titleSmall, 1) + 3 + lines(text.bodySmall, 1);
-  return [92.0, kinds, places, events].reduce(math.max).ceilToDouble();
+  return [92.0, kinds, places].reduce(math.max).ceilToDouble();
 }
 
 class _KindStrip extends StatelessWidget {
@@ -1115,37 +1133,40 @@ class _SelectedPlace extends StatelessWidget {
           _PlaceCategoryMark(feature: feature, size: 46, iconSize: 21),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  feature.name,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  feature.kindName,
-                  style: Theme.of(context).textTheme.labelMedium
-                      ?.copyWith(color: Theme.of(context).colorScheme.primary),
-                ),
-                if (feature.where.isNotEmpty) ...[
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    feature.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 3),
                   Text(
-                    feature.where,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    feature.kindName,
+                    style: Theme.of(context).textTheme.labelMedium
+                        ?.copyWith(color: Theme.of(context).colorScheme.primary),
                   ),
+                  if (feature.where.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      feature.where,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  if (feature.note case final note?) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      note,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ],
-                if (feature.note case final note?) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    note,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
           IconButton(
