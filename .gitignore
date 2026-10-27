@@ -24,6 +24,8 @@ client/build/
 client/.dart_tool/
 client/.flutter-plugins-dependencies
 client/linux/flutter/ephemeral/
+# golden mismatch images, written next to the test on a failed run
+client/test/failures/
 
 # dev helper runtime state
 .run/
