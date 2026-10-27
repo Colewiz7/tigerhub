@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../motion/reduce_motion.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
@@ -96,10 +97,6 @@ class ScallopedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
     final background = filled ? scheme.primary : scheme.surfaceContainerHighest;
     final foreground = filled ? scheme.onPrimary : scheme.onSurface;
 
@@ -130,7 +127,7 @@ class ScallopedBadge extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AnimatedSwitcher(
-                  duration: reduceMotion
+                  duration: reduceMotion(context)
                       ? Duration.zero
                       : const Duration(milliseconds: 180),
                   switchInCurve: Curves.easeOutCubic,

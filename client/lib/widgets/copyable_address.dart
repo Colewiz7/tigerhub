@@ -24,6 +24,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../motion/reduce_motion.dart';
 import '../theme/tokens.dart';
 
 class CopyableAddress extends StatefulWidget {
@@ -259,13 +260,8 @@ class _CopyMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
-
     return AnimatedSwitcher(
-      duration: reduceMotion
+      duration: reduceMotion(context)
           ? Duration.zero
           : const Duration(milliseconds: 160),
       switchInCurve: Curves.easeOutCubic,

@@ -62,6 +62,16 @@ void main() {
     expect(find.text('Second content'), findsOneWidget);
   });
 
+  testWidgets('section transition is instant with iOS Reduce Motion', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pumpWidget(app());
+
+    final panes = tester.widgetList<AnimatedOpacity>(find.byType(AnimatedOpacity, skipOffstage: false));
+    expect(panes, hasLength(2));
+    expect(panes.every((pane) => pane.duration == Duration.zero), isTrue);
+  });
+
   testWidgets('section transition is instant with reduced motion', (
     tester,
   ) async {

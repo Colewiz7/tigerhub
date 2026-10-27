@@ -11,6 +11,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../motion/reduce_motion.dart';
 import '../theme/tokens.dart';
 import 'tab_bar.dart';
 
@@ -209,13 +210,9 @@ class _Rail extends StatelessWidget {
       itemCount: groups.length,
       itemBuilder: (context, index) {
         final on = index == active;
-        final media = MediaQuery.maybeOf(context);
-        final reduceMotion =
-            (media?.disableAnimations ?? false) ||
-            (media?.accessibleNavigation ?? false);
         return TweenAnimationBuilder<double>(
           tween: Tween(end: on ? 1 : 0),
-          duration: reduceMotion
+          duration: reduceMotion(context)
               ? Duration.zero
               : const Duration(milliseconds: 180),
           curve: Curves.easeOutCubic,

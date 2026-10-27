@@ -21,6 +21,7 @@ import 'cards/visiting_chefs_card.dart';
 import 'cards/academic_dates_card.dart';
 import 'config.dart';
 import 'models/api_models.dart';
+import 'motion/reduce_motion.dart';
 import 'services/api.dart';
 import 'services/dashboard.dart';
 import 'theme/tokens.dart';
@@ -1132,9 +1133,6 @@ class _DragHandleState extends State<_DragHandle> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final reduceMotion =
-        (MediaQuery.maybeOf(context)?.disableAnimations ?? false) ||
-        View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
     return Semantics(
       button: true,
       label: 'Reorder card',
@@ -1164,7 +1162,7 @@ class _DragHandleState extends State<_DragHandle> {
             children: [
               AnimatedOpacity(
                 opacity: _shown ? 1 : 0,
-                duration: reduceMotion
+                duration: reduceMotion(context)
                     ? Duration.zero
                     : const Duration(milliseconds: 130),
                 curve: Curves.easeOutCubic,

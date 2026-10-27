@@ -12,6 +12,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../motion/reduce_motion.dart';
 import '../theme/tokens.dart';
 import 'glyph.dart';
 import 'status_row.dart';
@@ -130,11 +131,7 @@ class _SectionPaneStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
-    final duration = reduceMotion
+    final duration = reduceMotion(context)
         ? Duration.zero
         : const Duration(milliseconds: 180);
 

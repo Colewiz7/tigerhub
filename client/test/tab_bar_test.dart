@@ -273,6 +273,16 @@ void main() {
     expect(_pillLeft(tester), moreOrLessEquals(_pillAt(1)), reason: 'Reduce Motion jumps');
   });
 
+  testWidgets('the pill jumps under iOS Reduce Motion', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await _pumpBar(tester);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+    await tester.tapAt(Offset(_tabCentre(3), y));
+    await tester.pump();
+    expect(_pillLeft(tester), moreOrLessEquals(_pillAt(3)));
+  });
+
   testWidgets('each glass tab reads as "Dining, tab 2 of 5" in a tab bar', (tester) async {
     final semantics = tester.ensureSemantics();
     await _pumpBar(tester);

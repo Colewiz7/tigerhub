@@ -58,6 +58,20 @@ void main() {
     expect(find.byType(CustomPaint), findsWidgets);
   });
 
+  testWidgets('badge honours iOS Reduce Motion', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pumpWidget(wrap(const ScallopedBadge(value: '3', label: 'OPEN')));
+    expect(tester.widget<AnimatedSwitcher>(find.byType(AnimatedSwitcher)).duration, Duration.zero);
+  });
+
+  testWidgets('arc honours iOS Reduce Motion', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pumpWidget(wrap(const ArcProgress(value: 0.6)));
+    expect(find.byType(TweenAnimationBuilder<double>), findsNothing);
+  });
+
   testWidgets('arc animates in normal motion mode', (tester) async {
     await tester.pumpWidget(wrap(const ArcProgress(value: 0.6)));
 

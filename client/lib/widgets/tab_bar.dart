@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 
+import '../motion/reduce_motion.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
@@ -137,11 +138,6 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   bool _scrubbing = false;
   int _lastTab = 0;
 
-  bool get _reduceMotion {
-    final media = MediaQuery.maybeOf(context);
-    return (media?.disableAnimations ?? false) || (media?.accessibleNavigation ?? false);
-  }
-
   @override
   void didUpdateWidget(_GlassTabBar old) {
     super.didUpdateWidget(old);
@@ -155,7 +151,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   }
 
   void _settle(int tab) {
-    if (_reduceMotion) {
+    if (reduceMotion(context)) {
       _pill.value = tab.toDouble();
       return;
     }

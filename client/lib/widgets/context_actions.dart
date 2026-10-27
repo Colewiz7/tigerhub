@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
+import '../motion/reduce_motion.dart';
 import '../services/clipboard.dart';
 import '../theme/tokens.dart';
 
@@ -92,8 +93,7 @@ class _ContextActionsState extends State<ContextActions> {
     final local = overlay.globalToLocal(globalPosition);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final media = MediaQuery.of(context);
-    final reduce = media.disableAnimations || media.accessibleNavigation;
+    final reduce = reduceMotion(context);
     final actions = widget.actions;
 
     _open = true;

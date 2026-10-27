@@ -9,6 +9,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../motion/reduce_motion.dart';
+
 class ArcProgress extends StatelessWidget {
   const ArcProgress({
     super.key,
@@ -32,10 +34,6 @@ class ArcProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
     final target = value.clamp(0.0, 1.0);
 
     Widget paint(double animatedValue) => SizedBox(
@@ -53,7 +51,7 @@ class ArcProgress extends StatelessWidget {
       ),
     );
 
-    if (reduceMotion) return paint(target);
+    if (reduceMotion(context)) return paint(target);
     return TweenAnimationBuilder<double>(
       tween: Tween(end: target),
       duration: const Duration(milliseconds: 260),

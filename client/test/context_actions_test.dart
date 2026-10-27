@@ -168,6 +168,15 @@ void main() {
     expect(ModalRoute.of(tester.element(menuItems))!.transitionDuration, greaterThan(Duration.zero));
   });
 
+  testWidgets('iOS Reduce Motion makes the route zero duration', (tester) async {
+    MenuProbe().install(tester);
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pumpWidget(app());
+    await secondaryTap(tester, row());
+    expect(ModalRoute.of(tester.element(menuItems))!.transitionDuration, Duration.zero);
+  });
+
   testWidgets('in a centered phone frame the popup stays inside the frame', (tester) async {
     MenuProbe().install(tester);
     tester.view.devicePixelRatio = 1.0;
