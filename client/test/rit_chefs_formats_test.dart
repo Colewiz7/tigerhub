@@ -234,6 +234,48 @@ void main() {
       expect(item['location_name'], 'RITZ Sports Zone');
     });
 
+    test('synthetic: without a popup name, a time field that is not a time '
+        'is left out of the chef name', () {
+      final parsed = parseTodayChefs(
+        menusPage([
+          ('RITZ', [
+            ('26-1', 'P.H. Express: sometime'),
+            ('26-2', 'P.H. Express: TBA'),
+            ('26-3', 'Chef: Pasta Night: TBA'),
+            ('26-4', 'P.H. Express: 4:00 pm - sometime'),
+          ]),
+        ]),
+      );
+      expect(
+        [for (final c in parsed.chefs) (c['name'], c['start'], c['end'])],
+        [
+          ('P.H. Express', null, null),
+          ('P.H. Express', null, null),
+          ('Chef: Pasta Night', null, null),
+          ('P.H. Express', null, null),
+        ],
+      );
+    });
+
+    test('without a popup name, a valid time keeps colons in the chef name',
+        () {
+      final parsed = parseTodayChefs(
+        menusPage([
+          ('RITZ', [
+            ('26-1', 'Chef: Pasta Night: 4-7 p.m.'),
+            ('26-2', 'P.H. Express: 11:00 am - 2:00 pm'),
+          ]),
+        ]),
+      );
+      expect(
+        [for (final c in parsed.chefs) (c['name'], c['start'], c['end'])],
+        [
+          ('Chef: Pasta Night', '16:00', '19:00'),
+          ('P.H. Express', '11:00', '14:00'),
+        ],
+      );
+    });
+
     test('synthetic: one entry with no name is dropped and the rest kept', () {
       final parsed = parseTodayChefs(
         menusPage([

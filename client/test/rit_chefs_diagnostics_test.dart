@@ -130,10 +130,13 @@ void main() {
       expect(chefsDiagnostics.value, report);
     });
 
-    test('an HTTP error and a transport error are recorded by type', () async {
+    test('a failed fetch records its type, bytes received and parse result',
+        () async {
       final snapshot = await scrapeRitChefs(
         upstream((url) async {
-          if (url == ritMenusUrl) return page(const [], 503);
+          if (url == ritMenusUrl) {
+            return page('<h1>Busy</h1>'.codeUnits, 503);
+          }
           throw http.ClientException('connection reset');
         }),
       );
@@ -142,13 +145,36 @@ void main() {
         'at': '2026-10-23T16:32:00-04:00',
         'status': 503,
         'error': 'HTTP',
+        'bytes': 13,
+        'parsed': 0,
+        'reason': 'not parsed',
       });
       expect(report['schedule'], {
         'at': '2026-10-23T16:32:00-04:00',
         'status': null,
         'error': 'ClientException',
+        'bytes': 0,
+        'parsed': 0,
+        'reason': 'not parsed',
       });
       expect(snapshot['today_ok'], isFalse);
+      expect(chefsDiagnosticsLines(chefsDiagnostics.value), [
+        'Menus page: HTTP 503, failed, HTTP, 13 bytes, 0 chefs, not parsed, '
+            'at 2026-10-23 16:32',
+        'Schedule page: failed, ClientException, 0 bytes, 0 chefs, '
+            'not parsed, at 2026-10-23 16:32',
+      ]);
+    });
+
+    test('a 404 that is not retried still records its bytes', () async {
+      final snapshot = await scrapeRitChefs(
+        upstream((url) async => page('gone'.codeUnits, 404)),
+      );
+      final menusReport =
+          (snapshot['diagnostics'] as Map<String, dynamic>)['menus'] as Map;
+      expect(menusReport['status'], 404);
+      expect(menusReport['bytes'], 4);
+      expect(menusReport['parsed'], 0);
     });
 
     test('a page with no chefs records the reason and stays failed', () async {
@@ -175,7 +201,8 @@ void main() {
       expect(lines, [
         'Menus page: HTTP 200, ${menus.length} bytes, 5 chefs, 0 skipped, '
             '0 without a time, at 2026-10-23 16:32',
-        'Schedule page: failed, ClientException, at 2026-10-23 16:32',
+        'Schedule page: failed, ClientException, 0 bytes, 0 chefs, '
+            'not parsed, at 2026-10-23 16:32',
       ]);
       for (final line in lines) {
         expect(line, isNot(contains('rit.edu')));

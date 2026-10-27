@@ -122,17 +122,21 @@ String _hhmm(int minutes) => '${(minutes ~/ 60).toString().padLeft(2, '0')}:'
 }
 
 /// Splits "Chef: 11:00 am - 2:00 pm" on the colon that precedes the time
-/// range, so a name that itself holds a colon survives. A time that cannot be
-/// read still ends the name at the first colon followed by a digit, and the
-/// chef goes without a time.
+/// range, so a name that itself holds a colon survives.
+///
+/// A time that cannot be read is still dropped from the name and the chef goes
+/// without a time. The anchor text is always "name: times", so the time field
+/// starts at the first colon followed by a digit, or failing that ("TBA",
+/// "sometime") at the last colon followed by a space.
 ({String name, String? start, String? end}) splitChefText(String text) {
   final m = _chefTextRe.firstMatch(text);
   final range = m == null ? null : parseTimeRange(m.group(2)!, m.group(3)!);
   if (range != null) {
     return (name: m!.group(1)!.trim(), start: range.start, end: range.end);
   }
-  final garbled = RegExp(r'^(.*?)\s*:\s*\d', dotAll: true).firstMatch(text);
-  final name = garbled?.group(1)!.trim() ?? '';
+  final digit = RegExp(r'^(.*?)\s*:\s*\d', dotAll: true).firstMatch(text);
+  final word = RegExp(r'^(.*):\s+\S', dotAll: true).firstMatch(text);
+  final name = (digit ?? word)?.group(1)!.trim() ?? '';
   return (name: name.isEmpty ? text.trim() : name, start: null, end: null);
 }
 
@@ -333,8 +337,9 @@ Future<Map<String, dynamic>> scrapeRitChefs(
 
   // Anything thrown, a parser bug included, costs that page and is recorded,
   // so the other page and the previous copy still stand.
+  ({String text, int status, int bytes})? page;
   try {
-    final page = await _fetchPage(http, ritMenusUrl);
+    page = await _fetchPage(http, ritMenusUrl);
     final parsed = parseTodayChefs(page.text);
     menusReport = {
       'at': at,
@@ -355,10 +360,11 @@ Future<Map<String, dynamic>> scrapeRitChefs(
       todayOk = true;
     }
   } catch (error) {
-    menusReport = _failureReport(at, error);
+    menusReport = _failureReport(at, error, page);
   }
+  page = null;
   try {
-    final page = await _fetchPage(http, ritVisitingChefsUrl);
+    page = await _fetchPage(http, ritVisitingChefsUrl);
     final parsed = parseChefSchedule(page.text);
     // Usable means today's own block was read, as chefs or an explicit
     // empty. Another day parsing says nothing about today, so it neither
@@ -381,7 +387,7 @@ Future<Map<String, dynamic>> scrapeRitChefs(
       scheduleOk = true;
     }
   } catch (error) {
-    scheduleReport = _failureReport(at, error);
+    scheduleReport = _failureReport(at, error, page);
   }
 
   final diagnostics = {'menus': menusReport, 'schedule': scheduleReport};
@@ -417,15 +423,26 @@ Future<({String text, int status, int bytes})> _fetchPage(
   );
 }
 
-/// A failed page, by status and error type only. No URL and no body, so the
-/// report is safe to copy anywhere.
-Map<String, dynamic> _failureReport(String at, Object error) => {
-  'at': at,
-  'status': error is UpstreamError ? error.status : null,
-  'error': error is UpstreamError
-      ? error.cause ?? (error.status == null ? 'UpstreamError' : 'HTTP')
-      : error.runtimeType.toString(),
-};
+/// A failed page: status, error type, bytes received and how far parsing got.
+/// [page] is set when the fetch worked and the parser threw. No URL and no
+/// body, so the report is safe to copy anywhere.
+Map<String, dynamic> _failureReport(
+  String at,
+  Object error,
+  ({String text, int status, int bytes})? page,
+) {
+  final upstream = error is UpstreamError ? error : null;
+  return {
+    'at': at,
+    'status': page?.status ?? upstream?.status,
+    'error': upstream == null
+        ? error.runtimeType.toString()
+        : upstream.cause ?? (upstream.status == null ? 'UpstreamError' : 'HTTP'),
+    'bytes': page?.bytes ?? upstream?.bytes ?? 0,
+    'parsed': 0,
+    'reason': page == null ? 'not parsed' : 'parser threw',
+  };
+}
 
 /// The last chefs fetch report, for the frame stats screen. Set by each scrape
 /// and by the backend whenever it reads the snapshot, so a stored report shows
