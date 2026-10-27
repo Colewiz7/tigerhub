@@ -218,6 +218,12 @@ void main() {
       await shot(name);
     }
 
+    // the workflow takes a simctl screenshot on this line, status bar and all
+    Future<void> deviceShot(String name) async {
+      debugPrint('device shot $name');
+      await tester.pump(const Duration(milliseconds: 1500));
+    }
+
     // skips the first run setup screen
     await Preferences.instance.markSetupSeen();
     final scheme = SchemeController()..restore();
@@ -238,6 +244,7 @@ void main() {
           await tester.tap(find.byTooltip('Fit campus'));
           await _settle(tester);
           await tabShot('map_${mode}_top');
+          if (appearance == Brightness.light) await deviceShot('map_${mode}_top');
           final viewer = find.descendant(of: root, matching: find.byType(InteractiveViewer));
           await _drag(tester, viewer, const Offset(-120, -160));
           await tabShot('map_${mode}_panned');
@@ -246,6 +253,7 @@ void main() {
 
         await _toTop(tester, root);
         await tabShot('${name}_${mode}_top');
+        if (appearance == Brightness.light) await deviceShot('${name}_${mode}_top');
         await _scrollDown(tester, root);
         await tabShot('${name}_${mode}_scrolled');
 

@@ -182,16 +182,21 @@ workflows:
           xcrun simctl bootstatus "$UDID" -b
           echo "SIM_UDID=$UDID" >> "$CM_ENV"
       # one run per appearance keeps each drive's screenshot payload small
-      - name: Screenshots and a tab bar scrub video, light
+      - name: Screenshots, device screenshots and a tab bar scrub video, light
         script: |
           set -euo pipefail
           cd client
           xcrun simctl ui "$SIM_UDID" appearance light
+          mkdir -p build/ios_screens
           trap 'pkill -INT -f "simctl io $SIM_UDID recordVideo" || true' EXIT
           # records between the tests log lines, not the minutes of build
           flutter drive --driver=test_driver/integration_test.dart --target=integration_test/ios_screens_test.dart -d "$SIM_UDID" --dart-define=SCREENS_APPEARANCE=light 2>&1 | while IFS= read -r line || [ -n "$line" ]; do
             echo "$line"
             case "$line" in
+              # the real screen, with the status bar and home indicator
+              *"device shot "*)
+                shot=$(printf '%s' "${line##*device shot }" | tr -d '\r[:space:]')
+                xcrun simctl io "$SIM_UDID" screenshot "build/ios_screens/${shot}_device.png" ;;
               *"tab scrub start"*) xcrun simctl io "$SIM_UDID" recordVideo --codec=h264 --force build/tab_scrub.mp4 & rec=$! ;;
               *"tab scrub end"*) kill -INT "$rec"; wait "$rec" ;;
             esac
@@ -202,12 +207,13 @@ workflows:
           cd client
           xcrun simctl ui "$SIM_UDID" appearance dark
           flutter drive --driver=test_driver/integration_test.dart --target=integration_test/ios_screens_test.dart -d "$SIM_UDID" --dart-define=SCREENS_APPEARANCE=dark
-      - name: All 28 screenshots exist and none is blank
+      - name: All 28 screenshots and 5 device screenshots exist and none is blank
         script: |
           set -euo pipefail
           cd client/build/ios_screens
           ls -l
-          test "$(ls -1 *.png | wc -l | tr -d ' ')" -eq 28
+          test "$(ls -1 *.png | grep -vc '_device\.png$')" -eq 28
+          test "$(ls -1 *_device.png | wc -l | tr -d ' ')" -eq 5
           # a blank 1320x2868 png compresses to a few kb
           for f in *.png; do
             test "$(stat -f %z "$f")" -gt 30000 || { echo "$f looks blank"; exit 1; }
