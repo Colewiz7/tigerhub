@@ -11,6 +11,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import '../motion/gesture.dart';
@@ -264,8 +265,8 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
               // the owner lifting already ended it
               onHorizontalDragEnd: (_) => _endScrub(itemWidth, 0),
               onHorizontalDragCancel: () => _endScrub(itemWidth, 0),
-              // claims vertical moves, or horizontal wins them by default
-              onVerticalDragStart: (_) {},
+              // rows under the bar never long press
+              onLongPress: () {},
               child: Semantics(
                 role: ui.SemanticsRole.tabBar,
                 container: true,
@@ -322,7 +323,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
                 ),
               ),
             );
-            return Listener(
+            final owned = Listener(
               onPointerDown: (e) {
                 if (_owner != null) return;
                 _owner = e.pointer;
@@ -349,10 +350,27 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
               },
               child: bar,
             );
+            return _PassThrough(child: owned);
           },
         ),
       ),
     );
+  }
+}
+
+// the list below gets the pointer too, so vertical swipes scroll it
+class _PassThrough extends SingleChildRenderObjectWidget {
+  const _PassThrough({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) => _RenderPassThrough();
+}
+
+class _RenderPassThrough extends RenderProxyBox {
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    super.hitTest(result, position: position);
+    return false;
   }
 }
 

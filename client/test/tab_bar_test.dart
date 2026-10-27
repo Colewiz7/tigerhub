@@ -183,6 +183,33 @@ void main() {
     expect(lastBottom, lessThanOrEqualTo(barTop - AppTabBar.contentGap), reason: 'the last row hides behind the bar');
   }, variant: _all);
 
+  testWidgets('a vertical swipe on the capsule scrolls the list, a tap there still only picks a tab', (tester) async {
+    _phone(tester, const Size(390, 844));
+    await _pumpShell(tester);
+    await tester.tap(tabLabel('Dining'));
+    await tester.pumpAndSettle();
+    final list = _vertical(tester, find.byType(DiningScreen));
+    final capsule = tester.getCenter(find.byType(BackdropFilter));
+
+    await tester.dragFrom(capsule, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    expect(list.position.pixels, greaterThan(0));
+    expect(find.byType(DiningScreen), findsOneWidget, reason: 'still on Dining');
+
+    final before = list.position.pixels;
+    final under = tester.getCenter(tabLabel('Dining'));
+    final rows = find.descendant(of: find.byType(DiningScreen), matching: find.byType(InkWell)).evaluate();
+    bool covers(Element e) {
+      final box = e.renderObject! as RenderBox;
+      return (e.widget as InkWell).onTap != null && (box.localToGlobal(Offset.zero) & box.size).contains(under);
+    }
+    expect(rows.any(covers), isTrue, reason: 'a tappable row sits under the tab');
+    await tester.tapAt(under);
+    await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing, reason: 'the row under the bar stays untouched');
+    expect(list.position.pixels, before);
+  }, variant: _ios);
+
   testWidgets('android and linux keep an 80dp edge to edge NavigationBar', (tester) async {
     _phone(tester, const Size(390, 844));
     await _pumpShell(tester);
