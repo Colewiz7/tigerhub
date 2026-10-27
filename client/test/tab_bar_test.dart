@@ -463,6 +463,25 @@ void main() {
     expect(_pillLeft(tester), _pillAt(2));
   });
 
+  testWidgets('a cancelled scrub selects nothing and the pill goes home', (tester) async {
+    final haptics = _haptics(tester);
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    final y = tester.getCenter(find.byType(BackdropFilter)).dy;
+
+    final gesture = await tester.startGesture(Offset(_tabCentre(0), y));
+    for (var i = 1; i <= 30; i++) {
+      await gesture.moveTo(Offset(_tabCentre(0) + 5 * i, y), timeStamp: Duration(milliseconds: 16 * i));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    final clicks = haptics.length;
+    await gesture.cancel(timeStamp: const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+    expect(selected, isEmpty);
+    expect(haptics, hasLength(clicks), reason: 'no release haptic');
+    expect(_pillLeft(tester), _pillAt(0));
+  });
+
   testWidgets('a second finger tapping mid scrub selects nothing', (tester) async {
     final selected = <int>[];
     await _pumpBar(tester, selected: selected);

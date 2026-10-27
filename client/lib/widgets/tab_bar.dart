@@ -227,6 +227,13 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
 
   double _ms(Duration time) => time.inMicroseconds / 1000;
 
+  // the system took the touch, nothing was chosen
+  void _cancelScrub() {
+    if (!_scrubbing) return;
+    setState(() => _scrubbing = false);
+    _settle(widget.index);
+  }
+
   void _endScrub(double itemWidth, double velocity) {
     if (!_scrubbing) return;
     final tab = (_finger + project(velocity, 0.99) / itemWidth).round().clamp(0, widget.tabs.length - 1);
@@ -262,6 +269,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
                   bar.onScrubUpdate = () => _scrubTo(_ownerX, width);
                   // the owner lifting already ended it
                   bar.onScrubEnd = () => _endScrub(itemWidth, 0);
+                  bar.onScrubCancel = _cancelScrub;
                 }),
               },
               child: Semantics(
@@ -343,7 +351,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
                 if (e.pointer != _owner) return;
                 _owner = null;
                 _tracker.clear();
-                _endScrub(itemWidth, 0);
+                _cancelScrub();
               },
               child: bar,
             );
@@ -364,6 +372,7 @@ class _BarGestures extends OneSequenceGestureRecognizer {
   VoidCallback? onScrubStart;
   VoidCallback? onScrubUpdate;
   VoidCallback? onScrubEnd;
+  VoidCallback? onScrubCancel;
 
   int? _primary;
   Offset _down = Offset.zero;
@@ -419,7 +428,7 @@ class _BarGestures extends OneSequenceGestureRecognizer {
     } else if (event is PointerUpEvent || event is PointerCancelEvent) {
       _timer?.cancel();
       if (_scrubbing) {
-        onScrubEnd?.call();
+        event is PointerCancelEvent ? onScrubCancel?.call() : onScrubEnd?.call();
       } else if (event is PointerUpEvent && _won && !_moved) {
         onTap?.call(event.localPosition.dx);
       } else if (event is PointerUpEvent && !_moved) {
