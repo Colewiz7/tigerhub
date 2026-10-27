@@ -172,6 +172,8 @@ ScrollableState _mainScrollable(Finder root) {
 
 // a real finger drag, held still before lifting so nothing flings
 Future<void> _drag(WidgetTester tester, Finder target, Offset by) async {
+  // a still finger is a tap
+  if (by == Offset.zero) return;
   final gesture = await tester.startGesture(tester.getCenter(target));
   const steps = 20;
   for (var i = 0; i < steps; i++) {
@@ -191,6 +193,7 @@ Future<void> _toTop(WidgetTester tester, Finder root) async {
 Future<void> _scrollDown(WidgetTester tester, Finder root) async {
   final scrollable = _mainScrollable(root);
   final distance = math.min(_scrollBy, scrollable.position.maxScrollExtent);
+  if (distance <= 0) return;
   await _drag(tester, find.byWidget(scrollable.widget), Offset(0, -distance));
 }
 
