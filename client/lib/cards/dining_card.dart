@@ -82,25 +82,28 @@ AppIconKind iconForCategory(String category) => switch (category) {
 
 /// Venue type drives the icon, so a row is identifiable before it is read.
 AppIconKind iconForVenue(String name) {
-  final n = name.toLowerCase();
-  if (n.contains('market') || n.contains('store') || n.contains('corner')) {
-    return AppIconKind.market;
-  }
-  if (n.contains('cafe') ||
-      n.contains('café') ||
-      n.contains('coffee') ||
-      n.contains('beanz') ||
-      n.contains('java') ||
-      n.contains('grind') ||
-      n.contains('oil')) {
-    return AppIconKind.cafe;
-  }
-  if (n.contains('truck')) return AppIconKind.truck;
-  if (n.contains('ben') || n.contains('jerry') || n.contains('smoothie')) {
-    return AppIconKind.iceCream;
+  final n = name.toLowerCase().replaceAll('’', "'");
+  for (final (needles, kind) in _venueIcons) {
+    if (needles.any(n.contains)) return kind;
   }
   return AppIconKind.dining;
 }
+
+// first match wins, crossroads and artesano say cafe too
+const _venueIcons = [
+  (['gracie', 'commons', 'brick city', 'ritz', 'crossroads'], AppIconKind.diningHall),
+  (['artesano', 'bakery'], AppIconKind.bakery),
+  (['jerry'], AppIconKind.iceCream),
+  (['usb', 'smoothie'], AppIconKind.smoothie),
+  (['deli'], AppIconKind.deli),
+  (['loaded latke', 'petals', 'gpc'], AppIconKind.restaurant),
+  (['nathan', 'soup'], AppIconKind.soup),
+  (['patio'], AppIconKind.patio),
+  (['beanz', 'grind', 'java', 'midnight oil', 'cafe', 'café', 'coffee'], AppIconKind.cafe),
+  (['corner store', 'bytes', 'market', "sol's", 'store'], AppIconKind.grocery),
+  (['truck'], AppIconKind.truck),
+  (['dining office'], AppIconKind.diningOffice),
+];
 
 class DiningCard extends StatelessWidget {
   const DiningCard({
