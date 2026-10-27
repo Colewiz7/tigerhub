@@ -4,6 +4,7 @@ library;
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart' show kTouchSlop;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -193,7 +194,8 @@ Future<void> _toTop(WidgetTester tester, Finder root) async {
 Future<void> _scrollDown(WidgetTester tester, Finder root) async {
   final scrollable = _mainScrollable(root);
   final distance = math.min(_scrollBy, scrollable.position.maxScrollExtent);
-  if (distance <= 0) return;
+  // within slop it lands as a tap
+  if (distance <= kTouchSlop) return;
   await _drag(tester, find.byWidget(scrollable.widget), Offset(0, -distance));
 }
 
