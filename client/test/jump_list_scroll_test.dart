@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/jump_list.dart';
 
 void main() {
@@ -10,7 +11,7 @@ void main() {
     for (var i = 0; i < n; i++)
       JumpGroup(
         label: 'Group $i',
-        icon: Icons.circle,
+        icon: AppIconKind.event,
         count: 1,
         builder: (context) => SizedBox(height: 400, child: Text('body $i')),
       ),
@@ -72,7 +73,7 @@ void main() {
                 for (var i = 0; i < heights.n; i++)
                   JumpGroup(
                     label: 'Group $i',
-                    icon: Icons.circle,
+                    icon: AppIconKind.event,
                     count: 1,
                     builder: (context) => SizedBox(height: heights.h(i), child: Text('body $i')),
                   ),

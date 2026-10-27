@@ -1,14 +1,20 @@
-/// Every section icon fits inside every container that draws it.
+/// Every app icon fits inside every container that draws it.
 library;
+
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
+import 'package:tigerhub/widgets/empty_state.dart';
 import 'package:tigerhub/widgets/section_nav.dart';
 import 'package:tigerhub/widgets/status_row.dart';
+
+import 'golden_harness.dart';
 
 final _platforms = TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android});
 
@@ -39,15 +45,100 @@ Finder _glyph(Finder icon) => find.descendant(of: icon, matching: find.byType(Ri
 
 IconData _expected(AppIconKind kind) => debugDefaultTargetPlatformOverride == TargetPlatform.iOS ? kind.cupertino : kind.material;
 
+// cupertino has no food, drink, wheelchair, bicycle or baby glyphs
+const _materialOnIos = {
+  AppIconKind.drink,
+  AppIconKind.accessibleEntrance,
+  AppIconKind.lactation,
+  AppIconKind.dining,
+  AppIconKind.cutlery,
+  AppIconKind.menu,
+  AppIconKind.visitingChef,
+  AppIconKind.roomService,
+  AppIconKind.cafe,
+  AppIconKind.iceCream,
+  AppIconKind.salad,
+  AppIconKind.breakfast,
+  AppIconKind.bakery,
+  AppIconKind.accessible,
+  AppIconKind.bike,
+  AppIconKind.changingTable,
+};
+
+// advances vary per glyph, the ink test covers the fit
+void _expectGlyphSize(Size glyph, double size) {
+  expect(glyph.height, size);
+  expect(glyph.width, greaterThan(0));
+}
+
+// every painted pixel, not the layout box, cupertino glyphs overshoot their em
+Future<void> _expectInkInsideCircle(WidgetTester tester, IconData icon, double size, double circle) async {
+  final key = GlobalKey();
+  await tester.pumpWidget(Directionality(
+    textDirection: TextDirection.ltr,
+    child: Center(
+      child: RepaintBoundary(
+        key: key,
+        child: SizedBox.square(dimension: circle, child: Center(child: Icon(icon, size: size, color: const Color(0xFF000000)))),
+      ),
+    ),
+  ));
+  final boundary = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+  final bytes = await tester.runAsync(() async {
+    final image = await boundary.toImage(pixelRatio: 3);
+    final data = await image.toByteData();
+    image.dispose();
+    return data!;
+  });
+  final side = (circle * 3).round();
+  final centre = side / 2;
+  var inked = 0;
+  var worst = 0.0;
+  for (var y = 0; y < side; y++) {
+    for (var x = 0; x < side; x++) {
+      if (bytes!.getUint8((y * side + x) * 4 + 3) < 32) continue;
+      inked++;
+      worst = math.max(worst, math.sqrt(math.pow(x + 0.5 - centre, 2) + math.pow(y + 0.5 - centre, 2)));
+    }
+  }
+  expect(inked, greaterThan(0), reason: 'nothing painted for $icon');
+  expect(worst / 3, lessThanOrEqualTo(circle / 2), reason: '$icon reaches ${worst / 3} from the centre of a $circle circle');
+}
+
 void main() {
+  setUpAll(loadGoldenFonts);
+
+  testWidgets('ink stays inside every circle, both platforms', (tester) async {
+    for (final kind in AppIconKind.values) {
+      for (final icon in {kind.cupertino, kind.material}) {
+        await _expectInkInsideCircle(tester, icon, 18, StatusRow.badgeSize);
+        await _expectInkInsideCircle(tester, icon, 18, StatusRow.denseBadgeSize);
+      }
+    }
+    for (final kind in EmptyKind.values) {
+      for (final icon in {kind.icon.cupertino, kind.icon.material}) {
+        await _expectInkInsideCircle(tester, icon, 29, 58);
+        await _expectInkInsideCircle(tester, icon, 38, 76);
+      }
+    }
+  });
+
+  test('iOS draws from CupertinoIcons except where it has no glyph', () {
+    for (final kind in AppIconKind.values) {
+      final family = _materialOnIos.contains(kind) ? 'MaterialIcons' : 'CupertinoIcons';
+      expect(kind.cupertino.fontFamily, family, reason: kind.name);
+      expect(kind.material.fontFamily, 'MaterialIcons', reason: kind.name);
+    }
+  });
+
   testWidgets('section nav: 18 in the 42 circle', (tester) async {
     for (final kind in AppIconKind.values) {
-      await tester.pumpWidget(_wrap(SectionScaffold(sections: [SectionSpec(id: kind.name, title: 'Title', subtitle: 'Subtitle', icon: Icons.circle, glyph: kind, builder: (_) => const SizedBox())])));
+      await tester.pumpWidget(_wrap(SectionScaffold(sections: [SectionSpec(id: kind.name, title: 'Title', subtitle: 'Subtitle', icon: kind, builder: (_) => const SizedBox())])));
       final circle = _circle.first;
       final icon = find.descendant(of: circle, matching: find.byType(Icon));
       expect(tester.getSize(circle), const Size(42, 42));
       expect(tester.widget<Icon>(icon).icon, _expected(kind));
-      expect(tester.getSize(_glyph(icon)), const Size(18, 18));
+      _expectGlyphSize(tester.getSize(_glyph(icon)), 18);
       _expectInsideCircle(tester, circle, _glyph(icon));
     }
   }, variant: _platforms);
@@ -55,13 +146,26 @@ void main() {
   testWidgets('rows: 18 in 42, and 18 in 32 condensed', (tester) async {
     for (final dense in [false, true]) {
       for (final kind in AppIconKind.values) {
-        await tester.pumpWidget(_wrap(Builder(builder: (context) => StatusRow(icon: kind.of(context), title: 'Title', subtitle: 'Subtitle', dense: dense))));
+        await tester.pumpWidget(_wrap(StatusRow(icon: kind, title: 'Title', subtitle: 'Subtitle', dense: dense)));
         final circle = _circle.first;
         final icon = find.descendant(of: circle, matching: find.byType(Icon));
         final side = dense ? StatusRow.denseBadgeSize : StatusRow.badgeSize;
         expect(tester.getSize(circle), Size(side, side));
         expect(tester.widget<Icon>(icon).icon, _expected(kind));
-        expect(tester.getSize(_glyph(icon)), const Size(18, 18));
+        _expectGlyphSize(tester.getSize(_glyph(icon)), 18);
+        _expectInsideCircle(tester, circle, _glyph(icon));
+      }
+    }
+  }, variant: _platforms);
+
+  testWidgets('empty states: 29 in 58, 38 in 76', (tester) async {
+    for (final compact in [true, false]) {
+      for (final kind in EmptyKind.values) {
+        await tester.pumpWidget(_wrap(EmptyState(kind: kind, compact: compact)));
+        final circle = _circle.first;
+        final icon = find.descendant(of: circle, matching: find.byType(Icon));
+        expect(tester.getSize(circle), compact ? const Size(58, 58) : const Size(76, 76));
+        expect(tester.widget<Icon>(icon).icon, _expected(kind.icon));
         _expectInsideCircle(tester, circle, _glyph(icon));
       }
     }
@@ -75,7 +179,7 @@ void main() {
         final icon = find.byType(Icon);
         expect(tester.widget<Icon>(icon).icon, _expected(kind));
         final glyph = tester.getRect(_glyph(icon));
-        expect(glyph.size, const Size(22, 22));
+        _expectGlyphSize(glyph.size, 22);
         final card = tester.getRect(find.byType(CardShell));
         final title = tester.getRect(find.text('Title'));
         expect(card.contains(glyph.topLeft) && card.contains(glyph.bottomRight), isTrue);

@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/open_link.dart';
+import 'app_icon.dart';
 import 'status_row.dart';
 
 // &#8212; and &#x2014; with or without the semicolon, as HTML5 allows. Digits
@@ -131,13 +132,13 @@ class _EventDetailsSheet extends StatelessWidget {
             ],
             const SizedBox(height: 18),
             StatusRow(
-              icon: Icons.schedule_rounded,
+              icon: AppIconKind.time,
               title: 'When',
               subtitle: _when,
             ),
             if (event.location?.isNotEmpty == true)
               StatusRow(
-                icon: Icons.location_on_rounded,
+                icon: AppIconKind.location,
                 title: 'Where',
                 subtitle: event.location,
                 trailing: const Icon(Icons.content_copy_rounded, size: 18),

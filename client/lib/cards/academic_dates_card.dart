@@ -62,8 +62,8 @@ class AcademicDatesCard extends StatelessWidget {
               itemBuilder: (context, index) => StatusRow(
                 dense: true,
                 icon: index == 0
-                    ? Icons.upcoming_rounded
-                    : Icons.calendar_today_rounded,
+                    ? AppIconKind.upcoming
+                    : AppIconKind.day,
                 title: dates[index].title,
                 subtitle: dates[index].detail,
                 actions: [

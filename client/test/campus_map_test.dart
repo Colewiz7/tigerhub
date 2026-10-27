@@ -96,7 +96,9 @@ void main() {
       'reload',
     ];
 
-    expect(kinds.map(mapPlaceIcon).toSet(), hasLength(kinds.length));
+    for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+      expect(kinds.map((kind) => mapPlaceIcon(kind).on(platform)).toSet(), hasLength(kinds.length));
+    }
   });
 
   test('projection keeps longitude on X and north toward the top', () {

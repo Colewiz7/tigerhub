@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 
 import '../motion/reduce_motion.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 import 'tab_bar.dart';
 
 class JumpGroup {
@@ -24,7 +25,7 @@ class JumpGroup {
   });
 
   final String label;
-  final IconData icon;
+  final AppIconKind icon;
   final int count;
   final WidgetBuilder builder;
 }
@@ -233,7 +234,7 @@ class _Rail extends StatelessWidget {
                   child: Row(
                     children: [
                       Icon(
-                        groups[index].icon,
+                        groups[index].icon.of(context),
                         size: 17,
                         color: Color.lerp(
                           scheme.onSurfaceVariant,

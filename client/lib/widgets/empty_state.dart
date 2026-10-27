@@ -13,20 +13,22 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'app_icon.dart';
+
 /// Each state uses a familiar symbol inside the same restrained circular badge
 /// language as the rest of the app. Empty states used to render cartoon tiger
 /// scenes, which made ordinary "nothing today" results feel like novelty art.
 enum EmptyKind {
-  noEvents(Icons.event_busy_rounded, 'No events today'),
-  allClosed(Icons.nightlight_round, 'All closed'),
-  noVisitingChefs(Icons.room_service_rounded, 'No visiting chefs today'),
-  notFound(Icons.search_off_rounded, 'No matches'),
-  offline(Icons.cloud_off_rounded, 'Showing saved data'),
-  sourceDown(Icons.sync_problem_rounded, 'Unavailable');
+  noEvents(AppIconKind.noEvents, 'No events today'),
+  allClosed(AppIconKind.night, 'All closed'),
+  noVisitingChefs(AppIconKind.roomService, 'No visiting chefs today'),
+  notFound(AppIconKind.notFound, 'No matches'),
+  offline(AppIconKind.offline, 'Showing saved data'),
+  sourceDown(AppIconKind.sourceDown, 'Unavailable');
 
   const EmptyKind(this.icon, this.title);
 
-  final IconData icon;
+  final AppIconKind icon;
 
   /// The default line. Callers may override it where they can say something
   /// more specific, but the wording should stay this plain.
@@ -104,7 +106,7 @@ class EmptyState extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: Icon(
-                kind.icon,
+                kind.icon.of(context),
                 size: compact ? 29 : 38,
                 color: scheme.onPrimaryContainer,
               ),

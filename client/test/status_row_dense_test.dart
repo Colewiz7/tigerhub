@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/status_row.dart';
 
 import 'golden_harness.dart';
@@ -70,14 +71,14 @@ void main() {
                         for (final status in _statuses) ...[
                           StatusRow(
                             dense: true,
-                            icon: Icons.restaurant_rounded,
+                            icon: AppIconKind.dining,
                             title: name,
                             subtitle: status,
                             trailing: _pill(),
                           ),
                           StatusRow(
                             dense: true,
-                            icon: Icons.restaurant_rounded,
+                            icon: AppIconKind.dining,
                             title: name,
                             subtitle: status,
                           ),

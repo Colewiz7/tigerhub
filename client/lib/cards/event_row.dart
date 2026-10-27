@@ -14,29 +14,30 @@ import '../services/open_link.dart';
 import '../services/preferences.dart';
 import '../theme/semantic.dart';
 import '../theme/tokens.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/context_actions.dart';
 import '../widgets/event_details_sheet.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 
-IconData iconForEventType(String? type) {
+AppIconKind iconForEventType(String? type) {
   final t = (type ?? '').toLowerCase();
-  if (t.contains('athletics')) return Icons.sports_score_rounded;
-  if (t.contains('meeting')) return Icons.groups_rounded;
+  if (t.contains('athletics')) return AppIconKind.athletics;
+  if (t.contains('meeting')) return AppIconKind.groups;
   if (t.contains('workshop') || t.contains('training')) {
-    return Icons.construction_rounded;
+    return AppIconKind.makerspace;
   }
   if (t.contains('religious') || t.contains('spiritual')) {
-    return Icons.self_improvement_rounded;
+    return AppIconKind.spiritual;
   }
   if (t.contains('recreation') || t.contains('sport')) {
-    return Icons.sports_basketball_rounded;
+    return AppIconKind.basketball;
   }
-  if (t.contains('blood')) return Icons.bloodtype_rounded;
+  if (t.contains('blood')) return AppIconKind.blood;
   if (t.contains('tabling') || t.contains('outreach')) {
-    return Icons.campaign_rounded;
+    return AppIconKind.outreach;
   }
-  return Icons.event_rounded;
+  return AppIconKind.event;
 }
 
 class EventRow extends StatelessWidget {
@@ -139,10 +140,8 @@ class EventRow extends StatelessWidget {
     return StatusRow(
       dense: dense,
       icon: forceDimmed
-          ? Icons.visibility_off_rounded
-          : (isPast
-                ? Icons.history_rounded
-                : iconForEventType(event.eventType)),
+          ? AppIconKind.hidden
+          : (isPast ? AppIconKind.past : iconForEventType(event.eventType)),
       title: boosted ? '✦ ${event.title}' : event.title,
       subtitle: condensed ? denseSubtitle : (place ?? when),
       accent: boosted

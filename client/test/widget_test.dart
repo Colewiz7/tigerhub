@@ -20,6 +20,7 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/semantic.dart';
 import 'package:tigerhub/theme/tokens.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
 import 'package:tigerhub/widgets/content_column.dart';
 import 'package:tigerhub/widgets/freshness.dart';
@@ -1022,10 +1023,10 @@ void _visualStructure() {
     });
 
     testWidgets('venue type picks the icon', (tester) async {
-      expect(iconForVenue('Corner Store'), Icons.storefront_rounded);
-      expect(iconForVenue('Java Wally\'s'), Icons.local_cafe_rounded);
-      expect(iconForVenue('RIT Food Truck'), Icons.local_shipping_rounded);
-      expect(iconForVenue('Gracie\'s'), Icons.restaurant_rounded);
+      expect(iconForVenue('Corner Store'), AppIconKind.market);
+      expect(iconForVenue('Java Wally\'s'), AppIconKind.cafe);
+      expect(iconForVenue('RIT Food Truck'), AppIconKind.truck);
+      expect(iconForVenue('Gracie\'s'), AppIconKind.dining);
     });
   });
 
@@ -1809,7 +1810,7 @@ void _sectionNav() {
         id: 'id$i',
         title: 'Section $i',
         subtitle: 'sub $i',
-        icon: Icons.circle,
+        icon: AppIconKind.event,
         builder: (context) => Text('content $i'),
       ),
   ];
@@ -1878,7 +1879,7 @@ void _jumpRail() {
     for (var i = 0; i < n; i++)
       JumpGroup(
         label: 'Group $i',
-        icon: Icons.circle,
+        icon: AppIconKind.event,
         count: i + 1,
         builder: (context) => SizedBox(height: 400, child: Text('body $i')),
       ),

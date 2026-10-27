@@ -74,17 +74,17 @@ List<MapEntry<String, List<DiningLocation>>> groupByCategory(
 }
 
 /// Category drives the group header icon.
-IconData iconForCategory(String category) => switch (category) {
-  'market' => Icons.storefront_rounded,
-  'global_village' => Icons.public_rounded,
-  _ => Icons.restaurant_rounded,
+AppIconKind iconForCategory(String category) => switch (category) {
+  'market' => AppIconKind.market,
+  'global_village' => AppIconKind.globe,
+  _ => AppIconKind.dining,
 };
 
 /// Venue type drives the icon, so a row is identifiable before it is read.
-IconData iconForVenue(String name) {
+AppIconKind iconForVenue(String name) {
   final n = name.toLowerCase();
   if (n.contains('market') || n.contains('store') || n.contains('corner')) {
-    return Icons.storefront_rounded;
+    return AppIconKind.market;
   }
   if (n.contains('cafe') ||
       n.contains('café') ||
@@ -93,13 +93,13 @@ IconData iconForVenue(String name) {
       n.contains('java') ||
       n.contains('grind') ||
       n.contains('oil')) {
-    return Icons.local_cafe_rounded;
+    return AppIconKind.cafe;
   }
-  if (n.contains('truck')) return Icons.local_shipping_rounded;
+  if (n.contains('truck')) return AppIconKind.truck;
   if (n.contains('ben') || n.contains('jerry') || n.contains('smoothie')) {
-    return Icons.icecream_rounded;
+    return AppIconKind.iceCream;
   }
-  return Icons.restaurant_rounded;
+  return AppIconKind.dining;
 }
 
 class DiningCard extends StatelessWidget {
@@ -242,7 +242,7 @@ class DiningRow extends StatelessWidget {
     return StatusRow(
       dense: dense,
       icon: Preferences.instance.isPinned(location.id)
-          ? Icons.push_pin_rounded
+          ? AppIconKind.pinned
           : iconForVenue(location.name),
       title: location.name,
       subtitle: when,

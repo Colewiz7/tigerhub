@@ -9,8 +9,7 @@
 /// mutating the preset, so switching back is always possible.
 library;
 
-import 'package:flutter/material.dart';
-
+import '../widgets/app_icon.dart';
 import 'preferences.dart';
 
 class FilterProfile {
@@ -27,7 +26,7 @@ class FilterProfile {
   final String id;
   final String name;
   final String description;
-  final IconData icon;
+  final AppIconKind icon;
   final List<String> hide;
   final List<String> boost;
   final bool keywordsEnabled;
@@ -42,7 +41,7 @@ const List<FilterProfile> builtInProfiles = [
     name: 'Free and fun',
     description: 'Free food, games, tournaments. Hides info sessions, career '
         'fairs, religious services and tutoring.',
-    icon: Icons.celebration_rounded,
+    icon: AppIconKind.celebration,
     hide: [
       'tutoring',
       'info session',
@@ -77,7 +76,7 @@ const List<FilterProfile> builtInProfiles = [
     name: 'Academic and career',
     description: 'The opposite. Workshops, info sessions, career events and '
         'tutoring come first.',
-    icon: Icons.school_rounded,
+    icon: AppIconKind.school,
     hide: [],
     boost: [
       'workshop',
@@ -95,7 +94,7 @@ const List<FilterProfile> builtInProfiles = [
     name: 'Low key',
     description: 'Hides the high volume recurring stuff so one-off events are '
         'visible.',
-    icon: Icons.nightlight_round,
+    icon: AppIconKind.night,
     hide: [
       'attendance tracking',
       'tabling',
@@ -110,7 +109,7 @@ const List<FilterProfile> builtInProfiles = [
     id: 'everything',
     name: 'Everything',
     description: 'No keyword rules at all. Organizer mutes still apply.',
-    icon: Icons.all_inclusive_rounded,
+    icon: AppIconKind.everything,
     hide: [],
     boost: [],
     keywordsEnabled: false,

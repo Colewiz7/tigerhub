@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/theme/tokens.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/context_actions.dart';
 import 'package:tigerhub/widgets/phone_frame.dart';
 import 'package:tigerhub/widgets/status_row.dart';
@@ -37,7 +38,7 @@ void main() {
             ListView(
               children: [
                 StatusRow(
-                  icon: Icons.event_rounded,
+                  icon: AppIconKind.event,
                   title: 'Row',
                   subtitle: 'Sub',
                   onTap: () => taps++,
@@ -49,7 +50,7 @@ void main() {
                     ),
                   ],
                 ),
-                for (var i = 0; i < 30; i++) StatusRow(icon: Icons.event_rounded, title: 'Filler $i'),
+                for (var i = 0; i < 30; i++) StatusRow(icon: AppIconKind.event, title: 'Filler $i'),
               ],
             ),
       ),
@@ -108,7 +109,7 @@ void main() {
         theme: menuTheme(),
         home: Scaffold(
           body: StatusRow(
-            icon: Icons.event_rounded,
+            icon: AppIconKind.event,
             title: 'Row',
             onTap: () {},
             actions: [MenuAction(label: 'Pick', icon: Icons.check_rounded, onSelected: (_) {})],
@@ -125,7 +126,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: menuTheme(),
-        home: const Scaffold(body: StatusRow(icon: Icons.event_rounded, title: 'Row')),
+        home: const Scaffold(body: StatusRow(icon: AppIconKind.event, title: 'Row')),
       ),
     );
     await secondaryTap(tester, row());
@@ -191,7 +192,7 @@ void main() {
             children: [
               for (var i = 0; i < 30; i++)
                 StatusRow(
-                  icon: Icons.event_rounded,
+                  icon: AppIconKind.event,
                   title: 'Row $i',
                   actions: [
                     MenuAction(label: 'Pick', icon: Icons.check_rounded, onSelected: (_) {}),

@@ -8,6 +8,7 @@ import '../../services/event_filter.dart';
 import '../../services/filter_profiles.dart';
 import '../../services/preferences.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/status_row.dart';
 import '../../widgets/tab_bar.dart';
 
@@ -90,7 +91,7 @@ class _EventsSectionState extends State<EventsSection> {
           title: 'Hide',
           subtitle: 'Events whose title contains any of these are hidden, '
               'but always recoverable behind the hidden count.',
-          icon: Icons.visibility_off_rounded,
+          icon: AppIconKind.hidden,
           values: _prefs.hideKeywords,
           onChanged: _prefs.setHideKeywords,
           enabled: _prefs.keywordRulesEnabled,
@@ -99,7 +100,7 @@ class _EventsSectionState extends State<EventsSection> {
         _KeywordEditor(
           title: 'Boost',
           subtitle: 'These sort to the top of their group with an accent marker.',
-          icon: Icons.star_rounded,
+          icon: AppIconKind.boost,
           values: _prefs.boostKeywords,
           onChanged: _prefs.setBoostKeywords,
           enabled: _prefs.keywordRulesEnabled,
@@ -146,7 +147,7 @@ class _ProfilePicker extends StatelessWidget {
           ),
         if (active == null)
           StatusRow(
-            icon: Icons.tune_rounded,
+            icon: AppIconKind.tune,
             title: 'Custom',
             subtitle: 'Your own rules, edited below',
             trailing: Icon(Icons.check_circle_rounded,
@@ -202,7 +203,7 @@ class _OrganizerRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => StatusRow(
-        icon: muted ? Icons.notifications_off_rounded : Icons.groups_rounded,
+        icon: muted ? AppIconKind.muted : AppIconKind.groups,
         title: facet.name,
         subtitle: '${facet.count} event${facet.count == 1 ? '' : 's'}'
             '${facet.key == null ? '' : ' - ${facet.key}'}',
@@ -227,7 +228,7 @@ class _KeywordEditor extends StatefulWidget {
 
   final String title;
   final String subtitle;
-  final IconData icon;
+  final AppIconKind icon;
   final List<String> values;
   final ValueChanged<List<String>> onChanged;
   final bool enabled;
@@ -270,7 +271,7 @@ class _KeywordEditorState extends State<_KeywordEditor> {
           children: [
             Row(
               children: [
-                Icon(widget.icon, size: 18, color: scheme.primary),
+                AppIcon(widget.icon, color: scheme.primary),
                 const SizedBox(width: 9),
                 Text(widget.title.toUpperCase(), style: text.labelSmall),
               ],

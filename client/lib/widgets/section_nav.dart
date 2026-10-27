@@ -25,18 +25,12 @@ class SectionSpec {
     required this.subtitle,
     required this.icon,
     required this.builder,
-    this.glyph,
   });
 
   final String id;
   final String title;
   final String subtitle;
-
-  /// Used when [glyph] is null.
-  final IconData icon;
-
-  /// The platform section icon, where one exists.
-  final AppIconKind? glyph;
+  final AppIconKind icon;
 
   final WidgetBuilder builder;
 }
@@ -228,9 +222,7 @@ class SectionNavRow extends StatelessWidget {
                       color: badge,
                     ),
                     // 18 in 42, same as StatusRow
-                    child: spec.glyph == null
-                        ? Icon(spec.icon, size: 18, color: iconColor)
-                        : AppIcon(spec.glyph!, color: iconColor),
+                    child: AppIcon(spec.icon, color: iconColor),
                   ),
                   const SizedBox(width: 13),
                   Expanded(

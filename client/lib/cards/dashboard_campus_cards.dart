@@ -99,8 +99,8 @@ class _FacilityRow extends StatelessWidget {
     final semantic = Semantic.of(context);
     return StatusRow(
       icon: facility.name.toLowerCase().contains('pool')
-          ? Icons.pool_rounded
-          : Icons.fitness_center_rounded,
+          ? AppIconKind.swimming
+          : AppIconKind.gym,
       title: facility.name,
       subtitle: hours,
       accent: open ? semantic.open : semantic.closed,

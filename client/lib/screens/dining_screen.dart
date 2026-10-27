@@ -16,6 +16,7 @@ import '../data/local_backend.dart' show staleGraceMultiplier;
 import '../data/sources/food_trucks.dart' show foodTrucksCadence;
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/jump_list.dart';
 import '../widgets/link_button.dart';
 import '../widgets/empty_state.dart';
@@ -196,7 +197,7 @@ class _DiningScreenState extends State<DiningScreen> {
                 groups: [
                   JumpGroup(
                     label: 'Today’s menu',
-                    icon: Icons.local_dining_rounded,
+                    icon: AppIconKind.cutlery,
                     count: menuItems.length,
                     builder: (context) => _TodayMenuGroup(
                       result: _features,
@@ -207,14 +208,14 @@ class _DiningScreenState extends State<DiningScreen> {
                   if (trucks.isNotEmpty)
                     JumpGroup(
                       label: 'Food trucks',
-                      icon: Icons.local_shipping_rounded,
+                      icon: AppIconKind.truck,
                       count: trucks.length,
                       builder: (context) => _FoodTrucksGroup(trucks: trucks),
                     ),
                   if (groups.isEmpty)
                     JumpGroup(
                       label: 'No matches',
-                      icon: Icons.search_off_rounded,
+                      icon: AppIconKind.notFound,
                       count: 0,
                       builder: (context) => const EmptyState(
                         kind: EmptyKind.notFound,
@@ -370,14 +371,14 @@ class _FoodTrucksGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GroupHeader(
-          icon: Icons.local_shipping_rounded,
+          icon: AppIconKind.truck,
           title: 'Food trucks',
           count: trucks.length,
         ),
         for (final truck in trucks)
           StatusRow(
             key: ValueKey('truck-${truck.date}-${truck.name}'),
-            icon: Icons.local_shipping_rounded,
+            icon: AppIconKind.truck,
             dense: true,
             subtitleMaxLines: null,
             title: truck.name,
@@ -409,7 +410,7 @@ class _TodayMenuGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GroupHeader(
-          icon: Icons.local_dining_rounded,
+          icon: AppIconKind.cutlery,
           title: 'Today’s published menu',
           count: items.length,
         ),
@@ -443,15 +444,15 @@ class _TodayMenuGroup extends StatelessWidget {
     );
   }
 
-  static IconData _menuIcon(String? category) {
+  static AppIconKind _menuIcon(String? category) {
     final value = category?.toLowerCase() ?? '';
-    if (value.contains('soup')) return Icons.soup_kitchen_rounded;
-    if (value.contains('salad')) return Icons.eco_rounded;
-    if (value.contains('breakfast')) return Icons.egg_alt_rounded;
+    if (value.contains('soup')) return AppIconKind.visitingChef;
+    if (value.contains('salad')) return AppIconKind.salad;
+    if (value.contains('breakfast')) return AppIconKind.breakfast;
     if (value.contains('dessert') || value.contains('bakery')) {
-      return Icons.bakery_dining_rounded;
+      return AppIconKind.bakery;
     }
-    if (value.contains('visiting')) return Icons.room_service_rounded;
-    return Icons.restaurant_menu_rounded;
+    if (value.contains('visiting')) return AppIconKind.roomService;
+    return AppIconKind.menu;
   }
 }

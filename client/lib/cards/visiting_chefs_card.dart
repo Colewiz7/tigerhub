@@ -98,7 +98,7 @@ class VisitingChefsCard extends StatelessWidget {
           onShowAll: () => _showAllChefs(context, all),
           itemBuilder: (context, index) => StatusRow(
             dense: true,
-            icon: Icons.restaurant_menu_rounded,
+            icon: AppIconKind.menu,
             title: all[index].name,
             subtitle: [
               ?_window(all[index]),
@@ -176,11 +176,7 @@ class _ChefRow extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: scheme.primary.withValues(alpha: 0.32),
                 ),
-                child: Icon(
-                  Icons.restaurant_menu_rounded,
-                  size: 18,
-                  color: scheme.primary,
-                ),
+                child: AppIcon(AppIconKind.menu, color: scheme.primary),
               ),
               const SizedBox(width: 13),
               Expanded(

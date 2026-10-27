@@ -15,6 +15,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/screens/campus_screen.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/screens/events_screen.dart';
 import 'package:tigerhub/screens/map_screen.dart';
@@ -426,7 +427,7 @@ void main() {
           api: ApiClient(backend: _PlacesBackend()),
           kind: 'water',
           title: 'Water fountains',
-          icon: Icons.water_drop_rounded,
+          icon: AppIconKind.water,
         ),
       ),
     ));

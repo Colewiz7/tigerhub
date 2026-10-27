@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/dynamic_theme.dart';
 import '../../theme/scheme_source.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/status_row.dart';
 import '../../widgets/tab_bar.dart';
 
@@ -64,7 +65,7 @@ class _AppearanceSectionState extends State<AppearanceSection> {
           ),
         ),
         StatusRow(
-          icon: Icons.palette_rounded,
+          icon: AppIconKind.appearance,
           title: 'Built-in palette',
           subtitle: 'RIT orange, light and dark, follows your system setting',
           emphasis: state.isDynamic ? RowEmphasis.dimmed : RowEmphasis.normal,
@@ -80,7 +81,7 @@ class _AppearanceSectionState extends State<AppearanceSection> {
         // work is worse than an absent one.
         if (schemeSourceIsAvailable)
           StatusRow(
-            icon: Icons.wallpaper_rounded,
+            icon: AppIconKind.wallpaper,
             title: 'Follow my wallpaper',
             subtitle: state.isDynamic
                 ? (state.detail ?? 'reading the generated scheme')

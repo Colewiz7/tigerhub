@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/section_nav.dart';
 
 const sections = [
@@ -7,14 +8,14 @@ const sections = [
     id: 'one',
     title: 'One',
     subtitle: 'First section',
-    icon: Icons.looks_one_rounded,
+    icon: AppIconKind.events,
     builder: firstSection,
   ),
   SectionSpec(
     id: 'two',
     title: 'Two',
     subtitle: 'Second section',
-    icon: Icons.looks_two_rounded,
+    icon: AppIconKind.dining,
     builder: secondSection,
   ),
 ];

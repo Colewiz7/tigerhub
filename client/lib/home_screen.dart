@@ -25,6 +25,7 @@ import 'motion/reduce_motion.dart';
 import 'services/api.dart';
 import 'services/dashboard.dart';
 import 'theme/tokens.dart';
+import 'widgets/app_icon.dart';
 import 'widgets/card_shell.dart' show editControlsWidth;
 import 'widgets/context_actions.dart' show ContextActionsScope;
 import 'widgets/tab_bar.dart';
@@ -33,16 +34,16 @@ import 'widgets/touch_target.dart';
 /// The icon each module type shows in the card library and the hidden chips.
 /// The name comes from `moduleLabels` beside the type itself, so the library
 /// and the renderer cannot drift apart.
-const Map<ModuleType, IconData> moduleIcons = {
-  ModuleType.diningStatus: Icons.restaurant_rounded,
-  ModuleType.generalEvents: Icons.event_note_rounded,
-  ModuleType.clubEvents: Icons.groups_rounded,
-  ModuleType.calendar: Icons.calendar_month_rounded,
-  ModuleType.visitingChefs: Icons.restaurant_menu_rounded,
-  ModuleType.mailingAddress: Icons.markunread_mailbox_rounded,
-  ModuleType.facilityHours: Icons.fitness_center_rounded,
-  ModuleType.campusMap: Icons.map_rounded,
-  ModuleType.academicDates: Icons.event_available_rounded,
+const Map<ModuleType, AppIconKind> moduleIcons = {
+  ModuleType.diningStatus: AppIconKind.dining,
+  ModuleType.generalEvents: AppIconKind.events,
+  ModuleType.clubEvents: AppIconKind.groups,
+  ModuleType.calendar: AppIconKind.calendar,
+  ModuleType.visitingChefs: AppIconKind.menu,
+  ModuleType.mailingAddress: AppIconKind.mailbox,
+  ModuleType.facilityHours: AppIconKind.gym,
+  ModuleType.campusMap: AppIconKind.map,
+  ModuleType.academicDates: AppIconKind.academicDates,
 };
 
 /// Card height. Cards grow to use spare vertical room, but stop before they
@@ -643,7 +644,7 @@ class _EditBar extends StatelessWidget {
             const SizedBox(height: 12),
             for (final type in _available)
               ListTile(
-                leading: Icon(moduleIcons[type]),
+                leading: Icon(moduleIcons[type]!.of(context)),
                 title: Text(moduleLabels[type]!),
                 subtitle: Text(switch (type) {
                   ModuleType.clubEvents => 'Follow one organization',
@@ -716,7 +717,7 @@ class _EditBar extends StatelessWidget {
                     Row(
                       children: [
                         Icon(
-                          moduleIcons[selected!.type],
+                          moduleIcons[selected!.type]!.of(context),
                           color: scheme.primary,
                         ),
                         const SizedBox(width: 9),
@@ -894,8 +895,7 @@ class _EditBar extends StatelessWidget {
                             ),
                             const SizedBox(width: 7),
                             Icon(
-                              moduleIcons[cards[id]?.type] ??
-                                  Icons.widgets_rounded,
+                              (moduleIcons[cards[id]?.type] ?? AppIconKind.widgets).of(context),
                               size: 17,
                               color: scheme.onSurfaceVariant,
                             ),

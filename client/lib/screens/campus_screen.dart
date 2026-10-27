@@ -130,8 +130,7 @@ class _CampusScreenState extends State<CampusScreen> {
           id: 'mail',
           title: 'Mail',
           subtitle: 'Your address, and both post offices',
-          icon: Icons.local_post_office_rounded,
-          glyph: AppIconKind.mail,
+          icon: AppIconKind.mail,
           builder: (context) => _MailSection(
             api: widget.api,
             areas: widget.areas,
@@ -142,22 +141,21 @@ class _CampusScreenState extends State<CampusScreen> {
           id: 'find',
           title: 'Find on campus',
           subtitle: 'Fountains, restrooms, blue lights, bus stops',
-          icon: Icons.travel_explore_rounded,
-          glyph: AppIconKind.find,
+          icon: AppIconKind.find,
           builder: (context) => _FindSection(api: widget.api, kinds: _kinds),
         ),
         SectionSpec(
           id: 'dates',
           title: 'Academic dates',
           subtitle: 'Deadlines, breaks, reading days and finals',
-          icon: Icons.event_available_rounded,
+          icon: AppIconKind.academicDates,
           builder: (context) => _AcademicDatesSection(now: widget.now),
         ),
         SectionSpec(
           id: 'shuttles',
           title: 'Shuttles',
           subtitle: 'Today’s routes for where you live',
-          icon: Icons.directions_bus_rounded,
+          icon: AppIconKind.shuttle,
           builder: (context) => _ShuttleSection(
             areas: widget.areas.value?.data ?? const <HousingArea>[],
             now: widget.now,
@@ -167,29 +165,28 @@ class _CampusScreenState extends State<CampusScreen> {
           id: 'safety',
           title: 'Safety',
           subtitle: 'Emergency, text and non-emergency contacts',
-          icon: Icons.health_and_safety_rounded,
+          icon: AppIconKind.safety,
           builder: (context) => const _SafetySection(),
         ),
         SectionSpec(
           id: 'links',
           title: 'Quick links',
           subtitle: 'RIT services in your browser',
-          icon: Icons.open_in_new_rounded,
+          icon: AppIconKind.link,
           builder: (context) => const QuickLinksSection(),
         ),
         SectionSpec(
           id: 'rec',
           title: 'Gym and pool',
           subtitle: 'Facility hours for the week',
-          icon: Icons.fitness_center_rounded,
+          icon: AppIconKind.gym,
           builder: (context) => _RecreationSection(result: _rec),
         ),
         SectionSpec(
           id: 'shed',
           title: 'SHED makerspace',
-          glyph: AppIconKind.makerspace,
           subtitle: 'Live equipment availability',
-          icon: Icons.construction_rounded,
+          icon: AppIconKind.makerspace,
           builder: (context) => _ShedSection(shed: _shed, rooms: _rooms),
         ),
       ],
@@ -363,7 +360,7 @@ class _ShuttleSection extends StatelessWidget {
         else
           for (final route in routes)
             StatusRow(
-              icon: Icons.directions_bus_rounded,
+              icon: AppIconKind.shuttle,
               title: '${route.number} · ${route.name}',
               subtitle: route.hours,
               actions: [MenuAction.copy('${route.number} · ${route.name}\n${route.hours}')],
@@ -406,9 +403,7 @@ class _AcademicDatesSection extends StatelessWidget {
         else
           for (var index = 0; index < upcoming.length; index++)
             StatusRow(
-              icon: index == 0
-                  ? Icons.upcoming_rounded
-                  : Icons.calendar_today_rounded,
+              icon: index == 0 ? AppIconKind.upcoming : AppIconKind.day,
               title: upcoming[index].title,
               subtitle: upcoming[index].detail,
               actions: [
@@ -432,25 +427,25 @@ class _SafetySection extends StatelessWidget {
     (
       label: 'Emergency call',
       number: '585-475-3333',
-      icon: Icons.emergency_rounded,
+      icon: AppIconKind.emergency,
       isText: false,
     ),
     (
       label: 'Emergency text',
       number: '585-205-8333',
-      icon: Icons.sms_rounded,
+      icon: AppIconKind.text,
       isText: true,
     ),
     (
       label: 'General calls',
       number: '585-475-2853',
-      icon: Icons.support_agent_rounded,
+      icon: AppIconKind.support,
       isText: false,
     ),
     (
       label: 'RIT Service Center',
       number: '585-475-5000',
-      icon: Icons.support_agent_rounded,
+      icon: AppIconKind.support,
       isText: false,
     ),
   ];
@@ -865,11 +860,7 @@ class _PostOfficeBlock extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.32),
                   ),
-                  child: Icon(
-                    Icons.local_post_office_rounded,
-                    size: 18,
-                    color: scheme.primary,
-                  ),
+                  child: AppIcon(AppIconKind.mail, color: scheme.primary),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -1284,17 +1275,17 @@ class _RecreationRow extends StatelessWidget {
 
   final RecreationFacility facility;
 
-  static IconData _icon(String name) {
+  static AppIconKind _icon(String name) {
     final n = name.toLowerCase();
-    if (n.contains('aquatic') || n.contains('pool')) return Icons.pool_rounded;
-    if (n.contains('climb')) return Icons.terrain_rounded;
-    if (n.contains('tennis')) return Icons.sports_tennis_rounded;
+    if (n.contains('aquatic') || n.contains('pool')) return AppIconKind.swimming;
+    if (n.contains('climb')) return AppIconKind.climbing;
+    if (n.contains('tennis')) return AppIconKind.tennis;
     if (n.contains('turf') || n.contains('field')) {
-      return Icons.sports_soccer_rounded;
+      return AppIconKind.soccer;
     }
-    if (n.contains('track')) return Icons.directions_run_rounded;
-    if (n.contains('office')) return Icons.badge_rounded;
-    return Icons.fitness_center_rounded;
+    if (n.contains('track')) return AppIconKind.running;
+    if (n.contains('office')) return AppIconKind.office;
+    return AppIconKind.gym;
   }
 
   String _spansOf(RecreationDay day) => day.closed || day.spans.isEmpty
@@ -1456,11 +1447,7 @@ class _ShedHoursBlock extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.32),
                   ),
-                  child: Icon(
-                    Icons.construction_rounded,
-                    size: 18,
-                    color: scheme.primary,
-                  ),
+                  child: AppIcon(AppIconKind.makerspace, color: scheme.primary),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -1535,7 +1522,7 @@ class _EquipmentBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GroupHeader(
-          icon: Icons.precision_manufacturing_rounded,
+          icon: AppIconKind.machines,
           title: '$totalFree free now, $totalBusy in use',
           count: rooms.fold<int>(0, (n, r) => n + r.machines),
         ),
@@ -1563,15 +1550,15 @@ class _EquipmentBlock extends StatelessWidget {
     );
   }
 
-  static IconData _iconForRoom(String room) {
+  static AppIconKind _iconForRoom(String room) {
     final r = room.toLowerCase();
-    if (r.contains('3d print')) return Icons.view_in_ar_rounded;
-    if (r.contains('laser')) return Icons.blur_on_rounded;
-    if (r.contains('wood')) return Icons.carpenter_rounded;
-    if (r.contains('metal')) return Icons.hardware_rounded;
-    if (r.contains('textile')) return Icons.checkroom_rounded;
-    if (r.contains('electronic')) return Icons.memory_rounded;
-    if (r.contains('vinyl')) return Icons.content_cut_rounded;
-    return Icons.build_rounded;
+    if (r.contains('3d print')) return AppIconKind.printer3d;
+    if (r.contains('laser')) return AppIconKind.laser;
+    if (r.contains('wood')) return AppIconKind.wood;
+    if (r.contains('metal')) return AppIconKind.metal;
+    if (r.contains('textile')) return AppIconKind.textile;
+    if (r.contains('electronic')) return AppIconKind.electronics;
+    if (r.contains('vinyl')) return AppIconKind.vinyl;
+    return AppIconKind.tools;
   }
 }

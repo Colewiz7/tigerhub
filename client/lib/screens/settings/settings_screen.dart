@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../models/api_models.dart';
 import '../../services/api.dart';
 import '../../theme/dynamic_theme.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/section_nav.dart';
 import 'about_section.dart';
 import 'appearance_section.dart';
@@ -34,7 +35,7 @@ class SettingsScreen extends StatelessWidget {
             id: 'events',
             title: 'Events',
             subtitle: 'Profiles, organizer mutes, keyword rules',
-            icon: Icons.event_note_rounded,
+            icon: AppIconKind.events,
             builder: (context) =>
                 EventsSection(events: events.value?.data ?? const []),
           ),
@@ -42,21 +43,21 @@ class SettingsScreen extends StatelessWidget {
             id: 'dining',
             title: 'Dining',
             subtitle: 'Dietary filters, allergens to flag',
-            icon: Icons.restaurant_rounded,
+            icon: AppIconKind.dining,
             builder: (context) => const DiningSection(),
           ),
           SectionSpec(
             id: 'appearance',
             title: 'Appearance',
             subtitle: 'Theme source, palette',
-            icon: Icons.palette_rounded,
+            icon: AppIconKind.appearance,
             builder: (context) => AppearanceSection(scheme: scheme),
           ),
           SectionSpec(
             id: 'about',
             title: 'About',
             subtitle: 'Version, data sources, disclaimer',
-            icon: Icons.info_outline_rounded,
+            icon: AppIconKind.info,
             builder: (context) => const AboutSection(),
           ),
         ],

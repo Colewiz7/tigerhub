@@ -17,6 +17,7 @@ import '../services/frame_monitor.dart';
 import '../services/frame_stats.dart' show frameTabMap;
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 import 'campus_event_mapper.dart';
 import 'empty_state.dart';
 import 'freshness.dart';
@@ -349,6 +350,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                                               selectedId: _selectedId,
                                               scheme: Theme.of(context)
                                                   .colorScheme,
+                                              platform: Theme.of(context).platform,
                                               zoom: matrix.getMaxScaleOnAxis(),
                                               paths: _paths,
                                               onSelect: (feature) => setState(
@@ -793,7 +795,7 @@ class _MapSearchPageState extends State<_MapSearchPage> {
           leading: CircleAvatar(
             backgroundColor: palette.$1,
             foregroundColor: palette.$2,
-            child: Icon(mapPlaceIcon(feature.kind)),
+            child: Icon(mapPlaceIcon(feature.kind).of(context)),
           ),
           title: Text(feature.name),
           subtitle: Text(
@@ -832,7 +834,7 @@ class _MapToolbar extends StatelessWidget {
         ? 'All places'
         : kinds[selectedKind] ?? 'All places';
     final selectedIcon = selectedKind == null
-        ? Icons.apps_rounded
+        ? AppIconKind.allPlaces
         : mapPlaceIcon(selectedKind!);
 
     return Row(
@@ -849,12 +851,12 @@ class _MapToolbar extends StatelessWidget {
             tooltip: 'Filter map places',
             onSelected: (value) => onKindChanged(value.isEmpty ? null : value),
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: '',
                 child: ListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.apps_rounded),
+                  leading: Icon(AppIconKind.allPlaces.of(context)),
                   title: Text('All places'),
                 ),
               ),
@@ -866,7 +868,7 @@ class _MapToolbar extends StatelessWidget {
                   child: ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(mapPlaceIcon(entry.key)),
+                    leading: Icon(mapPlaceIcon(entry.key).of(context)),
                     title: Text(entry.value),
                   ),
                 ),
@@ -882,7 +884,7 @@ class _MapToolbar extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(selectedIcon, size: 19),
+                    Icon(selectedIcon.of(context), size: 19),
                     const SizedBox(width: 8),
                     Text(selectedLabel),
                     const SizedBox(width: 4),
@@ -955,11 +957,7 @@ class _KindStrip extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
-                      child: Icon(
-                        mapPlaceIcon(entry.key),
-                        size: 20,
-                        color: palette.$2,
-                      ),
+                      child: AppIcon(mapPlaceIcon(entry.key), size: 20, color: palette.$2),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -1146,11 +1144,7 @@ class _PlaceCategoryMark extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
-          child: Icon(
-            mapPlaceIcon(feature.kind),
-            size: iconSize,
-            color: scheme.onPrimaryContainer,
-          ),
+          child: AppIcon(mapPlaceIcon(feature.kind), size: iconSize, color: scheme.onPrimaryContainer),
         ),
       ),
     );
@@ -1349,35 +1343,35 @@ enum MapFamily {
 }
 
 /// Familiar, distinct symbols shared by the map, filters, and place cards.
-IconData mapPlaceIcon(String kind) => switch (kind) {
-  '_campus' => Icons.location_city_rounded,
-  'water' => Icons.water_drop_rounded,
-  'ev_charge' => Icons.ev_station_rounded,
-  'blue_light' => Icons.emergency_share_rounded,
-  'aed' => Icons.health_and_safety_rounded,
-  'restroom_all_gender' => Icons.wc_rounded,
-  'restroom_accessible' => Icons.accessible_rounded,
-  'atm' => Icons.local_atm_rounded,
-  'changing_table' => Icons.baby_changing_station_rounded,
-  'entrance_accessible' => Icons.accessible_forward_rounded,
-  'bus_stop' => Icons.directions_bus_rounded,
-  'bike_rack' => Icons.pedal_bike_rounded,
-  'reload' => Icons.add_card_rounded,
-  'time_clock' => Icons.punch_clock_rounded,
-  'printer' => Icons.print_rounded,
-  'study_area' => Icons.menu_book_rounded,
-  'computer_lab' => Icons.computer_rounded,
-  'connection_hub' => Icons.hub_rounded,
-  'lactation' => Icons.child_care_rounded,
-  'vending' => Icons.local_drink_rounded,
-  'convenience' => Icons.storefront_rounded,
-  'food_share' => Icons.volunteer_activism_rounded,
-  'bottle_return' => Icons.recycling_rounded,
-  'support_services' => Icons.support_agent_rounded,
-  'higi_kiosk' => Icons.monitor_heart_rounded,
-  'gym' => Icons.fitness_center_rounded,
-  _ when kind.startsWith('_event:') => Icons.event_rounded,
-  _ => Icons.place_rounded,
+AppIconKind mapPlaceIcon(String kind) => switch (kind) {
+  '_campus' => AppIconKind.campus,
+  'water' => AppIconKind.water,
+  'ev_charge' => AppIconKind.evCharge,
+  'blue_light' => AppIconKind.blueLight,
+  'aed' => AppIconKind.safety,
+  'restroom_all_gender' => AppIconKind.restroom,
+  'restroom_accessible' => AppIconKind.accessible,
+  'atm' => AppIconKind.atm,
+  'changing_table' => AppIconKind.changingTable,
+  'entrance_accessible' => AppIconKind.accessibleEntrance,
+  'bus_stop' => AppIconKind.shuttle,
+  'bike_rack' => AppIconKind.bike,
+  'reload' => AppIconKind.reload,
+  'time_clock' => AppIconKind.timeClock,
+  'printer' => AppIconKind.printer,
+  'study_area' => AppIconKind.study,
+  'computer_lab' => AppIconKind.computer,
+  'connection_hub' => AppIconKind.hub,
+  'lactation' => AppIconKind.lactation,
+  'vending' => AppIconKind.drink,
+  'convenience' => AppIconKind.market,
+  'food_share' => AppIconKind.volunteer,
+  'bottle_return' => AppIconKind.recycling,
+  'support_services' => AppIconKind.support,
+  'higi_kiosk' => AppIconKind.aed,
+  'gym' => AppIconKind.gym,
+  _ when kind.startsWith('_event:') => AppIconKind.event,
+  _ => AppIconKind.place,
 };
 
 (Color, Color) mapPinPalette(String kind, ColorScheme scheme) => switch (kind) {
@@ -1475,6 +1469,7 @@ class CampusMapPainter extends CustomPainter {
     this.boundsFeatures,
     required this.selectedId,
     required this.scheme,
+    this.platform = TargetPlatform.android,
     this.onSelect,
     this.zoom = 1,
     this.paths = const CampusPaths.empty(),
@@ -1484,6 +1479,9 @@ class CampusMapPainter extends CustomPainter {
   final List<CampusMapFeature>? boundsFeatures;
   final int? selectedId;
   final ColorScheme scheme;
+
+  /// Picks the marker glyphs, Cupertino on iOS.
+  final TargetPlatform platform;
   final ValueChanged<CampusMapFeature>? onSelect;
 
   /// The InteractiveViewer's current scale.
@@ -1691,13 +1689,13 @@ class CampusMapPainter extends CustomPainter {
       if (clustered || isEvent) {
         final kinds = {for (final item in bucket) item.feature.kind};
         final icon = isEvent
-            ? Icons.event_rounded
+            ? AppIconKind.event
             : kinds.length == 1
             ? mapPlaceIcon(bucket.first.feature.kind)
-            : Icons.apps_rounded;
+            : AppIconKind.allPlaces;
         _paintMapIcon(
           canvas,
-          icon,
+          icon.on(platform),
           center - Offset(5.5 / zoom, 0),
           foreground,
           11 / zoom,
@@ -1712,7 +1710,7 @@ class CampusMapPainter extends CustomPainter {
       } else {
         _paintMapIcon(
           canvas,
-          mapPlaceIcon(bucket.single.feature.kind),
+          mapPlaceIcon(bucket.single.feature.kind).on(platform),
           center,
           foreground,
           15 / zoom,
@@ -2006,6 +2004,7 @@ class CampusMapPainter extends CustomPainter {
       oldDelegate.boundsFeatures != boundsFeatures ||
       oldDelegate.selectedId != selectedId ||
       oldDelegate.scheme != scheme ||
+      oldDelegate.platform != platform ||
       oldDelegate.zoom != zoom ||
       oldDelegate.paths != paths;
 
