@@ -12,6 +12,7 @@ import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/frame_monitor.dart';
 import 'package:tigerhub/services/frame_stats.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/campus_map.dart';
 
 const west = CampusMapFeature(
@@ -99,6 +100,10 @@ void main() {
     for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
       expect(kinds.map((kind) => mapPlaceIcon(kind).on(platform)).toSet(), hasLength(kinds.length));
     }
+  });
+
+  test('an AED pin is a heart monitor, not a safety shield', () {
+    expect(mapPlaceIcon('aed'), AppIconKind.aed);
   });
 
   test('projection keeps longitude on X and north toward the top', () {
