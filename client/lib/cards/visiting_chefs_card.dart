@@ -20,7 +20,7 @@ import '../services/open_link.dart';
 import '../theme/tokens.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
-import '../widgets/glyph.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/freshness.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
@@ -48,7 +48,7 @@ class VisitingChefsCard extends StatelessWidget {
 
     return CardShell(
       // The toque is this section's identity, per the adoption spec.
-      glyph: GlyphKind.visitingChef,
+      glyph: AppIconKind.visitingChef,
       title: 'Visiting Chefs',
       state: result.state,
       // The age of the chefs themselves, not of the request. ApiClient stamps

@@ -13,7 +13,7 @@ import '../services/api.dart';
 import '../theme/semantic.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
-import '../widgets/glyph.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/freshness.dart';
 import '../services/preferences.dart';
 import '../widgets/dining_detail_sheet.dart';
@@ -133,7 +133,7 @@ class DiningCard extends StatelessWidget {
         : locations.first.categoryName;
 
     return CardShell(
-      glyph: GlyphKind.dining,
+      glyph: AppIconKind.dining,
       title: title,
       state: result.state,
       fetchedAt: result.fetchedAt,

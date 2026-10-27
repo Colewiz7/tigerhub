@@ -12,8 +12,8 @@ import 'package:flutter/rendering.dart';
 
 import '../services/api.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 import 'freshness.dart';
-import 'glyph.dart';
 
 /// Width of the edit controls row: handle, Inspect and Remove at 32 each with
 /// 6 between. The header layout depends on it.
@@ -51,10 +51,8 @@ class CardShell extends StatelessWidget {
 
   final String title;
 
-  /// Section identity, per the glyph-adoption spec. Only cards the spec
-  /// names carry one; the rest show the title alone rather than reaching for
-  /// a Material icon that means nothing.
-  final GlyphKind? glyph;
+  /// Section identity. Cards without one show the title alone.
+  final AppIconKind? glyph;
   final Widget child;
   final DataState state;
   final DateTime? fetchedAt;
@@ -155,7 +153,7 @@ class _CardTitle extends StatelessWidget {
   });
 
   final String title;
-  final GlyphKind? glyph;
+  final AppIconKind? glyph;
 
   /// The 600pt and wider title, as it was before the phone condense: given a
   /// finite height it keeps only the lines that fit and ellipsizes past them.
@@ -173,7 +171,7 @@ class _CardTitle extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (glyph != null) ...[
-          SizedBox(width: 22, height: 22, child: Glyph(glyph!, size: 22)),
+          SizedBox(width: 22, height: 22, child: AppIcon(glyph!, size: 22)),
           const SizedBox(width: 9),
         ],
         Flexible(child: Text(title, style: style)),
@@ -202,7 +200,7 @@ class _CardTitle extends StatelessWidget {
         return Row(
           children: [
             if (glyph != null) ...[
-              Glyph(glyph!, size: 22),
+              AppIcon(glyph!, size: 22),
               const SizedBox(width: 9),
             ],
             Flexible(

@@ -27,7 +27,7 @@ import '../widgets/context_actions.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 import '../widgets/places_sheet.dart';
-import '../widgets/glyph.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/section_nav.dart';
 import '../widgets/tab_bar.dart';
 import '../widgets/week_grid.dart';
@@ -131,7 +131,7 @@ class _CampusScreenState extends State<CampusScreen> {
           title: 'Mail',
           subtitle: 'Your address, and both post offices',
           icon: Icons.local_post_office_rounded,
-          glyph: GlyphKind.housing,
+          glyph: AppIconKind.mail,
           builder: (context) => _MailSection(
             api: widget.api,
             areas: widget.areas,
@@ -143,7 +143,7 @@ class _CampusScreenState extends State<CampusScreen> {
           title: 'Find on campus',
           subtitle: 'Fountains, restrooms, blue lights, bus stops',
           icon: Icons.travel_explore_rounded,
-          glyph: GlyphKind.buildings,
+          glyph: AppIconKind.find,
           builder: (context) => _FindSection(api: widget.api, kinds: _kinds),
         ),
         SectionSpec(
@@ -187,7 +187,7 @@ class _CampusScreenState extends State<CampusScreen> {
         SectionSpec(
           id: 'shed',
           title: 'SHED makerspace',
-          glyph: GlyphKind.makerspace,
+          glyph: AppIconKind.makerspace,
           subtitle: 'Live equipment availability',
           icon: Icons.construction_rounded,
           builder: (context) => _ShedSection(shed: _shed, rooms: _rooms),
@@ -526,7 +526,7 @@ class _MailSection extends StatelessWidget {
       HousingCard(areas: areas, api: api),
       const SizedBox(height: 22),
       _Heading(
-        glyph: GlyphKind.postOffice,
+        glyph: AppIconKind.mail,
         title: 'Post offices',
         subtitle:
             'Mail is collected at the counter after an email notice. '
@@ -632,7 +632,7 @@ class _ShedSection extends StatelessWidget {
     padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       _Heading(
-        glyph: GlyphKind.makerspace,
+        glyph: AppIconKind.makerspace,
         title: 'SHED makerspace',
         subtitle:
             'Equipment availability is live. Hours are hand '
@@ -661,9 +661,8 @@ class _Heading extends StatelessWidget {
   final DataState state;
   final DateTime? fetchedAt;
 
-  /// Section identity, which is what the custom glyphs are for. Sections the
-  /// spec does not cover simply leave this null and show no glyph.
-  final GlyphKind? glyph;
+  /// Section identity. Null shows the title alone.
+  final AppIconKind? glyph;
 
   @override
   Widget build(BuildContext context) {
@@ -676,7 +675,7 @@ class _Heading extends StatelessWidget {
           Row(
             children: [
               if (glyph != null) ...[
-                Glyph(glyph!, size: 22),
+                AppIcon(glyph!, size: 22),
                 const SizedBox(width: 9),
               ],
               Flexible(child: Text(title, style: text.titleLarge)),

@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 
 import '../motion/reduce_motion.dart';
 import '../theme/tokens.dart';
-import 'glyph.dart';
+import 'app_icon.dart';
 import 'status_row.dart';
 import 'tab_bar.dart';
 
@@ -32,14 +32,11 @@ class SectionSpec {
   final String title;
   final String subtitle;
 
-  /// The Material fallback, used when [glyph] is null. Sections keep one:
-  /// the glyph-adoption spec deliberately does not cover every section,
-  /// and "Gym and pool" has no custom glyph.
+  /// Used when [glyph] is null.
   final IconData icon;
 
-  /// The custom section glyph, where one exists. Section identity is exactly
-  /// what these are for.
-  final GlyphKind? glyph;
+  /// The platform section icon, where one exists.
+  final AppIconKind? glyph;
 
   final WidgetBuilder builder;
 }
@@ -230,9 +227,10 @@ class SectionNavRow extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: badge,
                     ),
+                    // 18 in 42, same as StatusRow
                     child: spec.glyph == null
-                        ? Icon(spec.icon, size: 21, color: iconColor)
-                        : Glyph(spec.glyph!, size: 21, color: iconColor),
+                        ? Icon(spec.icon, size: 18, color: iconColor)
+                        : AppIcon(spec.glyph!, color: iconColor),
                   ),
                   const SizedBox(width: 13),
                   Expanded(

@@ -3,11 +3,11 @@ import 'package:intl/intl.dart';
 
 import '../data/campus_time.dart';
 import '../services/academic_dates.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/context_actions.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/glyph.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
 
@@ -33,7 +33,7 @@ class AcademicDatesCard extends StatelessWidget {
           ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
 
     return CardShell(
-      glyph: GlyphKind.events,
+      glyph: AppIconKind.events,
       title: 'Academic Dates',
       dragHandle: dragHandle,
       hero: daysAway == null

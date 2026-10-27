@@ -6,12 +6,12 @@ import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../theme/semantic.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/campus_map.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/context_actions.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
-import '../widgets/glyph.dart';
 import '../widgets/status_row.dart';
 
 class FacilityHoursCard extends StatelessWidget {
@@ -39,7 +39,7 @@ class FacilityHoursCard extends StatelessWidget {
           ];
     return CardShell(
       title: facilityName ?? 'Facility hours',
-      glyph: GlyphKind.buildings,
+      glyph: AppIconKind.buildings,
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
@@ -125,7 +125,7 @@ class DashboardMapCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => CardShell(
     title: 'Campus map',
-    glyph: GlyphKind.buildings,
+    glyph: AppIconKind.buildings,
     state: result.state,
     fetchedAt: result.fetchedAt,
     dragHandle: dragHandle,

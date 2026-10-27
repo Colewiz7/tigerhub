@@ -13,11 +13,11 @@ import 'package:flutter/material.dart';
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
-import '../widgets/glyph.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
 import 'event_row.dart';
@@ -114,7 +114,7 @@ class EventsCard extends StatelessWidget {
         : 'Events';
 
     return CardShell(
-      glyph: GlyphKind.events,
+      glyph: AppIconKind.events,
       title: title,
       state: result.state,
       fetchedAt: result.fetchedAt,
