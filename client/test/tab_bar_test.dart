@@ -323,6 +323,77 @@ void main() {
     expect(find.byType(DiningScreen), findsOneWidget, reason: 'no tab change');
   }, variant: _ios);
 
+  testWidgets('a short flick on the capsule moves the list and carries momentum', (tester) async {
+    _phone(tester, const Size(390, 844));
+    await _pumpShell(tester);
+    await tester.tap(tabLabel('Dining'));
+    await tester.pumpAndSettle();
+    final list = _vertical(tester, find.byType(DiningScreen));
+    final at = tester.getCenter(find.byType(BackdropFilter));
+
+    // under the slop, then one move past it, then up
+    final gesture = await tester.startGesture(at);
+    await gesture.moveTo(at - const Offset(0, 12), timeStamp: const Duration(milliseconds: 8));
+    await gesture.moveTo(at - const Offset(0, 40), timeStamp: const Duration(milliseconds: 16));
+    await gesture.up(timeStamp: const Duration(milliseconds: 16));
+    await tester.pump();
+    final released = list.position.pixels;
+    expect(released, greaterThan(0), reason: 'the move that crossed the slop reached the list');
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(list.position.pixels, greaterThan(released), reason: 'momentum');
+    await tester.pumpAndSettle();
+  }, variant: _ios);
+
+  testWidgets('a small twitch after the drag starts does not fling the list', (tester) async {
+    _phone(tester, const Size(390, 844));
+    await _pumpShell(tester);
+    await tester.tap(tabLabel('Dining'));
+    await tester.pumpAndSettle();
+    final list = _vertical(tester, find.byType(DiningScreen));
+    final at = tester.getCenter(find.byType(BackdropFilter));
+
+    // past the slop with under 18 of it vertical, then 4 more quickly
+    final gesture = await tester.startGesture(at);
+    await gesture.moveTo(at + const Offset(14.5, -11.5), timeStamp: const Duration(milliseconds: 100));
+    await gesture.moveTo(at + const Offset(14.5, -13.5), timeStamp: const Duration(milliseconds: 104));
+    await gesture.moveTo(at + const Offset(14.5, -15.5), timeStamp: const Duration(milliseconds: 108));
+    await gesture.up(timeStamp: const Duration(milliseconds: 108));
+    await tester.pump();
+    final released = list.position.pixels;
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(list.position.pixels, released, reason: 'under the fling distance');
+    await tester.pumpAndSettle();
+  }, variant: _ios);
+
+  testWidgets('switching tabs mid swipe stops driving the hidden list', (tester) async {
+    _phone(tester, const Size(390, 844));
+    await _pumpShell(tester);
+    await tester.tap(tabLabel('Dining'));
+    await tester.pumpAndSettle();
+    final list = _vertical(tester, find.byType(DiningScreen));
+    final at = tester.getCenter(find.byType(BackdropFilter));
+
+    final gesture = await tester.startGesture(at);
+    for (var i = 1; i <= 5; i++) {
+      await gesture.moveTo(at - Offset(0, 15.0 * i), timeStamp: Duration(milliseconds: 10 * i));
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    expect(list.position.pixels, greaterThan(0));
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+    await tester.pump();
+    expect(find.byType(DiningScreen), findsNothing, reason: 'Events is showing');
+    await tester.pumpAndSettle();
+    final hidden = list.position.pixels;
+
+    for (var i = 6; i <= 10; i++) {
+      await gesture.moveTo(at - Offset(0, 15.0 * i), timeStamp: Duration(milliseconds: 10 * i));
+      await tester.pump(const Duration(milliseconds: 10));
+    }
+    await gesture.up(timeStamp: const Duration(milliseconds: 105));
+    await tester.pumpAndSettle();
+    expect(list.position.pixels, hidden, reason: 'the hidden list stays put');
+  }, variant: _ios);
+
   testWidgets('a semantics tap on a glass tab still selects it', (tester) async {
     final semantics = tester.ensureSemantics();
     final selected = <int>[];

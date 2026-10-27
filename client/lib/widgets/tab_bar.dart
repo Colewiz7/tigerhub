@@ -171,6 +171,8 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   @override
   void didUpdateWidget(_GlassTabBar old) {
     super.didUpdateWidget(old);
+    // the list being dragged is now hidden
+    if (old.index != widget.index || old.active != widget.active) _listDrag?.cancel();
     // release already picked the tab
     if (old.index != widget.index && !_scrubbing && widget.index != _target) _settle(widget.index);
   }
@@ -237,13 +239,20 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   double _ms(Duration time) => time.inMicroseconds / 1000;
 
   // the bar takes the touch, so it scrolls the list under the finger itself
-  void _listStart(PointerEvent event) {
+  void _listStart(List<PointerEvent> since) {
+    final down = since.first;
+    final last = since.last;
     final root = widget.content?.currentContext;
-    final list = root == null ? null : _listAt(root, event.position);
+    final list = root == null ? null : _listAt(root, down.position);
     if (list == null) return;
     _listPhysics = list.position.physics;
-    _listVelocity = ScrollConfiguration.of(list.context).velocityTrackerBuilder(list.context)(event)..addPosition(event.timeStamp, event.position);
-    _listDrag = list.position.drag(DragStartDetails(sourceTimeStamp: event.timeStamp, globalPosition: event.position, localPosition: event.localPosition, kind: event.kind), () => _listDrag = null);
+    // velocity from touch down, like the list's own drag
+    final tracker = ScrollConfiguration.of(list.context).velocityTrackerBuilder(list.context)(down);
+    for (final event in since) {
+      tracker.addPosition(event.timeStamp, event.position);
+    }
+    _listVelocity = tracker;
+    _listDrag = list.position.drag(DragStartDetails(sourceTimeStamp: last.timeStamp, globalPosition: last.position, localPosition: last.localPosition, kind: down.kind), () => _listDrag = null);
   }
 
   void _listUpdate(PointerEvent event) {
@@ -256,8 +265,10 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
     final drag = _listDrag;
     final physics = _listPhysics;
     if (drag == null || physics == null) return;
-    final v = _listVelocity?.getVelocity().pixelsPerSecond.dy ?? 0;
-    final fling = v.abs() < physics.minFlingVelocity ? 0.0 : v.clamp(-physics.maxFlingVelocity, physics.maxFlingVelocity);
+    final estimate = _listVelocity?.getVelocityEstimate();
+    final v = estimate?.pixelsPerSecond.dy ?? 0;
+    final flung = v.abs() > physics.minFlingVelocity && (estimate?.offset.dy.abs() ?? 0) > physics.minFlingDistance;
+    final fling = flung ? v.clamp(-physics.maxFlingVelocity, physics.maxFlingVelocity) : 0.0;
     drag.end(DragEndDetails(velocity: Velocity(pixelsPerSecond: Offset(0, fling)), primaryVelocity: fling));
   }
 
@@ -408,7 +419,7 @@ class _BarGestures extends OneSequenceGestureRecognizer {
   VoidCallback? onScrubUpdate;
   VoidCallback? onScrubEnd;
   VoidCallback? onScrubCancel;
-  ValueChanged<PointerEvent>? onListStart;
+  ValueChanged<List<PointerEvent>>? onListStart;
   ValueChanged<PointerEvent>? onListUpdate;
   VoidCallback? onListEnd;
   VoidCallback? onListCancel;
@@ -419,6 +430,8 @@ class _BarGestures extends OneSequenceGestureRecognizer {
   bool _won = false;
   bool _scrubbing = false;
   bool _listing = false;
+  // down and every move before the slop
+  final _since = <PointerEvent>[];
   // a tap lifted before the arena chose
   int? _upPointer;
   double _upX = 0;
@@ -438,6 +451,9 @@ class _BarGestures extends OneSequenceGestureRecognizer {
     _scrubbing = false;
     _listing = false;
     _upPointer = null;
+    _since
+      ..clear()
+      ..add(event);
   }
 
   @override
@@ -458,10 +474,10 @@ class _BarGestures extends OneSequenceGestureRecognizer {
           onScrubStart?.call();
         } else {
           _listing = true;
-          onListStart?.call(event);
-          return;
+          onListStart?.call(List.of(_since));
         }
       }
+      if (!_moved) _since.add(event);
       if (_scrubbing) onScrubUpdate?.call();
       if (_listing) onListUpdate?.call(event);
     } else if (event is PointerUpEvent || event is PointerCancelEvent) {
