@@ -5,14 +5,12 @@
 /// [TabBarInset] tells each scrollable how far to pad its end.
 library;
 
-import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
 import '../motion/gesture.dart';
@@ -56,6 +54,7 @@ class AppTabBar extends StatelessWidget {
     required this.onSelect,
     this.active = true,
     this.minimized = false,
+    this.content,
   });
 
   final List<TabSpec> tabs;
@@ -67,6 +66,10 @@ class AppTabBar extends StatelessWidget {
 
   /// iOS only: icons alone in a shorter capsule.
   final bool minimized;
+
+  /// iOS only: what the capsule floats over. A vertical swipe on the capsule
+  /// scrolls the list in it under the finger.
+  final GlobalKey? content;
 
   static const double capsuleHeight = 60;
   static const double minimizedHeight = 48;
@@ -92,7 +95,7 @@ class AppTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (glass(context)) {
-      return _GlassTabBar(tabs: tabs, index: index, onSelect: onSelect, active: active, minimized: minimized);
+      return _GlassTabBar(tabs: tabs, index: index, onSelect: onSelect, active: active, minimized: minimized, content: content);
     }
     return NavigationBar(
       height: materialHeight,
@@ -120,6 +123,7 @@ class _GlassTabBar extends StatefulWidget {
     required this.onSelect,
     required this.active,
     required this.minimized,
+    required this.content,
   });
 
   final List<TabSpec> tabs;
@@ -127,6 +131,7 @@ class _GlassTabBar extends StatefulWidget {
   final ValueChanged<int> onSelect;
   final bool active;
   final bool minimized;
+  final GlobalKey? content;
 
   @override
   State<_GlassTabBar> createState() => _GlassTabBarState();
@@ -152,6 +157,9 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   int? _owner;
   double _ownerDownX = 0;
   double _ownerX = 0;
+  Drag? _listDrag;
+  VelocityTracker? _listVelocity;
+  ScrollPhysics? _listPhysics;
   late int _target;
 
   @override
@@ -169,6 +177,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
 
   @override
   void dispose() {
+    _listDrag?.cancel();
     _pill.dispose();
     super.dispose();
   }
@@ -227,6 +236,31 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
 
   double _ms(Duration time) => time.inMicroseconds / 1000;
 
+  // the bar takes the touch, so it scrolls the list under the finger itself
+  void _listStart(PointerEvent event) {
+    final root = widget.content?.currentContext;
+    final list = root == null ? null : _listAt(root, event.position);
+    if (list == null) return;
+    _listPhysics = list.position.physics;
+    _listVelocity = ScrollConfiguration.of(list.context).velocityTrackerBuilder(list.context)(event)..addPosition(event.timeStamp, event.position);
+    _listDrag = list.position.drag(DragStartDetails(sourceTimeStamp: event.timeStamp, globalPosition: event.position, localPosition: event.localPosition, kind: event.kind), () => _listDrag = null);
+  }
+
+  void _listUpdate(PointerEvent event) {
+    _listVelocity?.addPosition(event.timeStamp, event.position);
+    _listDrag?.update(DragUpdateDetails(sourceTimeStamp: event.timeStamp, delta: Offset(0, event.delta.dy), primaryDelta: event.delta.dy, globalPosition: event.position, localPosition: event.localPosition));
+  }
+
+  // the same fling limits the list's own drag applies
+  void _listEnd() {
+    final drag = _listDrag;
+    final physics = _listPhysics;
+    if (drag == null || physics == null) return;
+    final v = _listVelocity?.getVelocity().pixelsPerSecond.dy ?? 0;
+    final fling = v.abs() < physics.minFlingVelocity ? 0.0 : v.clamp(-physics.maxFlingVelocity, physics.maxFlingVelocity);
+    drag.end(DragEndDetails(velocity: Velocity(pixelsPerSecond: Offset(0, fling)), primaryVelocity: fling));
+  }
+
   // the system took the touch, nothing was chosen
   void _cancelScrub() {
     if (!_scrubbing) return;
@@ -270,6 +304,10 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
                   // the owner lifting already ended it
                   bar.onScrubEnd = () => _endScrub(itemWidth, 0);
                   bar.onScrubCancel = _cancelScrub;
+                  bar.onListStart = _listStart;
+                  bar.onListUpdate = _listUpdate;
+                  bar.onListEnd = _listEnd;
+                  bar.onListCancel = () => _listDrag?.cancel();
                 }),
               },
               child: Semantics(
@@ -355,7 +393,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
               },
               child: bar,
             );
-            return _PassThrough(child: owned);
+            return owned;
           },
         ),
       ),
@@ -363,23 +401,24 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   }
 }
 
-// tap and scrub in one, so the bar can claim a touch before a row lights up
+// tap, scrub and list drag in one, the bar owns every touch on it
 class _BarGestures extends OneSequenceGestureRecognizer {
-  // just under kPressTimeout, when a row beneath would light
-  static const _claim = Duration(milliseconds: 90);
-
   ValueChanged<double>? onTap;
   VoidCallback? onScrubStart;
   VoidCallback? onScrubUpdate;
   VoidCallback? onScrubEnd;
   VoidCallback? onScrubCancel;
+  ValueChanged<PointerEvent>? onListStart;
+  ValueChanged<PointerEvent>? onListUpdate;
+  VoidCallback? onListEnd;
+  VoidCallback? onListCancel;
 
   int? _primary;
   Offset _down = Offset.zero;
   bool _moved = false;
   bool _won = false;
   bool _scrubbing = false;
-  Timer? _timer;
+  bool _listing = false;
   // a tap lifted before the arena chose
   int? _upPointer;
   double _upX = 0;
@@ -397,11 +436,8 @@ class _BarGestures extends OneSequenceGestureRecognizer {
     _moved = false;
     _won = false;
     _scrubbing = false;
+    _listing = false;
     _upPointer = null;
-    _timer = Timer(_claim, () {
-      final primary = _primary;
-      if (primary != null && !_moved) resolvePointer(primary, GestureDisposition.accepted);
-    });
   }
 
   @override
@@ -415,20 +451,24 @@ class _BarGestures extends OneSequenceGestureRecognizer {
     if (event is PointerMoveEvent) {
       if (!_moved && d.distance > slop) {
         _moved = true;
-        _timer?.cancel();
-        // clear sideways intent scrubs, anything else is the list's or nothing
-        final sideways = d.dx.abs() > d.dy.abs() * 1.5;
-        if (!_won) resolvePointer(event.pointer, sideways ? GestureDisposition.accepted : GestureDisposition.rejected);
-        if (_won && sideways) {
+        if (!_won) resolvePointer(event.pointer, GestureDisposition.accepted);
+        // clear sideways intent scrubs, anything else drives the list
+        if (d.dx.abs() > d.dy.abs() * 1.5) {
           _scrubbing = true;
           onScrubStart?.call();
+        } else {
+          _listing = true;
+          onListStart?.call(event);
+          return;
         }
       }
       if (_scrubbing) onScrubUpdate?.call();
+      if (_listing) onListUpdate?.call(event);
     } else if (event is PointerUpEvent || event is PointerCancelEvent) {
-      _timer?.cancel();
       if (_scrubbing) {
         event is PointerCancelEvent ? onScrubCancel?.call() : onScrubEnd?.call();
+      } else if (_listing) {
+        event is PointerCancelEvent ? onListCancel?.call() : onListEnd?.call();
       } else if (event is PointerUpEvent && _won && !_moved) {
         onTap?.call(event.localPosition.dx);
       } else if (event is PointerUpEvent && !_moved) {
@@ -444,7 +484,6 @@ class _BarGestures extends OneSequenceGestureRecognizer {
   void acceptGesture(int pointer) {
     if (pointer == _primary) {
       _won = true;
-      _timer?.cancel();
     } else if (pointer == _upPointer) {
       _upPointer = null;
       onTap?.call(_upX);
@@ -453,7 +492,6 @@ class _BarGestures extends OneSequenceGestureRecognizer {
 
   @override
   void rejectGesture(int pointer) {
-    if (pointer == _primary) _timer?.cancel();
     if (pointer == _upPointer) _upPointer = null;
     super.rejectGesture(pointer);
   }
@@ -462,29 +500,25 @@ class _BarGestures extends OneSequenceGestureRecognizer {
   void didStopTrackingLastPointer(int pointer) {}
 
   @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
   String get debugDescription => 'tab bar';
 }
 
-// the list below gets the pointer too, so vertical swipes scroll it
-class _PassThrough extends SingleChildRenderObjectWidget {
-  const _PassThrough({required super.child});
-
-  @override
-  RenderObject createRenderObject(BuildContext context) => _RenderPassThrough();
-}
-
-class _RenderPassThrough extends RenderProxyBox {
-  @override
-  bool hitTest(BoxHitTestResult result, {required Offset position}) {
-    super.hitTest(result, position: position);
-    return false;
+// innermost vertical list under the point, hidden tabs skipped
+ScrollableState? _listAt(BuildContext root, Offset point) {
+  ScrollableState? found;
+  void visit(Element element) {
+    final widget = element.widget;
+    if (widget is Offstage && widget.offstage) return;
+    if (element is StatefulElement && element.state is ScrollableState) {
+      final list = element.state as ScrollableState;
+      final box = element.findRenderObject();
+      if (list.position.axis == Axis.vertical && box is RenderBox && box.hasSize && (box.localToGlobal(Offset.zero) & box.size).contains(point)) found = list;
+    }
+    element.visitChildElements(visit);
   }
+
+  root.visitChildElements(visit);
+  return found;
 }
 
 // chases the finger until release

@@ -59,6 +59,8 @@ class _AppShellState extends State<AppShell>
   int _index = 0;
   bool _showSettings = false;
   bool _barMinimized = false;
+  // the glass bar scrolls lists in here
+  final _content = GlobalKey();
 
   Result<Collection<DiningLocation>> _dining = const Result(
     value: null,
@@ -269,6 +271,7 @@ class _AppShellState extends State<AppShell>
                         children: [
                           Positioned.fill(
                             child: TabBarInset(
+                              key: _content,
                               bottom: keyboardUp ? 0 : AppTabBar.overlap(context) + AppTabBar.contentGap,
                               child: _showSettings
                                   ? SettingsScreen(
@@ -313,6 +316,7 @@ class _AppShellState extends State<AppShell>
                                 index: _index,
                                 active: !_showSettings,
                                 minimized: _barMinimized,
+                                content: _content,
                                 onSelect: (i) {
                                   if (_showSettings) {
                                     setState(() => _showSettings = false);

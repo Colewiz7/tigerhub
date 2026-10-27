@@ -294,6 +294,45 @@ void main() {
     await tester.pumpAndSettle();
   }, variant: _ios);
 
+  testWidgets('a pause then a swipe up on the capsule scrolls the list with momentum, rows never light', (tester) async {
+    _phone(tester, const Size(390, 844));
+    await _pumpShell(tester);
+    await tester.tap(tabLabel('Dining'));
+    await tester.pumpAndSettle();
+    final list = _vertical(tester, find.byType(DiningScreen));
+    final at = tester.getCenter(find.byType(BackdropFilter));
+    int ink() => tester.allRenderObjects.where((r) => r.runtimeType.toString() == '_RenderInkFeatures').fold(0, (n, r) => n + (((r as dynamic).debugInkFeatures as List?)?.length ?? 0));
+    final resting = ink();
+
+    final gesture = await tester.startGesture(at);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(ink(), resting, reason: 'held');
+    for (var i = 1; i <= 10; i++) {
+      await gesture.moveTo(at - Offset(0, 15.0 * i), timeStamp: Duration(milliseconds: 200 + 10 * i));
+      await tester.pump(const Duration(milliseconds: 10));
+      expect(ink(), resting, reason: 'swiping');
+    }
+    await gesture.up(timeStamp: const Duration(milliseconds: 305));
+    await tester.pump();
+    final released = list.position.pixels;
+    expect(released, greaterThan(0), reason: 'the finger moved it');
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(list.position.pixels, greaterThan(released), reason: 'it keeps going after release');
+    await tester.pumpAndSettle();
+    expect(ink(), resting);
+    expect(find.byType(DiningScreen), findsOneWidget, reason: 'no tab change');
+  }, variant: _ios);
+
+  testWidgets('a semantics tap on a glass tab still selects it', (tester) async {
+    final semantics = tester.ensureSemantics();
+    final selected = <int>[];
+    await _pumpBar(tester, selected: selected);
+    tester.semantics.tap(find.semantics.byLabel('Events, tab 3 of 5'));
+    await tester.pumpAndSettle();
+    expect(selected, [2]);
+    semantics.dispose();
+  });
+
   testWidgets('a tap selects, a vertical drag never scrubs', (tester) async {
     final haptics = _haptics(tester);
     final selected = <int>[];
