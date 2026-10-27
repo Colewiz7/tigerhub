@@ -153,7 +153,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   @override
   void didUpdateWidget(_GlassTabBar old) {
     super.didUpdateWidget(old);
-    // a release already sent the pill to its tab
+    // release already picked the tab
     if (old.index != widget.index && !_scrubbing && widget.index != _target) _settle(widget.index);
   }
 
@@ -232,7 +232,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
                 final tab = ((d.localPosition.dx - _pad) / itemWidth).floor().clamp(0, count - 1);
                 widget.onSelect(tab);
               },
-              // starts at the down point, the slop arrives as the first update
+              // slop lands in first update
               dragStartBehavior: DragStartBehavior.down,
               // horizontal only, so a vertical swipe never starts a scrub
               onHorizontalDragStart: (d) => _startScrub(d.localPosition.dx),
@@ -304,7 +304,7 @@ class _GlassTabBarState extends State<_GlassTabBar> with SingleTickerProviderSta
   }
 }
 
-// settle stops in pixels, the pill moves in tabs
+// settle is pixels, pill is tabs
 class _InTabs extends Simulation {
   _InTabs(this.px, this.itemWidth);
 

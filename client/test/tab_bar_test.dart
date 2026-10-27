@@ -259,7 +259,7 @@ void main() {
     await _pumpBar(tester, selected: selected);
     final y = tester.getCenter(find.byType(BackdropFilter)).dy;
 
-    // released at 1.4 tabs, project(1200, 0.99) adds 1.7 more
+    // 1.4 tabs plus 1.7 projected
     await tester.flingFrom(Offset(_tabCentre(0), y), const Offset(100, 0), 1200);
     expect(selected, [3], reason: 'commits at release, past the nearest tab');
     expect(haptics.where((h) => h == 'HapticFeedbackType.lightImpact'), hasLength(1));
