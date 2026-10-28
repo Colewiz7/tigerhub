@@ -19,7 +19,10 @@ library;
 import 'package:flutter/material.dart';
 
 import '../models/api_models.dart';
+import '../models/diet_class.dart';
+import '../motion/reduce_motion.dart';
 import '../services/preferences.dart';
+import '../theme/diet_palette.dart';
 import '../theme/semantic.dart';
 import '../theme/tokens.dart';
 import 'app_icon.dart';
@@ -179,7 +182,9 @@ class _StationSectionState extends State<_StationSection> {
                     const SizedBox(width: 6),
                     AnimatedRotation(
                       turns: _open ? 0.5 : 0,
-                      duration: const Duration(milliseconds: 150),
+                      duration: reduceMotion(context)
+                          ? Duration.zero
+                          : const Duration(milliseconds: 150),
                       child: Icon(
                         AppIconKind.expand.of(context),
                         size: 18,
@@ -230,14 +235,18 @@ class _DishRow extends StatelessWidget {
         if (dish.mentions(allergen)) allergen,
     ];
 
+    final mark = classifyDish(dish);
+    final colors = DietPalette.of(context)[mark.kind];
+
     return Opacity(
       opacity: demoted ? 0.55 : 1,
       child: Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Container(
+          key: ValueKey('dish-${dish.name}'),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: scheme.surfaceContainerHigh,
+            color: colors.container,
             borderRadius: Shapes.inner,
           ),
           child: Column(
@@ -246,7 +255,12 @@ class _DishRow extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(child: Text(dish.name, style: text.titleMedium)),
+                  Expanded(
+                    child: Text(
+                      dish.name,
+                      style: text.titleMedium?.copyWith(color: colors.onContainer),
+                    ),
+                  ),
                   if (flagged.isNotEmpty) ...[
                     const SizedBox(width: 10),
                     // Flagged, not removed.
@@ -261,22 +275,37 @@ class _DishRow extends StatelessWidget {
               ),
               if (showCategory && dish.category != null) ...[
                 const SizedBox(height: 2),
-                Text(dish.category!, style: text.bodySmall),
+                Text(
+                  dish.category!,
+                  style: text.bodySmall?.copyWith(color: colors.onContainer),
+                ),
               ],
-              if (dish.dietary.isNotEmpty || dish.allergens.isNotEmpty) ...[
+              if (dish.dietary.isNotEmpty ||
+                  dish.allergens.isNotEmpty ||
+                  mark.tag != null) ...[
                 const SizedBox(height: 9),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    for (final tag in dish.dietary)
+                    // The class in words, so the tint is never the only signal.
+                    if (mark.tag != null)
                       _Tag(
-                        label: tag,
-                        foreground: semantic.open,
-                        background: semantic.openContainer,
-                        icon: AppIconKind.plant,
+                        key: ValueKey('diet-label-${mark.tag}'),
+                        label: mark.tag!,
+                        foreground: colors.onAccent,
+                        background: colors.accent,
+                        icon: dietIcon(mark.kind),
                       ),
+                    for (final tag in dish.dietary)
+                      if (tag != mark.tag)
+                        _Tag(
+                          label: tag,
+                          foreground: scheme.onSurfaceVariant,
+                          background: scheme.surfaceContainerHighest,
+                        ),
                     for (final allergen in dish.allergens)
+                      if (allergen != mark.tag)
                       _Tag(
                         label: allergen,
                         foreground: scheme.onSurfaceVariant,
@@ -293,8 +322,42 @@ class _DishRow extends StatelessWidget {
   }
 }
 
+/// The icon that goes with a class label.
+AppIconKind dietIcon(DietClass kind) => switch (kind) {
+  DietClass.vegan || DietClass.vegetarian => AppIconKind.plant,
+  DietClass.fish => AppIconKind.fish,
+  DietClass.beef || DietClass.pork || DietClass.chicken => AppIconKind.meat,
+  DietClass.other => AppIconKind.cutlery,
+};
+
+/// What each tint means. Sits above the menu, outside any section, so it reads
+/// once.
+class DietLegend extends StatelessWidget {
+  const DietLegend({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = DietPalette.of(context);
+    return Wrap(
+      key: const ValueKey('diet-legend'),
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final kind in DietClass.values)
+          _Tag(
+            label: kind.label,
+            foreground: palette[kind].onContainer,
+            background: palette[kind].container,
+            icon: dietIcon(kind),
+          ),
+      ],
+    );
+  }
+}
+
 class _Tag extends StatelessWidget {
   const _Tag({
+    super.key,
     required this.label,
     required this.foreground,
     required this.background,

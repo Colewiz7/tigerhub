@@ -13,6 +13,7 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 
 import '../widgets/app_icon.dart';
+import 'diet_palette.dart';
 import 'semantic.dart';
 import 'tokens.dart';
 
@@ -50,7 +51,10 @@ class AppTheme {
     return base.copyWith(
       // Status colours harmonized against this scheme, so they never clash
       // with a wallpaper derived palette.
-      extensions: <ThemeExtension<dynamic>>[Semantic.from(scheme)],
+      extensions: <ThemeExtension<dynamic>>[
+        Semantic.from(scheme),
+        DietPalette.from(scheme),
+      ],
       scaffoldBackgroundColor: scheme.surfaceContainerLowest,
       // Shadows are disabled globally rather than per widget, so a stray
       // elevation cannot reintroduce one.

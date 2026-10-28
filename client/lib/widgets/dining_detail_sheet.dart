@@ -236,6 +236,8 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                 ],
               ),
               const SizedBox(height: 10),
+              const DietLegend(),
+              const SizedBox(height: 10),
               MenuSection(menu: _menu!.value!, prefs: _prefs),
             ],
 

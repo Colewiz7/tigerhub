@@ -108,6 +108,17 @@ void main() {
     }
   }
 
+  testWidgets('detail shows the diet legend above the menu', (tester) async {
+    await open(tester, width: 390, scale: 1);
+
+    final legend = find.byKey(const ValueKey('diet-legend'));
+    expect(legend, findsOneWidget);
+    expect(
+      tester.getTopLeft(legend).dy,
+      lessThan(tester.getTopLeft(find.byKey(const ValueKey('station-Grill'))).dy),
+    );
+  });
+
   testWidgets('iOS edge swipe closes the detail', (tester) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     try {

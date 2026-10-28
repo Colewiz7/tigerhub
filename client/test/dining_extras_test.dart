@@ -223,13 +223,13 @@ void main() {
       expect(find.text('Fri, Oct 16 · 5 p.m. to 8 p.m. · Gracie’s lawn'), findsOneWidget);
     });
 
-    testWidgets('places come first, then todays trucks, then later days in their own section', (tester) async {
+    testWidgets('todays trucks come first, then places, then later days in their own section', (tester) async {
       await pumpDining(tester, _body(_six), size: const Size(390, 3200));
 
       double top(String text) => tester.getTopLeft(find.text(text).first).dy;
-      expect(top('Crossroads'), lessThan(top('Food trucks')));
       expect(top('Food trucks'), lessThan(top('Taco Loco')));
-      expect(top('Taco Loco'), lessThan(top('Upcoming food trucks')));
+      expect(top('Taco Loco'), lessThan(top('Crossroads')));
+      expect(top('Crossroads'), lessThan(top('Upcoming food trucks')));
       for (final later in ['Pierogi Pals', 'Smokestack BBQ', 'Bao Down', 'Waffle Wagon', 'Curry Up']) {
         expect(top('Upcoming food trucks'), lessThan(top(later)), reason: later);
       }
