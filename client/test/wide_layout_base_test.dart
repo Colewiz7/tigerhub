@@ -336,7 +336,7 @@ void main() {
                   .position;
               position.jumpTo(position.maxScrollExtent);
               await settle();
-              await tester.tap(find.text('Customize'));
+              await tester.tap(find.text('Edit Today'));
               await settle();
               position.jumpTo(0);
               await settle();

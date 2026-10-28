@@ -145,8 +145,8 @@ void main() {
     final handle = tester.ensureSemantics();
     await pumpToday(tester, [_chefsCompact, _dining, _pool]);
     expect(compact(tester, 0).width, 358);
-    await tester.scrollUntilVisible(find.text('Customize'), 300, scrollable: find.byType(Scrollable).first);
-    await tester.tap(find.text('Customize'));
+    await tester.scrollUntilVisible(find.text('Edit Today'), 300, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Edit Today'));
     await tester.pumpAndSettle();
     final dining = tester.getSemantics(find.bySemanticsLabel(RegExp(r'^Dining|^Eat now')).first);
     dining.owner!.performAction(dining.id, SemanticsAction.customAction, CustomSemanticsAction.getIdentifier(const CustomSemanticsAction(label: 'Move down')));
@@ -161,8 +161,8 @@ void main() {
       goldenWidgets('golden $shot', (tester) async {
         await pumpToday(tester, [_dining, _chefsCompact, _pool], brightness: brightness, ratio: 3);
         if (edit) {
-          await tester.scrollUntilVisible(find.text('Customize'), 300, scrollable: find.byType(Scrollable).first);
-          await tester.tap(find.text('Customize'));
+          await tester.scrollUntilVisible(find.text('Edit Today'), 300, scrollable: find.byType(Scrollable).first);
+          await tester.tap(find.text('Edit Today'));
           await tester.pumpAndSettle();
           await tester.scrollUntilVisible(find.byType(CompactCard).first, -300, scrollable: find.byType(Scrollable).first);
           await tester.pumpAndSettle();

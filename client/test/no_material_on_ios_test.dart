@@ -109,11 +109,11 @@ void main() {
       Finder tab(String label) => find.descendant(of: find.byType(AppTabBar), matching: find.text(label));
 
       check('today');
-      await tester.scrollUntilVisible(find.text('Customize'), 300, scrollable: find.byType(Scrollable).first);
+      await tester.scrollUntilVisible(find.text('Edit Today'), 300, scrollable: find.byType(Scrollable).first);
       // built in the cache extent is not on screen
-      await tester.ensureVisible(find.text('Customize'));
+      await tester.ensureVisible(find.text('Edit Today'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Customize'));
+      await tester.tap(find.text('Edit Today'));
       await tester.pumpAndSettle();
       check('today, customizing');
       // back to the top, clear of the short date bar

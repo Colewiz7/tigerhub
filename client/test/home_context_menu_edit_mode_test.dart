@@ -85,9 +85,9 @@ void main() {
     position.jumpTo(position.maxScrollExtent);
     await tester.pumpAndSettle();
     await tester.tap(
-      find.text('Customize').evaluate().isEmpty
+      find.text('Edit Today').evaluate().isEmpty
           ? find.text('Done')
-          : find.text('Customize'),
+          : find.text('Edit Today'),
     );
     await tester.pumpAndSettle();
     position.jumpTo(0);

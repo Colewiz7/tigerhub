@@ -363,7 +363,7 @@ void main() {
               .position;
           position.jumpTo(position.maxScrollExtent);
           await tester.pumpAndSettle();
-          await tester.tap(find.text('Customize'));
+          await tester.tap(find.text('Edit Today'));
           await tester.pumpAndSettle();
           position.jumpTo(0);
           await tester.pumpAndSettle();

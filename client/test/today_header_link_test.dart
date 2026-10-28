@@ -93,8 +93,8 @@ void main() {
 
   testWidgets('in edit mode the header does nothing', (tester) async {
     final taps = await pumpToday(tester);
-    await tester.scrollUntilVisible(find.text('Customize'), 300, scrollable: find.byType(Scrollable).first);
-    await tester.tap(find.text('Customize'));
+    await tester.scrollUntilVisible(find.text('Edit Today'), 300, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Edit Today'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Eat now'), -300, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text('Eat now'), warnIfMissed: false);
@@ -108,8 +108,8 @@ void main() {
     bool shown(Element e) => (e.widget as Visibility).visible;
     expect(chevrons().evaluate().every(shown), isTrue);
 
-    await tester.scrollUntilVisible(find.text('Customize'), 300, scrollable: find.byType(Scrollable).first);
-    await tester.tap(find.text('Customize'));
+    await tester.scrollUntilVisible(find.text('Edit Today'), 300, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Edit Today'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Eat now'), -300, scrollable: find.byType(Scrollable).first);
     await tester.pumpAndSettle();

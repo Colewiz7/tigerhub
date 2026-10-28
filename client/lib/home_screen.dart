@@ -22,7 +22,6 @@ import 'cards/visiting_chefs_card.dart';
 import 'cards/academic_dates_card.dart';
 import 'cards/shuttles_card.dart';
 import 'cards/package_pickup_card.dart';
-import 'config.dart';
 import 'data/campus_time.dart';
 import 'models/api_models.dart';
 import 'motion/reduce_motion.dart';
@@ -577,13 +576,16 @@ class _HomeScreenState extends State<HomeScreen> {
   static const double _maxCardHeight = homeMaxCardHeight;
   static const double _cardGutter = 6;
 
+  // room kept for edit today, wide cells unchanged
+  static const double _pageEndHeight = 64;
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Fill the viewport when there is room, without ever shrinking below
         // the height the cards were designed against.
-        final available = constraints.maxHeight - _Colophon.height;
+        final available = constraints.maxHeight - _pageEndHeight;
         final columns = homeGridColumns(
           constraints.maxWidth,
           available,
@@ -713,8 +715,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       });
                       _announce(
                         _editing
-                            ? 'Customize mode on. Select a card to edit it.'
-                            : 'Customize mode off',
+                            ? 'Editing Today. Select a card to edit it.'
+                            : 'Done editing Today',
                       );
                     },
                     onAdd: _addCard,
@@ -729,7 +731,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     onMove: (delta) => _moveCard(_selectedId!, delta),
                   ),
                 ),
-                const SliverToBoxAdapter(child: _Colophon()),
                 SliverToBoxAdapter(child: SizedBox(height: TabBarInset.of(context))),
               ],
             ),
@@ -854,6 +855,24 @@ class _EditBar extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
+    // the end of the page, one quiet button
+    if (!editing) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
+        child: Center(
+          child: _BarPill(
+            onTap: onToggle,
+            icon: AppIconKind.tune,
+            label: 'Edit Today',
+            background: Colors.transparent,
+            outline: scheme.outlineVariant,
+            iconColor: scheme.onSurfaceVariant,
+            labelColor: scheme.onSurface,
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
       child: Column(
@@ -868,13 +887,11 @@ class _EditBar extends StatelessWidget {
             children: [
               _BarPill(
                 onTap: onToggle,
-                icon: editing ? AppIconKind.check : AppIconKind.tune,
-                label: editing ? 'Done' : 'Customize',
-                background: editing
-                    ? scheme.primary
-                    : scheme.surfaceContainerHigh,
-                iconColor: editing ? scheme.onPrimary : scheme.onSurfaceVariant,
-                labelColor: editing ? scheme.onPrimary : scheme.onSurface,
+                icon: AppIconKind.check,
+                label: 'Done',
+                background: scheme.primary,
+                iconColor: scheme.onPrimary,
+                labelColor: scheme.onPrimary,
               ),
               if (editing) ...[
                 _BarPill(
@@ -1121,6 +1138,7 @@ class _BarPill extends StatelessWidget {
     required this.background,
     required this.iconColor,
     required this.labelColor,
+    this.outline,
   });
 
   final VoidCallback onTap;
@@ -1129,6 +1147,9 @@ class _BarPill extends StatelessWidget {
   final Color background;
   final Color iconColor;
   final Color labelColor;
+
+  /// A hairline edge, for a pill with no fill.
+  final Color? outline;
 
   @override
   Widget build(BuildContext context) {
@@ -1140,14 +1161,14 @@ class _BarPill extends StatelessWidget {
     return Material(
       elevation: 0,
       color: background,
-      shape: Shapes.pill,
+      shape: outline == null ? Shapes.pill : StadiumBorder(side: BorderSide(color: outline!)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 40),
           child: Padding(
-            // The spec's pill-x of 13, which is what lets "Customize" fit a
+            // The spec's pill-x of 13, which is what lets "Edit Today" fit a
             // 390 wide phone at 2x text.
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
             child: Row(
@@ -1242,22 +1263,6 @@ class _InspectButton extends StatelessWidget {
       ),
     );
   }
-}
-
-class _Colophon extends StatelessWidget {
-  const _Colophon();
-
-  static const double height = 64;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(26, 14, 26, 26),
-    child: Text(
-      AppConfig.disclaimer,
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.bodySmall,
-    ),
-  );
 }
 
 /// The edit mode controls in a card header: drag handle, Inspect, Remove.
