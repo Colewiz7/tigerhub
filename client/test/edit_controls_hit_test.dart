@@ -1,5 +1,6 @@
-/// The edit controls in a card header look 32 and answer across 48. The
-/// layout keeps the 32 boxes, so no card moves or grows.
+/// The edit controls in a card header look 32 and answer across 48. The 48
+/// touch squares meet and never overlap: handle and Customize on top, Remove
+/// under the handle.
 library;
 
 import 'package:flutter/material.dart';
@@ -73,27 +74,37 @@ void main() {
     return null;
   }
 
-  testWidgets('each control is 32 to see and 48 tall to tap', (tester) async {
+  testWidgets('each control is 32 to see and 48 square to tap, and the squares never overlap', (tester) async {
     await pumpEditing(tester);
     final finders = controls();
     final boxes = [for (final f in finders) tester.renderObject(f)];
+    final rects = [for (final f in finders) tester.getRect(f)];
     for (var i = 0; i < 3; i++) {
-      final rect = tester.getRect(finders[i]);
+      final rect = rects[i];
       expect(rect.size, const Size(32, 32), reason: 'control $i visual');
       // 23.5 from the center is inside a 48 square, 24.5 is not
       expect(controlAt(tester, boxes, rect.center.translate(0, -23.5)), i, reason: 'control $i top');
       expect(controlAt(tester, boxes, rect.center.translate(0, 23.5)), i, reason: 'control $i bottom');
-      expect(controlAt(tester, boxes, rect.center.translate(0, -24.5)), isNull, reason: 'control $i past the top');
+      expect(controlAt(tester, boxes, rect.center.translate(-23.5, 0)), i, reason: 'control $i left');
+      expect(controlAt(tester, boxes, rect.center.translate(23.5, 0)), i, reason: 'control $i right');
     }
-    // the outer two reach 24 out to their open side
-    final left = tester.getRect(finders[0]);
-    final right = tester.getRect(finders[2]);
-    expect(controlAt(tester, boxes, left.center.translate(-23.5, 0)), 0);
-    expect(controlAt(tester, boxes, right.center.translate(23.5, 0)), 2);
-    // between two controls the nearer one takes it
-    final middle = tester.getRect(finders[1]);
-    expect(controlAt(tester, boxes, Offset(middle.left - 2, middle.center.dy)), 1);
-    expect(controlAt(tester, boxes, Offset(middle.left - 5, middle.center.dy)), 0);
+    // the squares meet at the edge, 48 between centers, and share no area
+    final squares = [for (final r in rects) Rect.fromCenter(center: r.center, width: 48, height: 48)];
+    for (var a = 0; a < 3; a++) {
+      for (var b = a + 1; b < 3; b++) {
+        expect(squares[a].overlaps(squares[b]), isFalse, reason: 'squares $a and $b overlap');
+      }
+    }
+    // handle and Customize on top, Remove under the handle
+    expect(rects[1].center.dx - rects[0].center.dx, 48);
+    expect(rects[1].center.dy, rects[0].center.dy);
+    expect(rects[2].center.dx, rects[0].center.dx);
+    expect(rects[2].center.dy - rects[0].center.dy, 48);
+    // either side of the line between two squares goes to its own control
+    expect(controlAt(tester, boxes, Offset(rects[0].center.dx + 23.5, rects[0].center.dy)), 0);
+    expect(controlAt(tester, boxes, Offset(rects[1].center.dx - 23.5, rects[1].center.dy)), 1);
+    expect(controlAt(tester, boxes, Offset(rects[0].center.dx, rects[0].center.dy + 23.5)), 0);
+    expect(controlAt(tester, boxes, Offset(rects[2].center.dx, rects[2].center.dy - 23.5)), 2);
   });
 
   testWidgets('a tap 7 above Inspect opens the card options, 7 below Remove removes a card', (tester) async {
@@ -111,11 +122,11 @@ void main() {
     expect(find.byType(CardShell).evaluate().length, cards - 1);
   });
 
-  testWidgets('the header keeps its 32 controls band', (tester) async {
+  testWidgets('the controls are an 80 by 80 block', (tester) async {
     await pumpEditing(tester);
     final card = find.byType(CardShell).first;
-    final row = find.descendant(of: card, matching: find.byType(EditControls));
-    expect(tester.getSize(row), const Size(editControlsWidth, 32));
-    expect(tester.renderObject<RenderBox>(row).size.height, 32);
+    final block = find.descendant(of: card, matching: find.byType(EditControls));
+    expect(tester.getSize(block), const Size(editControlsWidth, editControlsHeight));
+    expect(tester.getSize(block), const Size(80, 80));
   });
 }

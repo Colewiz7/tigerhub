@@ -32,7 +32,7 @@ import 'services/event_filter.dart';
 import 'services/preferences.dart';
 import 'theme/tokens.dart';
 import 'widgets/app_icon.dart';
-import 'widgets/card_shell.dart' show editControlsWidth;
+import 'widgets/card_shell.dart' show editControlsHeight, editControlsWidth;
 import 'widgets/compact_card.dart' show CompactPair;
 import 'widgets/context_actions.dart' show ContextActionsScope;
 import 'widgets/tab_bar.dart';
@@ -175,6 +175,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _scrollController = ScrollController();
   final _gridKey = GlobalKey();
+  final _editGridKey = GlobalKey();
   final _headerKey = GlobalKey();
 
   /// The large date has scrolled under the top edge.
@@ -710,6 +711,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsets.symmetric(horizontal: sideInset),
                   sliver: SliverToBoxAdapter(
                     child: ReorderableBuilder<String>(
+                      // edit mode resizes cards and the grid measures them once
+                      // so remount it, with its own wrap key or the old items stay
+                      key: ValueKey(_editing),
                       // No scrollController on purpose. The inner GridView is
                       // non-scrollable and the parent CustomScrollView does the
                       // scrolling, so the package must find that itself. Passing
@@ -726,7 +730,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         _persist();
                       },
                       builder: (wrapped) =>
-                          Wrap(key: _gridKey, children: wrapped),
+                          Wrap(key: _editing ? _editGridKey : _gridKey, children: wrapped),
                       children: children,
                     ),
                   ),
@@ -1295,8 +1299,9 @@ class _InspectButton extends StatelessWidget {
 
 /// The edit mode controls in a card header: drag handle, Inspect, Remove.
 ///
-/// One row, so the three can never overlap each other at any width or text
-/// scale. CardShell gives the row its own space beside the title.
+/// An 80 by 80 block, 48 between centers, so the three 48 touch squares meet
+/// and never overlap at any width or text scale. CardShell gives the block its
+/// own space, so edit mode can be taller than normal mode.
 class EditControls extends StatelessWidget {
   const EditControls({
     super.key,
@@ -1312,14 +1317,13 @@ class EditControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SizedBox(
     width: editControlsWidth,
-    child: Row(
+    height: editControlsHeight,
+    child: Stack(
       // 32 to see, 48 to tap
       children: [
-        HitSlopTarget(child: _DragHandle(onActivate: onInspect)),
-        const SizedBox(width: 6),
-        HitSlopTarget(child: _InspectButton(selected: selected, onTap: onInspect)),
-        const SizedBox(width: 6),
-        HitSlopTarget(child: _RemoveButton(onTap: onRemove)),
+        Positioned(left: 0, top: 0, child: HitSlopTarget(child: _DragHandle(onActivate: onInspect))),
+        Positioned(left: 48, top: 0, child: HitSlopTarget(child: _InspectButton(selected: selected, onTap: onInspect))),
+        Positioned(left: 0, top: 48, child: HitSlopTarget(child: _RemoveButton(onTap: onRemove))),
       ],
     ),
   );

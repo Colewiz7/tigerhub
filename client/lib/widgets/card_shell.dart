@@ -15,15 +15,17 @@ import '../theme/tokens.dart';
 import 'app_icon.dart';
 import 'freshness.dart';
 
-/// Width of the edit controls row: handle, Inspect and Remove at 32 each with
-/// 6 between. The header layout depends on it.
-const double editControlsWidth = 32 * 3 + 6 * 2;
+// handle and customize on top, remove under the handle
+// 32 each, 48 between centers so the touch squares meet
+const double editControlsWidth = 32 * 2 + 16;
+const double editControlsHeight = 32 * 2 + 16;
+
+// the old single row, only to keep normal mode heights
+const double _rowControlsWidth = 32 * 3 + 6 * 2;
+const double _rowControlsHeight = 32;
 
 /// Gap between the title column, the hero and the edit controls.
 const double _headerGap = 10;
-
-/// Height of the edit controls row: every control is 32 tall.
-const double editControlsHeight = 32;
 
 /// Gap between the title and the controls when they sit under it.
 const double _belowGap = 6;
@@ -352,10 +354,9 @@ class _CardTitle extends StatelessWidget {
 /// The card header: title and freshness on the left, the hero on the right,
 /// and in edit mode the controls.
 ///
-/// The header has one height in both modes: the taller of what it needs
-/// outside edit mode and what it needs inside it. Edit mode only decides where
-/// things go inside that band, so toggling it never grows or shrinks a card or
-/// moves the gap after it, whatever the hero or the text size.
+/// Outside edit mode the header is as tall as it was when the controls were
+/// one 32 tall row. Edit mode is at least that tall and grows when the 80 by
+/// 80 controls block needs more.
 ///
 /// The title wraps by whole words and is never cut. In edit mode the controls
 /// sit beside the hero when the title column left of them still holds its
@@ -475,7 +476,8 @@ class _RenderCardHeader extends RenderBox
     final titleH = title.size.height;
     final freshH = freshness.size.height;
     final leftH = titleH + freshH;
-    final band = math.max(leftH, heroNatural.height);
+    final normalBand = math.max(leftH, heroNatural.height);
+    var band = normalBand;
     size = constraints.constrain(Size(maxW, band));
 
     var heroX = maxW - heroNatural.width;
@@ -492,6 +494,10 @@ class _RenderCardHeader extends RenderBox
     controls.layout(const BoxConstraints(), parentUsesSize: true);
     final cw = controls.size.width;
     final ch = controls.size.height;
+    // edit mode may grow the band for the block
+    band = math.max(normalBand, ch);
+    size = constraints.constrain(Size(maxW, band));
+    _place(hero, heroX, (band - heroNatural.height) / 2);
     final asideRoom = maxW - heroNatural.width - heroGap - _headerGap - cw;
     final canGoBelow = cw <= normalW && leftH + _belowGap + ch <= band;
 
@@ -552,8 +558,6 @@ class _RenderCardHeader extends RenderBox
       return title.size.height + freshness.size.height;
     }
 
-    const cw = editControlsWidth;
-    const ch = editControlsHeight;
     final longestWord = title.getMinIntrinsicWidth(double.infinity);
 
     // Outside edit mode the hero sits beside the title if the title keeps its
@@ -566,24 +570,27 @@ class _RenderCardHeader extends RenderBox
         ? topLeftH + _belowGap + heroH
         : math.max(topLeftH, heroH);
 
-    // Inside edit mode the controls sit beside the hero when the title keeps
-    // its longest word there ("aside"); else on a row under the title and hero
-    // ("below"); else, with the hero already stacked, they share the hero's
-    // row if both fit, or take their own. Both modes use the taller of the two
-    // bands so toggling never moves what is below.
-    final asideW = maxW - cw - _headerGap - heroW - heroGap;
-    final sharesHeroRow = stackedHero && heroW + _headerGap + cw <= maxW;
-    final belowBand = sharesHeroRow
-        ? topLeftH + _belowGap + math.max(heroH, ch)
-        : normalBand + _belowGap + ch;
-    final asideBand = asideW >= longestWord
-        ? math.max(math.max(layoutLeft(asideW), heroH), ch)
-        : double.infinity;
-    // Whichever costs the shorter band: the title wrapping to more lines
-    // beside the controls, or the controls on a row of their own.
-    final aside = asideBand <= belowBand;
-    final editBand = aside ? asideBand : belowBand;
-    final band = math.max(normalBand, editBand);
+    // controls of cw by ch sit beside the hero when the title keeps its
+    // longest word there (aside), else under the title and hero (below),
+    // else with the hero stacked they share its row if both fit
+    // whichever band is shorter wins
+    ({bool aside, bool sharesHeroRow, double asideW, double band}) plan(double cw, double ch) {
+      final asideW = maxW - cw - _headerGap - heroW - heroGap;
+      final sharesHeroRow = stackedHero && heroW + _headerGap + cw <= maxW;
+      final belowBand = sharesHeroRow
+          ? topLeftH + _belowGap + math.max(heroH, ch)
+          : normalBand + _belowGap + ch;
+      final asideBand = asideW >= longestWord
+          ? math.max(math.max(layoutLeft(asideW), heroH), ch)
+          : double.infinity;
+      final aside = asideBand <= belowBand;
+      return (aside: aside, sharesHeroRow: sharesHeroRow, asideW: asideW, band: aside ? asideBand : belowBand);
+    }
+
+    // normal mode keeps what the old one row asked for, so no card moves
+    final rowBand = math.max(normalBand, plan(_rowControlsWidth, _rowControlsHeight).band);
+    final edit = editing ? plan(editControlsWidth, editControlsHeight) : null;
+    final band = edit == null ? rowBand : math.max(rowBand, edit.band);
     size = constraints.constrain(Size(maxW, band));
 
     /// Title and hero as they sit outside edit mode, in the band's top
@@ -610,8 +617,10 @@ class _RenderCardHeader extends RenderBox
     }
 
     controls.layout(const BoxConstraints(), parentUsesSize: true);
-    if (aside) {
-      final leftH = layoutLeft(asideW);
+    const cw = editControlsWidth;
+    const ch = editControlsHeight;
+    if (edit!.aside) {
+      final leftH = layoutLeft(edit.asideW);
       final top = (band - leftH) / 2;
       _place(title, 0, top);
       _place(freshness, 0, top + title.size.height);
@@ -621,7 +630,7 @@ class _RenderCardHeader extends RenderBox
       return;
     }
     placeNormal();
-    if (sharesHeroRow) {
+    if (edit.sharesHeroRow) {
       final rowTop = topLeftH + _belowGap;
       final rowH = math.max(heroH, ch);
       _place(hero, 0, rowTop + (rowH - heroH) / 2);

@@ -1,19 +1,20 @@
 /// Edit mode on cards that have a hero.
 ///
 /// The edit controls share the card header with the title and the hero. The
-/// header is always the height it has outside edit mode, so edit mode never
-/// makes a card taller or shorter or moves the gap after it.
+/// 80 by 80 controls block can make a card up to 48 taller in edit mode, and
+/// never shorter. The gap after a card stays the same.
 ///
 /// Covered: the real DiningCard (inline hero pill on phones) and the real
 /// ScopedEventsCard (variable width text hero) on their own at the card widths
 /// of a 320, 390 and 430 wide phone at 1x and 2x text, asserting the header
-/// height is exactly equal, the pill keeps its size, the hero element is not
+/// grows by 0 to 48, the pill keeps its size, the hero element is not
 /// recreated, and nothing overlaps (the 320 wide 2x text hero case included:
 /// the hero drops under the title when the title cannot keep its longest word
 /// beside it); plus the whole dashboard with a dining hero and with a scoped
-/// events text hero at 390x844 and 430x932 at 1x, asserting card 1 and the gap
-/// are equal. Not covered: the hero element surviving at dashboard level,
-/// because the grid rebuilds the whole card when edit mode starts.
+/// events text hero at 390x844 and 430x932 at 1x, asserting card 1 grows by 0
+/// to 48 and the gap is equal. Not covered: the hero element surviving at
+/// dashboard level, because the grid rebuilds the whole card when edit mode
+/// starts.
 library;
 
 import 'package:flutter/material.dart';
@@ -228,8 +229,8 @@ void main() {
     for (final width in [320.0, 390.0, 430.0, 700.0, 1000.0]) {
       for (final scale in [1.0, 2.0]) {
         testWidgets(
-          '${card.key} at $width wide, text ${scale}x: edit mode keeps the '
-          'header height exactly and nothing overlaps',
+          '${card.key} at $width wide, text ${scale}x: edit mode grows the '
+          'header by at most 48 and nothing overlaps',
           (tester) async {
             phoneView(tester, width: width, height: 4000, scale: scale);
             final shell = find.byType(CardShell);
@@ -242,7 +243,7 @@ void main() {
 
             await pumpCard(tester, width, card.value.build(edit()));
             final edited = contentTop(tester, shell);
-            expect(edited, normal);
+            expect(edited - normal, inInclusiveRange(0, 48));
 
             // The hero is the same element, so toggling edit mode does not
             // recreate it and replay its entrance.
@@ -303,8 +304,8 @@ void main() {
     for (final view in const [Size(390, 844), Size(430, 932)]) {
       testWidgets(
         'dashboard with a ${scoped ? 'scoped events text' : 'dining'} hero at '
-        '${view.width.toInt()}x${view.height.toInt()}, 1x: edit mode keeps '
-        'card 1 and the gap',
+        '${view.width.toInt()}x${view.height.toInt()}, 1x: edit mode grows '
+        'card 1 by at most 48 and keeps the gap',
         (tester) async {
           phoneView(
             tester,
@@ -372,7 +373,7 @@ void main() {
           // Not asserted here: that the hero element survives. The grid
           // rebuilds the whole card when edit mode starts, so that only holds
           // for the header, which the card level tests above cover.
-          expect(edited.height, normal.height);
+          expect(edited.height - normal.height, inInclusiveRange(0, 48));
           expect(edited.gap, normal.gap);
           expectNoOverlap(
             tester,

@@ -317,7 +317,8 @@ void main() {
         expect(pillRect.width, greaterThan(0));
         expect(box.contains(pillRect.topLeft), isTrue);
         expect(box.contains(pillRect.bottomRight), isTrue);
-        // the accepted header height in edit mode as well
+        // the 80 tall controls block sets the edit header, 24 over the 390
+        // normal header (80) and 48 over the 440 one (56)
         final row = tester.getRect(
           find
               .descendant(
@@ -328,7 +329,7 @@ void main() {
               )
               .first,
         );
-        expect(row.top - box.top, size.width < 400 ? 80 : 56);
+        expect(row.top - box.top, 104);
       },
     );
 
