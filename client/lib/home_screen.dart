@@ -20,6 +20,7 @@ import 'cards/events_card.dart';
 import 'cards/housing_card.dart';
 import 'cards/visiting_chefs_card.dart';
 import 'cards/academic_dates_card.dart';
+import 'cards/shuttles_card.dart';
 import 'config.dart';
 import 'data/campus_time.dart';
 import 'models/api_models.dart';
@@ -49,6 +50,7 @@ const Map<ModuleType, AppIconKind> moduleIcons = {
   ModuleType.facilityHours: AppIconKind.gym,
   ModuleType.campusMap: AppIconKind.map,
   ModuleType.academicDates: AppIconKind.academicDates,
+  ModuleType.shuttles: AppIconKind.shuttle,
 };
 
 /// Card height. Cards grow to use spare vertical room, but stop before they
@@ -112,6 +114,7 @@ int homeGridColumns(double width, double available, int count) {
 const Set<ModuleType> compactBodyTypes = {
   ModuleType.visitingChefs,
   ModuleType.facilityHours,
+  ModuleType.shuttles,
 };
 
 /// Two up only while a half card still holds its value.
@@ -520,6 +523,10 @@ class _HomeScreenState extends State<HomeScreen> {
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(4),
         ),
+        ModuleType.shuttles => ShuttlesCard(
+          dragHandle: controls,
+          onShowAll: () => widget.onGoToTab(4),
+        ),
       };
 
   /// Columns grow with width, so a wide window is not four cards huddled in
@@ -733,6 +740,7 @@ class _EditBar extends StatelessWidget {
     ModuleType.facilityHours,
     ModuleType.campusMap,
     ModuleType.academicDates,
+    ModuleType.shuttles,
   ];
 
   Future<void> _showLibrary(BuildContext context) async {
@@ -765,6 +773,7 @@ class _EditBar extends StatelessWidget {
                   ModuleType.facilityHours => 'See today’s recreation hours',
                   ModuleType.campusMap => 'Keep campus wayfinding on Today',
                   ModuleType.academicDates => 'Keep the next deadline visible',
+                  ModuleType.shuttles => 'Routes from home and until when',
                   _ => 'Add another ${moduleLabels[type]!.toLowerCase()} card',
                 }),
                 trailing: Icon(AppIconKind.add.of(context)),
