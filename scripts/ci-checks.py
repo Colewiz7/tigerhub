@@ -118,6 +118,9 @@ for f in files:
         problems.append("em dash in code (use a plain dash or comma): %s:%d" % (f, n))
     for n in copy_style.all_caps_status_lines(text):
         problems.append("all caps status word (use sentence case): %s:%d" % (f, n))
+    if not f.startswith(copy_style.UI_EXEMPT):
+        for n in copy_style.all_caps_word_lines(text):
+            problems.append("all caps word in UI copy (use sentence case): %s:%d" % (f, n))
 
 if problems:
     print("\n".join(problems))

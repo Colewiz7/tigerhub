@@ -145,7 +145,7 @@ class _CalendarCardState extends State<CalendarCard> {
           ? null
           : CardHero(
               value: '${week.fold<int>(0, (n, d) => n + d.events.length)}',
-              label: 'THIS WEEK',
+              label: 'This week',
               filled: week.any((d) => d.events.isNotEmpty),
             ),
       child: switch ((widget.result.isPriming, events.isEmpty)) {

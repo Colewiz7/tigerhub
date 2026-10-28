@@ -9,6 +9,12 @@ NAMED_ARG = re.compile(r"^(\w+)\s*:(?!:)")
 EM_DASH = "—"
 STATUS_WORDS = ("OPEN", "OPENS", "CLOSED", "CLOSES", "CLOSING", "BUSY", "QUIET", "ENDED", "ALL DAY", "LIVE", "SOON", "FULL")
 STATUS_CAPS = re.compile(r"(?<![A-Za-z])(%s)(?![A-Za-z])" % "|".join(STATUS_WORDS))
+# acronyms and names that are written in capitals
+ACRONYMS = {"RIT", "SHED", "SIS", "FMS", "API", "JSON", "AM", "PM", "RTS", "SAU", "AED", "NTID", "GPC", "USB", "ATM", "EV", "SLC"}
+# underscores and digits are part of the word, so env keys like FORCE_SEED never match
+CAPS_WORD = re.compile(r"(?<![A-Za-z0-9_])[A-Z]{2,}(?![A-Za-z0-9_])")
+# parsers, upstream keys and build config, not UI copy
+UI_EXEMPT = ("client/lib/data/", "client/lib/services/", "client/lib/config.dart")
 
 
 def blank(c):
@@ -148,3 +154,30 @@ def string_text(text):
 def all_caps_status_lines(text):
     strings = string_text(text)
     return [n for n, line in enumerate(strings.splitlines(), 1) if STATUS_CAPS.search(line)]
+
+
+# the code just before the string literal holding offset i
+def _before_literal(code, i):
+    while i >= 0 and code[i] not in "'\"":
+        i -= 1
+    while i >= 0 and code[i] in "'\"":
+        i -= 1
+    if i >= 0 and code[i] == "r":
+        i -= 1
+    return code[: i + 1].rstrip()
+
+
+# UI copy is sentence case: no word in capitals unless it is an acronym. A map
+# key (env['HOME']) and a DateFormat pattern are not copy.
+def all_caps_word_lines(text):
+    strings = string_text(text)
+    code = strip_dart(text)
+    lines = set()
+    for m in CAPS_WORD.finditer(strings):
+        if m.group(0) in ACRONYMS:
+            continue
+        before = _before_literal(code, m.start())
+        if before.endswith("[") or re.search(r"DateFormat\s*\($", before):
+            continue
+        lines.add(strings.count("\n", 0, m.start()) + 1)
+    return sorted(lines)

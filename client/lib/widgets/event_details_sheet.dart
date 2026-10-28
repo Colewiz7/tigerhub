@@ -147,7 +147,7 @@ class _EventDetailsSheet extends StatelessWidget {
               ),
             if (description.isNotEmpty) ...[
               const SizedBox(height: 10),
-              Text('ABOUT', style: text.labelSmall),
+              Text('About', style: text.labelSmall),
               const SizedBox(height: 7),
               SelectableText(description, style: text.bodyMedium),
             ],

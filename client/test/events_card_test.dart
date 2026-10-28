@@ -51,7 +51,7 @@ void main() {
 
     expect(find.byType(ScallopedBadge), findsOneWidget);
     expect(find.text('1'), findsOneWidget);
-    expect(find.text('TODAY'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
   });
 
   testWidgets('empty events card does not invent a hero value', (tester) async {

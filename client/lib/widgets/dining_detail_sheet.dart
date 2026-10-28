@@ -209,7 +209,7 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
             if (location.description != null &&
                 location.description!.trim().isNotEmpty) ...[
               const SizedBox(height: 20),
-              Text('ABOUT', style: text.labelSmall),
+              Text('About', style: text.labelSmall),
               const SizedBox(height: 8),
               Text(_stripHtml(location.description!), style: text.bodyMedium),
             ],

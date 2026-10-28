@@ -113,7 +113,7 @@ class EventCalendarCard extends StatefulWidget {
 class _EventCalendarCardState extends State<EventCalendarCard> {
   int _selectedDay = 0;
 
-  static const _weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  static const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   @override
   Widget build(BuildContext context) {

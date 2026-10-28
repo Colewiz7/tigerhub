@@ -690,22 +690,25 @@ class _Heading extends StatelessWidget {
   }
 }
 
-/// Weekday order for display, and a compact "Mon to Fri" style label.
+/// Weekday order for display, and a compact "Mon to Fri" style label. The
+/// config spells days in capitals, so lookups go through [_weekIndex].
 const _weekOrder = [
-  'MONDAY',
-  'TUESDAY',
-  'WEDNESDAY',
-  'THURSDAY',
-  'FRIDAY',
-  'SATURDAY',
-  'SUNDAY',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
 ];
+
+int _weekIndex(String day) => _weekOrder.indexOf(day.toLowerCase());
 
 String _dayLabel(List<String> days) {
   if (days.isEmpty) return '';
-  final indices = days.map(_weekOrder.indexOf).toList()..sort();
+  final indices = days.map(_weekIndex).toList()..sort();
   final short = [
-    for (final i in indices) _weekOrder[i].substring(0, 3).toLowerCase(),
+    for (final i in indices) _weekOrder[i].substring(0, 3),
   ];
   final capitalised = [
     for (final s in short) '${s[0].toUpperCase()}${s.substring(1)}',
@@ -1123,7 +1126,7 @@ class _ServiceHeading extends StatelessWidget {
 
     final name = Text(_serviceLabel(service), style: text.titleMedium);
     final label = Text(
-      season.toUpperCase(),
+      '${season[0].toUpperCase()}${season.substring(1)}',
       style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
     );
 
@@ -1165,7 +1168,7 @@ class _DaySpans extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          label.toUpperCase(),
+          label,
           textAlign: TextAlign.center,
           style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
@@ -1428,9 +1431,8 @@ class _ShedHoursBlock extends StatelessWidget {
 
     final rules = [...space.hours]
       ..sort(
-        (a, b) => _weekOrder
-            .indexOf(a.days.isEmpty ? '' : a.days.first)
-            .compareTo(_weekOrder.indexOf(b.days.isEmpty ? '' : b.days.first)),
+        (a, b) => _weekIndex(a.days.isEmpty ? '' : a.days.first)
+            .compareTo(_weekIndex(b.days.isEmpty ? '' : b.days.first)),
       );
 
     return Padding(

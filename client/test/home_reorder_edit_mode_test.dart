@@ -802,10 +802,10 @@ void main() {
     );
 
     // Enter opens the card's options, where Move up and Move down live
-    expect(find.text('SIZE'), findsNothing);
+    expect(find.text('Size'), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     await tester.pumpAndSettle();
-    expect(find.text('SIZE'), findsOneWidget);
+    expect(find.text('Size'), findsOneWidget);
   });
 
   testWidgets('outside edit mode no handle can take focus', (tester) async {
@@ -910,7 +910,7 @@ void main() {
       find
           .descendant(
             of: find.ancestor(
-              of: find.text('ADD A CARD'),
+              of: find.text('Add a card'),
               matching: find.byType(Column),
             ),
             matching: find.byType(InkWell),

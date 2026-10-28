@@ -195,6 +195,40 @@ class StatusCaseTests(unittest.TestCase):
         self.assertEqual(copy_style.all_caps_status_lines("s = '${OPEN} left';\n"), [])
 
 
+class CapsWordTests(unittest.TestCase):
+    def test_caps_label_fails(self):
+        self.assertEqual(copy_style.all_caps_word_lines("a\nText('ADD A CARD');\n"), [2])
+
+    def test_caps_word_beside_interpolation_fails(self):
+        self.assertEqual(copy_style.all_caps_word_lines("s = 'CONTAINS ${x}';\n"), [1])
+
+    def test_sentence_case_passes(self):
+        self.assertEqual(copy_style.all_caps_word_lines("s = 'Add a card'; t = 'This week';\n"), [])
+
+    def test_acronyms_pass(self):
+        self.assertEqual(copy_style.all_caps_word_lines("s = 'View on RIT'; t = '5:00 PM'; u = 'SHED makerspace';\n"), [])
+
+    def test_env_key_with_underscore_passes(self):
+        self.assertEqual(copy_style.all_caps_word_lines("bool.fromEnvironment('FORCE_SEED');\n"), [])
+
+    def test_map_key_passes(self):
+        self.assertEqual(copy_style.all_caps_word_lines("final h = Platform.environment['HOME'];\n"), [])
+
+    def test_date_format_pattern_passes(self):
+        self.assertEqual(copy_style.all_caps_word_lines("DateFormat('EEE, MMM d');\nDateFormat(\n  'MMMM',\n);\n"), [])
+
+    def test_date_pattern_letters_elsewhere_fail(self):
+        self.assertEqual(copy_style.all_caps_word_lines("s = 'MMM';\n"), [1])
+
+    def test_comment_and_identifier_pass(self):
+        self.assertEqual(copy_style.all_caps_word_lines("// ADD A CARD\nfinal SIZE = 1;\n"), [])
+
+    def test_ci_scope_skips_parsers(self):
+        for path in ("client/lib/data/ical.dart", "client/lib/services/todays_hours.dart", "client/lib/config.dart"):
+            self.assertTrue(path.startswith(copy_style.UI_EXEMPT), path)
+        self.assertFalse("client/lib/home_screen.dart".startswith(copy_style.UI_EXEMPT))
+
+
 class RulesInCodeTests(unittest.TestCase):
     # rules live in copy_style.py, no repo doc
     def test_scanners_run_with_no_docs_beside_them(self):

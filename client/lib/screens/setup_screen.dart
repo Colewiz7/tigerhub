@@ -110,7 +110,7 @@ class _SetupScreenState extends State<SetupScreen> {
                 // hint is per area and meaningless before then.
                 if (selected != null && !selected.directDelivery) ...[
                   const SizedBox(height: 22),
-                  Text('YOUR BUILDING AND ROOM', style: text.labelSmall),
+                  Text('Your building and room', style: text.labelSmall),
                   const SizedBox(height: 8),
                   TextField(
                     controller: _unit,

@@ -124,7 +124,7 @@ class EventsCard extends StatelessWidget {
       // decide whether there is anything happening now.
       hero: events.isEmpty
           ? null
-          : CardHero(value: '$today', label: 'TODAY', filled: today > 0),
+          : CardHero(value: '$today', label: 'Today', filled: today > 0),
       child: switch ((result.isPriming, events.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading events'),
         (_, true) => EmptyState(

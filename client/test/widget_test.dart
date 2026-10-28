@@ -1816,7 +1816,7 @@ void _menus() {
       // wrong failure.
       expect(find.text('Cheese Danish'), findsOneWidget);
       expect(find.text('Plain Bagel'), findsOneWidget);
-      expect(find.text('CONTAINS MILK'), findsOneWidget);
+      expect(find.text('Contains milk'), findsOneWidget);
     });
 
     testWidgets('a dietary filter demotes rather than deletes', (tester) async {

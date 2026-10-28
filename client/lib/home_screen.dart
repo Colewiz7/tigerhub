@@ -765,7 +765,7 @@ class _EditBar extends StatelessWidget {
                         ),
                       ],
                     ),
-                    Text('SIZE', style: text.labelSmall),
+                    Text('Size', style: text.labelSmall),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 7,
@@ -785,7 +785,7 @@ class _EditBar extends StatelessWidget {
                     ),
                     if (selected!.type == ModuleType.diningStatus) ...[
                       const SizedBox(height: 12),
-                      Text('DINING CATEGORY', style: text.labelSmall),
+                      Text('Dining category', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
                         icon: Icon(AppIconKind.dropdown.of(context)),
@@ -822,7 +822,7 @@ class _EditBar extends StatelessWidget {
                         selected!.type == ModuleType.clubEvents ||
                         selected!.type == ModuleType.calendar) ...[
                       const SizedBox(height: 12),
-                      Text('ORGANIZATION', style: text.labelSmall),
+                      Text('Organization', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
                         icon: Icon(AppIconKind.dropdown.of(context)),
@@ -855,7 +855,7 @@ class _EditBar extends StatelessWidget {
                     ],
                     if (selected!.type == ModuleType.facilityHours) ...[
                       const SizedBox(height: 12),
-                      Text('FACILITY', style: text.labelSmall),
+                      Text('Facility', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
                         icon: Icon(AppIconKind.dropdown.of(context)),
@@ -895,7 +895,7 @@ class _EditBar extends StatelessWidget {
           ],
           if (editing && hidden.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('ADD A CARD', style: text.labelSmall),
+            Text('Add a card', style: text.labelSmall),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,

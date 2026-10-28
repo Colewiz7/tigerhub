@@ -274,7 +274,7 @@ class _KeywordEditorState extends State<_KeywordEditor> {
               children: [
                 AppIcon(widget.icon, color: scheme.primary),
                 const SizedBox(width: 9),
-                Text(widget.title.toUpperCase(), style: text.labelSmall),
+                Text(widget.title, style: text.labelSmall),
               ],
             ),
             const SizedBox(height: 6),

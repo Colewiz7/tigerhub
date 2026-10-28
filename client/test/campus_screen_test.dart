@@ -496,7 +496,7 @@ void main() {
         .toSet();
 
     expect(
-      labels.any((d) => d == 'FALL' || d == 'SUMMER'),
+      labels.any((d) => d == 'Fall' || d == 'Summer'),
       isTrue,
       reason: 'the hours shown belong to a season that is never named',
     );
@@ -514,11 +514,11 @@ void main() {
     await pumpCampus(tester);
 
     // The shipping window closes over lunch, arriving as two rules on the same
-    // weekdays. Captioning each half "MON TO FRI" reads as two separate rules.
+    // weekdays. Captioning each half "Mon to Fri" reads as two separate rules.
     final labels = tester
         .widgetList<Text>(find.byType(Text))
         .map((t) => t.data ?? '')
-        .where((d) => d == 'MON TO FRI')
+        .where((d) => d == 'Mon to Fri')
         .length;
 
     expect(labels, greaterThan(0), reason: 'no weekday hours rendered at all');

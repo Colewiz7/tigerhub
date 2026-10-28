@@ -39,10 +39,10 @@ class AcademicDatesCard extends StatelessWidget {
       hero: daysAway == null
           ? null
           : CardHero(
-              value: daysAway == 0 ? 'NOW' : '$daysAway',
+              value: daysAway == 0 ? 'Now' : '$daysAway',
               label: daysAway == 0
-                  ? 'TODAY'
-                  : (daysAway == 1 ? 'DAY TO GO' : 'DAYS TO GO'),
+                  ? 'Today'
+                  : (daysAway == 1 ? 'Day to go' : 'Days to go'),
               pill: daysAway == 0
                   ? 'today'
                   : (daysAway == 1 ? '1 day to go' : '$daysAway days to go'),

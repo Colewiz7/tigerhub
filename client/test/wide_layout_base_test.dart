@@ -216,12 +216,15 @@ const _shorterCopySizes = <({String cases, int card, String old, String now})>[
   ),
 ];
 
-// status words went sentence case after the base, geometry stayed put
+// status words and badge captions went sentence case after the base, geometry
+// stayed put
 String _sentenceCaseStatus(String text) => text.replaceAllMapped(
-  RegExp(r'\b(OPEN|ENDED|ALL DAY)\b'),
+  RegExp(r'\b(OPEN|ENDED|ALL DAY|CHEFS TODAY|TODAY)\b'),
   (m) => switch (m[0]) {
     'OPEN' => 'Open',
     'ENDED' => 'Ended',
+    'CHEFS TODAY' => 'Chefs today',
+    'TODAY' => 'Today',
     _ => 'All day',
   },
 );
