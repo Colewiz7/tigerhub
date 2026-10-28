@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../data/campus_time.dart';
+import '../data/chef_listing.dart';
 import '../data/sources/rit_chefs.dart' show ritDiningPageUrl;
 import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
@@ -30,7 +31,7 @@ import '../widgets/status_row.dart';
 /// The compact answer. Null while loading, so nothing is claimed.
 String? chefsCompactValue(Result<Collection<MenuItem>> result) {
   if (result.isPriming) return null;
-  final all = result.value?.data ?? const <MenuItem>[];
+  final all = listedChefs(result.value?.data ?? const <MenuItem>[]);
   if (all.isNotEmpty) return '${all.length} today';
   final down = (result.value?.availability ?? Availability.available) == Availability.unavailable;
   return down ? 'Unavailable' : 'None today';
@@ -57,7 +58,8 @@ class VisitingChefsCard extends StatelessWidget {
   final VoidCallback? onShowAll;
   @override
   Widget build(BuildContext context) {
-    final all = result.value?.data ?? const <MenuItem>[];
+    final fetched = result.value?.data ?? const <MenuItem>[];
+    final all = listedChefs(fetched);
     final value = result.value;
     final availability = value?.availability ?? Availability.available;
 
@@ -111,8 +113,12 @@ class VisitingChefsCard extends StatelessWidget {
               action: const _DiningLink(),
             ),
           ),
-        (_, true) => const _Centered(
-          EmptyState(kind: EmptyKind.noVisitingChefs, fill: true),
+        (_, true) => _Centered(
+          EmptyState(
+            kind: EmptyKind.noVisitingChefs,
+            fill: true,
+            title: fetched.isEmpty ? null : 'No more chefs today',
+          ),
         ),
         _ => BoundedList(
           itemCount: all.length,

@@ -168,6 +168,19 @@ void main() {
       );
     });
 
+    testWidgets('drops a chef 30 minutes after the slot ends', (tester) async {
+      RitClock.pin(DateTime.utc(2026, 10, 14, 18, 29, 59));
+      await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
+      expect(find.text('Chef Marco'), findsOneWidget);
+    });
+
+    testWidgets('hides the group once every chef has ended', (tester) async {
+      RitClock.pin(DateTime.utc(2026, 10, 14, 18, 30));
+      await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
+      expect(find.text('Chef Marco'), findsNothing);
+      expect(find.text('Visiting chefs'), findsNothing);
+    });
+
     testWidgets('rows are labelled and at least 48pt tall', (tester) async {
       final handle = tester.ensureSemantics();
       await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
