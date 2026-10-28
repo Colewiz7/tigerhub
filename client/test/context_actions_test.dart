@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/theme/tokens.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/context_actions.dart';
 import 'package:tigerhub/widgets/phone_frame.dart';
 import 'package:tigerhub/widgets/status_row.dart';
@@ -37,19 +38,19 @@ void main() {
             ListView(
               children: [
                 StatusRow(
-                  icon: Icons.event_rounded,
+                  icon: AppIconKind.event,
                   title: 'Row',
                   subtitle: 'Sub',
                   onTap: () => taps++,
                   actions: [
                     MenuAction(
                       label: 'Pick',
-                      icon: Icons.check_rounded,
+                      icon: AppIconKind.check,
                       onSelected: (_) => picked++,
                     ),
                   ],
                 ),
-                for (var i = 0; i < 30; i++) StatusRow(icon: Icons.event_rounded, title: 'Filler $i'),
+                for (var i = 0; i < 30; i++) StatusRow(icon: AppIconKind.event, title: 'Filler $i'),
               ],
             ),
       ),
@@ -108,10 +109,10 @@ void main() {
         theme: menuTheme(),
         home: Scaffold(
           body: StatusRow(
-            icon: Icons.event_rounded,
+            icon: AppIconKind.event,
             title: 'Row',
             onTap: () {},
-            actions: [MenuAction(label: 'Pick', icon: Icons.check_rounded, onSelected: (_) {})],
+            actions: [MenuAction(label: 'Pick', icon: AppIconKind.check, onSelected: (_) {})],
           ),
         ),
       ),
@@ -125,7 +126,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: menuTheme(),
-        home: const Scaffold(body: StatusRow(icon: Icons.event_rounded, title: 'Row')),
+        home: const Scaffold(body: StatusRow(icon: AppIconKind.event, title: 'Row')),
       ),
     );
     await secondaryTap(tester, row());
@@ -168,6 +169,15 @@ void main() {
     expect(ModalRoute.of(tester.element(menuItems))!.transitionDuration, greaterThan(Duration.zero));
   });
 
+  testWidgets('iOS Reduce Motion makes the route zero duration', (tester) async {
+    MenuProbe().install(tester);
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pumpWidget(app());
+    await secondaryTap(tester, row());
+    expect(ModalRoute.of(tester.element(menuItems))!.transitionDuration, Duration.zero);
+  });
+
   testWidgets('in a centered phone frame the popup stays inside the frame', (tester) async {
     MenuProbe().install(tester);
     tester.view.devicePixelRatio = 1.0;
@@ -182,11 +192,11 @@ void main() {
             children: [
               for (var i = 0; i < 30; i++)
                 StatusRow(
-                  icon: Icons.event_rounded,
+                  icon: AppIconKind.event,
                   title: 'Row $i',
                   actions: [
-                    MenuAction(label: 'Pick', icon: Icons.check_rounded, onSelected: (_) {}),
-                    MenuAction(label: 'Pick something longer', icon: Icons.check_rounded, onSelected: (_) {}),
+                    MenuAction(label: 'Pick', icon: AppIconKind.check, onSelected: (_) {}),
+                    MenuAction(label: 'Pick something longer', icon: AppIconKind.check, onSelected: (_) {}),
                   ],
                 ),
             ],
@@ -230,7 +240,7 @@ void main() {
           body: Center(
             child: ContextActions(
               focusable: true,
-              actions: [MenuAction(label: 'Pick', icon: Icons.check_rounded, onSelected: (_) {})],
+              actions: [MenuAction(label: 'Pick', icon: AppIconKind.check, onSelected: (_) {})],
               child: const SizedBox(width: 200, height: 64, child: Text('Row')),
             ),
           ),

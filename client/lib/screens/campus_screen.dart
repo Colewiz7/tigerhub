@@ -21,13 +21,15 @@ import '../services/open_link.dart';
 import '../services/preferences.dart';
 import '../services/academic_dates.dart';
 import '../theme/semantic.dart';
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import '../widgets/context_actions.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 import '../widgets/places_sheet.dart';
-import '../widgets/glyph.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/section_nav.dart';
+import '../widgets/tab_bar.dart';
 import '../widgets/week_grid.dart';
 import '../services/subscriptions.dart';
 import 'quick_links_section.dart';
@@ -128,8 +130,7 @@ class _CampusScreenState extends State<CampusScreen> {
           id: 'mail',
           title: 'Mail',
           subtitle: 'Your address, and both post offices',
-          icon: Icons.local_post_office_rounded,
-          glyph: GlyphKind.housing,
+          icon: AppIconKind.mail,
           builder: (context) => _MailSection(
             api: widget.api,
             areas: widget.areas,
@@ -140,22 +141,21 @@ class _CampusScreenState extends State<CampusScreen> {
           id: 'find',
           title: 'Find on campus',
           subtitle: 'Fountains, restrooms, blue lights, bus stops',
-          icon: Icons.travel_explore_rounded,
-          glyph: GlyphKind.buildings,
+          icon: AppIconKind.find,
           builder: (context) => _FindSection(api: widget.api, kinds: _kinds),
         ),
         SectionSpec(
           id: 'dates',
           title: 'Academic dates',
           subtitle: 'Deadlines, breaks, reading days and finals',
-          icon: Icons.event_available_rounded,
+          icon: AppIconKind.academicDates,
           builder: (context) => _AcademicDatesSection(now: widget.now),
         ),
         SectionSpec(
           id: 'shuttles',
           title: 'Shuttles',
           subtitle: 'Today’s routes for where you live',
-          icon: Icons.directions_bus_rounded,
+          icon: AppIconKind.shuttle,
           builder: (context) => _ShuttleSection(
             areas: widget.areas.value?.data ?? const <HousingArea>[],
             now: widget.now,
@@ -165,29 +165,28 @@ class _CampusScreenState extends State<CampusScreen> {
           id: 'safety',
           title: 'Safety',
           subtitle: 'Emergency, text and non-emergency contacts',
-          icon: Icons.health_and_safety_rounded,
+          icon: AppIconKind.safety,
           builder: (context) => const _SafetySection(),
         ),
         SectionSpec(
           id: 'links',
           title: 'Quick links',
           subtitle: 'RIT services in your browser',
-          icon: Icons.open_in_new_rounded,
+          icon: AppIconKind.link,
           builder: (context) => const QuickLinksSection(),
         ),
         SectionSpec(
           id: 'rec',
           title: 'Gym and pool',
           subtitle: 'Facility hours for the week',
-          icon: Icons.fitness_center_rounded,
+          icon: AppIconKind.gym,
           builder: (context) => _RecreationSection(result: _rec),
         ),
         SectionSpec(
           id: 'shed',
           title: 'SHED makerspace',
-          glyph: GlyphKind.makerspace,
           subtitle: 'Live equipment availability',
-          icon: Icons.construction_rounded,
+          icon: AppIconKind.makerspace,
           builder: (context) => _ShedSection(shed: _shed, rooms: _rooms),
         ),
       ],
@@ -329,7 +328,7 @@ class _ShuttleSection extends StatelessWidget {
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         _Heading(
           title: laborDay
@@ -361,7 +360,7 @@ class _ShuttleSection extends StatelessWidget {
         else
           for (final route in routes)
             StatusRow(
-              icon: Icons.directions_bus_rounded,
+              icon: AppIconKind.shuttle,
               title: '${route.number} · ${route.name}',
               subtitle: route.hours,
               actions: [MenuAction.copy('${route.number} · ${route.name}\n${route.hours}')],
@@ -388,7 +387,7 @@ class _AcademicDatesSection extends StatelessWidget {
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         const _Heading(
           title: 'What is next',
@@ -404,9 +403,7 @@ class _AcademicDatesSection extends StatelessWidget {
         else
           for (var index = 0; index < upcoming.length; index++)
             StatusRow(
-              icon: index == 0
-                  ? Icons.upcoming_rounded
-                  : Icons.calendar_today_rounded,
+              icon: index == 0 ? AppIconKind.upcoming : AppIconKind.day,
               title: upcoming[index].title,
               subtitle: upcoming[index].detail,
               actions: [
@@ -430,25 +427,25 @@ class _SafetySection extends StatelessWidget {
     (
       label: 'Emergency call',
       number: '585-475-3333',
-      icon: Icons.emergency_rounded,
+      icon: AppIconKind.emergency,
       isText: false,
     ),
     (
       label: 'Emergency text',
       number: '585-205-8333',
-      icon: Icons.sms_rounded,
+      icon: AppIconKind.text,
       isText: true,
     ),
     (
       label: 'General calls',
       number: '585-475-2853',
-      icon: Icons.support_agent_rounded,
+      icon: AppIconKind.support,
       isText: false,
     ),
     (
       label: 'RIT Service Center',
       number: '585-475-5000',
-      icon: Icons.support_agent_rounded,
+      icon: AppIconKind.support,
       isText: false,
     ),
   ];
@@ -456,7 +453,7 @@ class _SafetySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       const _Heading(
         title: 'RIT Public Safety',
@@ -469,7 +466,7 @@ class _SafetySection extends StatelessWidget {
           title: contact.label,
           subtitle: contact.number,
           trailing: Icon(
-            contact.isText ? Icons.sms_rounded : Icons.call_rounded,
+            (contact.isText ? AppIconKind.text : AppIconKind.call).of(context),
             size: 18,
           ),
           semanticHint:
@@ -484,7 +481,7 @@ class _SafetySection extends StatelessWidget {
           actions: [
             MenuAction(
               label: contact.isText ? 'Text' : 'Call',
-              icon: contact.isText ? Icons.sms_rounded : Icons.call_rounded,
+              icon: contact.isText ? AppIconKind.text : AppIconKind.call,
               onSelected: (context) => openOrCopy(
                 context,
                 phoneUri(contact.number)
@@ -519,12 +516,12 @@ class _MailSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       HousingCard(areas: areas, api: api),
       const SizedBox(height: 22),
       _Heading(
-        glyph: GlyphKind.postOffice,
+        glyph: AppIconKind.mail,
         title: 'Post offices',
         subtitle:
             'Mail is collected at the counter after an email notice. '
@@ -550,7 +547,7 @@ class _FindSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       _Heading(
         title: 'Find on campus',
@@ -581,7 +578,7 @@ class _FindSection extends StatelessWidget {
               ),
             ),
             trailing: Icon(
-              Icons.chevron_right_rounded,
+              AppIconKind.chevron.of(context),
               size: 18,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -598,7 +595,7 @@ class _RecreationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       _Heading(
         title: 'Gym and pool',
@@ -627,10 +624,10 @@ class _ShedSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
     children: [
       _Heading(
-        glyph: GlyphKind.makerspace,
+        glyph: AppIconKind.makerspace,
         title: 'SHED makerspace',
         subtitle:
             'Equipment availability is live. Hours are hand '
@@ -659,9 +656,8 @@ class _Heading extends StatelessWidget {
   final DataState state;
   final DateTime? fetchedAt;
 
-  /// Section identity, which is what the custom glyphs are for. Sections the
-  /// spec does not cover simply leave this null and show no glyph.
-  final GlyphKind? glyph;
+  /// Section identity. Null shows the title alone.
+  final AppIconKind? glyph;
 
   @override
   Widget build(BuildContext context) {
@@ -674,7 +670,7 @@ class _Heading extends StatelessWidget {
           Row(
             children: [
               if (glyph != null) ...[
-                Glyph(glyph!, size: 22),
+                AppIcon(glyph!, size: 22),
                 const SizedBox(width: 9),
               ],
               Flexible(child: Text(title, style: text.titleLarge)),
@@ -801,6 +797,7 @@ class _TodayLine extends StatelessWidget {
             '$label \u00b7 $detail',
             style: text.bodySmall?.copyWith(
               color: today.isOpen ? accent : scheme.onSurfaceVariant,
+              fontWeight: AppTheme.weight(Weights.medium),
               fontVariations: Weights.medium,
             ),
           ),
@@ -863,11 +860,7 @@ class _PostOfficeBlock extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.32),
                   ),
-                  child: Icon(
-                    Icons.local_post_office_rounded,
-                    size: 18,
-                    color: scheme.primary,
-                  ),
+                  child: AppIcon(AppIconKind.mail, color: scheme.primary),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -911,12 +904,12 @@ class _PostOfficeBlock extends StatelessWidget {
                 children: [
                   if (office.phone != null)
                     _ContactChip(
-                      icon: Icons.call_rounded,
+                      icon: AppIconKind.call,
                       label: office.phone!,
                     ),
                   if (office.email != null)
                     _ContactChip(
-                      icon: Icons.mail_rounded,
+                      icon: AppIconKind.email,
                       label: office.email!,
                     ),
                 ],
@@ -1182,6 +1175,7 @@ class _DaySpans extends StatelessWidget {
             style: text.displayMedium?.copyWith(
               fontSize: 34,
               height: 1.15,
+              fontWeight: AppTheme.weight(Weights.medium),
               fontVariations: Weights.medium,
               color: scheme.onSurface,
             ),
@@ -1250,7 +1244,7 @@ class _WavyPainter extends CustomPainter {
 class _ContactChip extends StatelessWidget {
   const _ContactChip({required this.icon, required this.label});
 
-  final IconData icon;
+  final AppIconKind icon;
   final String label;
 
   @override
@@ -1265,7 +1259,7 @@ class _ContactChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: scheme.onSurfaceVariant),
+            Icon(icon.of(context), size: 14, color: scheme.onSurfaceVariant),
             const SizedBox(width: 7),
             Text(label, style: Theme.of(context).textTheme.bodySmall),
           ],
@@ -1281,17 +1275,17 @@ class _RecreationRow extends StatelessWidget {
 
   final RecreationFacility facility;
 
-  static IconData _icon(String name) {
+  static AppIconKind _icon(String name) {
     final n = name.toLowerCase();
-    if (n.contains('aquatic') || n.contains('pool')) return Icons.pool_rounded;
-    if (n.contains('climb')) return Icons.terrain_rounded;
-    if (n.contains('tennis')) return Icons.sports_tennis_rounded;
+    if (n.contains('aquatic') || n.contains('pool')) return AppIconKind.swimming;
+    if (n.contains('climb')) return AppIconKind.climbing;
+    if (n.contains('tennis')) return AppIconKind.tennis;
     if (n.contains('turf') || n.contains('field')) {
-      return Icons.sports_soccer_rounded;
+      return AppIconKind.soccer;
     }
-    if (n.contains('track')) return Icons.directions_run_rounded;
-    if (n.contains('office')) return Icons.badge_rounded;
-    return Icons.fitness_center_rounded;
+    if (n.contains('track')) return AppIconKind.running;
+    if (n.contains('office')) return AppIconKind.office;
+    return AppIconKind.gym;
   }
 
   String _spansOf(RecreationDay day) => day.closed || day.spans.isEmpty
@@ -1329,7 +1323,7 @@ class _RecreationRow extends StatelessWidget {
       trailing: facility.days.length < 2
           ? null
           : Icon(
-              Icons.chevron_right_rounded,
+              AppIconKind.chevron.of(context),
               size: 18,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -1453,11 +1447,7 @@ class _ShedHoursBlock extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.32),
                   ),
-                  child: Icon(
-                    Icons.construction_rounded,
-                    size: 18,
-                    color: scheme.primary,
-                  ),
+                  child: AppIcon(AppIconKind.makerspace, color: scheme.primary),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -1532,7 +1522,7 @@ class _EquipmentBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GroupHeader(
-          icon: Icons.precision_manufacturing_rounded,
+          icon: AppIconKind.machines,
           title: '$totalFree free now, $totalBusy in use',
           count: rooms.fold<int>(0, (n, r) => n + r.machines),
         ),
@@ -1560,15 +1550,15 @@ class _EquipmentBlock extends StatelessWidget {
     );
   }
 
-  static IconData _iconForRoom(String room) {
+  static AppIconKind _iconForRoom(String room) {
     final r = room.toLowerCase();
-    if (r.contains('3d print')) return Icons.view_in_ar_rounded;
-    if (r.contains('laser')) return Icons.blur_on_rounded;
-    if (r.contains('wood')) return Icons.carpenter_rounded;
-    if (r.contains('metal')) return Icons.hardware_rounded;
-    if (r.contains('textile')) return Icons.checkroom_rounded;
-    if (r.contains('electronic')) return Icons.memory_rounded;
-    if (r.contains('vinyl')) return Icons.content_cut_rounded;
-    return Icons.build_rounded;
+    if (r.contains('3d print')) return AppIconKind.printer3d;
+    if (r.contains('laser')) return AppIconKind.laser;
+    if (r.contains('wood')) return AppIconKind.wood;
+    if (r.contains('metal')) return AppIconKind.metal;
+    if (r.contains('textile')) return AppIconKind.textile;
+    if (r.contains('electronic')) return AppIconKind.electronics;
+    if (r.contains('vinyl')) return AppIconKind.vinyl;
+    return AppIconKind.tools;
   }
 }

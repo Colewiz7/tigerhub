@@ -6,6 +6,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import 'app_icon.dart';
+
 class SearchField extends StatelessWidget {
   const SearchField({
     super.key,
@@ -39,13 +41,13 @@ class SearchField extends StatelessWidget {
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
               hintText: hintText,
-              prefixIcon: const Icon(Icons.search_rounded),
+              prefixIcon: Icon(AppIconKind.search.of(context)),
               suffixIcon: controller.text.isEmpty
                   ? null
                   : IconButton(
                       tooltip: 'Clear search',
                       onPressed: _clear,
-                      icon: const Icon(Icons.close_rounded),
+                      icon: Icon(AppIconKind.close.of(context)),
                     ),
             ),
           ),

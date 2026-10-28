@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
+import '../motion/reduce_motion.dart';
 import '../services/clipboard.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 
 class MenuAction {
   const MenuAction({
@@ -19,12 +21,12 @@ class MenuAction {
   factory MenuAction.copy(String text, {String label = 'Copy text'}) =>
       MenuAction(
         label: label,
-        icon: Icons.copy_rounded,
+        icon: AppIconKind.copy,
         onSelected: (context) => copyWithFeedback(context, text),
       );
 
   final String label;
-  final IconData icon;
+  final AppIconKind icon;
   final void Function(BuildContext context) onSelected;
 }
 
@@ -92,8 +94,7 @@ class _ContextActionsState extends State<ContextActions> {
     final local = overlay.globalToLocal(globalPosition);
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final media = MediaQuery.of(context);
-    final reduce = media.disableAnimations || media.accessibleNavigation;
+    final reduce = reduceMotion(context);
     final actions = widget.actions;
 
     _open = true;
@@ -123,7 +124,7 @@ class _ContextActionsState extends State<ContextActions> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(actions[i].icon, size: 18, color: scheme.onSurfaceVariant),
+                Icon(actions[i].icon.of(context), size: 18, color: scheme.onSurfaceVariant),
                 const SizedBox(width: 12),
                 Flexible(child: Text(actions[i].label, style: text.bodyMedium)),
               ],

@@ -20,8 +20,8 @@ import '../services/open_link.dart';
 import '../theme/tokens.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/focus_ring.dart';
-import '../widgets/glyph.dart';
 import '../widgets/freshness.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
@@ -49,7 +49,7 @@ class VisitingChefsCard extends StatelessWidget {
 
     return CardShell(
       // The toque is this section's identity, per the adoption spec.
-      glyph: GlyphKind.visitingChef,
+      glyph: AppIconKind.visitingChef,
       title: 'Visiting Chefs',
       state: result.state,
       // The age of the chefs themselves, not of the request. ApiClient stamps
@@ -99,7 +99,7 @@ class VisitingChefsCard extends StatelessWidget {
           onShowAll: () => _showAllChefs(context, all),
           itemBuilder: (context, index) => StatusRow(
             dense: true,
-            icon: Icons.restaurant_menu_rounded,
+            icon: AppIconKind.menu,
             title: all[index].name,
             subtitle: [
               ?_window(all[index]),
@@ -177,11 +177,7 @@ class _ChefRow extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: scheme.primary.withValues(alpha: 0.32),
                 ),
-                child: Icon(
-                  Icons.restaurant_menu_rounded,
-                  size: 18,
-                  color: scheme.primary,
-                ),
+                child: AppIcon(AppIconKind.menu, color: scheme.primary),
               ),
               const SizedBox(width: 13),
               Expanded(
@@ -294,7 +290,7 @@ class _ChefsSheet extends StatelessWidget {
                     width: 48,
                     height: 48,
                   ),
-                  icon: const Icon(Icons.close_rounded),
+                  icon: Icon(AppIconKind.close.of(context)),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
               ],

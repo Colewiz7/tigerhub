@@ -45,6 +45,10 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
+  flutter_driver:
+    sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -71,10 +75,7 @@ flutter:
     - assets/config/
     - assets/map/
     - assets/icons/
-    - assets/generated/empty-states/
-    - assets/generated/glyphs/
     - assets/generated/wordmark/
-    - assets/generated/dining-placeholder/
     - assets/fonts/
     - assets/images/
 

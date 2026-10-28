@@ -146,6 +146,17 @@ void main() {
     expect(find.byIcon(Icons.check_rounded), findsOneWidget);
   });
 
+  testWidgets('the tick swaps in at once under iOS Reduce Motion', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await pump(tester);
+
+    await tester.tap(find.text('Peterson 1234'));
+    await tester.pump();
+    final mark = find.ancestor(of: find.byIcon(Icons.check_rounded), matching: find.byType(AnimatedSwitcher)).first;
+    expect(tester.widget<AnimatedSwitcher>(mark).duration, Duration.zero);
+  });
+
   testWidgets('a trailing widget sits beside the copy all button', (
     tester,
   ) async {

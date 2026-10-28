@@ -43,6 +43,7 @@ const List<String> _honoured = [
   'accessibleNavigation',
   'Motion.of',
   'MotionSettings',
+  'reduceMotion(context)',
 ];
 
 void main() {

@@ -13,7 +13,7 @@ import '../services/api.dart';
 import '../theme/semantic.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
-import '../widgets/glyph.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/freshness.dart';
 import '../services/preferences.dart';
 import '../widgets/dining_detail_sheet.dart';
@@ -74,33 +74,36 @@ List<MapEntry<String, List<DiningLocation>>> groupByCategory(
 }
 
 /// Category drives the group header icon.
-IconData iconForCategory(String category) => switch (category) {
-  'market' => Icons.storefront_rounded,
-  'global_village' => Icons.public_rounded,
-  _ => Icons.restaurant_rounded,
+AppIconKind iconForCategory(String category) => switch (category) {
+  'market' => AppIconKind.market,
+  'global_village' => AppIconKind.globe,
+  _ => AppIconKind.dining,
 };
 
 /// Venue type drives the icon, so a row is identifiable before it is read.
-IconData iconForVenue(String name) {
-  final n = name.toLowerCase();
-  if (n.contains('market') || n.contains('store') || n.contains('corner')) {
-    return Icons.storefront_rounded;
+AppIconKind iconForVenue(String name) {
+  final n = name.toLowerCase().replaceAll('’', "'");
+  for (final (needles, kind) in _venueIcons) {
+    if (needles.any(n.contains)) return kind;
   }
-  if (n.contains('cafe') ||
-      n.contains('café') ||
-      n.contains('coffee') ||
-      n.contains('beanz') ||
-      n.contains('java') ||
-      n.contains('grind') ||
-      n.contains('oil')) {
-    return Icons.local_cafe_rounded;
-  }
-  if (n.contains('truck')) return Icons.local_shipping_rounded;
-  if (n.contains('ben') || n.contains('jerry') || n.contains('smoothie')) {
-    return Icons.icecream_rounded;
-  }
-  return Icons.restaurant_rounded;
+  return AppIconKind.dining;
 }
+
+// first match wins, crossroads and artesano say cafe too
+const _venueIcons = [
+  (['gracie', 'commons', 'brick city', 'ritz', 'crossroads'], AppIconKind.diningHall),
+  (['artesano', 'bakery'], AppIconKind.bakery),
+  (['jerry'], AppIconKind.iceCream),
+  (['usb', 'smoothie'], AppIconKind.smoothie),
+  (['deli'], AppIconKind.deli),
+  (['loaded latke', 'petals', 'gpc'], AppIconKind.restaurant),
+  (['nathan', 'soup'], AppIconKind.soup),
+  (['patio'], AppIconKind.patio),
+  (['beanz', 'grind', 'java', 'midnight oil', 'cafe', 'café', 'coffee'], AppIconKind.cafe),
+  (['corner store', 'bytes', 'market', "sol's", 'store'], AppIconKind.grocery),
+  (['truck'], AppIconKind.truck),
+  (['dining office'], AppIconKind.diningOffice),
+];
 
 class DiningCard extends StatelessWidget {
   const DiningCard({
@@ -133,7 +136,7 @@ class DiningCard extends StatelessWidget {
         : locations.first.categoryName;
 
     return CardShell(
-      glyph: GlyphKind.dining,
+      glyph: AppIconKind.dining,
       title: title,
       state: result.state,
       fetchedAt: result.fetchedAt,
@@ -242,7 +245,7 @@ class DiningRow extends StatelessWidget {
     return StatusRow(
       dense: dense,
       icon: Preferences.instance.isPinned(location.id)
-          ? Icons.push_pin_rounded
+          ? AppIconKind.pinned
           : iconForVenue(location.name),
       title: location.name,
       subtitle: when,

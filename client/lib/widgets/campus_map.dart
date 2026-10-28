@@ -17,6 +17,7 @@ import '../services/frame_monitor.dart';
 import '../services/frame_stats.dart' show frameTabMap;
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 import 'campus_event_mapper.dart';
 import 'empty_state.dart';
 import 'freshness.dart';
@@ -218,16 +219,17 @@ class _CampusMapViewState extends State<CampusMapView> {
           LayoutBuilder(
             builder: (context, constraints) {
               final mode = SegmentedButton<bool>(
-                segments: const [
+                selectedIcon: Icon(AppIconKind.selected.of(context)),
+                segments: [
                   ButtonSegment(
                     value: false,
-                    icon: Icon(Icons.place_rounded),
-                    label: Text('Places'),
+                    icon: Icon(AppIconKind.place.of(context)),
+                    label: const Text('Places'),
                   ),
                   ButtonSegment(
                     value: true,
-                    icon: Icon(Icons.event_rounded),
-                    label: Text('Events'),
+                    icon: Icon(AppIconKind.event.of(context)),
+                    label: const Text('Events'),
                   ),
                 ],
                 selected: {_showEvents},
@@ -349,6 +351,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                                               selectedId: _selectedId,
                                               scheme: Theme.of(context)
                                                   .colorScheme,
+                                              platform: Theme.of(context).platform,
                                               zoom: matrix.getMaxScaleOnAxis(),
                                               paths: _paths,
                                               onSelect: (feature) => setState(
@@ -365,11 +368,16 @@ class _CampusMapViewState extends State<CampusMapView> {
                         ),
                         // Fixed, and outside the InteractiveViewer, so it does not
                         // zoom the way the scale bar deliberately does.
+                        // wraps short of the north indicator
                         Positioned(
                           left: 12,
                           top: 12,
-                          child: _MapLegend(
-                            scheme: Theme.of(context).colorScheme,
+                          right: 12 + _NorthIndicator.size + 8,
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: _MapLegend(
+                              scheme: Theme.of(context).colorScheme,
+                            ),
                           ),
                         ),
                         const Positioned(
@@ -378,6 +386,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                           child: _NorthIndicator(),
                         ),
                         Positioned(
+                          left: 12,
                           right: 12,
                           bottom: 12,
                           child: ValueListenableBuilder<Matrix4>(
@@ -397,13 +406,14 @@ class _CampusMapViewState extends State<CampusMapView> {
             ),
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            height:
+          // a strip is a fixed row of cards, a selected panel grows with its text
+          ConstrainedBox(
+            constraints:
                 selected == null &&
                     selectedBuilding == null &&
                     selectedEvent == null
-                ? 92
-                : 146,
+                ? BoxConstraints.tightFor(height: _stripHeight(context, events: _showEvents))
+                : BoxConstraints(minHeight: 146, maxHeight: selectedEvent == null ? _placePanelMax(context) : _eventPanelHeight(context)),
             child: _showEvents
                 ? selectedEvent == null
                       ? _EventStrip(
@@ -445,6 +455,8 @@ class _CampusMapViewState extends State<CampusMapView> {
 class _NorthIndicator extends StatelessWidget {
   const _NorthIndicator();
 
+  static const double size = 46;
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -457,12 +469,12 @@ class _NorthIndicator extends StatelessWidget {
             color: scheme.surface.withValues(alpha: 0.92),
             shape: const CircleBorder(),
             child: SizedBox.square(
-              dimension: 46,
+              dimension: size,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   Icon(
-                    Icons.navigation_rounded,
+                    AppIconKind.navigation.of(context),
                     size: 25,
                     color: scheme.primary,
                   ),
@@ -500,27 +512,30 @@ class _MapZoomControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    // the hint takes its own row when both dont fit
+    return Wrap(
+      alignment: WrapAlignment.end,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 8,
+      runSpacing: 8,
       children: [
-        if (zoom < 1.15) ...[
+        if (zoom < 1.15)
           Material(
             color: scheme.surface.withValues(alpha: 0.92),
-            shape: Shapes.pill,
+            // a pill on one line, rounded when the text wraps
+            borderRadius: Shapes.inner,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.route_rounded, size: 16, color: scheme.primary),
+                  Icon(AppIconKind.route.of(context), size: 16, color: scheme.primary),
                   const SizedBox(width: 7),
-                  const Text('Zoom in for walking paths'),
+                  const Flexible(child: Text('Zoom in for walking paths')),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 8),
-        ],
         Material(
           color: scheme.surface.withValues(alpha: 0.92),
           borderRadius: Shapes.inner,
@@ -531,20 +546,24 @@ class _MapZoomControls extends StatelessWidget {
               IconButton(
                 tooltip: 'Zoom out',
                 onPressed: zoom > 1.01 ? onZoomOut : null,
-                icon: const Icon(Icons.remove_rounded),
+                icon: Icon(AppIconKind.minus.of(context)),
               ),
               SizedBox(
                 width: 38,
-                child: Text(
-                  '${zoom.toStringAsFixed(1).replaceFirst('.0', '')}×',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.labelMedium,
+                // one line, shrunk to fit at large text
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    '${zoom.toStringAsFixed(1).replaceFirst('.0', '')}×',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.labelMedium,
+                  ),
                 ),
               ),
               IconButton(
                 tooltip: 'Zoom in',
                 onPressed: zoom < _maxMapZoom - 0.01 ? onZoomIn : null,
-                icon: const Icon(Icons.add_rounded),
+                icon: Icon(AppIconKind.add.of(context)),
               ),
             ],
           ),
@@ -566,6 +585,8 @@ class _EventStrip extends StatelessWidget {
     children: [
       Text(
         '${result.mapped} mapped · ${result.unmapped} without a location',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.bodySmall,
       ),
       const SizedBox(height: 6),
@@ -612,6 +633,8 @@ class _EventStrip extends StatelessWidget {
                               const SizedBox(height: 3),
                               Text(
                                 group.building,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ],
@@ -644,6 +667,7 @@ class _SelectedEventGroup extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              shrinkWrap: true,
               itemCount: group.events.length,
               separatorBuilder: (_, _) => const SizedBox(height: 6),
               itemBuilder: (context, index) {
@@ -672,7 +696,7 @@ class _SelectedEventGroup extends StatelessWidget {
           IconButton(
             tooltip: 'Close event details',
             onPressed: onClose,
-            icon: const Icon(Icons.close_rounded),
+            icon: Icon(AppIconKind.close.of(context)),
           ),
         ],
       ),
@@ -754,7 +778,7 @@ class _MapSearchPageState extends State<_MapSearchPage> {
                 IconButton(
                   tooltip: 'Back to map',
                   onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.arrow_back_rounded),
+                  icon: Icon(AppIconKind.back.of(context)),
                 ),
                 Expanded(
                   child: SearchField(
@@ -793,7 +817,7 @@ class _MapSearchPageState extends State<_MapSearchPage> {
           leading: CircleAvatar(
             backgroundColor: palette.$1,
             foregroundColor: palette.$2,
-            child: Icon(mapPlaceIcon(feature.kind)),
+            child: Icon(mapPlaceIcon(feature.kind).of(context)),
           ),
           title: Text(feature.name),
           subtitle: Text(
@@ -832,7 +856,7 @@ class _MapToolbar extends StatelessWidget {
         ? 'All places'
         : kinds[selectedKind] ?? 'All places';
     final selectedIcon = selectedKind == null
-        ? Icons.apps_rounded
+        ? AppIconKind.allPlaces
         : mapPlaceIcon(selectedKind!);
 
     return Row(
@@ -841,53 +865,56 @@ class _MapToolbar extends StatelessWidget {
         IconButton.filledTonal(
           tooltip: 'Search campus places (Ctrl+F)',
           onPressed: onSearch,
-          icon: const Icon(Icons.search_rounded),
+          icon: Icon(AppIconKind.search.of(context)),
         ),
         const SizedBox(width: 8),
+        // the filter gives way first, the round buttons keep their 48
         if (kinds.isNotEmpty)
-          PopupMenuButton<String>(
-            tooltip: 'Filter map places',
-            onSelected: (value) => onKindChanged(value.isEmpty ? null : value),
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: '',
-                child: ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.apps_rounded),
-                  title: Text('All places'),
-                ),
-              ),
-              for (final entry
-                  in kinds.entries.toList()
-                    ..sort((a, b) => a.value.compareTo(b.value)))
+          Flexible(
+            child: PopupMenuButton<String>(
+              tooltip: 'Filter map places',
+              onSelected: (value) => onKindChanged(value.isEmpty ? null : value),
+              itemBuilder: (context) => [
                 PopupMenuItem(
-                  value: entry.key,
+                  value: '',
                   child: ListTile(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
-                    leading: Icon(mapPlaceIcon(entry.key)),
-                    title: Text(entry.value),
+                    leading: Icon(AppIconKind.allPlaces.of(context)),
+                    title: Text('All places'),
                   ),
                 ),
-            ],
-            child: Material(
-              color: scheme.surfaceContainerHigh,
-              shape: Shapes.pill,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 11,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(selectedIcon, size: 19),
-                    const SizedBox(width: 8),
-                    Text(selectedLabel),
-                    const SizedBox(width: 4),
-                    const Icon(Icons.expand_more_rounded, size: 18),
-                  ],
+                for (final entry
+                    in kinds.entries.toList()
+                      ..sort((a, b) => a.value.compareTo(b.value)))
+                  PopupMenuItem(
+                    value: entry.key,
+                    child: ListTile(
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(mapPlaceIcon(entry.key).of(context)),
+                      title: Text(entry.value),
+                    ),
+                  ),
+              ],
+              child: Material(
+                color: scheme.surfaceContainerHigh,
+                shape: Shapes.pill,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 11,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(selectedIcon.of(context), size: 19),
+                      const SizedBox(width: 8),
+                      Flexible(child: Text(selectedLabel)),
+                      const SizedBox(width: 4),
+                      Icon(AppIconKind.expand.of(context), size: 18),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -896,11 +923,46 @@ class _MapToolbar extends StatelessWidget {
         IconButton.filledTonal(
           tooltip: 'Fit campus',
           onPressed: onFit,
-          icon: const Icon(Icons.center_focus_strong_rounded),
+          icon: Icon(AppIconKind.recenter.of(context)),
         ),
       ],
     );
   }
+}
+
+double _lines(BuildContext context, TextStyle? style, int count) {
+  final painter = TextPainter(
+    text: TextSpan(text: List.filled(count, 'Ag').join('\n'), style: style),
+    textScaler: MediaQuery.textScalerOf(context),
+    textDirection: TextDirection.ltr,
+  )..layout();
+  final height = painter.height;
+  painter.dispose();
+  return height;
+}
+
+// past a third of the screen the details scroll, the map keeps the rest
+double _placePanelMax(BuildContext context) => math.max(146.0, MediaQuery.sizeOf(context).height / 3).floorToDouble();
+
+// two events show at once, more scroll, never under 146
+double _eventPanelHeight(BuildContext context) {
+  final text = Theme.of(context).textTheme;
+  final event = _lines(context, text.titleSmall, 1) + _lines(context, text.bodySmall, 1);
+  return math.max(146.0, 20 + event * 2 + 6).ceilToDouble();
+}
+
+// tall enough for the tallest strip card at this text size, never under 92
+double _stripHeight(BuildContext context, {required bool events}) {
+  final text = Theme.of(context).textTheme;
+  double lines(TextStyle? style, int count) => _lines(context, style, count);
+
+  if (events) {
+    // the mapped count line is held to two
+    return math.max(92.0, lines(text.bodySmall, 2) + 6 + 16 + lines(text.titleSmall, 1) + 3 + lines(text.bodySmall, 1)).ceilToDouble();
+  }
+  final kinds = 16 + math.max(38.0, lines(text.titleSmall?.copyWith(height: 1.05), 2) + 3 + lines(text.bodySmall, 1));
+  final places = 20 + math.max(38.0, lines(text.titleSmall, 2) + 3 + lines(text.bodySmall, 1));
+  return [92.0, kinds, places].reduce(math.max).ceilToDouble();
 }
 
 class _KindStrip extends StatelessWidget {
@@ -955,11 +1017,7 @@ class _KindStrip extends StatelessWidget {
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
-                      child: Icon(
-                        mapPlaceIcon(entry.key),
-                        size: 20,
-                        color: palette.$2,
-                      ),
+                      child: AppIcon(mapPlaceIcon(entry.key), size: 20, color: palette.$2),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -978,6 +1036,8 @@ class _KindStrip extends StatelessWidget {
                           Text(
                             '${entry.value.count} '
                             '${entry.value.count == 1 ? 'place' : 'places'}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -1077,43 +1137,46 @@ class _SelectedPlace extends StatelessWidget {
           _PlaceCategoryMark(feature: feature, size: 46, iconSize: 21),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  feature.name,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  feature.kindName,
-                  style: Theme.of(context).textTheme.labelMedium
-                      ?.copyWith(color: Theme.of(context).colorScheme.primary),
-                ),
-                if (feature.where.isNotEmpty) ...[
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    feature.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
                   const SizedBox(height: 3),
                   Text(
-                    feature.where,
-                    style: Theme.of(context).textTheme.bodySmall,
+                    feature.kindName,
+                    style: Theme.of(context).textTheme.labelMedium
+                        ?.copyWith(color: Theme.of(context).colorScheme.primary),
                   ),
+                  if (feature.where.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      feature.where,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  if (feature.note case final note?) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      note,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ],
-                if (feature.note case final note?) ...[
-                  const SizedBox(height: 3),
-                  Text(
-                    note,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
           IconButton(
             tooltip: 'Close details',
             onPressed: onClose,
-            icon: const Icon(Icons.close_rounded),
+            icon: Icon(AppIconKind.close.of(context)),
           ),
         ],
       ),
@@ -1146,11 +1209,7 @@ class _PlaceCategoryMark extends StatelessWidget {
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
-          child: Icon(
-            mapPlaceIcon(feature.kind),
-            size: iconSize,
-            color: scheme.onPrimaryContainer,
-          ),
+          child: AppIcon(mapPlaceIcon(feature.kind), size: iconSize, color: scheme.onPrimaryContainer),
         ),
       ),
     );
@@ -1349,35 +1408,35 @@ enum MapFamily {
 }
 
 /// Familiar, distinct symbols shared by the map, filters, and place cards.
-IconData mapPlaceIcon(String kind) => switch (kind) {
-  '_campus' => Icons.location_city_rounded,
-  'water' => Icons.water_drop_rounded,
-  'ev_charge' => Icons.ev_station_rounded,
-  'blue_light' => Icons.emergency_share_rounded,
-  'aed' => Icons.health_and_safety_rounded,
-  'restroom_all_gender' => Icons.wc_rounded,
-  'restroom_accessible' => Icons.accessible_rounded,
-  'atm' => Icons.local_atm_rounded,
-  'changing_table' => Icons.baby_changing_station_rounded,
-  'entrance_accessible' => Icons.accessible_forward_rounded,
-  'bus_stop' => Icons.directions_bus_rounded,
-  'bike_rack' => Icons.pedal_bike_rounded,
-  'reload' => Icons.add_card_rounded,
-  'time_clock' => Icons.punch_clock_rounded,
-  'printer' => Icons.print_rounded,
-  'study_area' => Icons.menu_book_rounded,
-  'computer_lab' => Icons.computer_rounded,
-  'connection_hub' => Icons.hub_rounded,
-  'lactation' => Icons.child_care_rounded,
-  'vending' => Icons.local_drink_rounded,
-  'convenience' => Icons.storefront_rounded,
-  'food_share' => Icons.volunteer_activism_rounded,
-  'bottle_return' => Icons.recycling_rounded,
-  'support_services' => Icons.support_agent_rounded,
-  'higi_kiosk' => Icons.monitor_heart_rounded,
-  'gym' => Icons.fitness_center_rounded,
-  _ when kind.startsWith('_event:') => Icons.event_rounded,
-  _ => Icons.place_rounded,
+AppIconKind mapPlaceIcon(String kind) => switch (kind) {
+  '_campus' => AppIconKind.campus,
+  'water' => AppIconKind.water,
+  'ev_charge' => AppIconKind.evCharge,
+  'blue_light' => AppIconKind.blueLight,
+  'aed' => AppIconKind.aed,
+  'restroom_all_gender' => AppIconKind.restroom,
+  'restroom_accessible' => AppIconKind.accessible,
+  'atm' => AppIconKind.atm,
+  'changing_table' => AppIconKind.changingTable,
+  'entrance_accessible' => AppIconKind.accessibleEntrance,
+  'bus_stop' => AppIconKind.shuttle,
+  'bike_rack' => AppIconKind.bike,
+  'reload' => AppIconKind.reload,
+  'time_clock' => AppIconKind.timeClock,
+  'printer' => AppIconKind.printer,
+  'study_area' => AppIconKind.study,
+  'computer_lab' => AppIconKind.computer,
+  'connection_hub' => AppIconKind.hub,
+  'lactation' => AppIconKind.lactation,
+  'vending' => AppIconKind.drink,
+  'convenience' => AppIconKind.market,
+  'food_share' => AppIconKind.volunteer,
+  'bottle_return' => AppIconKind.recycling,
+  'support_services' => AppIconKind.support,
+  'higi_kiosk' => AppIconKind.aed,
+  'gym' => AppIconKind.gym,
+  _ when kind.startsWith('_event:') => AppIconKind.event,
+  _ => AppIconKind.place,
 };
 
 (Color, Color) mapPinPalette(String kind, ColorScheme scheme) => switch (kind) {
@@ -1475,6 +1534,7 @@ class CampusMapPainter extends CustomPainter {
     this.boundsFeatures,
     required this.selectedId,
     required this.scheme,
+    this.platform = TargetPlatform.android,
     this.onSelect,
     this.zoom = 1,
     this.paths = const CampusPaths.empty(),
@@ -1484,6 +1544,9 @@ class CampusMapPainter extends CustomPainter {
   final List<CampusMapFeature>? boundsFeatures;
   final int? selectedId;
   final ColorScheme scheme;
+
+  /// Picks the marker glyphs, Cupertino on iOS.
+  final TargetPlatform platform;
   final ValueChanged<CampusMapFeature>? onSelect;
 
   /// The InteractiveViewer's current scale.
@@ -1691,13 +1754,13 @@ class CampusMapPainter extends CustomPainter {
       if (clustered || isEvent) {
         final kinds = {for (final item in bucket) item.feature.kind};
         final icon = isEvent
-            ? Icons.event_rounded
+            ? AppIconKind.event
             : kinds.length == 1
             ? mapPlaceIcon(bucket.first.feature.kind)
-            : Icons.apps_rounded;
+            : AppIconKind.allPlaces;
         _paintMapIcon(
           canvas,
-          icon,
+          icon.on(platform),
           center - Offset(5.5 / zoom, 0),
           foreground,
           11 / zoom,
@@ -1712,7 +1775,7 @@ class CampusMapPainter extends CustomPainter {
       } else {
         _paintMapIcon(
           canvas,
-          mapPlaceIcon(bucket.single.feature.kind),
+          mapPlaceIcon(bucket.single.feature.kind).on(platform),
           center,
           foreground,
           15 / zoom,
@@ -1854,7 +1917,7 @@ class CampusMapPainter extends CustomPainter {
       text: TextSpan(
         text: metres >= 1000 ? '${metres ~/ 1000} km' : '$metres m',
         style: TextStyle(
-          fontFamily: AppTheme.fontFamily,
+          fontFamily: AppTheme.uiFont,
           color: scheme.onSurfaceVariant,
           fontSize: 9 / zoom,
           fontWeight: FontWeight.w600,
@@ -1961,7 +2024,7 @@ class CampusMapPainter extends CustomPainter {
       text: TextSpan(
         text: count,
         style: TextStyle(
-          fontFamily: AppTheme.fontFamily,
+          fontFamily: AppTheme.uiFont,
           color: color,
           fontSize: 9 * scale,
           fontWeight: FontWeight.w800,
@@ -2006,6 +2069,7 @@ class CampusMapPainter extends CustomPainter {
       oldDelegate.boundsFeatures != boundsFeatures ||
       oldDelegate.selectedId != selectedId ||
       oldDelegate.scheme != scheme ||
+      oldDelegate.platform != platform ||
       oldDelegate.zoom != zoom ||
       oldDelegate.paths != paths;
 
@@ -2060,8 +2124,8 @@ class _MapGeometry {
           text: TextSpan(text: abbreviation, style: style),
           textDirection: TextDirection.ltr,
         )..layout();
-        const base = TextStyle(
-          fontFamily: AppTheme.fontFamily,
+        final base = TextStyle(
+          fontFamily: AppTheme.uiFont,
           fontSize: labelBaseSize,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2,
@@ -2196,7 +2260,8 @@ class _MapLegend extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: scheme.surface.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(999),
+        // a pill on one row, rounded when it wraps
+        borderRadius: Shapes.inner,
         border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Padding(
@@ -2228,13 +2293,15 @@ class _MapLegend extends StatelessWidget {
         painter: _LegendSwatch(family: family, scheme: scheme),
       ),
       const SizedBox(width: 7),
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          height: 1.1,
-          fontWeight: FontWeight.w600,
-          color: scheme.onSurfaceVariant,
+      Flexible(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            height: 1.1,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
       ),
     ],
@@ -2254,13 +2321,15 @@ class _MapLegend extends StatelessWidget {
         ),
       ),
       const SizedBox(width: 6),
-      Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          height: 1.1,
-          fontWeight: FontWeight.w600,
-          color: scheme.onSurfaceVariant,
+      Flexible(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            height: 1.1,
+            fontWeight: FontWeight.w600,
+            color: scheme.onSurfaceVariant,
+          ),
         ),
       ),
     ],

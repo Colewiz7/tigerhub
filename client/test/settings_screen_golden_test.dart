@@ -9,7 +9,7 @@ import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'golden_harness.dart';
 
 void main() {
-  Future<void> pumpSettings(WidgetTester tester, Size size, Brightness brightness, double scale) async {
+  Future<void> pumpSettings(WidgetTester tester, Size size, Brightness brightness, double scale, {TargetPlatform? platform}) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
     addTearDown(tester.view.reset);
@@ -20,7 +20,7 @@ void main() {
       builder: (context) => MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
         child: MaterialApp(
-          theme: AppTheme.from(SchemeController.builtIn(brightness)),
+          theme: AppTheme.from(SchemeController.builtIn(brightness)).copyWith(platform: platform),
           home: Scaffold(
             body: SettingsScreen(
               scheme: scheme,
@@ -42,6 +42,18 @@ void main() {
         final name = 'settings_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${scale.toInt()}x.png';
         goldenWidgets(name, (tester) async {
           await pumpSettings(tester, size, brightness, scale);
+          await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
+        });
+      }
+    }
+  }
+
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final brightness in Brightness.values) {
+      for (final scale in const [1.0, 2.0]) {
+        final name = 'settings_ios_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${scale.toInt()}x.png';
+        goldenWidgets(name, (tester) async {
+          await pumpSettings(tester, size, brightness, scale, platform: TargetPlatform.iOS);
           await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
         });
       }

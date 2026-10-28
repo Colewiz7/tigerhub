@@ -7,7 +7,9 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 
 class HiddenFooter extends StatelessWidget {
   const HiddenFooter({
@@ -54,9 +56,7 @@ class HiddenFooter extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      expanded
-                          ? Icons.visibility_off_rounded
-                          : Icons.visibility_rounded,
+                      (expanded ? AppIconKind.hidden : AppIconKind.visible).of(context),
                       size: 16,
                       color: scheme.onSurfaceVariant,
                     ),
@@ -65,6 +65,7 @@ class HiddenFooter extends StatelessWidget {
                       expanded ? 'Hide $count again' : '$count $noun',
                       style: text.bodySmall?.copyWith(
                         color: scheme.onSurface,
+                        fontWeight: AppTheme.weight(Weights.medium),
                         fontVariations: Weights.medium,
                       ),
                     ),

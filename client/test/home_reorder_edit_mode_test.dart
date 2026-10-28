@@ -225,32 +225,29 @@ void main() {
     expect(draggable(tester), isFalse);
   });
 
-  testWidgets('with reduce motion the handle appears with no fade', (
-    tester,
-  ) async {
-    await pumpHome(tester);
-    tester.platformDispatcher.accessibilityFeaturesTestValue =
-        const FakeAccessibilityFeatures(reduceMotion: true);
-    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
-    await tester.pump();
+  for (final (name, features) in const [
+    ('reduce motion', FakeAccessibilityFeatures(reduceMotion: true)),
+    ('accessible navigation', FakeAccessibilityFeatures(accessibleNavigation: true)),
+  ]) {
+    testWidgets('with $name the handle appears with no fade', (tester) async {
+      await pumpHome(tester);
+      tester.platformDispatcher.accessibilityFeaturesTestValue = features;
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await tester.pump();
 
-    await scrollTo(tester, bottom: true);
-    await tester.tap(find.text('Customize'));
-    await tester.pump();
-    await scrollTo(tester, bottom: false);
+      await scrollTo(tester, bottom: true);
+      await tester.tap(find.text('Customize'));
+      await tester.pump();
+      await scrollTo(tester, bottom: false);
 
-    final fades = find.ancestor(
-      of: find.byIcon(Icons.drag_indicator_rounded),
-      matching: find.byType(AnimatedOpacity),
-    );
-    final durations = tester
-        .widgetList<AnimatedOpacity>(fades)
-        .map((w) => w.duration);
-    expect(durations, isNotEmpty);
-    expect(durations.every((d) => d == Duration.zero), isTrue);
-    expect(handleOpacities(tester).every((o) => o == 1), isTrue);
-    expect(tester.hasRunningAnimations, isFalse);
-  });
+      final fades = find.ancestor(of: find.byIcon(Icons.drag_indicator_rounded), matching: find.byType(AnimatedOpacity));
+      final durations = tester.widgetList<AnimatedOpacity>(fades).map((w) => w.duration);
+      expect(durations, isNotEmpty);
+      expect(durations.every((d) => d == Duration.zero), isTrue);
+      expect(handleOpacities(tester).every((o) => o == 1), isTrue);
+      expect(tester.hasRunningAnimations, isFalse);
+    });
+  }
 
   testWidgets('without reduce motion the handle fades in', (tester) async {
     await pumpHome(tester);

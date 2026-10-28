@@ -17,6 +17,8 @@ import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 
+import 'support/tabs.dart';
+
 class _EmptyBackend implements Backend {
   @override
   Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async {
@@ -56,7 +58,7 @@ void main() {
       (tester) async {
     final scheme = await pump(tester);
 
-    await tester.tap(find.text('CAMPUS'));
+    await tester.tap(tabLabel('Campus'));
     await tester.pumpAndSettle();
 
     // The route must refuse to pop, which is what keeps the app open.

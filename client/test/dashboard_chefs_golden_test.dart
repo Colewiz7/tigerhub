@@ -28,26 +28,34 @@ void main() {
         InMemorySharedPreferencesAsync.empty();
   });
 
-  for (final size in [const Size(390, 844), const Size(430, 932)]) {
+  // the ios set uses the iOS phone sizes
+  for (final (ios, size) in const [(false, Size(390, 844)), (false, Size(430, 932)), (true, Size(390, 844)), (true, Size(440, 956))]) {
+    final prefix = ios ? 'dashboard_chefs_ios' : 'dashboard_chefs';
     for (final brightness in [Brightness.light, Brightness.dark]) {
       for (final scale in [1.0, 2.0]) {
         goldenWidgets(
-          'dashboard chefs ${size.width.toInt()}x${size.height.toInt()} ${brightness.name} ${scale}x',
+          'dashboard chefs${ios ? ' ios' : ''} ${size.width.toInt()}x${size.height.toInt()} ${brightness.name} ${scale}x',
           (tester) async {
             tester.view.devicePixelRatio = 1;
             tester.view.physicalSize = size;
             addTearDown(tester.view.reset);
-            await DashboardStore.save(const [
-              CardInstance(
+            await DashboardStore.save([
+              const CardInstance(
                 id: 'chefs-0',
                 type: ModuleType.visitingChefs,
                 size: CardSize.standard,
               ),
-              CardInstance(
+              const CardInstance(
                 id: 'dining-0',
                 type: ModuleType.diningStatus,
                 size: CardSize.standard,
               ),
+              // the cards with non food icons, so cupertino shows
+              if (ios) ...const [
+                CardInstance(id: 'events-0', type: ModuleType.generalEvents, size: CardSize.standard),
+                CardInstance(id: 'mail-0', type: ModuleType.mailingAddress, size: CardSize.standard),
+                CardInstance(id: 'dates-0', type: ModuleType.academicDates, size: CardSize.standard),
+              ],
             ]);
 
             final scheme = ColorScheme.fromSeed(
@@ -57,7 +65,7 @@ void main() {
             await tester.pumpWidget(
               MaterialApp(
                 debugShowCheckedModeBanner: false,
-                theme: AppTheme.from(scheme),
+                theme: AppTheme.from(scheme).copyWith(platform: ios ? TargetPlatform.iOS : null),
                 home: MediaQuery(
                   data: MediaQueryData(
                     size: size,
@@ -106,7 +114,7 @@ void main() {
             await expectLater(
               find.byType(MaterialApp),
               matchesGoldenFile(
-                'goldens/dashboard_chefs_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${scale.toInt()}x.png',
+                'goldens/${prefix}_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${scale.toInt()}x.png',
               ),
             );
           },

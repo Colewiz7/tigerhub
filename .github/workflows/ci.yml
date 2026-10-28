@@ -41,7 +41,8 @@ jobs:
       - run: flutter pub get
       - name: Analyze
         if: matrix.tz == 'America/New_York'
-        run: flutter analyze
+        # the screens test imports the generated fixtures
+        run: sh integration_test/gen_fixtures.sh && flutter analyze
       - name: Test
         env:
           TZ: ${{ matrix.tz }}

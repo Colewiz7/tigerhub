@@ -19,6 +19,8 @@ import 'package:tigerhub/services/frame_monitor.dart';
 import 'package:tigerhub/services/frame_stats.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 
+import 'support/tabs.dart';
+
 /// Answers every path with an empty but well formed envelope, so the shell
 /// builds its real widget tree without touching the network.
 class _EmptyBackend implements Backend {
@@ -58,8 +60,8 @@ void main() {
   testWidgets('every tab can be opened without throwing', (tester) async {
     final scheme = await pumpShell(tester);
 
-    for (final tab in ['DINING', 'EVENTS', 'MAP', 'CAMPUS', 'TODAY']) {
-      await tester.tap(find.text(tab));
+    for (final tab in ['Dining', 'Events', 'Map', 'Campus', 'Today']) {
+      await tester.tap(tabLabel(tab));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: 'opening $tab threw');
     }
@@ -87,12 +89,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'entering Customize threw');
 
-    await tester.tap(find.text('CAMPUS'));
+    await tester.tap(tabLabel('Campus'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull,
         reason: 'leaving Customize for Campus threw');
 
-    await tester.tap(find.text('TODAY'));
+    await tester.tap(tabLabel('Today'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull, reason: 'returning to Today threw');
 
@@ -105,8 +107,8 @@ void main() {
     final scheme = await pumpShell(tester);
 
     for (var round = 0; round < 4; round++) {
-      for (final tab in ['CAMPUS', 'MAP', 'EVENTS', 'DINING', 'TODAY']) {
-        await tester.tap(find.text(tab));
+      for (final tab in ['Campus', 'Map', 'Events', 'Dining', 'Today']) {
+        await tester.tap(tabLabel(tab));
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull,
             reason: 'round $round threw on $tab');
@@ -121,7 +123,7 @@ void main() {
     final monitor = FrameMonitor.instance;
     monitor.stats.reset();
 
-    await tester.tap(find.text('EVENTS'));
+    await tester.tap(tabLabel('Events'));
     await tester.pump();
     monitor.stats.recordFrame(atUs: monitor.nowUs, buildUs: 1000, rasterUs: 1000);
     expect(monitor.stats.tabSwitchSummary(2).frames, 1);
@@ -134,12 +136,12 @@ void main() {
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 50)),
     );
-    await tester.tap(find.text('EVENTS'));
+    await tester.tap(tabLabel('Events'));
     await tester.pump();
     monitor.stats.recordFrame(atUs: firstWindowEnd + 1, buildUs: 1000, rasterUs: 1000);
     expect(monitor.stats.tabSwitchSummary(2).frames, 1);
 
-    await tester.tap(find.text('TODAY'));
+    await tester.tap(tabLabel('Today'));
     await tester.pumpAndSettle();
     final gesture = await tester.startGesture(
       tester.getCenter(find.byType(CustomScrollView).first),
@@ -163,8 +165,8 @@ void main() {
     // office hours.
     final scheme = await pumpShell(tester);
 
-    expect(find.text('MAP'), findsOneWidget);
-    await tester.tap(find.text('MAP'));
+    expect(tabLabel('Map'), findsOneWidget);
+    await tester.tap(tabLabel('Map'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
 

@@ -20,6 +20,7 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/semantic.dart';
 import 'package:tigerhub/theme/tokens.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/bounded_list.dart';
 import 'package:tigerhub/widgets/content_column.dart';
 import 'package:tigerhub/widgets/freshness.dart';
@@ -1021,11 +1022,55 @@ void _visualStructure() {
       expect(await opacityFor(false), lessThan(await opacityFor(true)));
     });
 
-    testWidgets('venue type picks the icon', (tester) async {
-      expect(iconForVenue('Corner Store'), Icons.storefront_rounded);
-      expect(iconForVenue('Java Wally\'s'), Icons.local_cafe_rounded);
-      expect(iconForVenue('RIT Food Truck'), Icons.local_shipping_rounded);
-      expect(iconForVenue('Gracie\'s'), Icons.restaurant_rounded);
+    test('venue type picks the icon', () {
+      // the names tigercenter sends
+      const venues = {
+        'Beanz': AppIconKind.cafe,
+        'The College Grind': AppIconKind.cafe,
+        "Java Wally's": AppIconKind.cafe,
+        'Midnight Oil': AppIconKind.cafe,
+        'Corner Store': AppIconKind.grocery,
+        'Bytes Micro Market': AppIconKind.grocery,
+        'The Market at Global Village': AppIconKind.grocery,
+        '24/7 Market': AppIconKind.grocery,
+        "Sol's Underground": AppIconKind.grocery,
+        "Gracie's": AppIconKind.diningHall,
+        'The Commons': AppIconKind.diningHall,
+        'Kitchen at Brick City': AppIconKind.diningHall,
+        'RITZ': AppIconKind.diningHall,
+        'The Cafe & Market at Crossroads': AppIconKind.diningHall,
+        'Artesano Bakery & Cafe': AppIconKind.bakery,
+        "Ben and Jerry's": AppIconKind.iceCream,
+        'USB Ultimate Smoothie Blendz': AppIconKind.smoothie,
+        'CTRL ALT DELi': AppIconKind.deli,
+        'Loaded Latke': AppIconKind.restaurant,
+        'Petals at RIT Inn': AppIconKind.restaurant,
+        'GPC Club Lounge': AppIconKind.restaurant,
+        "Nathan's Soup & Salad": AppIconKind.soup,
+        'Patio at Global Village': AppIconKind.patio,
+        'RIT Food Truck': AppIconKind.truck,
+        'Dining Office': AppIconKind.diningOffice,
+      };
+      for (final MapEntry(key: name, value: kind) in venues.entries) {
+        expect(iconForVenue(name), kind, reason: name);
+        expect(iconForVenue(name.toUpperCase()), kind, reason: name);
+        expect(iconForVenue(name.toLowerCase()), kind, reason: name);
+      }
+      // short forms and the curly apostrophe
+      expect(iconForVenue('Ben & Jerry’s'), AppIconKind.iceCream);
+      expect(iconForVenue('Sol’s'), AppIconKind.grocery);
+      expect(iconForVenue('Gracie’s'), AppIconKind.diningHall);
+      expect(iconForVenue('Brand New Place'), AppIconKind.dining);
+      expect(iconForVenue(''), AppIconKind.dining);
+    });
+
+    test('venue icons are material on every platform', () {
+      for (final name in ['Beanz', 'Corner Store', 'RITZ', 'Artesano', "Ben and Jerry's", 'USB', 'CTRL ALT DELi', 'Loaded Latke', "Nathan's", 'Patio', 'RIT Food Truck', 'Dining Office', 'Brand New Place']) {
+        final kind = iconForVenue(name);
+        expect(kind.cupertino, kind.material, reason: name);
+        expect(AppIconKind.materialOnIos, contains(kind), reason: name);
+        expect(kind.material.fontFamily, 'MaterialIcons', reason: name);
+      }
     });
   });
 
@@ -1809,7 +1854,7 @@ void _sectionNav() {
         id: 'id$i',
         title: 'Section $i',
         subtitle: 'sub $i',
-        icon: Icons.circle,
+        icon: AppIconKind.event,
         builder: (context) => Text('content $i'),
       ),
   ];
@@ -1878,7 +1923,7 @@ void _jumpRail() {
     for (var i = 0; i < n; i++)
       JumpGroup(
         label: 'Group $i',
-        icon: Icons.circle,
+        icon: AppIconKind.event,
         count: i + 1,
         builder: (context) => SizedBox(height: 400, child: Text('body $i')),
       ),

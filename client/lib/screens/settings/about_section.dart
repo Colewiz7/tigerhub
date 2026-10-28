@@ -7,41 +7,43 @@ import 'package:flutter/material.dart';
 
 import '../../config.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/status_row.dart';
+import '../../widgets/tab_bar.dart';
 import 'frame_stats_screen.dart';
 
-const _sources = <({String name, String detail, IconData icon})>[
+const _sources = <({String name, String detail, AppIconKind icon})>[
   (
     name: 'TigerCenter',
     detail: 'Dining locations, hours, visiting chefs',
-    icon: Icons.restaurant_rounded,
+    icon: AppIconKind.dining,
   ),
   (
     name: 'CampusGroups',
     detail: 'Student club events, public iCal feed',
-    icon: Icons.groups_rounded,
+    icon: AppIconKind.groups,
   ),
   (
     name: 'RIT Drupal JSON:API',
     detail: 'Official university events',
-    icon: Icons.school_rounded,
+    icon: AppIconKind.school,
   ),
   (
     name: 'make.rit.edu',
     detail: 'SHED equipment availability',
-    icon: Icons.construction_rounded,
+    icon: AppIconKind.makerspace,
   ),
   (
     name: 'maps.rit.edu',
     detail: 'Live occupancy, 5 dining locations have sensors',
-    icon: Icons.map_rounded,
+    icon: AppIconKind.map,
   ),
   // ODbL requires this credit wherever the data is shown. It is not optional
   // and must not be dropped to tidy the list up.
   (
     name: 'OpenStreetMap',
     detail: 'Campus walking paths. Map data (c) OpenStreetMap contributors, ODbL',
-    icon: Icons.directions_walk_rounded,
+    icon: AppIconKind.walk,
   ),
 ];
 
@@ -85,7 +87,7 @@ class _VersionRowState extends State<VersionRow> {
 
   @override
   Widget build(BuildContext context) => StatusRow(
-    icon: Icons.info_outline_rounded,
+    icon: AppIconKind.info,
     title: 'Version',
     subtitle: AppConfig.buildVersion,
     onTap: _tap,
@@ -102,7 +104,7 @@ class AboutSection extends StatelessWidget {
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 14, top: 4),

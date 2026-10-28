@@ -8,6 +8,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../widgets/app_icon.dart';
 import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
@@ -29,7 +30,7 @@ class PlacesSheet extends StatefulWidget {
   final ApiClient api;
   final String kind;
   final String title;
-  final IconData icon;
+  final AppIconKind icon;
 
   @override
   State<PlacesSheet> createState() => _PlacesSheetState();
@@ -91,7 +92,7 @@ class _PlacesSheetState extends State<PlacesSheet> {
           children: [
             Row(
               children: [
-                Icon(widget.icon,
+                AppIcon(widget.icon,
                     size: 22, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 10),
                 Text(widget.title,
@@ -127,7 +128,7 @@ class _PlacesSheetState extends State<PlacesSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           GroupHeader(
-                            icon: Icons.apartment_rounded,
+                            icon: AppIconKind.buildings,
                             title: building,
                             count: places.length,
                           ),
@@ -181,18 +182,18 @@ class _PlaceRow extends StatelessWidget {
 }
 
 /// Icon per kind. Falls back rather than guessing wrong.
-IconData iconForPlaceKind(String kind) => switch (kind) {
-      'water' => Icons.water_drop_rounded,
-      'blue_light' => Icons.emergency_rounded,
-      'aed' => Icons.monitor_heart_rounded,
-      'restroom_all_gender' => Icons.wc_rounded,
-      'restroom_accessible' => Icons.accessible_rounded,
-      'entrance_accessible' => Icons.door_front_door_rounded,
-      'atm' => Icons.local_atm_rounded,
-      'bus_stop' => Icons.directions_bus_rounded,
-      'bike_rack' => Icons.pedal_bike_rounded,
-      'ev_charge' => Icons.ev_station_rounded,
-      'reload' => Icons.credit_card_rounded,
-      'changing_table' => Icons.baby_changing_station_rounded,
-      _ => Icons.place_rounded,
+AppIconKind iconForPlaceKind(String kind) => switch (kind) {
+      'water' => AppIconKind.water,
+      'blue_light' => AppIconKind.blueLight,
+      'aed' => AppIconKind.aed,
+      'restroom_all_gender' => AppIconKind.restroom,
+      'restroom_accessible' => AppIconKind.accessible,
+      'entrance_accessible' => AppIconKind.entrance,
+      'atm' => AppIconKind.atm,
+      'bus_stop' => AppIconKind.shuttle,
+      'bike_rack' => AppIconKind.bike,
+      'ev_charge' => AppIconKind.evCharge,
+      'reload' => AppIconKind.card,
+      'changing_table' => AppIconKind.changingTable,
+      _ => AppIconKind.place,
     };

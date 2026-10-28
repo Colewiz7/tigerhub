@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/section_nav.dart';
 
 const sections = [
@@ -7,14 +8,14 @@ const sections = [
     id: 'one',
     title: 'One',
     subtitle: 'First section',
-    icon: Icons.looks_one_rounded,
+    icon: AppIconKind.events,
     builder: firstSection,
   ),
   SectionSpec(
     id: 'two',
     title: 'Two',
     subtitle: 'Second section',
-    icon: Icons.looks_two_rounded,
+    icon: AppIconKind.dining,
     builder: secondSection,
   ),
 ];
@@ -60,6 +61,16 @@ void main() {
     expect(after.map((widget) => widget.opacity), containsAll([0.0, 1.0]));
     expect(find.text('First content'), findsNothing);
     expect(find.text('Second content'), findsOneWidget);
+  });
+
+  testWidgets('section transition is instant with iOS Reduce Motion', (tester) async {
+    tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+    await tester.pumpWidget(app());
+
+    final panes = tester.widgetList<AnimatedOpacity>(find.byType(AnimatedOpacity, skipOffstage: false));
+    expect(panes, hasLength(2));
+    expect(panes.every((pane) => pane.duration == Duration.zero), isTrue);
   });
 
   testWidgets('section transition is instant with reduced motion', (

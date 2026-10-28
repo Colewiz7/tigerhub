@@ -13,6 +13,8 @@ import 'package:tigerhub/data/campus_time.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 
+import 'support/tabs.dart';
+
 class _Backend implements Backend {
   int truckReads = 0;
 
@@ -60,7 +62,7 @@ void main() {
   }
 
   Future<void> go(WidgetTester tester, String tab) async {
-    await tester.tap(find.text(tab));
+    await tester.tap(tabLabel(tab));
     await tester.pumpAndSettle();
   }
 
@@ -69,7 +71,7 @@ void main() {
     final before = backend.truckReads;
     expect(before, greaterThan(0));
 
-    await go(tester, 'DINING');
+    await go(tester, 'Dining');
 
     expect(backend.truckReads, greaterThan(before));
   });
@@ -77,24 +79,24 @@ void main() {
   testWidgets('switching Events to Dining re-reads, switching away does not', (tester) async {
     final backend = await pumpShell(tester);
 
-    await go(tester, 'EVENTS');
+    await go(tester, 'Events');
     final onEvents = backend.truckReads;
-    await go(tester, 'DINING');
+    await go(tester, 'Dining');
 
     expect(backend.truckReads, greaterThan(onEvents));
 
     final onDining = backend.truckReads;
-    await go(tester, 'EVENTS');
+    await go(tester, 'Events');
 
     expect(backend.truckReads, onDining);
   });
 
   testWidgets('staying on Dining does not re-read', (tester) async {
     final backend = await pumpShell(tester);
-    await go(tester, 'DINING');
+    await go(tester, 'Dining');
     final reads = backend.truckReads;
 
-    await go(tester, 'DINING');
+    await go(tester, 'Dining');
     await tester.pump(const Duration(seconds: 30));
     await tester.pumpAndSettle();
 
@@ -104,13 +106,13 @@ void main() {
   testWidgets("the shell's two minute tick re-reads, on Dining and behind another tab", (tester) async {
     final backend = await pumpShell(tester);
 
-    await go(tester, 'DINING');
+    await go(tester, 'Dining');
     var reads = backend.truckReads;
     await tester.pump(const Duration(minutes: 2));
     await tester.pumpAndSettle();
     expect(backend.truckReads, greaterThan(reads), reason: 'on Dining');
 
-    await go(tester, 'EVENTS');
+    await go(tester, 'Events');
     reads = backend.truckReads;
     await tester.pump(const Duration(minutes: 2));
     await tester.pumpAndSettle();
@@ -119,7 +121,7 @@ void main() {
 
   testWidgets('resuming the app re-reads', (tester) async {
     final backend = await pumpShell(tester);
-    await go(tester, 'DINING');
+    await go(tester, 'Dining');
 
     for (final state in [
       AppLifecycleState.inactive,

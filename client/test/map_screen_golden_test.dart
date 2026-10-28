@@ -103,6 +103,64 @@ void main() {
     }
   }
 
+  // the map chrome on iOS: segment, zoom, search, fit
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final brightness in Brightness.values) {
+      for (final textScale in const [1, 2]) {
+        final name = 'map_ios_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_text$textScale.png';
+        goldenWidgets(name, (tester) async {
+          tester.view.devicePixelRatio = 1;
+          tester.view.physicalSize = size;
+          addTearDown(tester.view.reset);
+          await _loadPaths(tester);
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902), brightness: brightness)).copyWith(platform: TargetPlatform.iOS),
+              builder: (context, child) => MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(textScale.toDouble())), child: child!),
+              home: Scaffold(body: MapScreen(api: ApiClient(backend: _MapBackend()))),
+            ),
+          );
+          await tester.pumpAndSettle();
+          await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
+        });
+      }
+    }
+  }
+
+  // the longest place name in the capture, open in the details panel at 2x
+  for (final platform in const [TargetPlatform.android, TargetPlatform.iOS]) {
+    final prefix = platform == TargetPlatform.iOS ? 'map_ios' : 'map';
+    final name = '${prefix}_selected_390x844_light_text2.png';
+    goldenWidgets(name, (tester) async {
+      const size = Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.reset);
+      await _loadPaths(tester);
+      final place = parseCampusMapFeatures(File('test/fixtures/maps_category_35.data').readAsStringSync())
+          .map(CampusMapFeature.fromJson)
+          .where((f) => f.geometryType == 'Point' && !f.kind.startsWith('_'))
+          .map((f) => f.name)
+          .reduce((a, b) => a.length >= b.length ? a : b);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902))).copyWith(platform: platform),
+          builder: (context, child) => MediaQuery(data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(2)), child: child!),
+          home: Scaffold(body: MapScreen(api: ApiClient(backend: _MapBackend()))),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Search campus places (Ctrl+F)'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), place);
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(ListTile), matching: find.text(place)).first);
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Close details'), findsOneWidget);
+      await expectLater(find.byType(Scaffold).first, matchesGoldenFile('goldens/$name'));
+    });
+  }
+
   goldenWidgets('map screen 390x844 light at 20x', (tester) async {
     const size = Size(390, 844);
     tester.view.devicePixelRatio = 1;

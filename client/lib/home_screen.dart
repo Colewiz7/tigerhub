@@ -21,26 +21,29 @@ import 'cards/visiting_chefs_card.dart';
 import 'cards/academic_dates_card.dart';
 import 'config.dart';
 import 'models/api_models.dart';
+import 'motion/reduce_motion.dart';
 import 'services/api.dart';
 import 'services/dashboard.dart';
 import 'theme/tokens.dart';
+import 'widgets/app_icon.dart';
 import 'widgets/card_shell.dart' show editControlsWidth;
 import 'widgets/context_actions.dart' show ContextActionsScope;
+import 'widgets/tab_bar.dart';
 import 'widgets/touch_target.dart';
 
 /// The icon each module type shows in the card library and the hidden chips.
 /// The name comes from `moduleLabels` beside the type itself, so the library
 /// and the renderer cannot drift apart.
-const Map<ModuleType, IconData> moduleIcons = {
-  ModuleType.diningStatus: Icons.restaurant_rounded,
-  ModuleType.generalEvents: Icons.event_note_rounded,
-  ModuleType.clubEvents: Icons.groups_rounded,
-  ModuleType.calendar: Icons.calendar_month_rounded,
-  ModuleType.visitingChefs: Icons.restaurant_menu_rounded,
-  ModuleType.mailingAddress: Icons.markunread_mailbox_rounded,
-  ModuleType.facilityHours: Icons.fitness_center_rounded,
-  ModuleType.campusMap: Icons.map_rounded,
-  ModuleType.academicDates: Icons.event_available_rounded,
+const Map<ModuleType, AppIconKind> moduleIcons = {
+  ModuleType.diningStatus: AppIconKind.dining,
+  ModuleType.generalEvents: AppIconKind.events,
+  ModuleType.clubEvents: AppIconKind.groups,
+  ModuleType.calendar: AppIconKind.calendar,
+  ModuleType.visitingChefs: AppIconKind.menu,
+  ModuleType.mailingAddress: AppIconKind.mailbox,
+  ModuleType.facilityHours: AppIconKind.gym,
+  ModuleType.campusMap: AppIconKind.map,
+  ModuleType.academicDates: AppIconKind.academicDates,
 };
 
 /// Card height. Cards grow to use spare vertical room, but stop before they
@@ -563,6 +566,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const SliverToBoxAdapter(child: _Colophon()),
+                SliverToBoxAdapter(child: SizedBox(height: TabBarInset.of(context))),
               ],
             ),
           ),
@@ -640,7 +644,7 @@ class _EditBar extends StatelessWidget {
             const SizedBox(height: 12),
             for (final type in _available)
               ListTile(
-                leading: Icon(moduleIcons[type]),
+                leading: Icon(moduleIcons[type]!.of(context)),
                 title: Text(moduleLabels[type]!),
                 subtitle: Text(switch (type) {
                   ModuleType.clubEvents => 'Follow one organization',
@@ -650,7 +654,7 @@ class _EditBar extends StatelessWidget {
                   ModuleType.academicDates => 'Keep the next deadline visible',
                   _ => 'Add another ${moduleLabels[type]!.toLowerCase()} card',
                 }),
-                trailing: const Icon(Icons.add_rounded),
+                trailing: Icon(AppIconKind.add.of(context)),
                 onTap: () => Navigator.pop(context, type),
               ),
           ],
@@ -679,7 +683,7 @@ class _EditBar extends StatelessWidget {
             children: [
               _BarPill(
                 onTap: onToggle,
-                icon: editing ? Icons.check_rounded : Icons.tune_rounded,
+                icon: editing ? AppIconKind.check : AppIconKind.tune,
                 label: editing ? 'Done' : 'Customize',
                 background: editing
                     ? scheme.primary
@@ -690,7 +694,7 @@ class _EditBar extends StatelessWidget {
               if (editing) ...[
                 _BarPill(
                   onTap: () => _showLibrary(context),
-                  icon: Icons.add_rounded,
+                  icon: AppIconKind.add,
                   label: 'Add module',
                   background: scheme.primaryContainer,
                   iconColor: scheme.onPrimaryContainer,
@@ -713,7 +717,7 @@ class _EditBar extends StatelessWidget {
                     Row(
                       children: [
                         Icon(
-                          moduleIcons[selected!.type],
+                          moduleIcons[selected!.type]!.of(context),
                           color: scheme.primary,
                         ),
                         const SizedBox(width: 9),
@@ -726,12 +730,12 @@ class _EditBar extends StatelessWidget {
                         IconButton(
                           tooltip: 'Move up',
                           onPressed: () => onMove(-1),
-                          icon: const Icon(Icons.arrow_back_rounded),
+                          icon: Icon(AppIconKind.back.of(context)),
                         ),
                         IconButton(
                           tooltip: 'Move down',
                           onPressed: () => onMove(1),
-                          icon: const Icon(Icons.arrow_forward_rounded),
+                          icon: Icon(AppIconKind.forward.of(context)),
                         ),
                       ],
                     ),
@@ -758,6 +762,7 @@ class _EditBar extends StatelessWidget {
                       Text('DINING CATEGORY', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
+                        icon: Icon(AppIconKind.dropdown.of(context)),
                         initialValue:
                             diningCategories.any(
                               (item) => item.key == selected!.scope,
@@ -794,6 +799,7 @@ class _EditBar extends StatelessWidget {
                       Text('ORGANIZATION', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
+                        icon: Icon(AppIconKind.dropdown.of(context)),
                         initialValue:
                             organizers.any((o) => o.key == selected!.scope)
                             ? selected!.scope
@@ -826,6 +832,7 @@ class _EditBar extends StatelessWidget {
                       Text('FACILITY', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
+                        icon: Icon(AppIconKind.dropdown.of(context)),
                         initialValue:
                             facilities.any(
                               (item) => item.key == selected!.scope,
@@ -885,14 +892,13 @@ class _EditBar extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.add_rounded,
+                              AppIconKind.add.of(context),
                               size: 17,
                               color: scheme.primary,
                             ),
                             const SizedBox(width: 7),
                             Icon(
-                              moduleIcons[cards[id]?.type] ??
-                                  Icons.widgets_rounded,
+                              (moduleIcons[cards[id]?.type] ?? AppIconKind.widgets).of(context),
                               size: 17,
                               color: scheme.onSurfaceVariant,
                             ),
@@ -933,7 +939,7 @@ class _BarPill extends StatelessWidget {
   });
 
   final VoidCallback onTap;
-  final IconData icon;
+  final AppIconKind icon;
   final String label;
   final Color background;
   final Color iconColor;
@@ -962,7 +968,7 @@ class _BarPill extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(icon, size: 18, color: iconColor, applyTextScaling: true),
+                Icon(icon.of(context), size: 18, color: iconColor, applyTextScaling: true),
                 const SizedBox(width: 8),
                 Text(
                   label,
@@ -1002,7 +1008,7 @@ class _RemoveButton extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(7),
               child: Icon(
-                Icons.close_rounded,
+                AppIconKind.close.of(context),
                 size: 18,
                 color: scheme.onErrorContainer,
               ),
@@ -1041,7 +1047,7 @@ class _InspectButton extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(7),
               child: Icon(
-                Icons.tune_rounded,
+                AppIconKind.tune.of(context),
                 size: 18,
                 color: scheme.onSurface,
               ),
@@ -1130,9 +1136,6 @@ class _DragHandleState extends State<_DragHandle> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final reduceMotion =
-        (MediaQuery.maybeOf(context)?.disableAnimations ?? false) ||
-        View.of(context).platformDispatcher.accessibilityFeatures.reduceMotion;
     return Semantics(
       button: true,
       label: 'Reorder card',
@@ -1162,12 +1165,12 @@ class _DragHandleState extends State<_DragHandle> {
             children: [
               AnimatedOpacity(
                 opacity: _shown ? 1 : 0,
-                duration: reduceMotion
+                duration: reduceMotion(context)
                     ? Duration.zero
                     : const Duration(milliseconds: 130),
                 curve: Curves.easeOutCubic,
                 child: Icon(
-                  Icons.drag_indicator_rounded,
+                  AppIconKind.dragHandle.of(context),
                   size: 17,
                   color: scheme.onSurfaceVariant,
                 ),

@@ -71,5 +71,5 @@ Unset, empty, `0` or `false` is off, and a bad `WxH` falls back to 390x844. `TIG
 - `client/` is the Flutter app. `lib/data/sources/` has one scraper per upstream, and `lib/data/local_backend.dart` routes a request to a source and holds the cadence.
 - `client/test/golden/` has pinned parser output and captured upstream payloads.
 - `client/assets/config/` holds hand-maintained JSON, each file with a last-verified date.
-- `assets/` has the wordmark, glyphs and icon art.
+- `assets/` has the wordmark and icon art.
 - `scripts/` has dev tooling, and the repo also carries CI and Codemagic config for the Android and iOS builds.

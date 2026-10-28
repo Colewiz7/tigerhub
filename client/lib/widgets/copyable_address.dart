@@ -24,7 +24,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../motion/reduce_motion.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 
 class CopyableAddress extends StatefulWidget {
   const CopyableAddress({
@@ -259,13 +261,8 @@ class _CopyMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
-
     return AnimatedSwitcher(
-      duration: reduceMotion
+      duration: reduceMotion(context)
           ? Duration.zero
           : const Duration(milliseconds: 160),
       switchInCurve: Curves.easeOutCubic,
@@ -278,7 +275,7 @@ class _CopyMark extends StatelessWidget {
         ),
       ),
       child: Icon(
-        copied ? Icons.check_rounded : Icons.copy_rounded,
+        (copied ? AppIconKind.check : AppIconKind.copy).of(context),
         key: ValueKey(copied),
         size: size,
         color: color,

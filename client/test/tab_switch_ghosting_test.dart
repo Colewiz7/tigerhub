@@ -23,6 +23,9 @@ import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/arc_progress.dart';
 import 'package:tigerhub/home_screen.dart';
+import 'package:tigerhub/widgets/tab_bar.dart';
+
+import 'support/tabs.dart';
 
 const _categories = 4;
 const _perCategory = 6;
@@ -88,11 +91,11 @@ class _DataBackend implements Backend {
 }
 
 const _tabTypes = <String, Type>{
-  'TODAY': HomeScreen,
-  'DINING': DiningScreen,
-  'EVENTS': EventsScreen,
-  'MAP': MapScreen,
-  'CAMPUS': CampusScreen,
+  'Today': HomeScreen,
+  'Dining': DiningScreen,
+  'Events': EventsScreen,
+  'Map': MapScreen,
+  'Campus': CampusScreen,
 };
 
 void main() {
@@ -155,9 +158,9 @@ void main() {
       (tester) async {
     await pumpShell(tester);
 
-    await tester.tap(find.text('EVENTS'));
+    await tester.tap(tabLabel('Events'));
     await tester.pump();
-    await tester.tap(find.text('DINING'));
+    await tester.tap(tabLabel('Dining'));
     await tester.pump();
 
     expect(find.byType(DiningScreen), findsOneWidget);
@@ -166,7 +169,11 @@ void main() {
           reason: '$type is still painted one frame after the switch');
     }
 
-    final fades = tester.widgetList<FadeTransition>(find.byType(FadeTransition));
+    // the material bar fades its own indicator, screens never fade
+    final fades = [
+      for (final e in find.byType(FadeTransition).evaluate())
+        if (e.findAncestorWidgetOfExactType<AppTabBar>() == null) e.widget as FadeTransition,
+    ];
     for (final fade in fades) {
       expect(fade.opacity.value, 1.0,
           reason: 'a screen is mid fade one frame after the switch');
@@ -177,8 +184,8 @@ void main() {
       (tester) async {
     await pumpShell(tester);
 
-    for (final tab in ['DINING', 'EVENTS', 'MAP', 'CAMPUS', 'TODAY']) {
-      await tester.tap(find.text(tab));
+    for (final tab in ['Dining', 'Events', 'Map', 'Campus', 'Today']) {
+      await tester.tap(tabLabel(tab));
       for (var frame = 0; frame < 20; frame++) {
         await tester.pump(const Duration(milliseconds: 16));
         expectNoBlocker('on $tab, frame $frame');
@@ -192,7 +199,7 @@ void main() {
     final backend = await pumpShell(tester);
 
     for (final tab in _tabTypes.keys) {
-      await tester.tap(find.text(tab));
+      await tester.tap(tabLabel(tab));
       await tester.pump();
 
       // The shell's two minute ticker asks again; the answer is held back.
@@ -201,11 +208,11 @@ void main() {
       for (var frame = 0; frame < 10; frame++) {
         await tester.pump(const Duration(milliseconds: 16));
         expectNoBlocker('refreshing $tab, frame $frame');
-        if (tab == 'DINING') {
+        if (tab == 'Dining') {
           expect(find.text(_DataBackend.name(0)), findsOneWidget,
               reason: 'Dining content went away mid refresh');
         }
-        if (tab == 'EVENTS') {
+        if (tab == 'Events') {
           expect(find.text('Event number 0'), findsOneWidget,
               reason: 'Events content went away mid refresh');
         }
@@ -220,7 +227,7 @@ void main() {
       (tester) async {
     final backend = await pumpShell(tester);
     await Preferences.instance.togglePinned(1);
-    await tester.tap(find.text('DINING'));
+    await tester.tap(tabLabel('Dining'));
     await tester.pumpAndSettle();
 
     final seen = <int>{};
@@ -319,11 +326,11 @@ void main() {
     await pumpShell(tester);
 
     for (final (tab, screen) in [
-      ('EVENTS', EventsScreen),
-      ('DINING', DiningScreen),
-      ('EVENTS', EventsScreen),
+      ('Events', EventsScreen),
+      ('Dining', DiningScreen),
+      ('Events', EventsScreen),
     ]) {
-      await tester.tap(find.text(tab));
+      await tester.tap(tabLabel(tab));
       await tester.pump();
       await tester.pump();
 
@@ -351,7 +358,7 @@ void main() {
     await pumpShell(tester);
     expect(find.byType(HomeScreen), findsOneWidget);
 
-    await tester.tap(find.text('DINING'));
+    await tester.tap(tabLabel('Dining'));
     await tester.pump();
     await tester.pump();
 
@@ -387,8 +394,8 @@ void main() {
   testWidgets('switching tabs never opens the keyboard', (tester) async {
     await pumpShell(tester);
 
-    for (final tab in ['DINING', 'EVENTS', 'MAP', 'CAMPUS', 'TODAY']) {
-      await tester.tap(find.text(tab));
+    for (final tab in ['Dining', 'Events', 'Map', 'Campus', 'Today']) {
+      await tester.tap(tabLabel(tab));
       await tester.pump();
       await tester.pump();
       expect(anySearchFocused(tester), isFalse, reason: '$tab focused a field');
@@ -401,11 +408,11 @@ void main() {
     await pumpShell(tester);
 
     for (final (tab, screen) in [
-      ('DINING', DiningScreen),
-      ('EVENTS', EventsScreen),
-      ('TODAY', HomeScreen),
+      ('Dining', DiningScreen),
+      ('Events', EventsScreen),
+      ('Today', HomeScreen),
     ]) {
-      await tester.tap(find.text(tab));
+      await tester.tap(tabLabel(tab));
       await tester.pump();
       await tester.pump();
       final hidden = _tabTypes.values.where((t) => t != screen);
@@ -429,7 +436,7 @@ void main() {
   testWidgets('a hidden tab cannot hold focus or take keyboard input',
       (tester) async {
     await pumpShell(tester);
-    await tester.tap(find.text('DINING'));
+    await tester.tap(tabLabel('Dining'));
     await tester.pumpAndSettle();
 
     await tester.tap(diningSearch());
@@ -437,7 +444,7 @@ void main() {
     await tester.enterText(diningSearch(), 'abc');
     expect(tester.widget<TextField>(diningSearch()).focusNode!.hasFocus, isTrue);
 
-    await tester.tap(find.text('EVENTS'));
+    await tester.tap(tabLabel('Events'));
     await tester.pump();
 
     final focus = FocusManager.instance.primaryFocus;
@@ -452,7 +459,7 @@ void main() {
   testWidgets('switching back keeps a tab\'s state and scroll offset',
       (tester) async {
     await pumpShell(tester);
-    await tester.tap(find.text('DINING'));
+    await tester.tap(tabLabel('Dining'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.textContaining('Open').first);
@@ -462,9 +469,9 @@ void main() {
     final offset = diningScroll(tester).pixels;
     expect(offset, greaterThan(0), reason: 'the list did not scroll');
 
-    await tester.tap(find.text('EVENTS'));
+    await tester.tap(tabLabel('Events'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('DINING'));
+    await tester.tap(tabLabel('Dining'));
     await tester.pumpAndSettle();
 
     expect(diningScroll(tester).pixels, offset);

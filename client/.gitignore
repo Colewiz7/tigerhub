@@ -32,6 +32,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/integration_test/fixtures.g.dart
 
 # Symbolication related
 app.*.symbols

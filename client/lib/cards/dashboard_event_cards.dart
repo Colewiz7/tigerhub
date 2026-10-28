@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/glyph.dart';
 import '../widgets/status_row.dart';
 import 'event_row.dart';
 
@@ -67,7 +67,7 @@ class ScopedEventsCard extends StatelessWidget {
 
     return CardShell(
       title: organizerName(result, organizerKey),
-      glyph: GlyphKind.events,
+      glyph: AppIconKind.events,
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
@@ -145,7 +145,7 @@ class _EventCalendarCardState extends State<EventCalendarCard> {
       title: widget.organizerKey == null
           ? 'Events calendar'
           : '${organizerName(widget.result, widget.organizerKey)} calendar',
-      glyph: GlyphKind.events,
+      glyph: AppIconKind.events,
       state: widget.result.state,
       fetchedAt: widget.result.fetchedAt,
       dragHandle: widget.dragHandle,

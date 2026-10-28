@@ -129,6 +129,7 @@ void main() {
     Size size = const Size(1500, 1000),
     Brightness brightness = Brightness.light,
     double textScale = 1,
+    TargetPlatform? platform,
   }) async {
     tester.view.devicePixelRatio = 1.0;
     tester.view.physicalSize = size;
@@ -139,7 +140,7 @@ void main() {
         seedColor: const Color(0xFFF76902),
         brightness: brightness,
       ),
-    );
+    ).copyWith(platform: platform);
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -299,6 +300,42 @@ void main() {
             );
           },
         );
+      }
+    }
+  }
+
+  // the pushed section on iOS: back chevron, call and text marks
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final brightness in Brightness.values) {
+      for (final textScale in const [1.0, 2.0]) {
+        final name = 'campus_safety_ios_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${textScale.toInt()}x.png';
+        goldenWidgets(name, (tester) async {
+          await pumpCampus(tester, size: size, brightness: brightness, textScale: textScale, platform: TargetPlatform.iOS);
+          await tester.tap(find.text('Safety'));
+          await tester.pumpAndSettle();
+          await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
+        });
+      }
+    }
+  }
+
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final brightness in Brightness.values) {
+      for (final textScale in const [1.0, 2.0]) {
+        final name = 'campus_nav_ios_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${textScale.toInt()}x.png';
+        goldenWidgets(name, (tester) async {
+          await pumpCampus(tester, size: size, brightness: brightness, textScale: textScale, platform: TargetPlatform.iOS);
+          expect(find.text('Mail'), findsOneWidget);
+          expect(find.text('Find on campus'), findsOneWidget);
+          await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
+          // at 2x the last rows are below the fold
+          if (textScale > 1) {
+            await tester.scrollUntilVisible(find.text('SHED makerspace'), 200);
+            await tester.pumpAndSettle();
+            await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/${name.replaceFirst('.png', '_end.png')}'));
+          }
+          expect(find.text('SHED makerspace'), findsOneWidget);
+        });
       }
     }
   }

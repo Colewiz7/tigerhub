@@ -146,3 +146,91 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: false
+
+  # 4. Simulator screenshots, the source of truth for iOS visuals. No signing,
+  #    no publishing, no secrets. Manual start only, like the others. Expect
+  #    roughly 12 to 17 macOS minutes.
+  ios-screens:
+    name: iOS 4 - simulator screenshots
+    max_build_duration: 25
+    instance_type: mac_mini_m2
+    environment:
+      flutter: *flutter
+      xcode: 26.6
+      cocoapods: default
+    scripts:
+      - name: Packages
+        script: |
+          set -eu
+          cd client
+          flutter pub get
+          sh integration_test/gen_fixtures.sh
+      - name: Boot an iPhone 16 Pro Max simulator
+        script: |
+          set -euo pipefail
+          xcrun simctl list runtimes
+          # newest installed ios runtime, whatever the image ships
+          RUNTIME=$(xcrun simctl list runtimes | grep '^iOS' | grep -v unavailable | tail -n 1 | grep -oE 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]+')
+          # the image only lists iphone 17 sims, 17 pro max has the same 1320x2868 screen
+          DEVICE=com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro-Max
+          if ! xcrun simctl list devicetypes | grep -F "($DEVICE)" > /dev/null; then
+            DEVICE=com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro-Max
+          fi
+          echo "device type: $DEVICE"
+          UDID=$(xcrun simctl create ios-screens "$DEVICE" "$RUNTIME")
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          echo "SIM_UDID=$UDID" >> "$CM_ENV"
+      # one run per appearance keeps each drive's screenshot payload small
+      - name: Screenshots, device screenshots and a tab bar scrub video, light
+        script: |
+          set -euo pipefail
+          cd client
+          xcrun simctl ui "$SIM_UDID" appearance light
+          mkdir -p build/ios_screens
+          trap 'pkill -INT -f "simctl io $SIM_UDID recordVideo" || true' EXIT
+          # records between the tests log lines, not the minutes of build
+          flutter drive --driver=test_driver/integration_test.dart --target=integration_test/ios_screens_test.dart -d "$SIM_UDID" --dart-define=SCREENS_APPEARANCE=light --dart-define=DEVICE_SHOTS=true 2>&1 | while IFS= read -r line || [ -n "$line" ]; do
+            echo "$line"
+            case "$line" in
+              # the real screen, with the status bar and home indicator
+              *"device shot "*)
+                rest=$(printf '%s' "${line##*device shot }" | tr -d '\r')
+                shot=${rest%% *}
+                xcrun simctl io "$SIM_UDID" screenshot "build/ios_screens/${shot}_device.png"
+                # the test holds still until this file exists
+                touch "${rest#* }" ;;
+              *"tab scrub start"*) xcrun simctl io "$SIM_UDID" recordVideo --codec=h264 --force build/tab_scrub.mp4 & rec=$! ;;
+              *"tab scrub end"*) kill -INT "$rec"; wait "$rec" ;;
+            esac
+          done
+          test -s build/tab_scrub.mp4
+      # apples own settings app, does simctl capture the home indicator at all
+      - name: Home indicator check
+        script: |
+          set -euo pipefail
+          xcrun simctl launch "$SIM_UDID" com.apple.Preferences
+          sleep 3
+          xcrun simctl io "$SIM_UDID" screenshot client/build/home_indicator_check.png
+          xcrun simctl terminate "$SIM_UDID" com.apple.Preferences
+      - name: Screenshots, dark
+        script: |
+          cd client
+          xcrun simctl ui "$SIM_UDID" appearance dark
+          flutter drive --driver=test_driver/integration_test.dart --target=integration_test/ios_screens_test.dart -d "$SIM_UDID" --dart-define=SCREENS_APPEARANCE=dark
+      - name: All 28 screenshots and 5 device screenshots exist and none is blank
+        script: |
+          set -euo pipefail
+          cd client/build/ios_screens
+          ls -l
+          test "$(ls -1 *.png | grep -vc '_device\.png$')" -eq 28
+          test "$(ls -1 *_device.png | wc -l | tr -d ' ')" -eq 5
+          # a blank 1320x2868 png compresses to a few kb
+          for f in *.png; do
+            test "$(stat -f %z "$f")" -gt 30000 || { echo "$f looks blank"; exit 1; }
+          done
+    artifacts:
+      - client/build/ios_screens/*.png
+      - client/build/tab_scrub.mp4
+      - client/build/home_indicator_check.png
+      - /tmp/xcodebuild_logs/*.log

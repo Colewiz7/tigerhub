@@ -21,6 +21,8 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
 
+import 'support/tabs.dart';
+
 class _EmptyBackend implements Backend {
   @override
   Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async {
@@ -61,8 +63,8 @@ void main() {
     ));
     await tester.pumpAndSettle();
 
-    for (final tab in ['DINING', 'EVENTS', 'MAP', 'CAMPUS', 'TODAY']) {
-      await tester.tap(find.text(tab));
+    for (final tab in ['Dining', 'Events', 'Map', 'Campus', 'Today']) {
+      await tester.tap(tabLabel(tab));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull, reason: '$tab threw in light mode');
     }

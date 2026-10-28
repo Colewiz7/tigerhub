@@ -22,6 +22,7 @@ import '../models/api_models.dart';
 import '../services/preferences.dart';
 import '../theme/semantic.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 
 /// The dietary tags RIT actually uses. Not an aspirational list.
 const List<String> knownDietaryTags = ['Vegan', 'Vegetarian'];
@@ -136,7 +137,7 @@ class _DishRow extends StatelessWidget {
                       label: 'CONTAINS ${flagged.first.toUpperCase()}',
                       foreground: semantic.closed,
                       background: semantic.closedContainer,
-                      icon: Icons.warning_amber_rounded,
+                      icon: AppIconKind.warning,
                     ),
                   ],
                 ],
@@ -156,7 +157,7 @@ class _DishRow extends StatelessWidget {
                         label: tag,
                         foreground: semantic.open,
                         background: semantic.openContainer,
-                        icon: Icons.eco_rounded,
+                        icon: AppIconKind.plant,
                       ),
                     for (final allergen in dish.allergens)
                       _Tag(
@@ -186,7 +187,7 @@ class _Tag extends StatelessWidget {
   final String label;
   final Color foreground;
   final Color background;
-  final IconData? icon;
+  final AppIconKind? icon;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -199,7 +200,7 @@ class _Tag extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 12, color: foreground),
+                Icon(icon!.of(context), size: 12, color: foreground),
                 const SizedBox(width: 5),
               ],
               Text(
@@ -231,7 +232,7 @@ class _Caveat extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.info_outline_rounded, size: 16, color: scheme.onSurfaceVariant),
+          Icon(AppIconKind.info.of(context), size: 16, color: scheme.onSurfaceVariant),
           const SizedBox(width: 10),
           Expanded(
             child: Text(

@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 import 'context_actions.dart';
 
 /// How prominent a row is. Dimmed rows recede without disappearing.
@@ -49,7 +50,7 @@ class StatusRow extends StatelessWidget {
 
   bool _isDense(BuildContext context) => dense && Insets.phone(context);
 
-  final IconData icon;
+  final AppIconKind icon;
   final String title;
   final String? subtitle;
 
@@ -173,7 +174,7 @@ class StatusRow extends StatelessWidget {
                         ),
                         // 18 in a 42px circle. At 21 the glyph very nearly filled
                         // its box, leaving a ring too thin to read as a badge.
-                        child: Icon(icon, size: 18, color: tint),
+                        child: AppIcon(icon, color: tint),
                       ),
                     ),
                     SizedBox(width: dense ? 10 : 13),
@@ -460,7 +461,7 @@ class GroupHeader extends StatelessWidget {
     this.dense = false,
   });
 
-  final IconData icon;
+  final AppIconKind icon;
   final String title;
   final int? count;
 
@@ -515,7 +516,7 @@ class GroupHeader extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(icon, size: 17, color: scheme.primary),
+              AppIcon(icon, size: 17, color: scheme.primary),
               const SizedBox(width: 9),
               Expanded(
                 child: Text(

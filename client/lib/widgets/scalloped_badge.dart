@@ -7,6 +7,8 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../motion/reduce_motion.dart';
+import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 
 /// A card's one hero number. On phones (under 600pt) it is an inline 28pt pill
@@ -60,6 +62,7 @@ class CardHero extends StatelessWidget {
                 color: foreground,
                 fontSize: 14,
                 letterSpacing: 0,
+                fontWeight: AppTheme.weight(Weights.medium),
                 fontVariations: Weights.medium,
               ),
             ),
@@ -94,10 +97,6 @@ class ScallopedBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
     final background = filled ? scheme.primary : scheme.surfaceContainerHighest;
     final foreground = filled ? scheme.onPrimary : scheme.onSurface;
 
@@ -128,7 +127,7 @@ class ScallopedBadge extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 AnimatedSwitcher(
-                  duration: reduceMotion
+                  duration: reduceMotion(context)
                       ? Duration.zero
                       : const Duration(milliseconds: 180),
                   switchInCurve: Curves.easeOutCubic,
@@ -152,6 +151,7 @@ class ScallopedBadge extends StatelessWidget {
                       // The display scale is deliberately light, but at badge
                       // size that reads as thin and washed out against the
                       // filled accent, so this one steps up.
+                      fontWeight: AppTheme.weight(Weights.medium),
                       fontVariations: Weights.medium,
                     ),
                     maxLines: 1,
@@ -171,6 +171,7 @@ class ScallopedBadge extends StatelessWidget {
                         fontSize: size * 0.135,
                         height: 1.1,
                         letterSpacing: 0.6,
+                        fontWeight: AppTheme.weight(Weights.bold),
                         fontVariations: Weights.bold,
                       ),
                       maxLines: 1,

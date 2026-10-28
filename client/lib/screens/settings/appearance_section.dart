@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../../theme/dynamic_theme.dart';
 import '../../theme/scheme_source.dart';
+import '../../widgets/app_icon.dart';
 import '../../widgets/status_row.dart';
+import '../../widgets/tab_bar.dart';
 
 class AppearanceSection extends StatefulWidget {
   const AppearanceSection({super.key, required this.scheme});
@@ -41,7 +43,7 @@ class _AppearanceSectionState extends State<AppearanceSection> {
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.fromLTRB(4, 6, 4, 24),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 12, top: 4),
@@ -63,14 +65,14 @@ class _AppearanceSectionState extends State<AppearanceSection> {
           ),
         ),
         StatusRow(
-          icon: Icons.palette_rounded,
+          icon: AppIconKind.appearance,
           title: 'Built-in palette',
           subtitle: 'RIT orange, light and dark, follows your system setting',
           emphasis: state.isDynamic ? RowEmphasis.dimmed : RowEmphasis.normal,
           onTap: () => widget.scheme.setForceSeed(true),
           trailing: state.isDynamic
               ? null
-              : Icon(Icons.check_circle_rounded, color: scheme.primary),
+              : Icon(AppIconKind.checkCircle.of(context), color: scheme.primary),
         ),
         // Desktop only, and hidden rather than merely disabled elsewhere.
         // Following the wallpaper reads a scheme file that a Linux desktop
@@ -79,7 +81,7 @@ class _AppearanceSectionState extends State<AppearanceSection> {
         // work is worse than an absent one.
         if (schemeSourceIsAvailable)
           StatusRow(
-            icon: Icons.wallpaper_rounded,
+            icon: AppIconKind.wallpaper,
             title: 'Follow my wallpaper',
             subtitle: state.isDynamic
                 ? (state.detail ?? 'reading the generated scheme')
@@ -87,7 +89,7 @@ class _AppearanceSectionState extends State<AppearanceSection> {
             emphasis: state.isDynamic ? RowEmphasis.normal : RowEmphasis.dimmed,
             onTap: () => widget.scheme.setForceSeed(false),
             trailing: state.isDynamic
-                ? Icon(Icons.check_circle_rounded, color: scheme.primary)
+                ? Icon(AppIconKind.checkCircle.of(context), color: scheme.primary)
                 : null,
           ),
         const SizedBox(height: 18),

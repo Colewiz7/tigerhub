@@ -12,9 +12,11 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../motion/reduce_motion.dart';
 import '../theme/tokens.dart';
-import 'glyph.dart';
+import 'app_icon.dart';
 import 'status_row.dart';
+import 'tab_bar.dart';
 
 class SectionSpec {
   const SectionSpec({
@@ -23,21 +25,12 @@ class SectionSpec {
     required this.subtitle,
     required this.icon,
     required this.builder,
-    this.glyph,
   });
 
   final String id;
   final String title;
   final String subtitle;
-
-  /// The Material fallback, used when [glyph] is null. Sections keep one:
-  /// the glyph-adoption spec deliberately does not cover every section,
-  /// and "Gym and pool" has no custom glyph.
-  final IconData icon;
-
-  /// The custom section glyph, where one exists. Section identity is exactly
-  /// what these are for.
-  final GlyphKind? glyph;
+  final AppIconKind icon;
 
   final WidgetBuilder builder;
 }
@@ -129,11 +122,7 @@ class _SectionPaneStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final media = MediaQuery.maybeOf(context);
-    final reduceMotion =
-        (media?.disableAnimations ?? false) ||
-        (media?.accessibleNavigation ?? false);
-    final duration = reduceMotion
+    final duration = reduceMotion(context)
         ? Duration.zero
         : const Duration(milliseconds: 180);
 
@@ -171,7 +160,7 @@ class _NavList extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
+    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(16, 6, 16, 24)),
     children: [
       for (final section in sections)
         SectionNavRow(
@@ -232,9 +221,8 @@ class SectionNavRow extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: badge,
                     ),
-                    child: spec.glyph == null
-                        ? Icon(spec.icon, size: 21, color: iconColor)
-                        : Glyph(spec.glyph!, size: 21, color: iconColor),
+                    // 18 in 42, same as StatusRow
+                    child: AppIcon(spec.icon, color: iconColor),
                   ),
                   const SizedBox(width: 13),
                   Expanded(

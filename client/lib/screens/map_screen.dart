@@ -15,6 +15,7 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../services/subscriptions.dart';
 import '../widgets/campus_map.dart';
+import '../widgets/tab_bar.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key, required this.api, this.events});
@@ -55,7 +56,8 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+        // the map doesnt scroll, so it stops above the bar
+        padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(12, 6, 12, 12)),
         child: CampusMapView(result: _map, events: widget.events),
       );
 }

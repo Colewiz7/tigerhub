@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import '../data/campus_time.dart';
 import '../services/api.dart';
 import '../theme/tokens.dart';
+import 'app_icon.dart';
 
 /// Relative age, formatting only. All real time logic lives on the server.
 String formatAge(DateTime when) {
@@ -61,7 +62,7 @@ class FreshnessLine extends StatelessWidget {
       child: Row(
         children: [
           if (failing) ...[
-            Icon(Icons.cloud_off_rounded, size: 12, color: color),
+            Icon(AppIconKind.offline.of(context), size: 12, color: color),
             const SizedBox(width: 4),
           ],
           Text(
@@ -120,7 +121,7 @@ class PrimingPlaceholder extends StatelessWidget {
                       ),
                       alignment: Alignment.center,
                       child: Icon(
-                        Icons.more_horiz_rounded,
+                        AppIconKind.more.of(context),
                         size: 20,
                         color: scheme.onPrimaryContainer,
                       ),

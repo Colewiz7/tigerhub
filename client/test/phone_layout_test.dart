@@ -108,9 +108,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final broken = <String>[];
-    for (final tab in ['TODAY', 'DINING', 'EVENTS', 'MAP', 'CAMPUS']) {
+    for (final tab in ['Today', 'Dining', 'Events', 'Map', 'Campus']) {
       // Scoped to the tab strip: a populated Today grid renders its own
-      // "TODAY" text in a card footer, so a bare text finder is ambiguous.
+      // "Today" text in a card footer, so a bare text finder is ambiguous.
       await tester.tap(
         find.descendant(of: find.byType(AppTabBar), matching: find.text(tab)),
       );
@@ -152,9 +152,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final broken = <String>[];
-    for (final tab in ['TODAY', 'DINING', 'EVENTS', 'MAP', 'CAMPUS']) {
+    for (final tab in ['Today', 'Dining', 'Events', 'Map', 'Campus']) {
       // Scoped to the tab strip: a populated Today grid renders its own
-      // "TODAY" text in a card footer, so a bare text finder is ambiguous.
+      // "Today" text in a card footer, so a bare text finder is ambiguous.
       await tester.tap(
         find.descendant(
           of: find.byType(AppTabBar),

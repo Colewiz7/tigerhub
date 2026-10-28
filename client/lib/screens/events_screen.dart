@@ -19,6 +19,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
 import '../widgets/hidden_footer.dart';
 import '../widgets/search_field.dart';
+import '../widgets/app_icon.dart';
 import '../widgets/status_row.dart';
 
 class EventsScreen extends StatefulWidget {
@@ -230,7 +231,7 @@ class _EventFilters extends StatelessWidget {
             children: [
               FilterChip(
                 label: const Text('Today'),
-                avatar: const Icon(Icons.today_rounded, size: 17),
+                avatar: Icon(AppIconKind.today.of(context), size: 17),
                 selected: todayOnly,
                 onSelected: onTodayChanged,
               ),
