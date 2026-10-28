@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/foundation.dart';
 
+import '../data/dining_layout.dart';
 import 'cache.dart';
 
 /// Keyword defaults, all editable.
@@ -46,6 +47,8 @@ class Preferences extends ChangeNotifier {
   static const _boostKey = 'boost_keywords';
   static const _keywordsEnabledKey = 'keyword_rules_enabled';
   static const _pinnedKey = 'pinned_dining';
+  static const _hiddenKey = 'hidden_dining';
+  static const _layoutKey = 'dining_layout';
   static const _dietKey = 'diet_filters';
   static const _avoidKey = 'avoid_allergens';
 
@@ -59,6 +62,8 @@ class Preferences extends ChangeNotifier {
 
   Set<String> _muted = {};
   Set<String> _pinned = {};
+  Set<String> _hidden = {};
+  DiningLayout _layout = DiningLayout.empty;
   Set<String> _diet = {};
   Set<String> _avoid = {};
   List<String> _hide = defaultHideKeywords;
@@ -76,6 +81,12 @@ class Preferences extends ChangeNotifier {
 
   /// Dining location ids, as strings. Pinned locations sort to the top.
   Set<String> get pinnedDining => _pinned;
+
+  /// Dining location ids hidden from the Dining tab and the Today card.
+  Set<String> get hiddenDining => _hidden;
+
+  /// The user's group edits, as diffs from the shipped groups.
+  DiningLayout get diningLayout => _layout;
 
   /// Dietary tags to keep, for example Vegan. Empty means no filter.
   Set<String> get dietFilters => _diet;
@@ -101,6 +112,9 @@ class Preferences extends ChangeNotifier {
     final cache = ResponseCache.instance;
     _muted = (await cache.readOrder(_mutedKey)).toSet();
     _pinned = (await cache.readOrder(_pinnedKey)).toSet();
+    _hidden = (await cache.readOrder(_hiddenKey)).toSet();
+    final layout = await cache.readOrder(_layoutKey);
+    _layout = DiningLayout.parse(layout.isEmpty ? null : layout.first);
     _diet = (await cache.readOrder(_dietKey)).toSet();
     _avoid = (await cache.readOrder(_avoidKey)).toSet();
 
@@ -218,6 +232,30 @@ class Preferences extends ChangeNotifier {
     await ResponseCache.instance.writeOrder(_pinnedKey, _pinned.toList());
   }
 
+  bool isHidden(int locationId) => _hidden.contains('$locationId');
+
+  Future<void> toggleHidden(int locationId) async {
+    final key = '$locationId';
+    _hidden = _hidden.contains(key) ? ({..._hidden}..remove(key)) : {..._hidden, key};
+    notifyListeners();
+    await ResponseCache.instance.writeOrder(_hiddenKey, _hidden.toList());
+  }
+
+  Future<void> unhideAllDining() async {
+    _hidden = {};
+    notifyListeners();
+    await ResponseCache.instance.writeOrder(_hiddenKey, const []);
+  }
+
+  Future<void> setDiningLayout(DiningLayout layout) async {
+    _layout = layout;
+    notifyListeners();
+    final encoded = layout.encode();
+    await ResponseCache.instance.writeOrder(_layoutKey, encoded == null ? const [] : [encoded]);
+  }
+
+  Future<void> resetDiningGroups() => setDiningLayout(DiningLayout.empty);
+
   Future<void> clearMutes() async {
     _muted = {};
     notifyListeners();
@@ -271,6 +309,8 @@ class Preferences extends ChangeNotifier {
   void resetForTests() {
     _muted = {};
     _pinned = {};
+    _hidden = {};
+    _layout = DiningLayout.empty;
     _diet = {};
     _avoid = {};
     _hide = defaultHideKeywords;
