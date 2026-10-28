@@ -13,14 +13,18 @@ import 'package:flutter/services.dart';
 import '../cards/dining_card.dart';
 import '../cards/visiting_chefs_card.dart' show VisitingChefsCard;
 import '../data/campus_time.dart';
-import '../data/dining_layout.dart' show otherGroupId;
+import '../data/dining_layout.dart';
 import '../data/dining_sections.dart';
 import '../data/static_config.dart';
 import '../data/local_backend.dart' show staleGraceMultiplier;
 import '../data/sources/food_trucks.dart' show foodTrucksCadence;
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../services/clipboard.dart';
 import '../widgets/app_icon.dart';
+import '../widgets/context_actions.dart';
+import '../widgets/dining_actions.dart';
+import '../widgets/dining_group_editor.dart';
 import '../widgets/jump_list.dart';
 import '../widgets/link_button.dart';
 import '../widgets/empty_state.dart';
@@ -46,6 +50,7 @@ class _DiningScreenState extends State<DiningScreen> {
   final _searchFocus = FocusNode();
   bool _openOnly = false;
   bool _pinnedOnly = false;
+  bool _editing = false;
   Result<Collection<MenuItem>> _features = const Result(
     value: null,
     state: DataState.priming,
@@ -168,6 +173,88 @@ class _DiningScreenState extends State<DiningScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _setLayout(DiningLayout layout) => _prefs.setDiningLayout(layout);
+
+  Future<void> _renameGroup(ResolvedGroup group, List<GroupDef> defaults) async {
+    final name = await promptGroupName(context, title: 'Rename group', initial: group.name);
+    if (name == null) return;
+    final defaultName = defaults.where((g) => g.id == group.id).map((g) => g.name).firstOrNull ?? '';
+    await _setLayout(_prefs.diningLayout.rename(group.id, name, defaultName: defaultName));
+  }
+
+  Future<void> _newGroup() async {
+    final name = await promptGroupName(context, title: 'New group');
+    if (name == null) return;
+    await _setLayout(_prefs.diningLayout.addCustom(name));
+  }
+
+  void _deleteGroup(ResolvedGroup group) {
+    final before = _prefs.diningLayout;
+    showFeedback(
+      context,
+      'Deleted ${group.name}',
+      action: SnackBarAction(label: 'Undo', onPressed: () => _setLayout(before)),
+    );
+    _setLayout(before.removeCustom(group.id));
+  }
+
+  // Pinned is not a group, so it has no header controls
+  List<JumpGroup> _editGroups(DiningSections sections, List<GroupDef> defaults) {
+    final order = _prefs.diningLayout.groupOrder(defaults);
+    return [
+      if (sections.pinned.isNotEmpty)
+        JumpGroup(
+          label: 'Pinned',
+          icon: AppIconKind.pinned,
+          count: 0,
+          builder: (context) => _PlaceSection(icon: AppIconKind.pinned, title: 'Pinned', places: sections.pinned, api: widget.api, editing: true),
+        ),
+      for (final section in sections.groups)
+        JumpGroup(
+          label: section.group.name,
+          icon: AppIconKind.dining,
+          count: 0,
+          builder: (context) {
+            final group = section.group;
+            final at = order.indexOf(group.id);
+            final movable = group.id != otherGroupId;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                EditGroupHeader(
+                  name: group.name,
+                  onRename: () => _renameGroup(group, defaults),
+                  onUp: movable && at > 0 ? () => _setLayout(_prefs.diningLayout.moveGroup(group.id, -1, defaults)) : null,
+                  onDown: movable && at < order.length - 2 ? () => _setLayout(_prefs.diningLayout.moveGroup(group.id, 1, defaults)) : null,
+                  onDelete: group.isDefault ? null : () => _deleteGroup(group),
+                ),
+                for (final location in section.places)
+                  DiningRow(
+                    key: ValueKey('place-${location.id}'),
+                    location: location,
+                    api: widget.api,
+                    onMove: () => showMoveToGroupSheet(context, location),
+                  ),
+              ],
+            );
+          },
+        ),
+      JumpGroup(
+        label: 'New group',
+        icon: AppIconKind.add,
+        count: 0,
+        builder: (context) => Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton.icon(
+            onPressed: _newGroup,
+            icon: AppIcon(AppIconKind.add, size: 18, color: Theme.of(context).colorScheme.primary),
+            label: const Text('New group'),
+          ),
+        ),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.result.isPriming) {
@@ -186,15 +273,17 @@ class _DiningScreenState extends State<DiningScreen> {
         })
         .toList();
     final config = StaticConfig.loadedOrNull;
+    final defaults = config?.diningGroups ?? const <GroupDef>[];
     final sections = buildDiningSections(
-      locations: locations,
+      locations: _editing ? (widget.result.value?.data ?? const <DiningLocation>[]) : locations,
       layout: _prefs.diningLayout,
-      defaults: config?.diningGroups ?? const [],
+      defaults: defaults,
       defaultGroupOf: config?.diningGroupFor ?? (_) => otherGroupId,
       pinned: _prefs.pinnedDining.toList(),
       hidden: _prefs.hiddenDining,
       // Open now leaves hidden places out
-      showHidden: !_openOnly && !_pinnedOnly,
+      showHidden: !_editing && !_openOnly && !_pinnedOnly,
+      keepEmpty: _editing,
     );
     final allMenuItems = [...(_features.value?.data ?? const <MenuItem>[])]
       ..sort((a, b) {
@@ -258,6 +347,8 @@ class _DiningScreenState extends State<DiningScreen> {
               pinnedOnly: _pinnedOnly,
               pinnedCount: _prefs.pinnedDining.length,
               resultCount: sections.visibleCount,
+              editing: _editing,
+              onEditChanged: (value) => setState(() => _editing = value),
               onQueryChanged: (_) => setState(() {}),
               onOpenChanged: (value) => setState(() => _openOnly = value),
               onPinnedChanged: (value) => setState(() => _pinnedOnly = value),
@@ -268,8 +359,12 @@ class _DiningScreenState extends State<DiningScreen> {
               }),
             ),
             Expanded(
-              child: JumpList(
-                groups: [
+              // long-press means nothing while editing, the rows carry buttons
+              child: ContextActionsScope(
+                enabled: !_editing,
+                child: JumpList(
+                  groups: _editing ? _editGroups(sections, defaults) : [
+
                   if (chefs.isNotEmpty)
                     JumpGroup(
                       label: 'Visiting chefs',
@@ -345,6 +440,7 @@ class _DiningScreenState extends State<DiningScreen> {
                       builder: (context) => _HiddenSection(places: sections.hidden, api: widget.api),
                     ),
                 ],
+                ),
               ),
             ),
           ],
@@ -355,8 +451,9 @@ class _DiningScreenState extends State<DiningScreen> {
 }
 
 class _PlaceSection extends StatelessWidget {
-  const _PlaceSection({required this.icon, required this.title, required this.places, required this.api});
+  const _PlaceSection({required this.icon, required this.title, required this.places, required this.api, this.editing = false});
 
+  final bool editing;
   final AppIconKind icon;
   final String title;
   final List<DiningLocation> places;
@@ -368,7 +465,13 @@ class _PlaceSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GroupHeader(icon: icon, title: title, count: places.where((l) => l.isOpen).length),
-        for (final location in places) DiningRow(key: ValueKey('place-${location.id}'), location: location, api: api),
+        for (final location in places)
+          DiningRow(
+            key: ValueKey('place-${location.id}'),
+            location: location,
+            api: api,
+            onMove: editing ? () => showMoveToGroupSheet(context, location) : null,
+          ),
       ],
     );
   }
@@ -444,6 +547,8 @@ class _DiningFilters extends StatelessWidget {
     required this.pinnedOnly,
     required this.pinnedCount,
     required this.resultCount,
+    required this.editing,
+    required this.onEditChanged,
     required this.onQueryChanged,
     required this.onOpenChanged,
     required this.onPinnedChanged,
@@ -456,6 +561,8 @@ class _DiningFilters extends StatelessWidget {
   final bool pinnedOnly;
   final int pinnedCount;
   final int resultCount;
+  final bool editing;
+  final ValueChanged<bool> onEditChanged;
   final ValueChanged<String> onQueryChanged;
   final ValueChanged<bool> onOpenChanged;
   final ValueChanged<bool> onPinnedChanged;
@@ -514,12 +621,19 @@ class _DiningFilters extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              '$resultCount ${resultCount == 1 ? 'place' : 'places'}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '$resultCount ${resultCount == 1 ? 'place' : 'places'}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+              TextButton(
+                onPressed: () => onEditChanged(!editing),
+                child: Text(editing ? 'Done' : 'Edit groups'),
+              ),
+            ],
           ),
         ],
       ),

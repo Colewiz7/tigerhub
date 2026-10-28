@@ -31,6 +31,8 @@ DiningSections buildDiningSections({
   required List<String> pinned,
   required Set<String> hidden,
   bool showHidden = true,
+  // edit mode lists groups with no places too, apart from Other
+  bool keepEmpty = false,
 }) {
   bool isHidden(DiningLocation l) => hidden.contains('${l.id}');
   final visible = [
@@ -59,7 +61,7 @@ DiningSections buildDiningSections({
       ...ordered.where((l) => l.isOpen),
       ...ordered.where((l) => !l.isOpen),
     ];
-    if (places.isNotEmpty) groups.add(GroupSection(group: group, places: places));
+    if (places.isNotEmpty || (keepEmpty && group.id != otherGroupId)) groups.add(GroupSection(group: group, places: places));
   }
 
   final hiddenPlaces = showHidden

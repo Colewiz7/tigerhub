@@ -235,9 +235,13 @@ class DiningRow extends StatelessWidget {
     required this.location,
     this.api,
     this.dense = false,
+    this.onMove,
   });
 
   final DiningLocation location;
+
+  /// Edit mode: a Move button replaces the long-press menu.
+  final VoidCallback? onMove;
 
   /// The dashboard's condensed phone row.
   final bool dense;
@@ -278,6 +282,7 @@ class DiningRow extends StatelessWidget {
     }
 
     final client = api;
+    final moving = onMove;
     return StatusRow(
       dense: dense,
       icon: Preferences.instance.isPinned(location.id)
@@ -290,11 +295,25 @@ class DiningRow extends StatelessWidget {
       onTap: client == null
           ? null
           : () => DiningDetailPage.open(context, location, client),
-      trailing: trailing,
+      trailing: moving == null ? trailing : _MoveButton(onPressed: moving),
       // the Today card previews, so only the tab carries the menu
       actions: client == null ? const [] : diningActions(location),
     );
   }
+}
+
+class _MoveButton extends StatelessWidget {
+  const _MoveButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    tooltip: moveToGroupLabel,
+    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+    onPressed: onPressed,
+    icon: AppIcon(AppIconKind.allPlaces, size: 20, color: Theme.of(context).colorScheme.primary),
+  );
 }
 
 class _StatusPill extends StatelessWidget {

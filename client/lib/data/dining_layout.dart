@@ -160,6 +160,18 @@ class DiningLayout {
     return _with(order: same ? const [] : current);
   }
 
+  // swaps with the neighbour, Other never takes part
+  DiningLayout moveGroup(String id, int step, List<GroupDef> defaults) {
+    final current = groupOrder(defaults);
+    final from = current.indexOf(id);
+    final to = from + step;
+    if (id == otherGroupId || from < 0 || to < 0 || to >= current.length - 1) return this;
+    final next = [...current];
+    next[from] = current[to];
+    next[to] = id;
+    return reorder(next, [for (final g in defaults) if (g.id != otherGroupId) g.id, otherGroupId]);
+  }
+
   DiningLayout addCustom(String name) {
     final trimmed = name.trim();
     if (trimmed.isEmpty) return this;
