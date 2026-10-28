@@ -676,12 +676,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   // A Stack, as before the header controls moved into the
                   // card: it hands the card loose constraints, so a card
                   // keeps its natural height inside its cell.
-                  child: Stack(
-                    children: [
-                      pairs.contains(index)
-                          ? CompactPair(child: _cardFor(shown[index]))
-                          : _cardFor(shown[index]),
-                    ],
+                  child: HitSlopRegion(
+                    child: Stack(
+                      children: [
+                        pairs.contains(index)
+                            ? CompactPair(child: _cardFor(shown[index]))
+                            : _cardFor(shown[index]),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -1311,12 +1313,13 @@ class EditControls extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(
     width: editControlsWidth,
     child: Row(
+      // 32 to see, 48 to tap
       children: [
-        _DragHandle(onActivate: onInspect),
+        HitSlopTarget(child: _DragHandle(onActivate: onInspect)),
         const SizedBox(width: 6),
-        _InspectButton(selected: selected, onTap: onInspect),
+        HitSlopTarget(child: _InspectButton(selected: selected, onTap: onInspect)),
         const SizedBox(width: 6),
-        _RemoveButton(onTap: onRemove),
+        HitSlopTarget(child: _RemoveButton(onTap: onRemove)),
       ],
     ),
   );
