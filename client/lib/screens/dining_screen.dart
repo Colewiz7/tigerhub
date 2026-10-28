@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import '../cards/dining_card.dart';
 import '../cards/visiting_chefs_card.dart' show VisitingChefsCard;
 import '../data/campus_time.dart';
+import '../data/chef_listing.dart';
 import '../data/dining_layout.dart';
 import '../data/dining_sections.dart';
 import '../data/static_config.dart';
@@ -86,7 +87,7 @@ class _DiningScreenState extends State<DiningScreen> {
     }
     final today = CampusTime.wallDate();
     return [
-      for (final chef in chefs.data)
+      for (final chef in listedChefs(chefs.data))
         if (chef.name.isNotEmpty &&
             (chef.startsAt == null ||
                 DateUtils.isSameDay(CampusTime.fieldsOf(chef.startsAt!), today)) &&

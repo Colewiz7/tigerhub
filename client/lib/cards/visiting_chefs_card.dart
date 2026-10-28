@@ -8,10 +8,13 @@
 /// none today (a real quiet day), and unavailable (nobody could say).
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../data/campus_time.dart';
+import '../data/chef_listing.dart';
 import '../data/sources/rit_chefs.dart' show ritDiningPageUrl;
 import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
@@ -30,13 +33,15 @@ import '../widgets/status_row.dart';
 /// The compact answer. Null while loading, so nothing is claimed.
 String? chefsCompactValue(Result<Collection<MenuItem>> result) {
   if (result.isPriming) return null;
-  final all = result.value?.data ?? const <MenuItem>[];
+  final all = listedChefs(result.value?.data ?? const <MenuItem>[]);
   if (all.isNotEmpty) return '${all.length} today';
+  final fetched = result.value?.data ?? const <MenuItem>[];
   final down = (result.value?.availability ?? Availability.available) == Availability.unavailable;
-  return down ? 'Unavailable' : 'None today';
+  if (down) return 'Unavailable';
+  return fetched.isEmpty ? 'None today' : 'No more chefs';
 }
 
-class VisitingChefsCard extends StatelessWidget {
+class VisitingChefsCard extends StatefulWidget {
   const VisitingChefsCard({
     super.key,
     required this.result,
@@ -55,9 +60,79 @@ class VisitingChefsCard extends StatelessWidget {
   /// TigerCenter specials and has none of these chefs, so "+N more" now opens
   /// a sheet of all of them instead. Kept so existing callers still compile.
   final VoidCallback? onShowAll;
+
+  @override
+  State<VisitingChefsCard> createState() => _VisitingChefsCardState();
+
+  /// "11:00 AM to 2:00 PM", on the campus clock. Null when RIT gave no time,
+  /// which is never filled in by guessing.
+  static String? window(MenuItem chef) {
+    final start = chef.startsAt;
+    final end = chef.endsAt;
+    if (start != null && end != null) {
+      return '${_clock(start)} to ${_clock(end)}';
+    }
+    if (start != null) return 'from ${_clock(start)}';
+    if (end != null) return 'until ${_clock(end)}';
+    return null;
+  }
+
+  /// "11 AM" on the hour and "4:30 PM" otherwise. The ":00" is dropped because
+  /// at large text it is what pushed the window onto a second line.
+  static String _clock(DateTime when) {
+    final f = CampusTime.fieldsOf(when);
+    if (f.minute == 0 && f.hour != 0 && f.hour != 12) {
+      return DateFormat('h a').format(f);
+    }
+    return formatClock(when);
+  }
+}
+
+class _VisitingChefsCardState extends State<VisitingChefsCard> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _arm();
+  }
+
+  @override
+  void didUpdateWidget(VisitingChefsCard old) {
+    super.didUpdateWidget(old);
+    if (!identical(old.result, widget.result)) _arm();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  // one shot to the next cutoff, rebuilt from the clock when it fires
+  void _arm() {
+    _timer?.cancel();
+    _timer = null;
+    final data = widget.result.value?.data ?? const <MenuItem>[];
+    final next = nextChefCutoff(data);
+    if (next == null) return;
+    var wait = next.difference(CampusTime.nowUtc());
+    // a clock that hasnt moved must not spin
+    if (wait < const Duration(seconds: 1)) wait = const Duration(seconds: 1);
+    _timer = Timer(wait, () {
+      if (!mounted) return;
+      setState(() {});
+      _arm();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final all = result.value?.data ?? const <MenuItem>[];
+    final result = widget.result;
+    final dragHandle = widget.dragHandle;
+    final compact = widget.compact;
+    final fetched = result.value?.data ?? const <MenuItem>[];
+    final all = listedChefs(fetched);
     final value = result.value;
     final availability = value?.availability ?? Availability.available;
 
@@ -111,8 +186,12 @@ class VisitingChefsCard extends StatelessWidget {
               action: const _DiningLink(),
             ),
           ),
-        (_, true) => const _Centered(
-          EmptyState(kind: EmptyKind.noVisitingChefs, fill: true),
+        (_, true) => _Centered(
+          EmptyState(
+            kind: EmptyKind.noVisitingChefs,
+            fill: true,
+            title: fetched.isEmpty ? null : 'No more chefs today',
+          ),
         ),
         _ => BoundedList(
           itemCount: all.length,
@@ -130,7 +209,7 @@ class VisitingChefsCard extends StatelessWidget {
             icon: AppIconKind.menu,
             title: all[index].name,
             subtitle: [
-              ?window(all[index]),
+              ?VisitingChefsCard.window(all[index]),
               all[index].locationName,
             ].where((s) => s.isNotEmpty).join(' · '),
           ),
@@ -138,30 +217,6 @@ class VisitingChefsCard extends StatelessWidget {
       },
     );
   }
-
-  /// "11:00 AM to 2:00 PM", on the campus clock. Null when RIT gave no time,
-  /// which is never filled in by guessing.
-  static String? window(MenuItem chef) {
-    final start = chef.startsAt;
-    final end = chef.endsAt;
-    if (start != null && end != null) {
-      return '${_clock(start)} to ${_clock(end)}';
-    }
-    if (start != null) return 'from ${_clock(start)}';
-    if (end != null) return 'until ${_clock(end)}';
-    return null;
-  }
-
-  /// "11 AM" on the hour and "4:30 PM" otherwise. The ":00" is dropped because
-  /// at large text it is what pushed the window onto a second line.
-  static String _clock(DateTime when) {
-    final f = CampusTime.fieldsOf(when);
-    if (f.minute == 0 && f.hour != 0 && f.hour != 12) {
-      return DateFormat('h a').format(f);
-    }
-    return formatClock(when);
-  }
-
 }
 
 /// One chef: a badge, the name, then the time and the location, each allowed
