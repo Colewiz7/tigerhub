@@ -70,7 +70,7 @@ void main() {
 
   // campus midnight oct 14 is 04:00 utc, oct 15 is 04:00 utc the next day.
   // every instant here is utc, so the result is the same in any device zone
-  final allDay = CampusEvent(uid: 'fair', source: 'drupal', title: 'Career fair', startsAt: DateTime.utc(2026, 10, 14, 4), allDay: true, organizer: 'RIT', organizerKey: 'rit');
+  final allDay = CampusEvent(uid: 'fair', source: 'drupal', title: 'Homecoming fair', startsAt: DateTime.utc(2026, 10, 14, 4), allDay: true, organizer: 'RIT', organizerKey: 'rit');
   final open = CampusEvent(uid: 'talk', source: 'test', title: 'Open studio', startsAt: DateTime.utc(2026, 10, 14, 15), organizer: 'Art Club', organizerKey: 'art');
   final multi = CampusEvent(uid: 'expo', source: 'campusgroups', title: 'Art expo', startsAt: DateTime.utc(2026, 10, 13, 4), endsAt: DateTime.utc(2026, 10, 15, 4), allDay: true, organizer: 'Gallery', organizerKey: 'gallery');
 

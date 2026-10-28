@@ -28,6 +28,7 @@ import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/home_screen.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
@@ -257,10 +258,14 @@ void main() {
   // Real Rubik, loaded once for the file the way goldenWidgets does.
   setUpAll(loadGoldenFonts);
 
-  setUp(() {
+  setUp(() async {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
+    // the base had no filters on today
+    await Preferences.instance.setKeywordRulesEnabled(false);
   });
+
+  tearDown(() => Preferences.instance.setKeywordRulesEnabled(true));
 
   for (final edit in const [false, true]) {
     // 'rows' leads each Events group with the all day and the past event, so

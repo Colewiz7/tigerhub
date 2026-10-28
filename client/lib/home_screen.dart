@@ -26,6 +26,8 @@ import 'models/api_models.dart';
 import 'motion/reduce_motion.dart';
 import 'services/api.dart';
 import 'services/dashboard.dart';
+import 'services/event_filter.dart';
+import 'services/preferences.dart';
 import 'theme/tokens.dart';
 import 'widgets/app_icon.dart';
 import 'widgets/card_shell.dart' show editControlsWidth;
@@ -326,16 +328,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // today shows what is still ahead, ended events drop off
-  Result<Collection<CampusEvent>> get _upcomingEvents {
+  Result<Collection<CampusEvent>> get _upcomingEvents => _upcoming(false);
+
+  // saved mutes and hide words apply too
+  Result<Collection<CampusEvent>> get _filteredUpcomingEvents =>
+      _upcoming(true);
+
+  Result<Collection<CampusEvent>> _upcoming(bool applyFilters) {
     final result = widget.events;
     final value = result.value;
     if (value == null) return result;
     final now = CampusTime.nowUtc();
+    final visible = applyFilters
+        ? {
+            for (final group
+                in filterEvents(value.data, Preferences.instance).groups)
+              for (final item in group.visible) item.event,
+          }
+        : null;
     return Result(
       value: Collection(
         data: [
           for (final event in value.data)
-            if (eventEnd(event).isAfter(now)) event,
+            if (eventEnd(event).isAfter(now) &&
+                (visible == null || visible.contains(event)))
+              event,
         ],
         stale: value.stale,
         lastUpdated: value.lastUpdated,
@@ -396,12 +413,15 @@ class _HomeScreenState extends State<HomeScreen> {
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(1),
         ),
-        ModuleType.generalEvents => EventsCard(
-          result: _upcomingEvents,
-          organizerKey: card.scope,
-          compact: card.size == CardSize.compact,
-          dragHandle: controls,
-          onShowAll: () => widget.onGoToTab(2),
+        ModuleType.generalEvents => ListenableBuilder(
+          listenable: Preferences.instance,
+          builder: (context, _) => EventsCard(
+            result: _filteredUpcomingEvents,
+            organizerKey: card.scope,
+            compact: card.size == CardSize.compact,
+            dragHandle: controls,
+            onShowAll: () => widget.onGoToTab(2),
+          ),
         ),
         ModuleType.clubEvents => ScopedEventsCard(
           result: _upcomingEvents,
