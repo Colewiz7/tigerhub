@@ -17,6 +17,7 @@ import '../widgets/card_shell.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/freshness.dart';
 import '../services/preferences.dart';
+import '../widgets/dining_actions.dart';
 import '../widgets/dining_detail_sheet.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
@@ -290,6 +291,8 @@ class DiningRow extends StatelessWidget {
           ? null
           : () => DiningDetailPage.open(context, location, client),
       trailing: trailing,
+      // the Today card previews, so only the tab carries the menu
+      actions: client == null ? const [] : diningActions(location),
     );
   }
 }

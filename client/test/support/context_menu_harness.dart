@@ -38,6 +38,25 @@ class Unmutes extends MenuEffect {
   final String key;
 }
 
+// pin and hide say where the place should end up
+class SetsPinned extends MenuEffect {
+  const SetsPinned(this.id, this.pinned);
+  final int id;
+  final bool pinned;
+}
+
+class SetsHidden extends MenuEffect {
+  const SetsHidden(this.id, this.hidden, {this.name});
+  final int id;
+  final bool hidden;
+  // set when hiding speaks and offers Undo
+  final String? name;
+}
+
+class OpensMoveSheet extends MenuEffect {
+  const OpensMoveSheet();
+}
+
 class MenuSurface {
   const MenuSurface({
     required this.name,
@@ -243,12 +262,30 @@ void expectEffect(WidgetTester tester, MenuProbe probe, MenuEffect effect, Strin
       expect(probe.announcements, ['Muted $name'], reason: '$label announcement');
     case Unmutes(:final key):
       expect(Preferences.instance.mutedOrganizers, isNot(contains(key)), reason: '$label unmute');
+    case SetsPinned(:final id, :final pinned):
+      expect(Preferences.instance.isPinned(id), pinned, reason: '$label pin');
+    case SetsHidden(:final id, :final hidden, :final name):
+      expect(Preferences.instance.isHidden(id), hidden, reason: '$label hide');
+      if (name != null) {
+        expect(find.text('Hid $name'), findsOneWidget, reason: '$label snackbar');
+        expect(find.text('Undo'), findsOneWidget, reason: '$label undo');
+        expect(probe.announcements, ['Hid $name'], reason: '$label announcement');
+      }
+    case OpensMoveSheet():
+      expect(find.text('Move to group'), findsWidgets, reason: '$label sheet');
+      expect(find.text('Dorm side'), findsOneWidget, reason: '$label lists the groups');
   }
 }
 
 Future<void> resetAfterEffect(WidgetTester tester, MenuProbe probe, MenuEffect effect) async {
   if (effect case Mutes(:final key)) await Preferences.instance.setMuted(key, false);
   if (effect case Unmutes(:final key)) await Preferences.instance.setMuted(key, true);
+  if (effect case SetsPinned(:final id)) await Preferences.instance.togglePinned(id);
+  if (effect case SetsHidden(:final id)) await Preferences.instance.toggleHidden(id);
+  if (effect is OpensMoveSheet) {
+    await tester.tapAt(const Offset(2, 2));
+    await tester.pumpAndSettle();
+  }
   ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first)).removeCurrentSnackBar();
   await tester.pumpAndSettle();
   probe.clear();
