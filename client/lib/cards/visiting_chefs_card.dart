@@ -57,6 +57,9 @@ class VisitingChefsCard extends StatelessWidget {
       // now" over a first run outage that had never held any chefs.
       fetchedAt: value?.lastUpdated,
       dragHandle: dragHandle,
+      // no chefs tab, the header opens the sheet
+      onOpen: all.isEmpty ? null : () => _showAllChefs(context, all),
+      openLabel: 'shows all chefs',
       // This feed is already scoped to today, so its count is honest and
       // immediately useful. The individual chef name remains the hero of each
       // row; this is the one card-level number. It stays in the header at

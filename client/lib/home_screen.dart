@@ -452,6 +452,7 @@ class _HomeScreenState extends State<HomeScreen> {
           facilityName: card.scope,
           compact: card.size == CardSize.compact,
           dragHandle: controls,
+          onShowAll: () => widget.onGoToTab(4),
         ),
         ModuleType.campusMap => DashboardMapCard(
           result: _campusMap,

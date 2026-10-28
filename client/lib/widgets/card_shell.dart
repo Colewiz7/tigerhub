@@ -47,9 +47,23 @@ class CardShell extends StatelessWidget {
     this.hero,
     this.dragHandle,
     this.glyph,
+    this.onOpen,
+    this.openLabel,
   });
 
+  /// Whether the card above [context] is a phone card whose header links to
+  /// the rest, so its list drops the "+N" footer.
+  static bool linkedOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_CardLinked>() != null;
+
   final String title;
+
+  /// Phones: the header (title and a chevron) opens the full list. Inert in
+  /// edit mode. Wider windows keep the "+N" footer instead.
+  final VoidCallback? onOpen;
+
+  /// Where [onOpen] goes, read after the title: "opens Dining".
+  final String? openLabel;
 
   /// Section identity. Cards without one show the title alone.
   final AppIconKind? glyph;
@@ -67,6 +81,7 @@ class CardShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (onOpen != null && Insets.phone(context)) return _linked(context);
     final scheme = Theme.of(context).colorScheme;
 
     return Material(
@@ -127,6 +142,82 @@ class CardShell extends StatelessWidget {
       ),
     );
   }
+
+  // the same geometry, padding split around a tappable header band
+  Widget _linked(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final pad = Insets.cardPaddingFor(context);
+    final editing = dragHandle != null;
+    final header = _CardHeader(
+      hasHero: hero != null,
+      editing: editing,
+      legacy: false,
+      title: Semantics(
+        container: true,
+        button: !editing,
+        label: openLabel == null ? title : '$title, $openLabel',
+        excludeSemantics: true,
+        onTap: editing ? null : onOpen,
+        child: _CardTitle(title: title, glyph: glyph, legacy: false, chevron: true),
+      ),
+      freshness: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: FreshnessLine(state: state, fetchedAt: fetchedAt),
+      ),
+      hero: hero == null
+          ? const SizedBox.shrink()
+          : FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerRight, child: hero!),
+      controls: dragHandle ?? const SizedBox.shrink(),
+    );
+    return Material(
+      elevation: 0,
+      color: scheme.surfaceContainerLow,
+      borderRadius: Shapes.cardFor(context),
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, box) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // card top to content is 56, all of it the link
+            InkWell(
+              onTap: editing ? null : onOpen,
+              excludeFromSemantics: true,
+              canRequestFocus: !editing,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(pad, pad, pad, 8),
+                child: header,
+              ),
+            ),
+            _FlexibleIfBounded(
+              bounded: box.maxHeight.isFinite,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(pad, 0, pad, pad),
+                // rows stay apart from the link and the cards move actions
+                child: Semantics(
+                  container: true,
+                  child: _CardLinked(
+                    child: KeyedSubtree(
+                      key: ValueKey(state == DataState.priming),
+                      child: child,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CardLinked extends InheritedWidget {
+  const _CardLinked({required super.child});
+
+  @override
+  bool updateShouldNotify(_CardLinked oldWidget) => false;
 }
 
 /// A Flexible when the column it sits in has a height to share, the child as
@@ -150,10 +241,12 @@ class _CardTitle extends StatelessWidget {
     required this.title,
     required this.glyph,
     required this.legacy,
+    this.chevron = false,
   });
 
   final String title;
   final AppIconKind? glyph;
+  final bool chevron;
 
   /// The 600pt and wider title, as it was before the phone condense: given a
   /// finite height it keeps only the lines that fit and ellipsizes past them.
@@ -175,6 +268,15 @@ class _CardTitle extends StatelessWidget {
           const SizedBox(width: 9),
         ],
         Flexible(child: Text(title, style: style)),
+        if (chevron) ...[
+          const SizedBox(width: 4),
+          Icon(
+            AppIconKind.chevron.of(context),
+            size: 17,
+            applyTextScaling: true,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ],
       ],
     );
   }

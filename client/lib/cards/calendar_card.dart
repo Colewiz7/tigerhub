@@ -139,6 +139,8 @@ class _CalendarCardState extends State<CalendarCard> {
       state: widget.result.state,
       fetchedAt: widget.result.fetchedAt,
       dragHandle: widget.dragHandle,
+      onOpen: widget.onShowAll,
+      openLabel: 'opens Events',
       // The week's total, not today's: this card exists to show the shape of
       // the week, so the number that matches it is the week's.
       hero: events.isEmpty

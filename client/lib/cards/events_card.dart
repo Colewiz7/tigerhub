@@ -119,6 +119,8 @@ class EventsCard extends StatelessWidget {
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
+      onOpen: onShowAll,
+      openLabel: 'opens Events',
       // "Today" is the useful card-level answer. The full feed can span
       // weeks, so its total would look impressive without helping a student
       // decide whether there is anything happening now.

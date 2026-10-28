@@ -29,7 +29,7 @@ import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/more_row.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart';
-import 'package:tigerhub/widgets/touch_target.dart';
+import 'package:tigerhub/widgets/status_row.dart';
 
 import 'golden_harness.dart';
 
@@ -293,6 +293,22 @@ void main() {
         for (var i = 0; i < 6; i++)
           MenuItem(id: i, name: 'Chef $i', locationName: 'RITZ'),
       ];
+      // the footer lives from 600pt, a phone header links instead
+      await _pump(
+        tester,
+        result: Result(
+          value: ChefCollection(data: many, stale: false),
+          state: DataState.ok,
+        ),
+        size: const Size(700, 900),
+        brightness: Brightness.light,
+        scale: 2,
+        height: 560,
+      );
+      expect(find.textContaining(RegExp(r'^\+\d+ more$')), findsOneWidget);
+      expect(find.textContaining(RegExp(r'^\+\d+ chefs?$')), findsNothing);
+
+      // a phone previews three rows (phonePreviewRows) and counts none
       await _pump(
         tester,
         result: Result(
@@ -303,23 +319,31 @@ void main() {
         brightness: Brightness.light,
         scale: 2,
       );
-      // A phone previews three rows (phonePreviewRows), then counts the rest.
-      expect(find.text('+3 more'), findsOneWidget);
-      expect(find.textContaining('+3 chefs'), findsNothing);
+      expect(find.byType(StatusRow), findsNWidgets(3));
+      expect(find.textContaining(RegExp(r'^\+\d+')), findsNothing);
+    });
 
-      // One left over reads "+1 more", never "+1 chefs".
+    testWidgets('on a phone the header opens every chef', (tester) async {
+      final handle = tester.ensureSemantics();
+      final many = [
+        for (var i = 0; i < 6; i++)
+          MenuItem(id: i, name: 'Chef $i', locationName: 'RITZ'),
+      ];
       await _pump(
         tester,
-        result: Result(
-          value: ChefCollection(data: many.take(4).toList(), stale: false),
-          state: DataState.ok,
-        ),
+        result: Result(value: ChefCollection(data: many, stale: false), state: DataState.ok),
         size: const Size(390, 844),
         brightness: Brightness.light,
-        scale: 2,
+        scale: 1,
       );
-      expect(find.text('+1 more'), findsOneWidget);
-      expect(find.text('+1 chefs'), findsNothing);
+      final link = find.bySemanticsLabel('Visiting Chefs, shows all chefs');
+      expect(link, findsOneWidget);
+      expect(tester.getSemantics(link), isSemantics(isButton: true, hasTapAction: true));
+
+      await tester.tap(find.text('Visiting Chefs'));
+      await tester.pumpAndSettle();
+      expect(find.text('6 visiting chefs today'), findsOneWidget);
+      handle.dispose();
     });
 
     testWidgets('a first run outage never says just now', (
@@ -392,30 +416,36 @@ void main() {
         ),
     ];
 
+    // the footer is the 600pt and wider layout now
     Future<void> pumpMany(WidgetTester tester) => _pump(
       tester,
       result: Result(
         value: ChefCollection(data: many, stale: false),
         state: DataState.ok,
       ),
-      size: const Size(390, 844),
+      size: const Size(700, 900),
       brightness: Brightness.light,
       scale: 1,
+      height: 560,
     );
 
     final pill = find.textContaining(RegExp(r'^\+\d+ more$'));
     final sheet = find.byType(BottomSheet);
 
-    testWidgets('is a 48px touch target', (tester) async {
-      await pumpMany(tester);
-      expect(pill, findsOneWidget);
-      // The footer text is a 28 tall row inside a 48 tall hit region.
-      final band = find.ancestor(of: pill, matching: find.byType(TouchTarget));
-      expect(tester.getSize(band.first).height, greaterThanOrEqualTo(48));
-      expect(tester.getSize(band.first).width, greaterThanOrEqualTo(48));
-      // A tap at the edge of the band, off the text, still opens the sheet.
-      final rect = tester.getRect(band.first);
-      await tester.tapAt(Offset(rect.left + 2, rect.top + 2));
+    testWidgets('on a phone the header that replaces it is a 48px touch target', (tester) async {
+      await _pump(
+        tester,
+        result: Result(value: ChefCollection(data: many, stale: false), state: DataState.ok),
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 1,
+      );
+      expect(pill, findsNothing);
+      final band = find.ancestor(of: find.text('Visiting Chefs'), matching: find.byType(InkWell)).first;
+      expect(tester.getSize(band).height, greaterThanOrEqualTo(48));
+      // a tap at the edge of the band, off the text, still opens the sheet
+      final rect = tester.getRect(band);
+      await tester.tapAt(Offset(rect.left + 4, rect.center.dy));
       await tester.pumpAndSettle();
       expect(sheet, findsOneWidget);
     });
@@ -470,8 +500,8 @@ void main() {
           brightness: mode,
           scale: scale,
         );
-        await tester.ensureVisible(pill);
-        await tester.tap(pill);
+        // a phone opens it from the header
+        await tester.tap(find.text('Visiting Chefs'));
         await tester.pumpAndSettle();
         await expectLater(
           find.byType(MaterialApp),
@@ -565,7 +595,7 @@ void main() {
           scale: 1,
           height: width >= 600 ? 560 : null,
         );
-        await tester.tap(pill);
+        await tester.tap(width >= 600 ? pill : find.text('Visiting Chefs'));
         await tester.pumpAndSettle();
         final shape = tester.widget<BottomSheet>(sheet).shape!
             as RoundedRectangleBorder;

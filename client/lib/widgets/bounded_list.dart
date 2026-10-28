@@ -12,6 +12,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import 'card_shell.dart';
 import 'more_row.dart';
 import 'touch_target.dart';
 
@@ -76,8 +77,10 @@ class BoundedList extends StatelessWidget {
           // lines), so there is no row height to divide: the preview is the
           // first [cap] rows.
           final shown = itemCount < cap ? itemCount : cap;
-          final footerHidden =
-              hiddenCountBuilder?.call(shown) ?? itemCount - shown;
+          // a linked header replaces the footer, the hero counts the rest
+          final footerHidden = CardShell.linkedOf(context)
+              ? 0
+              : hiddenCountBuilder?.call(shown) ?? itemCount - shown;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,

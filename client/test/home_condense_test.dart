@@ -25,7 +25,6 @@ import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart' show CardHero;
 import 'package:tigerhub/widgets/status_row.dart';
-import 'package:tigerhub/widgets/touch_target.dart';
 
 import 'golden_harness.dart';
 
@@ -251,14 +250,12 @@ void main() {
       expect(pill.right, dining.right - 16);
       expect(find.text('14 open'), findsOneWidget);
 
-      // footer: one 28 text row, "+11 open", directly under the rows
-      final footer = find.text('+11 open');
-      expect(footer, findsOneWidget);
-      expect(tester.getSize(footer).height, lessThanOrEqualTo(28));
+      // no footer, the header links to the tab and the hero counts
+      expect(find.textContaining('open', findRichText: true), findsOneWidget);
+      expect(find.text('+11 open'), findsNothing);
 
-      // 3 rows: 288. The footer's 48 tall hit region (see the footer test
-      // below) is real layout space, 12 more than a 36 block.
-      expect(dining.height, 288);
+      // 56 to the first row, 3 rows of 52 plus their 4 gap, 16 padding
+      expect(dining.height, 56 + 3 * 56 + 16);
 
       final chefRow = tester.getRect(
         find
@@ -277,8 +274,9 @@ void main() {
       // title, the "2 today" pill and the three 32 wide edit controls do not fit
       // on one row of a 358 (or 408) wide card, so the title wraps beside the
       // controls and the header, which keeps the same height in edit mode, is
-      // 56 tall instead of 32 (16 + 56 + 8 = 80). Pinned here so a change shows.
-      expect(chefRow.top - chefs.top, 80);
+      // taller than 32: 56 (16 + 56 + 8 = 80). At 390 the link chevron after
+      // the title wraps it once more, 66. Pinned here so a change shows.
+      expect(chefRow.top - chefs.top, size.width < 400 ? 90 : 80);
 
       report(name, {
         'chefsTopToFirstRow': chefRow.top - chefs.top,
@@ -293,7 +291,7 @@ void main() {
     });
 
     testWidgets(
-      '$name: Visiting Chefs keeps its pill in edit mode, first row at 80',
+      '$name: Visiting Chefs keeps its pill in edit mode, first row pinned',
       (tester) async {
         await pumpHome(tester, size);
         final position = tester
@@ -326,7 +324,7 @@ void main() {
               )
               .first,
         );
-        expect(row.top - box.top, 80);
+        expect(row.top - box.top, size.width < 400 ? 90 : 80);
       },
     );
 
@@ -375,22 +373,20 @@ void main() {
     });
 
     testWidgets(
-      '$name: the "+11 open" footer is a 28 row with a 48 hit region',
+      '$name: the Dining header is the link, with a 48 hit region',
       (tester) async {
         final taps = <int>[];
         await pumpHome(tester, size, onGoToTab: taps.add);
 
-        final label = find.text('+11 open');
+        final label = find.text('Dining');
         final visual = tester.getRect(label);
-        expect(visual.height, lessThanOrEqualTo(28));
         final target = tester.getRect(
-          find.ancestor(of: label, matching: find.byType(TouchTarget)),
+          find.ancestor(of: label, matching: find.byType(InkWell)).first,
         );
         expect(target.height, greaterThanOrEqualTo(48));
-        expect(target.width, greaterThanOrEqualTo(48));
         expect(target.contains(visual.center), isTrue);
 
-        // a tap above and below the visual row, in the region, goes through
+        // a tap above and below the title, in the region, goes through
         for (final dy in [-20.0, 20.0]) {
           await tester.tapAt(Offset(visual.center.dx, visual.center.dy + dy));
           await tester.pump();
@@ -490,7 +486,7 @@ void main() {
   // Today. The Today content area is the window less the top safe area (62 on
   // the 17 Pro Max), the 48 masthead and the tab bar (121 including its safe
   // area today).
-  testWidgets('440x956: two full cards and the start of a third on Today', (
+  testWidgets('440x956: two full cards and at least the start of a third on Today', (
     tester,
   ) async {
     const content = 956 - 62 - 48 - 121.0;
@@ -506,15 +502,11 @@ void main() {
     });
     expect(first.bottom, lessThanOrEqualTo(content));
     expect(second.bottom, lessThanOrEqualTo(content));
+    // 3 row cards end sooner, so the third may now fit whole
     expect(
       third.top,
       lessThan(content - 30),
       reason: 'the third card is not visible',
-    );
-    expect(
-      third.bottom,
-      greaterThan(content),
-      reason: 'the third is only started',
     );
   });
 }

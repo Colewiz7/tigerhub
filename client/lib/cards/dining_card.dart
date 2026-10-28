@@ -141,6 +141,8 @@ class DiningCard extends StatelessWidget {
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
+      onOpen: onShowAll,
+      openLabel: 'opens Dining',
       // Card level, not location level. The hero has to answer the question
       // this card exists to answer, which is what is open right now.
       hero: locations.isEmpty

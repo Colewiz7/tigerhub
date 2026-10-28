@@ -21,12 +21,14 @@ class FacilityHoursCard extends StatelessWidget {
     this.facilityName,
     this.compact = false,
     this.dragHandle,
+    this.onShowAll,
   });
 
   final Result<Collection<RecreationFacility>> result;
   final String? facilityName;
   final bool compact;
   final Widget? dragHandle;
+  final VoidCallback? onShowAll;
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +45,8 @@ class FacilityHoursCard extends StatelessWidget {
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
+      onOpen: onShowAll,
+      openLabel: 'opens Campus',
       child: switch ((result.isPriming, facilities.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading facility hours'),
         (_, true) => const EmptyState(

@@ -36,6 +36,8 @@ class AcademicDatesCard extends StatelessWidget {
       glyph: AppIconKind.events,
       title: 'Academic Dates',
       dragHandle: dragHandle,
+      onOpen: onShowAll,
+      openLabel: 'opens Campus',
       hero: daysAway == null
           ? null
           : CardHero(
