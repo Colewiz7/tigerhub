@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
@@ -15,11 +16,21 @@ import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
 import 'package:tigerhub/widgets/status_row.dart';
 
+import 'golden_harness.dart';
+
 class _DiningBackend implements Backend {
-  _DiningBackend(this.features, {this.availability, this.failures = 0});
+  _DiningBackend(
+    this.features, {
+    this.availability,
+    this.failures = 0,
+    this.chefs,
+  });
 
   final List<Map<String, dynamic>> features;
   final String? availability;
+
+  // the chefs route answer, or a failed read when null
+  final Map<String, dynamic>? chefs;
 
   // specials fetches that throw before one succeeds
   int failures;
@@ -38,6 +49,7 @@ class _DiningBackend implements Backend {
       }
       return {'data': features, 'stale': false, 'last_updated': null, if (availability != null) 'availability': availability};
     }
+    if (path == '/dining/visiting-chefs' && chefs != null) return chefs!;
     throw UnimplementedError(path);
   }
 
@@ -45,11 +57,33 @@ class _DiningBackend implements Backend {
   void close() {}
 }
 
+Map<String, dynamic> _chef(int id, String name, {String? cuisine, String? place}) => {
+  'id': id,
+  'name': name,
+  'cuisine': cuisine,
+  'location_name': place ?? '',
+  'start_time': '2026-10-14T15:00:00Z',
+  'end_time': '2026-10-14T18:00:00Z',
+};
+
+Map<String, dynamic> _chefsBody(
+  List<Map<String, dynamic>> data, {
+  String availability = 'available',
+}) => {
+  'data': data,
+  'stale': false,
+  'last_updated': null,
+  'availability': availability,
+};
+
 void main() {
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
+    // pinned to Wed Oct 14 2026 noon, the day the chef times are on
+    RitClock.pin(DateTime.utc(2026, 10, 14, 16));
   });
+  tearDown(RitClock.reset);
   // the cache singleton keeps its first store, so empty it between tests
   setUp(() => ResponseCache.instance.prune(olderThan: const Duration(days: -1)));
 
@@ -58,6 +92,8 @@ void main() {
     List<Map<String, dynamic>> features, {
     Size size = const Size(1000, 900),
     _DiningBackend? backend,
+    Brightness brightness = Brightness.light,
+    double scale = 1,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
@@ -65,8 +101,16 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        debugShowCheckedModeBanner: false,
         theme: AppTheme.from(
-          ColorScheme.fromSeed(seedColor: const Color(0xFFF76902)),
+          ColorScheme.fromSeed(
+            seedColor: const Color(0xFFF76902),
+            brightness: brightness,
+          ),
+        ),
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
+          child: child!,
         ),
         home: Scaffold(
           body: DiningScreen(
@@ -100,6 +144,73 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  group('visiting chefs group', () {
+    final chefs = _chefsBody([
+      _chef(1, 'Chef Marco', cuisine: 'Italian', place: 'Crossroads'),
+      _chef(2, 'Chef Lin', cuisine: 'Sichuan', place: 'Gracie’s'),
+    ]);
+
+    testWidgets('lists each chef with cuisine, time and location above the menu', (tester) async {
+      await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
+
+      expect(find.text('Visiting chefs'), findsWidgets);
+      expect(
+        find.byWidgetPredicate((w) => w is GroupHeader && w.title == 'Visiting chefs'),
+        findsNothing,
+        reason: 'plain header, no filled bar',
+      );
+      expect(find.text('Chef Marco'), findsOneWidget);
+      expect(find.text('Italian · 11 AM to 2 PM\nCrossroads'), findsOneWidget);
+      expect(find.text('Sichuan · 11 AM to 2 PM\nGracie’s'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.text('Chef Marco')).dy,
+        lessThan(tester.getTopLeft(find.text('Menus not published yet today')).dy),
+      );
+    });
+
+    testWidgets('rows are labelled and at least 48pt tall', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
+
+      final row = find.byKey(const ValueKey('chef-1'));
+      expect(
+        tester.getSemantics(find.descendant(of: row, matching: find.byType(Semantics)).first).label,
+        startsWith('Chef Marco, Italian · 11 AM to 2 PM\nCrossroads'),
+      );
+      expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
+      handle.dispose();
+    });
+
+    final hidden = <String, _DiningBackend>{
+      'no chefs': _DiningBackend(const [], chefs: _chefsBody(const [])),
+      'unavailable': _DiningBackend(const [], chefs: _chefsBody(const [], availability: 'unavailable')),
+      'unavailable with rows': _DiningBackend(
+        const [],
+        chefs: _chefsBody([_chef(1, 'Chef Marco')], availability: 'unavailable'),
+      ),
+      'a failed read': _DiningBackend(const []),
+    };
+    for (final entry in hidden.entries) {
+      testWidgets('is absent for ${entry.key}, with no warning', (tester) async {
+        await pumpDining(tester, const [], backend: entry.value);
+
+        expect(find.text('Visiting chefs'), findsNothing);
+        expect(find.text('Chef Marco'), findsNothing);
+        expect(find.textContaining('chefs'), findsNothing);
+        expect(find.text('Crossroads'), findsOneWidget);
+      });
+    }
+
+    testWidgets('a cached answer stays when the refresh fails', (tester) async {
+      await ResponseCache.instance.write('/dining/visiting-chefs', chefs);
+      await pumpDining(tester, const [], backend: _DiningBackend(const []));
+
+      expect(find.text('Chef Marco'), findsOneWidget);
+      expect(find.textContaining('Couldn’t'), findsNothing);
+    });
+
+  });
+
   testWidgets('published dining features appear with category and location', (
     tester,
   ) async {
@@ -116,12 +227,19 @@ void main() {
     expect(find.text('Soup · Crossroads'), findsOneWidget);
   });
 
+  testWidgets('the quiet menu line says menus, not chefs', (tester) async {
+    await pumpDining(tester, const []);
+
+    expect(find.text('Menus not published yet today'), findsOneWidget);
+    expect(find.textContaining(RegExp('^No ')), findsNothing);
+  });
+
   testWidgets('a quiet menu day explains itself without hiding locations', (
     tester,
   ) async {
     await pumpDining(tester, const []);
 
-    expect(find.text('No menus published yet today'), findsOneWidget);
+    expect(find.text('Menus not published yet today'), findsOneWidget);
     expect(find.text('Crossroads'), findsOneWidget);
   });
 
@@ -131,7 +249,7 @@ void main() {
   ) async {
     await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
 
-    expect(find.text('No menus published yet today'), findsOneWidget);
+    expect(find.text('Menus not published yet today'), findsOneWidget);
     expect(find.byType(EmptyState), findsNothing);
     expect(find.byIcon(AppIconKind.sourceDown.of(tester.element(find.byType(DiningScreen)))), findsNothing);
     expect(find.text('Today’s published menu'), findsNothing);
@@ -159,7 +277,7 @@ void main() {
     await pumpDining(tester, const [], backend: backend);
 
     expect(find.text('Couldn’t load menus'), findsOneWidget);
-    expect(find.text('No menus published yet today'), findsNothing);
+    expect(find.text('Menus not published yet today'), findsNothing);
 
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
@@ -175,7 +293,7 @@ void main() {
     await ResponseCache.instance.write('/dining/specials', {'data': <dynamic>[], 'stale': false, 'last_updated': null, 'availability': 'empty'});
     await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
 
-    expect(find.text('No menus published yet today'), findsOneWidget);
+    expect(find.text('Menus not published yet today'), findsOneWidget);
     expect(find.text('Retry'), findsNothing);
   });
 
@@ -280,7 +398,7 @@ void main() {
   ) async {
     await pumpDining(tester, const []);
     await tester.enterText(find.byType(TextField), 'coffee');
-    await tester.tap(find.text('No menus published yet today'));
+    await tester.tap(find.text('Menus not published yet today'));
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
@@ -293,4 +411,29 @@ void main() {
       const TextSelection(baseOffset: 0, extentOffset: 6),
     );
   });
+
+  final goldenChefs = _chefsBody([
+    _chef(1, 'Chef Marco', cuisine: 'Italian', place: 'Crossroads'),
+    _chef(2, 'Chef Lin', cuisine: 'Sichuan', place: 'Gracie’s'),
+    _chef(3, 'Chef Amara Okonkwo-Reyes', cuisine: 'West African', place: 'Global Village Plaza'),
+  ]);
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      for (final scale in [1.0, 2.0]) {
+        final name = 'dining_chefs_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${scale.toInt()}x';
+        goldenWidgets(name, (tester) async {
+          await pumpDining(
+            tester,
+            const [],
+            size: size,
+            brightness: brightness,
+            scale: scale,
+            backend: _DiningBackend(const [], chefs: goldenChefs),
+          );
+          expect(find.text('Chef Marco'), findsOneWidget);
+          await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name.png'));
+        });
+      }
+    }
+  }
 }
