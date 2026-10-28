@@ -136,8 +136,17 @@ class DiningCard extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) {
-    final all = result.value?.data ?? const <DiningLocation>[];
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Preferences.instance,
+    builder: (context, _) => _build(context),
+  );
+
+  Widget _build(BuildContext context) {
+    final hiddenIds = Preferences.instance.hiddenDining;
+    final all = [
+      for (final l in result.value?.data ?? const <DiningLocation>[])
+        if (!hiddenIds.contains('${l.id}')) l,
+    ];
     final locations = category == null
         ? all
         : [
@@ -165,9 +174,9 @@ class DiningCard extends StatelessWidget {
           : CardHero(value: '$openNow', label: 'Open'),
       child: switch ((result.isPriming, locations.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
-        (_, true) => const EmptyState(
-          kind: EmptyKind.sourceDown,
-          title: 'Dining unavailable',
+        (_, true) => EmptyState(
+          kind: all.isEmpty && (result.value?.data.isNotEmpty ?? false) ? EmptyKind.notFound : EmptyKind.sourceDown,
+          title: all.isEmpty && (result.value?.data.isNotEmpty ?? false) ? 'No places' : 'Dining unavailable',
         ),
         _ => _List(
           locations: locations,
@@ -276,7 +285,7 @@ class DiningRow extends StatelessWidget {
       title: location.name,
       subtitle: when,
       accent: accent,
-      emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
+      emphasis: open ? RowEmphasis.normal : RowEmphasis.quiet,
       onTap: client == null
           ? null
           : () => DiningDetailPage.open(context, location, client),

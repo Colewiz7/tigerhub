@@ -61,6 +61,9 @@ class StaticConfig {
   static StaticConfig get instance =>
       _instance ?? (throw StateError('StaticConfig.load() has not run'));
 
+  // for screens that still draw before the config is loaded, as in tests
+  static StaticConfig? get loadedOrNull => _instance;
+
   Map<String, dynamic> file(String name) =>
       _files[name] ?? (throw StateError('config asset $name not loaded'));
 

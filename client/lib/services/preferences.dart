@@ -228,8 +228,12 @@ class Preferences extends ChangeNotifier {
     _pinned = _pinned.contains(key)
         ? ({..._pinned}..remove(key))
         : {..._pinned, key};
+    // a place is pinned or hidden, never both
+    final unhid = _pinned.contains(key) && _hidden.contains(key);
+    if (unhid) _hidden = {..._hidden}..remove(key);
     notifyListeners();
     await ResponseCache.instance.writeOrder(_pinnedKey, _pinned.toList());
+    if (unhid) await ResponseCache.instance.writeOrder(_hiddenKey, _hidden.toList());
   }
 
   bool isHidden(int locationId) => _hidden.contains('$locationId');
@@ -237,8 +241,11 @@ class Preferences extends ChangeNotifier {
   Future<void> toggleHidden(int locationId) async {
     final key = '$locationId';
     _hidden = _hidden.contains(key) ? ({..._hidden}..remove(key)) : {..._hidden, key};
+    final unpinned = _hidden.contains(key) && _pinned.contains(key);
+    if (unpinned) _pinned = {..._pinned}..remove(key);
     notifyListeners();
     await ResponseCache.instance.writeOrder(_hiddenKey, _hidden.toList());
+    if (unpinned) await ResponseCache.instance.writeOrder(_pinnedKey, _pinned.toList());
   }
 
   Future<void> unhideAllDining() async {

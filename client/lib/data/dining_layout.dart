@@ -55,8 +55,9 @@ class DiningLayout {
     if (raw == null || raw.isEmpty) return empty;
     try {
       final json = jsonDecode(raw);
-      if (json is! Map<String, dynamic> || json['v'] != diningLayoutVersion)
+      if (json is! Map<String, dynamic> || json['v'] != diningLayoutVersion) {
         return empty;
+      }
       return DiningLayout(
         order: [
           for (final id in (json['order'] as List<dynamic>? ?? const []))
@@ -232,7 +233,7 @@ class DiningLayout {
       for (final id in ids)
         ResolvedGroup(
           id: id,
-          name: custom[id] ?? renamed[id] ?? defaultNames[id] ?? id,
+          name: custom[id] ?? renamed[id] ?? defaultNames[id] ?? (id == otherGroupId ? 'Other' : id),
           isDefault: !custom.containsKey(id),
           placeIds: _sorted(byGroup[id]!, placeOrder[id]),
         ),

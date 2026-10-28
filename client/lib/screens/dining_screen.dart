@@ -13,6 +13,9 @@ import 'package:flutter/services.dart';
 import '../cards/dining_card.dart';
 import '../cards/visiting_chefs_card.dart' show VisitingChefsCard;
 import '../data/campus_time.dart';
+import '../data/dining_layout.dart' show otherGroupId;
+import '../data/dining_sections.dart';
+import '../data/static_config.dart';
 import '../data/local_backend.dart' show staleGraceMultiplier;
 import '../data/sources/food_trucks.dart' show foodTrucksCadence;
 import '../models/api_models.dart';
@@ -24,6 +27,7 @@ import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
 import '../widgets/search_field.dart';
 import '../services/preferences.dart';
+import '../theme/tokens.dart';
 import '../widgets/status_row.dart';
 
 class DiningScreen extends StatefulWidget {
@@ -181,7 +185,17 @@ class _DiningScreenState extends State<DiningScreen> {
               (location.summary?.toLowerCase().contains(query) ?? false);
         })
         .toList();
-    final groups = groupByCategory(locations, pinned: _prefs.pinnedDining);
+    final config = StaticConfig.loadedOrNull;
+    final sections = buildDiningSections(
+      locations: locations,
+      layout: _prefs.diningLayout,
+      defaults: config?.diningGroups ?? const [],
+      defaultGroupOf: config?.diningGroupFor ?? (_) => otherGroupId,
+      pinned: _prefs.pinnedDining.toList(),
+      hidden: _prefs.hiddenDining,
+      // Open now leaves hidden places out
+      showHidden: !_openOnly && !_pinnedOnly,
+    );
     final allMenuItems = [...(_features.value?.data ?? const <MenuItem>[])]
       ..sort((a, b) {
         final byLocation = a.locationName.compareTo(b.locationName);
@@ -243,7 +257,7 @@ class _DiningScreenState extends State<DiningScreen> {
               openOnly: _openOnly,
               pinnedOnly: _pinnedOnly,
               pinnedCount: _prefs.pinnedDining.length,
-              resultCount: locations.length,
+              resultCount: sections.visibleCount,
               onQueryChanged: (_) => setState(() {}),
               onOpenChanged: (value) => setState(() => _openOnly = value),
               onPinnedChanged: (value) => setState(() => _pinnedOnly = value),
@@ -281,7 +295,7 @@ class _DiningScreenState extends State<DiningScreen> {
                       onRetry: _readFeatures,
                     ),
                   ),
-                  if (groups.isEmpty)
+                  if (sections.visibleCount == 0 && sections.hidden.isEmpty)
                     JumpGroup(
                       label: 'No matches',
                       icon: AppIconKind.notFound,
@@ -291,26 +305,31 @@ class _DiningScreenState extends State<DiningScreen> {
                         title: 'No matching locations',
                         compact: false,
                       ),
-                    )
-                  else
-                    for (final group in groups)
-                      JumpGroup(
-                        label: group.key,
-                        icon: iconForCategory(group.value.first.category),
-                        count: group.value.where((l) => l.isOpen).length,
-                        builder: (context) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            GroupHeader(
-                              icon: iconForCategory(group.value.first.category),
-                              title: group.key,
-                              count: group.value.where((l) => l.isOpen).length,
-                            ),
-                            for (final location in group.value)
-                              DiningRow(location: location, api: widget.api),
-                          ],
-                        ),
+                    ),
+                  if (sections.pinned.isNotEmpty)
+                    JumpGroup(
+                      label: 'Pinned',
+                      icon: AppIconKind.pinned,
+                      count: sections.pinned.where((l) => l.isOpen).length,
+                      builder: (context) => _PlaceSection(
+                        icon: AppIconKind.pinned,
+                        title: 'Pinned',
+                        places: sections.pinned,
+                        api: widget.api,
                       ),
+                    ),
+                  for (final section in sections.groups)
+                    JumpGroup(
+                      label: section.group.name,
+                      icon: AppIconKind.dining,
+                      count: section.places.where((l) => l.isOpen).length,
+                      builder: (context) => _PlaceSection(
+                        icon: AppIconKind.dining,
+                        title: section.group.name,
+                        places: section.places,
+                        api: widget.api,
+                      ),
+                    ),
                   if (laterTrucks.isNotEmpty)
                     JumpGroup(
                       label: 'Upcoming food trucks',
@@ -318,12 +337,96 @@ class _DiningScreenState extends State<DiningScreen> {
                       count: laterTrucks.length,
                       builder: (context) => _FoodTrucksGroup(title: 'Upcoming food trucks', trucks: laterTrucks),
                     ),
+                  if (sections.hidden.isNotEmpty)
+                    JumpGroup(
+                      label: 'Hidden',
+                      icon: AppIconKind.hidden,
+                      count: 0,
+                      builder: (context) => _HiddenSection(places: sections.hidden, api: widget.api),
+                    ),
                 ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PlaceSection extends StatelessWidget {
+  const _PlaceSection({required this.icon, required this.title, required this.places, required this.api});
+
+  final AppIconKind icon;
+  final String title;
+  final List<DiningLocation> places;
+  final ApiClient api;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GroupHeader(icon: icon, title: title, count: places.where((l) => l.isOpen).length),
+        for (final location in places) DiningRow(key: ValueKey('place-${location.id}'), location: location, api: api),
+      ],
+    );
+  }
+}
+
+// collapsed until opened, so hidden places stay out of the way
+class _HiddenSection extends StatefulWidget {
+  const _HiddenSection({required this.places, required this.api});
+
+  final List<DiningLocation> places;
+  final ApiClient api;
+
+  @override
+  State<_HiddenSection> createState() => _HiddenSectionState();
+}
+
+class _HiddenSectionState extends State<_HiddenSection> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          label: 'Hidden (${widget.places.length})',
+          excludeSemantics: true,
+          child: InkWell(
+            onTap: () => setState(() => _open = !_open),
+            borderRadius: Shapes.inner,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Hidden (${widget.places.length})',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                    ),
+                    RotatedBox(
+                      quarterTurns: _open ? 2 : 0,
+                      child: AppIcon(AppIconKind.expand, size: 22, color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_open)
+          for (final location in widget.places) DiningRow(key: ValueKey('hidden-${location.id}'), location: location, api: widget.api),
+      ],
     );
   }
 }
