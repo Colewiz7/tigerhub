@@ -156,28 +156,111 @@ def all_caps_status_lines(text):
     return [n for n, line in enumerate(strings.splitlines(), 1) if STATUS_CAPS.search(line)]
 
 
-# the code just before the string literal holding offset i
-def _before_literal(code, i):
+# offset of the opening quote of the string literal holding offset i
+def _literal_start(code, i):
     while i >= 0 and code[i] not in "'\"":
         i -= 1
-    while i >= 0 and code[i] in "'\"":
+    while i > 0 and code[i - 1] in "'\"":
         i -= 1
-    if i >= 0 and code[i] == "r":
-        i -= 1
-    return code[: i + 1].rstrip()
+    return i
 
 
-# UI copy is sentence case: no word in capitals unless it is an acronym. A map
-# key (env['HOME']) and a DateFormat pattern are not copy.
+KEYWORDS = {"const", "return", "if", "for", "while", "switch", "catch", "in", "else", "yield", "await", "assert"}
+
+
+def _prev_char(code, i):
+    i -= 1
+    while i >= 0 and code[i].isspace():
+        i -= 1
+    return code[i] if i >= 0 else ""
+
+
+# where a literal ends up: ("call", callee, named arg or None), ("decl", name)
+# or None. Grouping parens, list literals and interpolations are walked through
+# to what holds them; string contents are already blanked in code
+def _literal_context(code, s):
+    pos = s
+    while True:
+        i, depth, arg_start = pos - 1, 0, None
+        while i >= 0:
+            c = code[i]
+            if c in ")]":
+                depth += 1
+            elif c == "}":
+                # a closing brace on its own line ends the previous declaration
+                if depth == 0 and code[i + 1 : pos].lstrip(" \t").startswith("\n"):
+                    break
+                depth += 1
+            elif c in "([{":
+                if depth == 0:
+                    break
+                depth -= 1
+            elif depth == 0 and c == ",":
+                arg_start = i if arg_start is None else arg_start
+            elif depth == 0 and c == ";":
+                break
+            i -= 1
+        opener = code[i] if i >= 0 else ""
+        before = _prev_char(code, i) if i >= 0 else ""
+        word = re.search(r"(\w+)\s*$", code[:i]) if i >= 0 else None
+        if word and word.group(1) in KEYWORDS:
+            before = " "  # const [...], return (...), if (...) hold, they do not call
+        if opener == "(" and (before.isalnum() or before in "_>"):
+            callee = re.search(r"([\w.]+)\s*(?:<[^()]*>)?\s*$", code[:i])
+            seg = code[(i if arg_start is None else arg_start) + 1 : s].strip()
+            named = NAMED_ARG.match(seg)
+            return ("call", callee.group(1) if callee else "", named.group(1) if named else None)
+        if opener == "[" and (before.isalnum() or before in "_)]"):
+            return None  # an index key, env['HOME']
+        if opener == "{" and before not in "$=(,:[" and not code[:i].rstrip().endswith("=>"):
+            opener = ";"  # a block, so the literal sits in a statement
+        if opener in ("(", "[", "{"):
+            pos = i
+            continue
+        statement = code[i + 1 : s]
+        decl = re.search(r"\bget\s+(\w+)\s*(?:=>|\{)", statement) or re.search(r"(\w+)\s*=(?![=>])", statement)
+        return ("decl", decl.group(1)) if decl else None
+
+
+# named args and constants that carry copy in this codebase
+UI_ARGS = {
+    "label", "tooltip", "hintText", "labelText", "helperText", "semanticsLabel", "semanticLabel",
+    "semanticHint", "title", "subtitle", "message", "text", "pill", "noun",
+}
+UI_CALLS = {"Text", "Text.rich", "SelectableText", "TextSpan"}
+UI_VALUE_CALLS = {"CardHero", "ScallopedBadge"}  # value is the badge figure
+UI_NAME = re.compile(r"(?:Label|Title|Caption|Text|Weekdays|Months)s?$|^_?(?:label|title|caption|text|weekdays|months)s?$")
+OPT_OUT = "// copy-style: allow-caps"
+
+
+def _is_ui(context):
+    if context is None:
+        return False
+    if context[0] == "decl":
+        return bool(UI_NAME.search(context[1]))
+    _, callee, named = context
+    if callee in ("RegExp", "DateFormat"):
+        return False
+    if named is None:
+        return callee in UI_CALLS
+    return named in UI_ARGS or (named == "value" and callee in UI_VALUE_CALLS)
+
+
+# UI copy is sentence case: no word in capitals unless it is an acronym. Only
+# strings that reach the screen count: Text and TextSpan, copy named args
+# (label, title, tooltip...), the badge value, and constants named like copy.
+# A line ending in the opt out comment is skipped.
 def all_caps_word_lines(text):
     strings = string_text(text)
     code = strip_dart(text)
+    source = text.splitlines()
     lines = set()
     for m in CAPS_WORD.finditer(strings):
         if m.group(0) in ACRONYMS:
             continue
-        before = _before_literal(code, m.start())
-        if before.endswith("[") or re.search(r"DateFormat\s*\($", before):
+        n = strings.count("\n", 0, m.start()) + 1
+        if OPT_OUT in source[n - 1]:
             continue
-        lines.add(strings.count("\n", 0, m.start()) + 1)
+        if _is_ui(_literal_context(code, _literal_start(code, m.start()))):
+            lines.add(n)
     return sorted(lines)
