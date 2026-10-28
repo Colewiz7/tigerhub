@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../cards/dining_card.dart';
+import '../cards/visiting_chefs_card.dart' show VisitingChefsCard;
 import '../data/campus_time.dart';
 import '../data/local_backend.dart' show staleGraceMultiplier;
 import '../data/sources/food_trucks.dart' show foodTrucksCadence;
@@ -50,6 +51,32 @@ class _DiningScreenState extends State<DiningScreen> {
     state: DataState.priming,
   );
 
+  Result<Collection<MenuItem>> _chefs = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+
+  // only a real answer with chefs on today's campus date; the feed is
+  // today's, but a cached copy can be yesterday's
+  List<MenuItem> _todayChefs(String query) {
+    final chefs = _chefs.value;
+    if (chefs == null || chefs.availability != Availability.available) {
+      return const [];
+    }
+    final today = CampusTime.wallDate();
+    return [
+      for (final chef in chefs.data)
+        if (chef.name.isNotEmpty &&
+            (chef.startsAt == null ||
+                DateUtils.isSameDay(CampusTime.fieldsOf(chef.startsAt!), today)) &&
+            (query.isEmpty ||
+                chef.name.toLowerCase().contains(query) ||
+                chef.locationName.toLowerCase().contains(query) ||
+                (chef.cuisine?.toLowerCase().contains(query) ?? false)))
+          chef,
+    ];
+  }
+
   bool get _trucksFresh {
     final trucks = _trucks.value;
     final at = trucks?.lastUpdated;
@@ -61,7 +88,18 @@ class _DiningScreenState extends State<DiningScreen> {
 
   StreamSubscription<Result<Collection<FoodTruck>>>? _trucksSub;
   StreamSubscription<Result<Collection<MenuItem>>>? _featuresSub;
+  StreamSubscription<Result<Collection<MenuItem>>>? _chefsSub;
   bool _active = true;
+
+  // keeps what it has when a read comes back empty-handed
+  void _readChefs() {
+    _chefsSub?.cancel();
+    _chefsSub = widget.api.visitingChefs().listen((result) {
+      if (!mounted) return;
+      if (result.value == null && _chefs.value != null) return;
+      setState(() => _chefs = result);
+    });
+  }
 
   // also the Retry button
   void _readFeatures() {
@@ -85,7 +123,10 @@ class _DiningScreenState extends State<DiningScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final active = TickerMode.valuesOf(context).enabled;
-    if (active && !_active) _readTrucks();
+    if (active && !_active) {
+      _readTrucks();
+      _readChefs();
+    }
     _active = active;
   }
 
@@ -93,7 +134,10 @@ class _DiningScreenState extends State<DiningScreen> {
   @override
   void didUpdateWidget(DiningScreen old) {
     super.didUpdateWidget(old);
-    if (!identical(old.result, widget.result)) _readTrucks();
+    if (!identical(old.result, widget.result)) {
+      _readTrucks();
+      _readChefs();
+    }
   }
 
   @override
@@ -101,6 +145,7 @@ class _DiningScreenState extends State<DiningScreen> {
     super.initState();
     _prefs.addListener(_onChanged);
     _readTrucks();
+    _readChefs();
     _readFeatures();
   }
 
@@ -108,6 +153,7 @@ class _DiningScreenState extends State<DiningScreen> {
   void dispose() {
     _prefs.removeListener(_onChanged);
     _trucksSub?.cancel();
+    _chefsSub?.cancel();
     _featuresSub?.cancel();
     _search.dispose();
     _searchFocus.dispose();
@@ -153,6 +199,8 @@ class _DiningScreenState extends State<DiningScreen> {
                     (item.category?.toLowerCase().contains(query) ?? false),
               )
               .toList();
+
+    final chefs = _todayChefs(query);
 
     // cached trucks show at once
     final trucks = [
@@ -208,6 +256,13 @@ class _DiningScreenState extends State<DiningScreen> {
             Expanded(
               child: JumpList(
                 groups: [
+                  if (chefs.isNotEmpty)
+                    JumpGroup(
+                      label: 'Visiting chefs',
+                      icon: AppIconKind.visitingChef,
+                      count: chefs.length,
+                      builder: (context) => _VisitingChefsGroup(chefs: chefs),
+                    ),
                   JumpGroup(
                     label: 'Today’s menu',
                     icon: AppIconKind.cutlery,
@@ -423,6 +478,40 @@ class _FoodTrucksGroup extends StatelessWidget {
               if (truck.timeText?.trim().isNotEmpty ?? false) truck.timeText!,
               if (truck.location?.trim().isNotEmpty ?? false) truck.location!,
             ].where((part) => part.isNotEmpty).join(' · '),
+          ),
+      ],
+    );
+  }
+}
+
+class _VisitingChefsGroup extends StatelessWidget {
+  const _VisitingChefsGroup({required this.chefs});
+
+  final List<MenuItem> chefs;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GroupHeader(
+          icon: AppIconKind.visitingChef,
+          title: 'Visiting chefs',
+          count: chefs.length,
+        ),
+        for (final chef in chefs)
+          StatusRow(
+            key: ValueKey('chef-${chef.id}'),
+            icon: AppIconKind.visitingChef,
+            subtitleMaxLines: null,
+            title: chef.name,
+            subtitle: [
+              [
+                if (chef.cuisine?.trim().isNotEmpty ?? false) chef.cuisine!,
+                ?VisitingChefsCard.window(chef),
+              ].join(' · '),
+              chef.locationName,
+            ].where((part) => part.isNotEmpty).join('\n'),
           ),
       ],
     );

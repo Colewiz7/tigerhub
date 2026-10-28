@@ -93,6 +93,7 @@ class _Live implements Backend {
   @override
   Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? query]) async {
     if (path == '/dining/specials') return {'data': <dynamic>[], 'stale': false, 'last_updated': null};
+    if (path == '/dining/visiting-chefs') throw UnimplementedError(path);
     reads++;
     await gate?.future;
     return answer();
@@ -114,6 +115,7 @@ class _Slow implements Backend {
   @override
   Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? query]) async {
     if (path == '/dining/specials') return {'data': <dynamic>[], 'stale': false, 'last_updated': null};
+    if (path == '/dining/visiting-chefs') throw UnimplementedError(path);
     await _gate.future;
     return answer;
   }
