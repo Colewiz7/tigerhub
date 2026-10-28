@@ -20,7 +20,7 @@ import '../widgets/status_row.dart';
 ({String? value, String? caption, bool quiet}) shuttlesCompact(ShuttleSchedule? schedule, String? area, DateTime now) {
   if (area == null) return (value: 'Set home', caption: null, quiet: true);
   if (schedule == null) return (value: null, caption: null, quiet: true);
-  if (!schedule.covers(area) && !ShuttleSchedule.isHoliday(now)) return (value: 'No routes', caption: null, quiet: true);
+  if (!schedule.covers(area) && schedule.holidayOn(now) == null) return (value: 'No routes', caption: null, quiet: true);
   final window = schedule.windowAt(area, now);
   String routes(int n) => n == 1 ? '1 route' : '$n routes';
   return switch (window.state) {

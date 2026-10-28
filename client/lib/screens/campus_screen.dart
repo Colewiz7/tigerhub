@@ -212,7 +212,8 @@ class _ShuttleSection extends StatelessWidget {
     final homeId = Preferences.instance.homeArea;
     final home = areas.where((area) => area.id == homeId).firstOrNull;
     final clock = now ?? CampusTime.wallNow();
-    final laborDay = ShuttleSchedule.isHoliday(clock);
+    final holiday = schedule?.holidayOn(clock);
+    final breakDays = schedule?.breakOn(clock);
     final routes = schedule?.routesOn(homeId, clock) ?? const <ShuttleRoute>[];
 
     return ListView(
@@ -220,11 +221,15 @@ class _ShuttleSection extends StatelessWidget {
       padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         _Heading(
-          title: laborDay
-              ? 'Labor Day service'
+          title: holiday != null
+              ? '${holiday.name} service'
+              : breakDays != null
+              ? '${breakDays.name} service'
               : 'Today from ${home?.name ?? 'home'}',
-          subtitle: laborDay
-              ? 'Reduced service published for Monday, September 7.'
+          subtitle: holiday != null
+              ? 'Reduced service published for ${DateFormat('EEEE, MMMM d').format(clock)}.'
+              : breakDays != null
+              ? 'Break shuttle only. Scheduled windows, not live arrivals.'
               : 'Scheduled windows, not live arrivals. Arrive at the stop at least five minutes early.',
           state: DataState.ok,
         ),
@@ -237,7 +242,7 @@ class _ShuttleSection extends StatelessWidget {
         // the table is still loading
         else if (schedule == null)
           const SizedBox.shrink()
-        else if (!laborDay && !schedule.covers(homeId))
+        else if (holiday == null && !schedule.covers(homeId))
           const EmptyState(
             kind: EmptyKind.notFound,
             title: 'No routes for this area',

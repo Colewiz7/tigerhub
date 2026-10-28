@@ -12,7 +12,16 @@
     {"number": 11, "name": "East Residence Shuttle", "starts_at": "19:00", "ends_at": "23:56", "days": "weekday"},
     {"number": 12, "name": "Retail", "starts_at": "07:00", "ends_at": "23:50", "days": "weekend"},
     {"number": 13, "name": "Campus & Inn Shuttle", "starts_at": "07:47", "ends_at": "00:33", "days": "weekend"},
-    {"number": 14, "name": "Campus & Inn Break Shuttle", "starts_at": "07:20", "ends_at": "00:06", "days": "breaks"}
+    {"number": 14, "name": "Campus & Inn Break Shuttle", "starts_at": "07:20", "ends_at": "00:06", "days": "breaks"},
+    {"number": 1, "name": "RIT RTS Connection (Holiday)", "note": "See the holiday timetable", "days": "holiday"}
+  ],
+  "breaks_source": "RIT academic calendar, the same dates as Academic dates in the app. Only breaks with a published first and last day are listed.",
+  "breaks": [
+    {"name": "Fall break", "from": "2026-10-12", "to": "2026-10-13"},
+    {"name": "Spring break", "from": "2027-03-07", "to": "2027-03-14"}
+  ],
+  "holidays": [
+    {"name": "Labor Day", "date": "2026-09-07"}
   ],
   "areas": {
     "global-village": [3, 4, 5, 12, 13, 14],

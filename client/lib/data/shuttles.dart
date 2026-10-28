@@ -65,16 +65,43 @@ class ShuttleWindow {
   final int? minute;
 }
 
+/// A dated stretch of special service: a break or a holiday, first and last
+/// campus day inclusive.
+class ShuttleSpan {
+  const ShuttleSpan({required this.name, required this.from, required this.to});
+
+  final String name;
+  final DateTime from;
+  final DateTime to;
+
+  bool contains(DateTime date) {
+    final day = DateTime(date.year, date.month, date.day);
+    return !day.isBefore(from) && !day.isAfter(to);
+  }
+}
+
 class ShuttleSchedule {
   const ShuttleSchedule({
     required this.sourceUrl,
     required this.lastVerified,
     required this.areas,
+    this.breaks = const [],
+    this.holidays = const [],
+    this.holidayRoutes = const [],
+    this.breakRoutes = const [],
   });
 
   final String sourceUrl;
   final String lastVerified;
   final Map<String, List<ShuttleRoute>> areas;
+  final List<ShuttleSpan> breaks;
+  final List<ShuttleSpan> holidays;
+
+  /// Routes that run only on a holiday, for every area.
+  final List<ShuttleRoute> holidayRoutes;
+
+  /// Every break route, which a holiday runs for every area too.
+  final List<ShuttleRoute> breakRoutes;
 
   static final ValueNotifier<ShuttleSchedule?> current = ValueNotifier(null);
   static Future<ShuttleSchedule?>? _loading;
@@ -104,8 +131,10 @@ class ShuttleSchedule {
     final byNumber = <int, ShuttleRoute>{};
     for (final raw in json['routes'] as List<dynamic>) {
       final route = raw as Map<String, dynamic>;
-      final start = clockMinutes(route['starts_at'] as String);
-      var end = clockMinutes(route['ends_at'] as String);
+      final starts = route['starts_at'] as String?;
+      final ends = route['ends_at'] as String?;
+      final start = starts == null ? null : clockMinutes(starts);
+      var end = ends == null ? null : clockMinutes(ends);
       if (start != null && end != null && end <= start) end += 1440;
       final number = route['number'] as int;
       byNumber[number] = ShuttleRoute(
@@ -114,11 +143,27 @@ class ShuttleSchedule {
         days: ShuttleDays.values.byName(route['days'] as String),
         start: start,
         end: end,
+        note: route['note'] as String?,
       );
     }
+    DateTime day(String iso) {
+      final parts = iso.split('-').map(int.parse).toList();
+      return DateTime(parts[0], parts[1], parts[2]);
+    }
+
     return ShuttleSchedule(
       sourceUrl: json['source_url'] as String,
       lastVerified: json['last_verified'] as String,
+      breaks: [
+        for (final raw in json['breaks'] as List<dynamic>? ?? const [])
+          ShuttleSpan(name: raw['name'] as String, from: day(raw['from'] as String), to: day(raw['to'] as String)),
+      ],
+      holidays: [
+        for (final raw in json['holidays'] as List<dynamic>? ?? const [])
+          ShuttleSpan(name: raw['name'] as String, from: day(raw['date'] as String), to: day(raw['date'] as String)),
+      ],
+      holidayRoutes: [for (final route in byNumber.values) if (route.days == ShuttleDays.holiday) route],
+      breakRoutes: [for (final route in byNumber.values) if (route.days == ShuttleDays.breaks) route],
       areas: {
         for (final entry in (json['areas'] as Map<String, dynamic>).entries)
           entry.key: [
@@ -131,21 +176,21 @@ class ShuttleSchedule {
 
   bool covers(String? area) => area != null && areas.containsKey(area);
 
-  /// Labor Day 2026 ran a reduced holiday service, the same for every area.
-  static bool isHoliday(DateTime date) => date.year == 2026 && date.month == 9 && date.day == 7;
+  /// The holiday on the campus calendar [date], if there is one. A holiday
+  /// runs the same reduced service for every area.
+  ShuttleSpan? holidayOn(DateTime date) => holidays.where((h) => h.contains(date)).firstOrNull;
 
-  static const List<ShuttleRoute> _holidayRoutes = [
-    ShuttleRoute(number: 1, name: 'RIT RTS Connection (Holiday)', days: ShuttleDays.holiday, note: 'See the holiday timetable'),
-    ShuttleRoute(number: 14, name: 'Campus & Inn Break Shuttle', days: ShuttleDays.holiday, start: 440, end: 1446),
-  ];
+  /// The break on [date], if there is one. Only break routes run then.
+  ShuttleSpan? breakOn(DateTime date) => breaks.where((b) => b.contains(date)).firstOrNull;
 
   /// The routes that run on the campus calendar [date].
   List<ShuttleRoute> routesOn(String? area, DateTime date) {
-    if (isHoliday(date)) return _holidayRoutes;
+    if (holidayOn(date) != null) return [...holidayRoutes, ...breakRoutes];
     final weekend = date.weekday == DateTime.saturday || date.weekday == DateTime.sunday;
+    final days = breakOn(date) != null ? ShuttleDays.breaks : (weekend ? ShuttleDays.weekend : ShuttleDays.weekday);
     return [
       for (final route in areas[area] ?? const <ShuttleRoute>[])
-        if (route.days == (weekend ? ShuttleDays.weekend : ShuttleDays.weekday)) route,
+        if (route.days == days) route,
     ];
   }
 
