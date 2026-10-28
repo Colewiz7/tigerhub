@@ -1,0 +1,204 @@
+{
+  "last_verified": "2026-10-28",
+  "source": "dining building table (TigerCenter mdoId joined to maps.rit.edu features), Cole's area decisions of 2026-10-28. Only the group names are hand written.",
+  "groups": [
+    {
+      "id": "dorm_side",
+      "name": "Dorm side"
+    },
+    {
+      "id": "shed",
+      "name": "SHED"
+    },
+    {
+      "id": "student_alumni_union",
+      "name": "Student Alumni Union"
+    },
+    {
+      "id": "global_village",
+      "name": "Global Village"
+    },
+    {
+      "id": "golisano",
+      "name": "Golisano"
+    },
+    {
+      "id": "rit_inn",
+      "name": "RIT Inn"
+    },
+    {
+      "id": "other",
+      "name": "Other"
+    }
+  ],
+  "places": [
+    {
+      "id": 21,
+      "name": "Gracie's",
+      "building": "GWH",
+      "group": "dorm_side",
+      "confidence": "exact"
+    },
+    {
+      "id": 31,
+      "name": "Beanz",
+      "building": "GWH",
+      "group": "dorm_side",
+      "confidence": "exact"
+    },
+    {
+      "id": 24,
+      "name": "The Commons",
+      "building": "CSD",
+      "group": "dorm_side",
+      "confidence": "exact"
+    },
+    {
+      "id": 35,
+      "name": "The College Grind",
+      "building": "CSD",
+      "group": "dorm_side",
+      "confidence": "exact"
+    },
+    {
+      "id": 27,
+      "name": "Corner Store",
+      "building": "DSP",
+      "group": "dorm_side",
+      "confidence": "exact"
+    },
+    {
+      "id": 28,
+      "name": "Sol's Underground",
+      "building": "SHH",
+      "group": "dorm_side",
+      "confidence": "exact"
+    },
+    {
+      "id": 30,
+      "name": "Artesano Bakery & Cafe",
+      "building": "MON",
+      "group": "shed",
+      "confidence": "likely"
+    },
+    {
+      "id": 441,
+      "name": "Loaded Latke",
+      "building": "MON",
+      "group": "shed",
+      "confidence": "likely"
+    },
+    {
+      "id": 37,
+      "name": "Java Wally's",
+      "building": "WAL",
+      "group": "shed",
+      "confidence": "likely"
+    },
+    {
+      "id": 32,
+      "name": "Ben and Jerry's",
+      "building": "SAU",
+      "group": "student_alumni_union",
+      "confidence": "exact"
+    },
+    {
+      "id": 36,
+      "name": "Nathan's Soup & Salad",
+      "building": "SAU",
+      "group": "student_alumni_union",
+      "confidence": "exact"
+    },
+    {
+      "id": 26,
+      "name": "RITZ",
+      "building": "SAU",
+      "group": "student_alumni_union",
+      "confidence": "exact"
+    },
+    {
+      "id": 22,
+      "name": "Kitchen at Brick City",
+      "building": "SAU",
+      "group": "student_alumni_union",
+      "confidence": "exact"
+    },
+    {
+      "id": 41,
+      "name": "Dining Office",
+      "building": "SAU",
+      "group": "student_alumni_union",
+      "confidence": "likely"
+    },
+    {
+      "id": 23,
+      "name": "The Cafe & Market at Crossroads",
+      "building": "CRS",
+      "group": "global_village",
+      "confidence": "exact"
+    },
+    {
+      "id": 38,
+      "name": "Midnight Oil",
+      "building": "CRS",
+      "group": "global_village",
+      "confidence": "exact"
+    },
+    {
+      "id": 29,
+      "name": "The Market at Global Village",
+      "building": "GVP",
+      "group": "global_village",
+      "confidence": "exact"
+    },
+    {
+      "id": 25,
+      "name": "Patio at Global Village",
+      "building": "GVP",
+      "group": "global_village",
+      "confidence": "exact"
+    },
+    {
+      "id": 34,
+      "name": "CTRL ALT DELi",
+      "building": "GOL",
+      "group": "golisano",
+      "confidence": "exact"
+    },
+    {
+      "id": 481,
+      "name": "Bytes Micro Market",
+      "building": "LOW",
+      "group": "other",
+      "confidence": "likely"
+    },
+    {
+      "id": 39,
+      "name": "USB Ultimate Smoothie Blendz",
+      "building": "CRS",
+      "group": "other",
+      "confidence": "guess"
+    },
+    {
+      "id": 61,
+      "name": "GPC Club Lounge",
+      "building": "POL",
+      "group": "other",
+      "confidence": "likely"
+    },
+    {
+      "id": 461,
+      "name": "Petals at RIT Inn",
+      "building": "none",
+      "group": "rit_inn",
+      "confidence": "exact"
+    },
+    {
+      "id": 501,
+      "name": "RIT Food Truck",
+      "building": "mobile",
+      "group": "other",
+      "confidence": "exact"
+    }
+  ]
+}
