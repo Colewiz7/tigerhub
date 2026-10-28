@@ -36,7 +36,8 @@ enum ModuleType {
   facilityHours('facility_hours'),
   campusMap('campus_map'),
   academicDates('academic_dates'),
-  shuttles('shuttles');
+  shuttles('shuttles'),
+  packagePickup('package_pickup');
 
   const ModuleType(this.id);
 
@@ -96,6 +97,7 @@ const Map<ModuleType, List<CardSize>> supportedSizes = {
   ModuleType.campusMap: [CardSize.wide],
   ModuleType.academicDates: [CardSize.compact, CardSize.standard],
   ModuleType.shuttles: [CardSize.compact],
+  ModuleType.packagePickup: [CardSize.compact],
 };
 
 /// The footprint a newly added module starts with.
@@ -204,6 +206,7 @@ const Map<ModuleType, String> moduleLabels = {
   ModuleType.campusMap: 'Campus map',
   ModuleType.academicDates: 'Academic Dates',
   ModuleType.shuttles: 'Shuttles',
+  ModuleType.packagePickup: 'Package pickup',
 };
 
 /// The four cards the app shipped with, as instances.

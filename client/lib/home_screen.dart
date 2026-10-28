@@ -21,6 +21,7 @@ import 'cards/housing_card.dart';
 import 'cards/visiting_chefs_card.dart';
 import 'cards/academic_dates_card.dart';
 import 'cards/shuttles_card.dart';
+import 'cards/package_pickup_card.dart';
 import 'config.dart';
 import 'data/campus_time.dart';
 import 'models/api_models.dart';
@@ -51,6 +52,7 @@ const Map<ModuleType, AppIconKind> moduleIcons = {
   ModuleType.campusMap: AppIconKind.map,
   ModuleType.academicDates: AppIconKind.academicDates,
   ModuleType.shuttles: AppIconKind.shuttle,
+  ModuleType.packagePickup: AppIconKind.mail,
 };
 
 /// Card height. Cards grow to use spare vertical room, but stop before they
@@ -115,6 +117,7 @@ const Set<ModuleType> compactBodyTypes = {
   ModuleType.visitingChefs,
   ModuleType.facilityHours,
   ModuleType.shuttles,
+  ModuleType.packagePickup,
 };
 
 /// Two up only while a half card still holds its value.
@@ -185,6 +188,11 @@ class _HomeScreenState extends State<HomeScreen> {
   );
   StreamSubscription<Result<Collection<RecreationFacility>>>? _recreationSub;
   StreamSubscription<Result<Collection<CampusMapFeature>>>? _mapSub;
+  Result<Collection<PostOffice>> _offices = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  StreamSubscription<Result<Collection<PostOffice>>>? _officesSub;
 
   // ended events leave without new data
   Timer? _minute;
@@ -210,6 +218,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _mapSub = widget.api.campusMap().listen((result) {
       if (mounted) setState(() => _campusMap = result);
     });
+    _officesSub = widget.api.postOffices().listen((result) {
+      if (mounted) setState(() => _offices = result);
+    });
   }
 
   @override
@@ -218,6 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _minute?.cancel();
     _recreationSub?.cancel();
     _mapSub?.cancel();
+    _officesSub?.cancel();
     super.dispose();
   }
 
@@ -527,6 +539,12 @@ class _HomeScreenState extends State<HomeScreen> {
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(4),
         ),
+        ModuleType.packagePickup => PackagePickupCard(
+          areas: widget.areas,
+          offices: _offices,
+          dragHandle: controls,
+          onShowAll: () => widget.onGoToTab(4),
+        ),
       };
 
   /// Columns grow with width, so a wide window is not four cards huddled in
@@ -741,6 +759,7 @@ class _EditBar extends StatelessWidget {
     ModuleType.campusMap,
     ModuleType.academicDates,
     ModuleType.shuttles,
+    ModuleType.packagePickup,
   ];
 
   Future<void> _showLibrary(BuildContext context) async {
@@ -774,6 +793,7 @@ class _EditBar extends StatelessWidget {
                   ModuleType.campusMap => 'Keep campus wayfinding on Today',
                   ModuleType.academicDates => 'Keep the next deadline visible',
                   ModuleType.shuttles => 'Routes from home and until when',
+                  ModuleType.packagePickup => 'Your post office counter hours',
                   _ => 'Add another ${moduleLabels[type]!.toLowerCase()} card',
                 }),
                 trailing: Icon(AppIconKind.add.of(context)),
