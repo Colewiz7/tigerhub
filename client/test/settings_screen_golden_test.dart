@@ -63,10 +63,14 @@ void main() {
 
   for (final size in const [Size(390, 844), Size(440, 956)]) {
     for (final platform in const [TargetPlatform.iOS, TargetPlatform.android]) {
-      testWidgets('no row subtitle is cut short at ${size.width.toInt()} on ${platform.name}', (tester) async {
-        await pumpSettings(tester, size, Brightness.light, 1, platform: platform);
-        expect(truncatedRowText(tester), isEmpty);
-      });
+      for (final scale in const [1.0, 2.0]) {
+        testWidgets('no row subtitle is cut short at ${size.width.toInt()} on ${platform.name} at ${scale}x', (tester) async {
+          await pumpSettings(tester, size, Brightness.light, scale, platform: platform);
+          expect(truncatedRowText(tester), isEmpty);
+          // one line at 1x, two allowed at large text
+          if (scale == 1) expect(multiLineRowText(tester), isEmpty);
+        });
+      }
     }
   }
 

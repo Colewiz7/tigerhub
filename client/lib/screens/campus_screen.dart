@@ -363,6 +363,7 @@ class _ShuttleSection extends StatelessWidget {
             StatusRow(
               icon: AppIconKind.shuttle,
               iconSize: StatusRow.fillIconSize,
+              wrapSubtitle: true,
               title: '${route.number} · ${route.name}',
               subtitle: route.hours,
               actions: [MenuAction.copy('${route.number} · ${route.name}\n${route.hours}')],
@@ -407,6 +408,7 @@ class _AcademicDatesSection extends StatelessWidget {
             StatusRow(
               icon: index == 0 ? AppIconKind.upcoming : AppIconKind.day,
               iconSize: StatusRow.fillIconSize,
+              wrapSubtitle: true,
               title: upcoming[index].title,
               subtitle: upcoming[index].detail,
               actions: [
@@ -467,6 +469,7 @@ class _SafetySection extends StatelessWidget {
         StatusRow(
           icon: contact.icon,
           iconSize: StatusRow.fillIconSize,
+          wrapSubtitle: true,
           title: contact.label,
           subtitle: contact.number,
           trailing: Icon(
@@ -568,6 +571,7 @@ class _FindSection extends StatelessWidget {
           StatusRow(
             icon: iconForPlaceKind(kind.kind),
             iconSize: StatusRow.fillIconSize,
+            wrapSubtitle: true,
             title: kind.kindName,
             subtitle: '${kind.count} on campus',
             onTap: () => showModalBottomSheet<void>(
@@ -1317,6 +1321,7 @@ class _RecreationRow extends StatelessWidget {
     return StatusRow(
       icon: _icon(facility.name),
       iconSize: StatusRow.fillIconSize,
+      wrapSubtitle: true,
       title: facility.name,
       subtitle: hours,
       accent: open ? semantic.open : semantic.closed,
@@ -1538,6 +1543,7 @@ class _EquipmentBlock extends StatelessWidget {
           StatusRow(
             icon: _iconForRoom(room.room),
             iconSize: StatusRow.fillIconSize,
+            wrapSubtitle: true,
             title: room.room,
             subtitle:
                 '${room.machines} machine${room.machines == 1 ? '' : 's'}',

@@ -343,29 +343,83 @@ void main() {
     }
   }
 
-  // static copy fits one line on the phones we ship to
+  // static copy fits one line on the phones we ship to. At large text it gets
+  // two; these still need a third at 2x, beside a trailing date or in a nav row
+  const needThirdLineAt2x = {
+    390: {
+      'Fountains, restrooms, blue lights',
+      'No classes October 12–13',
+      'Last day to drop with a W',
+      'Graduation applications due',
+      'Final exams begin December 9',
+      'First day of spring add/drop',
+    },
+    440: {
+      'Graduation applications due',
+      'Final exams begin December 9',
+      'First day of spring add/drop',
+    },
+  };
   for (final size in const [Size(390, 844), Size(440, 956)]) {
     for (final platform in const [TargetPlatform.iOS, TargetPlatform.android]) {
-      testWidgets('no row subtitle is cut short at ${size.width.toInt()} on ${platform.name}', (tester) async {
-        await pumpCampus(tester, size: size, platform: platform);
-        final cut = <String>{...truncatedRowText(tester)};
-        for (final title in const ['Mail', 'Find on campus', 'Academic dates', 'Shuttles', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace']) {
-          await tester.tap(find.descendant(of: find.byType(SectionNavRow), matching: find.text(title)));
-          await tester.pumpAndSettle();
-          // lists build lazily, so walk each one to its end
-          final list = tester.state<ScrollableState>(find.byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down).first);
-          while (true) {
+      for (final textScale in const [1.0, 2.0]) {
+        testWidgets('no row subtitle is cut short at ${size.width.toInt()} on ${platform.name} at ${textScale}x', (tester) async {
+          await pumpCampus(tester, size: size, platform: platform, textScale: textScale);
+          final cut = <String>{};
+          final wraps = <String>{};
+          final oneLine = <String>{};
+          Finder vertical() => find.byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down).first;
+          void collect() {
             cut.addAll(truncatedRowText(tester));
-            final before = list.position.pixels;
-            list.position.jumpTo((before + 300).clamp(0, list.position.maxScrollExtent));
-            await tester.pumpAndSettle();
-            if (list.position.pixels == before) break;
+            wraps.addAll(multiLineRowText(tester));
+            oneLine.addAll(singleLineRowText(tester));
           }
-          await tester.pageBack();
+
+          // lists build lazily, so walk each one to its end
+          Future<void> walk() async {
+            final list = tester.state<ScrollableState>(vertical());
+            while (true) {
+              collect();
+              final before = list.position.pixels;
+              list.position.jumpTo((before + 300).clamp(0, list.position.maxScrollExtent));
+              await tester.pumpAndSettle();
+              if (list.position.pixels == before) break;
+            }
+          }
+
+          const titles = ['Mail', 'Find on campus', 'Academic dates', 'Shuttles', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace'];
+          await walk();
+          // open each section as the nav list brings it on screen
+          final nav = tester.state<ScrollableState>(vertical());
+          nav.position.jumpTo(0);
           await tester.pumpAndSettle();
-        }
-        expect(cut, isEmpty);
-      });
+          final visited = <String>{};
+          while (true) {
+            for (final title in titles) {
+              final row = find.descendant(of: find.byType(SectionNavRow), matching: find.text(title)).hitTestable();
+              if (visited.contains(title) || row.evaluate().isEmpty) continue;
+              visited.add(title);
+              await tester.tap(row);
+              await tester.pumpAndSettle();
+              await walk();
+              await tester.pageBack();
+              await tester.pumpAndSettle();
+            }
+            final before = nav.position.pixels;
+            nav.position.jumpTo((before + 300).clamp(0, nav.position.maxScrollExtent));
+            await tester.pumpAndSettle();
+            if (nav.position.pixels == before) break;
+          }
+          expect(visited, titles.toSet(), reason: 'every section opened');
+          if (textScale == 1) {
+            expect(cut, isEmpty);
+            expect(wraps, isEmpty, reason: 'one line at 1x');
+          } else {
+            expect(oneLine, isEmpty, reason: 'two lines at large text');
+            expect(cut, needThirdLineAt2x[size.width.toInt()]);
+          }
+        });
+      }
     }
   }
 

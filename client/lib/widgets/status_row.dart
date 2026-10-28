@@ -33,10 +33,15 @@ class StatusRow extends StatelessWidget {
     this.subtitleMaxLines = 2,
     this.actions = const [],
     this.iconSize = 18,
+    this.wrapSubtitle = false,
   });
 
   /// Glyph size in the badge circle.
   final double iconSize;
+
+  /// Standard rows only: the subtitle takes a second line once text is turned
+  /// up. Off where a list budgets a fixed row height.
+  final bool wrapSubtitle;
 
   /// max subtitle lines, null shows all
   /// null only outside BoundedList
@@ -118,6 +123,7 @@ class StatusRow extends StatelessWidget {
     final dimmed = emphasis == RowEmphasis.dimmed;
     final tint = accent ?? scheme.primary;
     final dense = _isDense(context);
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1;
     final rowGap = dense ? denseGap : gap;
     final badge = dense ? denseBadgeSize : badgeSize;
     final titleStyle = dense
@@ -231,8 +237,11 @@ class StatusRow extends StatelessWidget {
                                 Text(
                                   subtitle!,
                                   style: subtitleStyle,
-                                  // one line unless null
-                                  maxLines: subtitleMaxLines == null ? null : 1,
+                                  // one line, two at large text when the row
+                                  // wraps, all of it when null
+                                  maxLines: subtitleMaxLines == null
+                                      ? null
+                                      : (wrapSubtitle && largeText ? 2 : 1),
                                   overflow: subtitleMaxLines == null
                                       ? TextOverflow.clip
                                       : TextOverflow.ellipsis,

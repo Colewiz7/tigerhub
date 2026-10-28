@@ -199,6 +199,8 @@ class SectionNavRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    // one line at the default size, a second once the reader turns text up
+    final largeText = MediaQuery.textScalerOf(context).scale(1) > 1;
 
     final background = active
         ? scheme.primary.withValues(alpha: 0.22)
@@ -246,7 +248,7 @@ class SectionNavRow extends StatelessWidget {
                         Text(
                           spec.subtitle,
                           style: text.bodySmall,
-                          maxLines: 1,
+                          maxLines: largeText ? 2 : 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
