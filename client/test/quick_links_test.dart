@@ -59,6 +59,7 @@ void main() {
   testWidgets('every quick link renders, has semantics and opens externally', (tester) async {
     expect(quickLinks, hasLength(8));
     expect(quickLinks.map((link) => (label: link.label, url: link.url)).toList(), expectedLinks);
+    expect(quickLinks.firstWhere((link) => link.label == 'Reserve').subtitle, 'Sign in with RIT');
     for (final link in quickLinks) {
       final parsed = DateTime.tryParse(link.lastVerified);
       expect(parsed?.toIso8601String().substring(0, 10), link.lastVerified);
