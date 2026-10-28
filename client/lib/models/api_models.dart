@@ -425,6 +425,7 @@ class HousingArea {
     required this.name,
     this.directDelivery = false,
     this.line2Example,
+    this.postOffice,
   });
 
   final String id;
@@ -432,12 +433,25 @@ class HousingArea {
   final bool directDelivery;
   final String? line2Example;
 
+  /// The campus post office id. Null where mail is delivered direct.
+  final String? postOffice;
+
   factory HousingArea.fromJson(Map<String, dynamic> json) => HousingArea(
     id: json['id'] as String,
     name: json['name'] as String,
     directDelivery: json['direct_delivery'] as bool? ?? false,
     line2Example: json['line2_example'] as String?,
+    postOffice: json['post_office'] as String?,
   );
+}
+
+/// The post office that holds mail for [areaId], or null for direct delivery
+/// and for an area that is not set or not known.
+String? postOfficeFor(List<HousingArea> areas, String? areaId) {
+  for (final area in areas) {
+    if (area.id == areaId) return area.directDelivery ? null : area.postOffice;
+  }
+  return null;
 }
 
 class HoursRule {
