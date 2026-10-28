@@ -13,7 +13,7 @@ import 'package:tigerhub/cards/event_row.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/campus_time.dart';
 import 'package:tigerhub/models/api_models.dart';
-import 'package:tigerhub/screens/campus_screen.dart' show currentSeason;
+import 'package:tigerhub/services/todays_hours.dart' show currentSeason;
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';

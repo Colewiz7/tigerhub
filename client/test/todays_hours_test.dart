@@ -166,4 +166,73 @@ void main() {
     // is not the order anyone thinks about them in.
     expect(servicesIn(rules), ['package_pickup', 'shipping_window']);
   });
+
+  group('the next opening', () {
+    DateTime? next(DateTime now) => nextOpening(service: 'package_pickup', rules: rules, now: now);
+
+    test('before opening today it is today', () {
+      expect(next(at(2, 8, 0)), at(2, 9, 0));
+    });
+
+    test('after closing it is the next day with hours', () {
+      expect(next(at(2, 17, 0)), at(3, 9, 0));
+    });
+
+    test('saturday evening skips sunday to monday', () {
+      expect(next(at(5, 17, 0)), at(7, 9, 0));
+    });
+
+    test('a service with no rules never opens', () {
+      expect(nextOpening(service: 'nothing', rules: rules, now: at(2, 8, 0)), isNull);
+    });
+
+    test('the week ahead crosses the november clock change', () {
+      // sat oct 31 2026 evening, clocks fall back sun nov 1
+      final now = CampusTime.wall(2026, 10, 31, 17, 0);
+      expect(nextOpening(service: 'package_pickup', rules: rules, now: now), CampusTime.wall(2026, 11, 2, 9, 0));
+    });
+  });
+
+  group('clock labels', () {
+    test('drop zero minutes and say midnight', () {
+      expect(clockLabel(19 * 60), '7 PM');
+      expect(clockLabel(16 * 60 + 30), '4:30 PM');
+      expect(clockLabel(0), 'midnight');
+      expect(clockLabel(1440), 'midnight');
+      expect(clockLabel(12 * 60), '12 PM');
+      expect(clockLabel(1440 + 33), '12:33 AM');
+    });
+
+    test('clockMinutes reads HH:MM and nothing else', () {
+      expect(clockMinutes('07:30'), 450);
+      expect(clockMinutes('7'), isNull);
+      expect(clockMinutes('ab:cd'), isNull);
+    });
+  });
+
+  group('the next change at a facility', () {
+    const pool = [(opens: '06:00', closes: '09:00'), (opens: '11:30', closes: '13:00'), (opens: '19:00', closes: '22:00')];
+
+    test('between sessions it says when it opens', () {
+      expect(nextChange(pool, 14 * 60), (kind: ChangeKind.opens, minute: 19 * 60));
+    });
+
+    test('open it says when it closes', () {
+      expect(nextChange(pool, 12 * 60), (kind: ChangeKind.closes, minute: 13 * 60));
+    });
+
+    test('after the last session it is closed today', () {
+      expect(nextChange(pool, 22 * 60 + 5), (kind: ChangeKind.closedToday, minute: null));
+    });
+
+    test('touching sessions count as one', () {
+      const gym = [(opens: '06:00', closes: '12:00'), (opens: '12:00', closes: '23:00')];
+      expect(nextChange(gym, 10 * 60), (kind: ChangeKind.closes, minute: 23 * 60));
+    });
+
+    test('a span to midnight ends at midnight', () {
+      const late = [(opens: '18:00', closes: '00:00')];
+      expect(nextChange(late, 20 * 60), (kind: ChangeKind.closes, minute: 1440));
+    });
+  });
 }

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/services.dart';
 
+import 'data/shuttles.dart';
 import 'home_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/setup_screen.dart';
@@ -104,6 +105,7 @@ class _AppShellState extends State<AppShell>
     // Housekeeping, not on the critical path: nothing waits on it and a
     // failure is swallowed.
     unawaited(ResponseCache.instance.prune());
+    unawaited(ShuttleSchedule.load());
     _refresh();
     _ticker = Timer.periodic(_tick, (_) => _refresh());
     WidgetsBinding.instance.addObserver(this);
