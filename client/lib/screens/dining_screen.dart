@@ -164,6 +164,16 @@ class _DiningScreenState extends State<DiningScreen> {
                   (truck.location?.toLowerCase().contains(query) ?? false)))
             truck,
     ];
+    // places first, then todays trucks, then later days
+    final today = CampusTime.wallDate();
+    final laterTrucks = [
+      for (final truck in trucks)
+        if (_FoodTrucksGroup.isLater(truck.date, today)) truck,
+    ];
+    final todayTrucks = [
+      for (final truck in trucks)
+        if (!_FoodTrucksGroup.isLater(truck.date, today)) truck,
+    ];
 
     return CallbackShortcuts(
       bindings: {
@@ -209,13 +219,6 @@ class _DiningScreenState extends State<DiningScreen> {
                       onRetry: _readFeatures,
                     ),
                   ),
-                  if (trucks.isNotEmpty)
-                    JumpGroup(
-                      label: 'Food trucks',
-                      icon: AppIconKind.truck,
-                      count: trucks.length,
-                      builder: (context) => _FoodTrucksGroup(trucks: trucks),
-                    ),
                   if (groups.isEmpty)
                     JumpGroup(
                       label: 'No matches',
@@ -246,6 +249,20 @@ class _DiningScreenState extends State<DiningScreen> {
                           ],
                         ),
                       ),
+                  if (todayTrucks.isNotEmpty)
+                    JumpGroup(
+                      label: 'Food trucks',
+                      icon: AppIconKind.truck,
+                      count: todayTrucks.length,
+                      builder: (context) => _FoodTrucksGroup(title: 'Food trucks', trucks: todayTrucks),
+                    ),
+                  if (laterTrucks.isNotEmpty)
+                    JumpGroup(
+                      label: 'Upcoming food trucks',
+                      icon: AppIconKind.truck,
+                      count: laterTrucks.length,
+                      builder: (context) => _FoodTrucksGroup(title: 'Upcoming food trucks', trucks: laterTrucks),
+                    ),
                 ],
               ),
             ),
@@ -345,9 +362,16 @@ class _DiningFilters extends StatelessWidget {
 }
 
 class _FoodTrucksGroup extends StatelessWidget {
-  const _FoodTrucksGroup({required this.trucks});
+  const _FoodTrucksGroup({required this.title, required this.trucks});
 
+  final String title;
   final List<FoodTruck> trucks;
+
+  static bool isLater(String ymd, DateTime today) {
+    final date = DateTime.tryParse(ymd);
+    if (date == null) return false;
+    return DateTime.utc(date.year, date.month, date.day).isAfter(DateTime.utc(today.year, today.month, today.day));
+  }
 
   static const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   static const _months = [
@@ -376,7 +400,7 @@ class _FoodTrucksGroup extends StatelessWidget {
       children: [
         GroupHeader(
           icon: AppIconKind.truck,
-          title: 'Food trucks',
+          title: title,
           count: trucks.length,
         ),
         for (final truck in trucks)
