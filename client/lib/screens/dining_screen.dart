@@ -583,7 +583,7 @@ class _TodayMenuGroup extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
-      child: Text('No menus published yet today', style: quiet),
+      child: Text('Menus not published yet today', style: quiet),
     );
   }
 

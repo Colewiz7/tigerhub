@@ -157,7 +157,7 @@ void main() {
       expect(find.text('Sichuan · 11 AM to 2 PM\nGracie’s'), findsOneWidget);
       expect(
         tester.getTopLeft(find.text('Chef Marco')).dy,
-        lessThan(tester.getTopLeft(find.text('No menus published yet today')).dy),
+        lessThan(tester.getTopLeft(find.text('Menus not published yet today')).dy),
       );
     });
 
@@ -220,12 +220,19 @@ void main() {
     expect(find.text('Soup · Crossroads'), findsOneWidget);
   });
 
+  testWidgets('the quiet menu line says menus, not chefs', (tester) async {
+    await pumpDining(tester, const []);
+
+    expect(find.text('Menus not published yet today'), findsOneWidget);
+    expect(find.textContaining(RegExp('^No ')), findsNothing);
+  });
+
   testWidgets('a quiet menu day explains itself without hiding locations', (
     tester,
   ) async {
     await pumpDining(tester, const []);
 
-    expect(find.text('No menus published yet today'), findsOneWidget);
+    expect(find.text('Menus not published yet today'), findsOneWidget);
     expect(find.text('Crossroads'), findsOneWidget);
   });
 
@@ -235,7 +242,7 @@ void main() {
   ) async {
     await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
 
-    expect(find.text('No menus published yet today'), findsOneWidget);
+    expect(find.text('Menus not published yet today'), findsOneWidget);
     expect(find.byType(EmptyState), findsNothing);
     expect(find.byIcon(AppIconKind.sourceDown.of(tester.element(find.byType(DiningScreen)))), findsNothing);
     expect(find.text('Today’s published menu'), findsNothing);
@@ -263,7 +270,7 @@ void main() {
     await pumpDining(tester, const [], backend: backend);
 
     expect(find.text('Couldn’t load menus'), findsOneWidget);
-    expect(find.text('No menus published yet today'), findsNothing);
+    expect(find.text('Menus not published yet today'), findsNothing);
 
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
@@ -279,7 +286,7 @@ void main() {
     await ResponseCache.instance.write('/dining/specials', {'data': <dynamic>[], 'stale': false, 'last_updated': null, 'availability': 'empty'});
     await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
 
-    expect(find.text('No menus published yet today'), findsOneWidget);
+    expect(find.text('Menus not published yet today'), findsOneWidget);
     expect(find.text('Retry'), findsNothing);
   });
 
@@ -384,7 +391,7 @@ void main() {
   ) async {
     await pumpDining(tester, const []);
     await tester.enterText(find.byType(TextField), 'coffee');
-    await tester.tap(find.text('No menus published yet today'));
+    await tester.tap(find.text('Menus not published yet today'));
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
