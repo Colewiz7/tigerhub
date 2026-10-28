@@ -34,7 +34,7 @@ class SettingsScreen extends StatelessWidget {
           SectionSpec(
             id: 'events',
             title: 'Events',
-            subtitle: 'Profiles, organizer mutes, keyword rules',
+            subtitle: 'Profiles, mutes, keyword rules',
             icon: AppIconKind.events,
             builder: (context) =>
                 EventsSection(events: events.value?.data ?? const []),

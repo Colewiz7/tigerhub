@@ -7,6 +7,7 @@ import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 
 import 'golden_harness.dart';
+import 'support/truncation.dart';
 
 void main() {
   Future<void> pumpSettings(WidgetTester tester, Size size, Brightness brightness, double scale, {TargetPlatform? platform}) async {
@@ -57,6 +58,15 @@ void main() {
           await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
         });
       }
+    }
+  }
+
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final platform in const [TargetPlatform.iOS, TargetPlatform.android]) {
+      testWidgets('no row subtitle is cut short at ${size.width.toInt()} on ${platform.name}', (tester) async {
+        await pumpSettings(tester, size, Brightness.light, 1, platform: platform);
+        expect(truncatedRowText(tester), isEmpty);
+      });
     }
   }
 

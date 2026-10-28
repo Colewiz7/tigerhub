@@ -141,14 +141,14 @@ class _CampusScreenState extends State<CampusScreen> {
         SectionSpec(
           id: 'find',
           title: 'Find on campus',
-          subtitle: 'Fountains, restrooms, blue lights, bus stops',
+          subtitle: 'Fountains, restrooms, blue lights',
           icon: AppIconKind.find,
           builder: (context) => _FindSection(api: widget.api, kinds: _kinds),
         ),
         SectionSpec(
           id: 'dates',
           title: 'Academic dates',
-          subtitle: 'Deadlines, breaks, reading days and finals',
+          subtitle: 'Deadlines, breaks and finals',
           icon: AppIconKind.academicDates,
           builder: (context) => _AcademicDatesSection(now: widget.now),
         ),
@@ -165,7 +165,7 @@ class _CampusScreenState extends State<CampusScreen> {
         SectionSpec(
           id: 'safety',
           title: 'Safety',
-          subtitle: 'Emergency, text and non-emergency contacts',
+          subtitle: 'Emergency, text and other numbers',
           icon: AppIconKind.safety,
           builder: (context) => const _SafetySection(),
         ),

@@ -34,6 +34,7 @@ import 'package:url_launcher_platform_interface/method_channel_url_launcher.dart
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import 'golden_harness.dart';
+import 'support/truncation.dart';
 
 /// Serves the same envelopes LocalBackend does, from captured fixtures, with no
 /// network and no clock dependence.
@@ -221,7 +222,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Add/drop ends'), findsOneWidget);
-    expect(find.textContaining('Last day of the fall'), findsOneWidget);
+    expect(find.text('Last day to add or drop'), findsOneWidget);
   });
 
   testWidgets('safety contacts dial the exact official number', (tester) async {
@@ -339,6 +340,32 @@ void main() {
           expect(find.text('SHED makerspace'), findsOneWidget);
         });
       }
+    }
+  }
+
+  // static copy fits one line on the phones we ship to
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final platform in const [TargetPlatform.iOS, TargetPlatform.android]) {
+      testWidgets('no row subtitle is cut short at ${size.width.toInt()} on ${platform.name}', (tester) async {
+        await pumpCampus(tester, size: size, platform: platform);
+        final cut = <String>{...truncatedRowText(tester)};
+        for (final title in const ['Mail', 'Find on campus', 'Academic dates', 'Shuttles', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace']) {
+          await tester.tap(find.descendant(of: find.byType(SectionNavRow), matching: find.text(title)));
+          await tester.pumpAndSettle();
+          // lists build lazily, so walk each one to its end
+          final list = tester.state<ScrollableState>(find.byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down).first);
+          while (true) {
+            cut.addAll(truncatedRowText(tester));
+            final before = list.position.pixels;
+            list.position.jumpTo((before + 300).clamp(0, list.position.maxScrollExtent));
+            await tester.pumpAndSettle();
+            if (list.position.pixels == before) break;
+          }
+          await tester.pageBack();
+          await tester.pumpAndSettle();
+        }
+        expect(cut, isEmpty);
+      });
     }
   }
 
