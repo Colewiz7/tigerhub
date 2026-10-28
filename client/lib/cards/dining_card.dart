@@ -95,7 +95,36 @@ AppIconKind iconForCategory(String category) => switch (category) {
   _ => AppIconKind.dining,
 };
 
-/// Venue type drives the icon, so a row is identifiable before it is read.
+// one icon per TigerCenter id, the type filter still reads iconForVenue
+// 41 and 501 are not here, they keep their venue type icon
+const placeIcons = {
+  21: AppIconKind.diningHall,
+  22: AppIconKind.grill,
+  23: AppIconKind.dining,
+  24: AppIconKind.deli,
+  25: AppIconKind.patio,
+  26: AppIconKind.courtside,
+  27: AppIconKind.storefront,
+  28: AppIconKind.grocery,
+  29: AppIconKind.basket,
+  30: AppIconKind.bakery,
+  31: AppIconKind.coffee,
+  32: AppIconKind.iceCream,
+  34: AppIconKind.keyboard,
+  35: AppIconKind.coffeeMaker,
+  36: AppIconKind.soup,
+  37: AppIconKind.cafe,
+  38: AppIconKind.bedtime,
+  39: AppIconKind.smoothie,
+  61: AppIconKind.menu,
+  441: AppIconKind.takeout,
+  461: AppIconKind.florist,
+  481: AppIconKind.memory,
+};
+
+AppIconKind iconForPlace(int id, String name) => placeIcons[id] ?? iconForVenue(name);
+
+/// Venue type drives the type filter, so a row is identifiable before it is read.
 AppIconKind iconForVenue(String name) {
   final n = name.toLowerCase().replaceAll('’', "'");
   for (final (needles, kind) in _venueIcons) {
@@ -309,7 +338,7 @@ class DiningRow extends StatelessWidget {
       dense: dense,
       icon: Preferences.instance.isPinned(location.id)
           ? AppIconKind.pinned
-          : iconForVenue(location.name),
+          : iconForPlace(location.id, location.name),
       title: location.name,
       subtitle: when,
       accent: accent,

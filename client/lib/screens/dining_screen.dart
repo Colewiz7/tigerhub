@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import '../cards/dining_card.dart';
 import '../cards/visiting_chefs_card.dart' show VisitingChefsCard;
 import '../data/campus_time.dart';
+import '../data/chef_family.dart';
 import '../data/chef_listing.dart';
 import '../data/dining_layout.dart';
 import '../data/dining_sections.dart';
@@ -785,7 +786,7 @@ class _VisitingChefsGroup extends StatelessWidget {
             for (final chef in chefs)
               StatusRow(
                 key: ValueKey('chef-${chef.id}'),
-                icon: AppIconKind.visitingChef,
+                icon: iconForChef(chef),
                 grouped: true,
                 subtitleMaxLines: null,
                 title: chef.name,
