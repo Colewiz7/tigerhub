@@ -447,9 +447,9 @@ class LocalBackend implements Backend {
     return _envelope('tigercenter_dining', data, fetchedAt);
   }
 
-  /// Everything TigerCenter publishes for today. No other source has specials,
-  /// so when every `menus[]` is empty this says unavailable rather than
-  /// pretending it is a quiet day.
+  /// Everything TigerCenter publishes for today. Unavailable only when no
+  /// snapshot was ever read. Every `menus[]` empty is a loaded source with
+  /// nothing published yet, which is normal late at night.
   Future<Map<String, dynamic>> _specials() async {
     final (snapshot, fetchedAt) = await _snapshot('tigercenter_dining');
     final data = snapshot == null
@@ -459,7 +459,7 @@ class LocalBackend implements Backend {
       ..._envelope('tigercenter_dining', data, fetchedAt),
       'availability': data.isNotEmpty
           ? availabilityAvailable
-          : tigerCenterMenusEmpty(snapshot)
+          : snapshot == null
           ? availabilityUnavailable
           : availabilityEmpty,
     };

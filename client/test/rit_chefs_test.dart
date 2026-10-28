@@ -1011,11 +1011,20 @@ void main() {
       expect(chefs['data'], isEmpty);
     });
 
-    test('specials report unavailable when every menu is empty', () async {
+    test('specials are empty, not unavailable, when every menu is empty', () async {
       TestWidgetsFlutterBinding.ensureInitialized();
       backend = build({
         tcUrl: http.Response(fixture('tc_dining_all_empty_menus.json'), 200),
       });
+
+      final specials = await backend!.fetch('/dining/specials');
+      expect(specials['availability'], availabilityEmpty);
+      expect(specials['data'], isEmpty);
+    });
+
+    test('specials are unavailable when TigerCenter never loaded', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      backend = build({tcUrl: http.Response('down', 503)});
 
       final specials = await backend!.fetch('/dining/specials');
       expect(specials['availability'], availabilityUnavailable);

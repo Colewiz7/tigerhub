@@ -23,7 +23,6 @@ import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
 import '../widgets/search_field.dart';
 import '../services/preferences.dart';
-import '../services/subscriptions.dart';
 import '../widgets/status_row.dart';
 
 class DiningScreen extends StatefulWidget {
@@ -38,7 +37,6 @@ class DiningScreen extends StatefulWidget {
 
 class _DiningScreenState extends State<DiningScreen> {
   final _prefs = Preferences.instance;
-  final _subscriptions = Subscriptions();
   final _search = TextEditingController();
   final _searchFocus = FocusNode();
   bool _openOnly = false;
@@ -62,7 +60,16 @@ class _DiningScreenState extends State<DiningScreen> {
   }
 
   StreamSubscription<Result<Collection<FoodTruck>>>? _trucksSub;
+  StreamSubscription<Result<Collection<MenuItem>>>? _featuresSub;
   bool _active = true;
+
+  // also the Retry button
+  void _readFeatures() {
+    _featuresSub?.cancel();
+    _featuresSub = widget.api.diningFeatures().listen((result) {
+      if (mounted) setState(() => _features = result);
+    });
+  }
 
   // local snapshot, swapped in place
   void _readTrucks() {
@@ -94,18 +101,14 @@ class _DiningScreenState extends State<DiningScreen> {
     super.initState();
     _prefs.addListener(_onChanged);
     _readTrucks();
-    _subscriptions.add(
-      widget.api.diningFeatures().listen((result) {
-        if (mounted) setState(() => _features = result);
-      }),
-    );
+    _readFeatures();
   }
 
   @override
   void dispose() {
     _prefs.removeListener(_onChanged);
     _trucksSub?.cancel();
-    _subscriptions.dispose();
+    _featuresSub?.cancel();
     _search.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -203,6 +206,7 @@ class _DiningScreenState extends State<DiningScreen> {
                       result: _features,
                       items: menuItems,
                       filtering: query.isNotEmpty,
+                      onRetry: _readFeatures,
                     ),
                   ),
                   if (trucks.isNotEmpty)
@@ -398,39 +402,32 @@ class _TodayMenuGroup extends StatelessWidget {
     required this.result,
     required this.items,
     required this.filtering,
+    required this.onRetry,
   });
 
   final Result<Collection<MenuItem>> result;
   final List<MenuItem> items;
   final bool filtering;
+  final VoidCallback onRetry;
+
+  // a fetch that never landed, or a source that never loaded
+  bool get _failed => result.value == null
+      ? result.error != null
+      : result.value!.availability == Availability.unavailable;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GroupHeader(
-          icon: AppIconKind.cutlery,
-          title: 'Today’s published menu',
-          count: items.length,
-        ),
-        if (result.isPriming)
-          const PrimingPlaceholder(label: 'Loading today’s menu')
-        else if (items.isEmpty &&
-            !filtering &&
-            result.value?.availability == Availability.unavailable)
-          const EmptyState(
-            kind: EmptyKind.sourceDown,
-            title: 'Menu features unavailable',
-          )
-        else if (items.isEmpty)
-          EmptyState(
-            kind: EmptyKind.noEvents,
-            title: filtering
-                ? 'No matching menu items'
-                : 'No menu features today',
-          )
-        else
+    final text = Theme.of(context).textTheme;
+    final quiet = text.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
+    if (items.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          GroupHeader(
+            icon: AppIconKind.cutlery,
+            title: 'Today’s published menu',
+            count: items.length,
+          ),
           for (final item in items)
             StatusRow(
               icon: _menuIcon(item.category),
@@ -440,7 +437,29 @@ class _TodayMenuGroup extends StatelessWidget {
                 item.locationName,
               ].join(' · '),
             ),
-      ],
+        ],
+      );
+    }
+    if (_failed) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(4, 0, 0, 8),
+        child: Row(
+          children: [
+            Expanded(child: Text('Couldn’t load menus', style: quiet)),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
+        ),
+      );
+    }
+    if (result.isPriming) {
+      return const PrimingPlaceholder(label: 'Loading today’s menu');
+    }
+    if (filtering) {
+      return const EmptyState(kind: EmptyKind.noEvents, title: 'No matching menu items');
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
+      child: Text('No menus published yet today', style: quiet),
     );
   }
 
