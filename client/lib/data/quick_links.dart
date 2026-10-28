@@ -15,5 +15,5 @@ const quickLinks = <QuickLink>[
   QuickLink(label: 'Tiger Chat', url: 'https://tigerchat.app/', lastVerified: '2026-10-14'),
   QuickLink(label: 'Service Center', url: 'https://help.rit.edu/', lastVerified: '2026-10-14'),
   QuickLink(label: 'FMS requests', url: 'https://www.rit.edu/facilitiesmanagement/request-service', lastVerified: '2026-10-14', subtitle: 'Facilities requests'),
-  QuickLink(label: 'Reserve', url: 'https://reserve.rit.edu/', lastVerified: '2026-10-20', subtitle: 'Room reservations'),
+  QuickLink(label: 'Reserve', url: 'https://reserve.rit.edu/', lastVerified: '2026-10-20', subtitle: 'Sign in with RIT'),
 ];

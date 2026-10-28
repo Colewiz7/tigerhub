@@ -132,15 +132,13 @@ String _r(Rect rect) =>
   Map<String, List<String>> empty,
   Map<String, List<String>> text,
 })
-_loadBase() {
+_loadBase([String path = 'test/fixtures/wide_layout_base.txt']) {
   final base = <String, List<String>>{};
   final empty = <String, List<String>>{};
   final text = <String, List<String>>{};
   Map<String, List<String>>? into;
   String? key;
-  for (final line in File(
-    'test/fixtures/wide_layout_base.txt',
-  ).readAsLinesSync()) {
+  for (final line in File(path).readAsLinesSync()) {
     final header = RegExp(r"^(BASE|EMPTY|TEXT) '(.*)': \[$").firstMatch(line);
     if (header != null) {
       into = switch (header.group(1)) {
@@ -473,7 +471,22 @@ void main() {
                   _housingNewHeight,
                 );
               }
-              expect(lines, expected, reason: 'geometry moved');
+              if (edit) {
+                // edit mode holds the 80 by 80 controls block, so a card
+                // without a tall hero grows by up to 48. Everything else
+                // stays on the base, which these numbers are checked against.
+                for (final (i, line) in lines.indexed) {
+                  final now = line.split(' | ').first.split('x').map(double.parse).toList();
+                  final then = expected[i].split(' | ').first.split('x').map(double.parse).toList();
+                  expect(now[0], then[0], reason: 'card $i width');
+                  expect(now[1] - then[1], inInclusiveRange(0, 48), reason: 'card $i edit growth');
+                }
+                final pinned = _loadBase('test/fixtures/wide_layout_edit.txt');
+                // the rows variant has the same edit mode geometry as data
+                expect(lines, pinned.base[key.replaceFirst(' rows', '')], reason: 'edit geometry moved');
+              } else {
+                expect(lines, expected, reason: 'geometry moved');
+              }
               expect(
                 texts,
                 [for (final t in fixture.text[key]!) _sentenceCaseTitles(_endedDropsOff(_sentenceCaseStatus(t))).replaceAll('+1 organizers', '+1 organizer')],
@@ -484,6 +497,10 @@ void main() {
               // centered across its card (the base left aligned it).
               final base = fixture.empty[key]!;
               expect(blocks.length, base.length);
+              if (edit) {
+                final pinned = _loadBase('test/fixtures/wide_layout_edit.txt');
+                expect(blocks, pinned.empty[key.replaceFirst(' rows', '')], reason: 'edit empty block moved');
+              }
               for (var i = 0; i < blocks.length; i++) {
                 if (base[i] == 'none') {
                   expect(blocks[i], 'none', reason: 'card $i');
@@ -496,7 +513,12 @@ void main() {
                 final then = parse(base[i]);
                 final sizeNow = '${now[2]}x${now[3]}';
                 final sizeThen = '${then[2]}x${then[3]}';
-                expect(now[1], then[1], reason: 'card $i empty block top');
+                if (edit) {
+                  // moves down with the content, by the card's growth
+                  expect(now[1] - then[1], inInclusiveRange(0, 48), reason: 'card $i empty block top');
+                } else {
+                  expect(now[1], then[1], reason: 'card $i empty block top');
+                }
                 expect(
                   sizeNow,
                   _expectedEmptySize(key, i, sizeThen),
