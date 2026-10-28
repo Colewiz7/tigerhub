@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../theme/tokens.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
@@ -30,6 +31,39 @@ int eventsToday(List<CampusEvent> events, {DateTime? now}) {
   final today = CampusTime.dateOf(now ?? CampusTime.nowUtc());
   return events
       .where((event) => CampusTime.dateOf(event.startsAt) == today)
+      .length;
+}
+
+/// Up next on a phone: timed events not yet over, soonest first, a boosted
+/// one first only on a tie. All day events are counted in the hero, never
+/// listed, or they would sit on top every day.
+List<CampusEvent> upNextOrder(
+  List<CampusEvent> events, {
+  Set<String> boosted = const {},
+  DateTime? now,
+}) {
+  final moment = now ?? CampusTime.nowUtc();
+  final timed = [
+    for (final event in events)
+      if (!event.allDay && eventEnd(event).isAfter(moment)) event,
+  ];
+  timed.sort((a, b) {
+    final byStart = a.startsAt.compareTo(b.startsAt);
+    if (byStart != 0) return byStart;
+    final aBoost = boosted.contains(a.uid);
+    if (aBoost != boosted.contains(b.uid)) return aBoost ? -1 : 1;
+    return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+  });
+  return timed;
+}
+
+/// The Up next hero: events on today, started or not, that are not over. A
+/// multi day event on its last day counts.
+int upNextToday(List<CampusEvent> events, {DateTime? now}) {
+  final moment = now ?? CampusTime.nowUtc();
+  final today = CampusTime.dateOf(moment);
+  return events
+      .where((e) => !CampusTime.dateOf(e.startsAt).isAfter(today) && eventEnd(e).isAfter(moment))
       .length;
 }
 
@@ -77,9 +111,13 @@ class EventsCard extends StatelessWidget {
     this.onShowAll,
     this.organizerKey,
     this.compact = false,
+    this.boosted = const {},
   });
 
   final Result<Collection<CampusEvent>> result;
+
+  /// Uids that matched a boost word. Breaks start time ties in Up next.
+  final Set<String> boosted;
   final Widget? dragHandle;
   final VoidCallback? onShowAll;
 
@@ -103,7 +141,9 @@ class EventsCard extends StatelessWidget {
               if (e.organizerKey == organizerKey) e,
           ]
         : all;
-    final today = eventsToday(events);
+    // one question on a phone, wide keeps its groups
+    final upNext = !_scoped && !compact && Insets.phone(context);
+    final today = upNext ? upNextToday(events) : eventsToday(events);
 
     // The club's own name, taken from its events rather than stored on the
     // card, so a club that renames itself is not stuck with the old label.
@@ -111,7 +151,7 @@ class EventsCard extends StatelessWidget {
         ? (events.isEmpty
               ? 'Club events'
               : events.first.organizer ?? 'Club events')
-        : 'Events';
+        : (upNext ? 'Up next' : 'Events');
 
     return CardShell(
       glyph: AppIconKind.events,
@@ -136,6 +176,7 @@ class EventsCard extends StatelessWidget {
           title: _scoped ? 'No club events' : null,
         ),
         _ when compact => _Compact(events: events),
+        _ when upNext => _UpNext(events: upNextOrder(events, boosted: boosted)),
         // Grouping by organizer is pointless when they are all one organizer.
         _ when _scoped => _Flat(events: events, onShowAll: onShowAll),
         _ => _Grouped(events: events, onShowAll: onShowAll),
@@ -155,6 +196,26 @@ class _Compact extends StatelessWidget {
     final ordered = [...events]
       ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
     return EventRow(event: ordered.first, dense: true);
+  }
+}
+
+/// The next few events, flat, no organizer bars.
+class _UpNext extends StatelessWidget {
+  const _UpNext({required this.events});
+
+  final List<CampusEvent> events;
+
+  @override
+  Widget build(BuildContext context) {
+    if (events.isEmpty) return const EmptyState(kind: EmptyKind.noEvents, title: 'No more events');
+    return BoundedList(
+      itemCount: events.length,
+      itemHeight: StatusRow.heightFor(context, dense: true),
+      dense: true,
+      maxRows: phoneRowCap(context),
+      noun: 'events',
+      itemBuilder: (context, i) => EventRow(event: events[i], dense: true),
+    );
   }
 }
 

@@ -63,11 +63,11 @@ void main() {
     return taps;
   }
 
-  testWidgets('the Eat now header opens the Dining tab and Events opens Events', (tester) async {
+  testWidgets('the Eat now header opens the Dining tab and Up next opens Events', (tester) async {
     final taps = await pumpToday(tester);
     await tester.tap(find.text('Eat now'));
     await tester.pump();
-    await tester.tap(find.text('Events'));
+    await tester.tap(find.text('Up next'));
     await tester.pump();
     expect(taps, [1, 2]);
   });

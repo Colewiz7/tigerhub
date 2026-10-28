@@ -156,9 +156,23 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<Result<Collection<RecreationFacility>>>? _recreationSub;
   StreamSubscription<Result<Collection<CampusMapFeature>>>? _mapSub;
 
+  // ended events leave without new data
+  Timer? _minute;
+
+  void _tickMinute() {
+    final now = CampusTime.nowUtc();
+    final wait = Duration(seconds: 60 - now.second, milliseconds: -now.millisecond);
+    _minute = Timer(wait, () {
+      if (!mounted) return;
+      setState(() {});
+      _tickMinute();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _tickMinute();
     _restoreOrder();
     _recreationSub = widget.api.recreation().listen((result) {
       if (mounted) setState(() => _recreation = result);
@@ -171,6 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _minute?.cancel();
     _recreationSub?.cancel();
     _mapSub?.cancel();
     super.dispose();
@@ -334,6 +349,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Result<Collection<CampusEvent>> get _filteredUpcomingEvents =>
       _upcoming(true);
 
+  // boost words only break ties in up next
+  Set<String> get _boostedUids {
+    final data = widget.events.value?.data;
+    if (data == null) return const {};
+    return {
+      for (final group in filterEvents(data, Preferences.instance).groups)
+        for (final item in group.visible)
+          if (item.boosted) item.event.uid,
+    };
+  }
+
   Result<Collection<CampusEvent>> _upcoming(bool applyFilters) {
     final result = widget.events;
     final value = result.value;
@@ -417,6 +443,7 @@ class _HomeScreenState extends State<HomeScreen> {
           listenable: Preferences.instance,
           builder: (context, _) => EventsCard(
             result: _filteredUpcomingEvents,
+            boosted: _boostedUids,
             organizerKey: card.scope,
             compact: card.size == CardSize.compact,
             dragHandle: controls,

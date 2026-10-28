@@ -83,10 +83,12 @@ void main() {
   for (final MapEntry(key: moment, value: (now, shown)) in days.entries) {
     testWidgets('with no end, an all day event, a timed one and the last day of a multi day one ${shown ? 'show' : 'are gone'} $moment', (tester) async {
       RitClock.pin(now);
-      // one at a time, the card folds a third organizer into "+1 organizers"
+      // up next lists timed events, all day ones count in the hero
       for (final event in [allDay, open, multi]) {
         await pumpToday(tester, [event]);
-        expect(find.text(event.title), shown ? findsWidgets : findsNothing, reason: event.title);
+        final listed = shown && !event.allDay;
+        expect(find.text(event.title), listed ? findsWidgets : findsNothing, reason: event.title);
+        expect(find.text('1 today'), shown ? findsOneWidget : findsNothing, reason: event.title);
         expect(find.text('Ended'), findsNothing);
       }
     });
