@@ -9,6 +9,7 @@ import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/cache.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
@@ -49,6 +50,8 @@ void main() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
   });
+  // the cache singleton keeps its first store, so empty it between tests
+  setUp(() => ResponseCache.instance.prune(olderThan: const Duration(days: -1)));
 
   Future<void> pumpDining(
     WidgetTester tester,
@@ -143,6 +146,53 @@ void main() {
     expect(find.text('Couldn’t load menus'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
     expect(find.text('Today’s published menu'), findsNothing);
+  });
+
+  // the cache said empty, then the refresh failed: that is a failure, not a quiet day
+  testWidgets('a cached empty menu with a failed refresh offers Retry, which works', (
+    tester,
+  ) async {
+    await ResponseCache.instance.write('/dining/specials', {'data': <dynamic>[], 'stale': false, 'last_updated': null, 'availability': 'empty'});
+    final backend = _DiningBackend(const [
+      {'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'},
+    ], failures: 1);
+    await pumpDining(tester, const [], backend: backend);
+
+    expect(find.text('Couldn’t load menus'), findsOneWidget);
+    expect(find.text('No menus published yet today'), findsNothing);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(backend.specialsFetches, 2);
+    expect(find.text('Couldn’t load menus'), findsNothing);
+    expect(find.text('Tomato bisque'), findsOneWidget);
+  });
+
+  testWidgets('a cached empty menu with a good refresh is the quiet line', (
+    tester,
+  ) async {
+    await ResponseCache.instance.write('/dining/specials', {'data': <dynamic>[], 'stale': false, 'last_updated': null, 'availability': 'empty'});
+    await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
+
+    expect(find.text('No menus published yet today'), findsOneWidget);
+    expect(find.text('Retry'), findsNothing);
+  });
+
+  // menus in hand stay up when a refresh fails, no failure line over them
+  testWidgets('cached menus stay when the refresh fails', (tester) async {
+    await ResponseCache.instance.write('/dining/specials', {
+      'data': [
+        {'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'},
+      ],
+      'stale': false,
+      'last_updated': null,
+    });
+    await pumpDining(tester, const [], backend: _DiningBackend(const [], failures: 1));
+
+    expect(find.text('Tomato bisque'), findsOneWidget);
+    expect(find.text('Today’s published menu'), findsOneWidget);
+    expect(find.text('Couldn’t load menus'), findsNothing);
   });
 
   testWidgets('a failed fetch offers Retry, which fetches again', (

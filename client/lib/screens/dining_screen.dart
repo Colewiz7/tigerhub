@@ -442,10 +442,13 @@ class _TodayMenuGroup extends StatelessWidget {
   final bool filtering;
   final VoidCallback onRetry;
 
-  // a fetch that never landed, or a source that never loaded
-  bool get _failed => result.value == null
-      ? result.error != null
-      : result.value!.availability == Availability.unavailable;
+  // menus in hand always show. without them, a failed fetch or a source
+  // that never loaded is a failure, even over a cached empty day
+  bool get _failed {
+    final value = result.value;
+    if (value != null && value.data.isNotEmpty) return false;
+    return result.error != null || result.state == DataState.failing || value?.availability == Availability.unavailable;
+  }
 
   @override
   Widget build(BuildContext context) {
