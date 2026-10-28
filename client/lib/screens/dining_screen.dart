@@ -212,7 +212,7 @@ class _DiningScreenState extends State<DiningScreen> {
                   (truck.location?.toLowerCase().contains(query) ?? false)))
             truck,
     ];
-    // places first, then todays trucks, then later days
+    // chefs, todays trucks, places, then later days
     final today = CampusTime.wallDate();
     final laterTrucks = [
       for (final truck in trucks)
@@ -263,6 +263,13 @@ class _DiningScreenState extends State<DiningScreen> {
                       count: chefs.length,
                       builder: (context) => _VisitingChefsGroup(chefs: chefs),
                     ),
+                  if (todayTrucks.isNotEmpty)
+                    JumpGroup(
+                      label: 'Food trucks',
+                      icon: AppIconKind.truck,
+                      count: todayTrucks.length,
+                      builder: (context) => _FoodTrucksGroup(title: 'Food trucks', trucks: todayTrucks),
+                    ),
                   JumpGroup(
                     label: 'Today’s menu',
                     icon: AppIconKind.cutlery,
@@ -304,13 +311,6 @@ class _DiningScreenState extends State<DiningScreen> {
                           ],
                         ),
                       ),
-                  if (todayTrucks.isNotEmpty)
-                    JumpGroup(
-                      label: 'Food trucks',
-                      icon: AppIconKind.truck,
-                      count: todayTrucks.length,
-                      builder: (context) => _FoodTrucksGroup(title: 'Food trucks', trucks: todayTrucks),
-                    ),
                   if (laterTrucks.isNotEmpty)
                     JumpGroup(
                       label: 'Upcoming food trucks',
