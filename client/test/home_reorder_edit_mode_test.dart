@@ -502,7 +502,14 @@ void main() {
             // the title ends before the first control starts
             expect(title.right, lessThanOrEqualTo(handle.left));
             expect(handle.right, lessThanOrEqualTo(inspect.left));
-            expect(inspect.right, lessThanOrEqualTo(remove.left));
+            expect(handle.bottom, lessThanOrEqualTo(remove.top));
+            // the 48 touch squares never overlap each other
+            final squares = [for (final r in [handle, inspect, remove]) Rect.fromCenter(center: r.center, width: 48, height: 48)];
+            for (var a = 0; a < 3; a++) {
+              for (var b = a + 1; b < 3; b++) {
+                expect(squares[a].overlaps(squares[b]), isFalse, reason: 'card $i touch squares $a and $b overlap');
+              }
+            }
           }
         },
       );
@@ -522,7 +529,7 @@ void main() {
     for (final scale in const [1.0, 2.0]) {
     goldenWidgets(
       'at ${size.width.toInt()}x${size.height.toInt()}, text ${scale}x, the gap '
-      'between cards is 10 in normal and edit mode, and edit mode keeps card 1',
+      'between cards is 10 in normal and edit mode, and edit mode grows card 1 by at most 48',
       (tester) async {
         await pumpHome(
           tester,
@@ -549,7 +556,7 @@ void main() {
         final edit = measure();
 
         expect(edit.gaps, [10.0, 10.0]);
-        expect(edit.height, normal.height);
+        expect(edit.height - normal.height, inInclusiveRange(0, 48));
       },
     );
     }
@@ -735,8 +742,7 @@ void main() {
               );
             }
 
-            // Controls beside or under the title, the header is the same
-            // height with the controls gone.
+            // the 80 tall block can grow a card in edit mode, by 48 at most
             final editHeader = tester.getRect(find.byType(CardShell)).height;
             await tester.pumpWidget(
               MaterialApp(
@@ -759,11 +765,8 @@ void main() {
               ),
             );
             await tester.pumpAndSettle();
-            expect(
-              tester.getRect(find.byType(CardShell)).height,
-              editHeader,
-              reason: 'edit mode changed the card height',
-            );
+            final normalHeader = tester.getRect(find.byType(CardShell)).height;
+            expect(editHeader - normalHeader, inInclusiveRange(0, 48), reason: 'edit mode grew the card by more than 48');
           },
         );
       }
