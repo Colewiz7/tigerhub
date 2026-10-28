@@ -119,21 +119,21 @@ class EventRow extends StatelessWidget {
     final sameDay =
         CampusTime.dateOf(event.startsAt) == CampusTime.dateOf(moment);
     final stamp = event.allDay
-        ? 'ALL DAY'
+        ? 'All day'
         : (sameDay
               ? formatClock(event.startsAt)
               : formatDayAndClock(event.startsAt));
 
     // The dashboard row says the time once, in the status line, with the place
     // after a middle dot ("Fri 5:00 PM · SAU"), and keeps the trailing slot
-    // for "ENDED". The standard row keeps the time on the right.
+    // for "Ended". The standard row keeps the time on the right.
     final place = event.location?.isNotEmpty == true ? event.location! : null;
     // Only on phones: dense is ignored at 600pt and up, which keep base text.
     final condensed = dense && Insets.phone(context);
     final denseWhen = event.allDay ? 'All day' : stamp;
     final denseSubtitle = place == null ? denseWhen : '$denseWhen · $place';
     final ended = Text(
-      'ENDED',
+      'Ended',
       style: text.labelSmall?.copyWith(color: semantic.closed),
     );
 

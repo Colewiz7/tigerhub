@@ -7,6 +7,8 @@ BANNED_ARGS = {"body", "message", "detail"}
 CALL = re.compile(r"(?<![\w.])EmptyState(?:\s*\.\s*\w+)?\s*\(")
 NAMED_ARG = re.compile(r"^(\w+)\s*:(?!:)")
 EM_DASH = "—"
+STATUS_WORDS = ("OPEN", "OPENS", "CLOSED", "CLOSES", "CLOSING", "BUSY", "QUIET", "ENDED", "ALL DAY", "LIVE", "SOON", "FULL")
+STATUS_CAPS = re.compile(r"(?<![A-Za-z])(%s)(?![A-Za-z])" % "|".join(STATUS_WORDS))
 
 
 def blank(c):
@@ -133,3 +135,16 @@ def empty_state_violations(text):
 def em_dash_lines(text):
     code = strip_dart(text, keep_strings=True)
     return [n for n, line in enumerate(code.splitlines(), 1) if EM_DASH in line]
+
+
+# string contents only: what differs between the kept and blanked passes
+def string_text(text):
+    kept = strip_dart(text, keep_strings=True)
+    code = strip_dart(text)
+    return "".join(k if k != c else blank(k) for k, c in zip(kept, code))
+
+
+# status words are sentence case, Open not OPEN
+def all_caps_status_lines(text):
+    strings = string_text(text)
+    return [n for n, line in enumerate(strings.splitlines(), 1) if STATUS_CAPS.search(line)]

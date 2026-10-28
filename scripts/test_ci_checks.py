@@ -165,6 +165,35 @@ class EmDashTests(unittest.TestCase):
         self.assertEqual(copy_style.em_dash_lines("s = '${a}//'; t = '—';\n"), [1])
 
 
+class StatusCaseTests(unittest.TestCase):
+    def test_caps_status_word_in_string_fails(self):
+        self.assertEqual(copy_style.all_caps_status_lines("a\nlabel = 'OPEN';\n"), [2])
+
+    def test_caps_word_with_detail_fails(self):
+        self.assertEqual(copy_style.all_caps_status_lines("s = 'CLOSED · opens ${t}';\n"), [1])
+
+    def test_two_word_status_fails(self):
+        self.assertEqual(copy_style.all_caps_status_lines("s = \"ALL DAY\";\n"), [1])
+
+    def test_each_status_word_fails(self):
+        for word in copy_style.STATUS_WORDS:
+            self.assertEqual(copy_style.all_caps_status_lines("s = '%s';\n" % word), [1], word)
+
+    def test_sentence_case_passes(self):
+        self.assertEqual(copy_style.all_caps_status_lines("s = 'Open · until 9'; t = 'Busy'; u = 'All day';\n"), [])
+
+    def test_comment_passes(self):
+        self.assertEqual(copy_style.all_caps_status_lines("// a green OPEN pill\n/* ENDED */\nx = 1;\n"), [])
+
+    def test_identifier_passes(self):
+        self.assertEqual(copy_style.all_caps_status_lines("final OPEN = ServiceState.OPEN;\n"), [])
+
+    def test_word_inside_longer_caps_passes(self):
+        self.assertEqual(copy_style.all_caps_status_lines("s = 'OPENING_HOURS'; t = 'FULLTIME';\n"), [])
+
+    def test_interpolated_code_passes(self):
+        self.assertEqual(copy_style.all_caps_status_lines("s = '${OPEN} left';\n"), [])
+
 
 class RulesInCodeTests(unittest.TestCase):
     # rules live in copy_style.py, no repo doc

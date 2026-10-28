@@ -175,6 +175,12 @@ DateTime _requiredCalendarDate(Map<String, dynamic> json, String key) {
   );
 }
 
+// the gym page shouts CLOSED, the app says Closed
+String? _sentenceCase(String? value) {
+  if (value == null || value != value.toUpperCase() || value == value.toLowerCase()) return value;
+  return value[0] + value.substring(1).toLowerCase();
+}
+
 DateTime _requiredDate(Map<String, dynamic> json, String key) {
   final value = _date(json[key]);
   if (value == null) throw MissingTimeException(key);
@@ -809,7 +815,7 @@ class RecreationDay {
   factory RecreationDay.fromJson(Map<String, dynamic> json) => RecreationDay(
     serviceDate: _requiredCalendarDate(json, 'service_date'),
     closed: json['closed'] as bool? ?? false,
-    note: json['note'] as String?,
+    note: _sentenceCase(json['note'] as String?),
     spans: (json['spans'] as List<dynamic>? ?? const [])
         .map((e) => RecreationSpan.fromJson(e as Map<String, dynamic>))
         .toList(),

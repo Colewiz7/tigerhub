@@ -145,7 +145,7 @@ class DiningCard extends StatelessWidget {
       // this card exists to answer, which is what is open right now.
       hero: locations.isEmpty
           ? null
-          : CardHero(value: '$openNow', label: 'OPEN'),
+          : CardHero(value: '$openNow', label: 'Open'),
       child: switch ((result.isPriming, locations.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
         (_, true) => const EmptyState(
@@ -222,11 +222,11 @@ class DiningRow extends StatelessWidget {
 
     final when = open
         ? (location.closesAt == null
-              ? 'OPEN · hours unavailable'
-              : 'OPEN · until ${formatClock(location.closesAt!)}')
+              ? 'Open · hours unavailable'
+              : 'Open · until ${formatClock(location.closesAt!)}')
         : (location.opensAt == null
-              ? 'CLOSED · hours unavailable'
-              : 'CLOSED · opens ${formatDayAndClock(location.opensAt!)}');
+              ? 'Closed · hours unavailable'
+              : 'Closed · opens ${formatDayAndClock(location.opensAt!)}');
 
     // A badge only when the status is NOT the default. Thirteen identical
     // green OPEN pills in a column carry no information, and they drown out
@@ -318,7 +318,7 @@ class _OccupancyPill extends StatelessWidget {
     final over = occupancy.overCapacity;
     return _pill(
       context,
-      over ? 'BUSY' : '$percent%',
+      over ? 'Busy' : '$percent%',
       over ? semantic.busy : semantic.open,
       over ? semantic.busyContainer : semantic.openContainer,
     );

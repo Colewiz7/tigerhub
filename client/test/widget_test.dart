@@ -162,7 +162,7 @@ void main() {
           overCapacity: true,
         ),
       );
-      expect(find.text('BUSY'), findsOneWidget);
+      expect(find.text('Busy'), findsOneWidget);
       expect(
         find.textContaining('%'),
         findsNothing,
@@ -828,7 +828,7 @@ void _screenshotReview() {
           ),
         );
         expect(find.text('6'), findsOneWidget);
-        expect(find.text('OPEN'), findsOneWidget);
+        expect(find.text('Open'), findsOneWidget);
         // The unrelated location's number must not be the hero.
         expect(find.text('165'), findsNothing);
       },
@@ -995,10 +995,10 @@ void _visualStructure() {
         ),
       );
       expect(find.text('Beanz'), findsOneWidget);
-      expect(find.text('OPEN · until 10:00 PM'), findsOneWidget);
+      expect(find.text('Open · until 10:00 PM'), findsOneWidget);
       expect(find.byIcon(Icons.local_cafe_rounded), findsOneWidget);
       // No standalone pill. The subtitle still states the status in text.
-      expect(find.text('OPEN'), findsNothing);
+      expect(find.text('Open'), findsNothing);
     });
 
     testWidgets('a closed row is dimmed relative to an open one', (
@@ -1097,7 +1097,7 @@ void _visualStructure() {
           DateTime(2026, 8, 28, 14),
         ),
       );
-      expect(find.text('ENDED'), findsOneWidget);
+      expect(find.text('Ended'), findsOneWidget);
       expect(find.byIcon(Icons.history_rounded), findsOneWidget);
     });
 
@@ -1108,7 +1108,7 @@ void _visualStructure() {
           DateTime(2026, 8, 28, 14),
         ),
       );
-      expect(find.text('ENDED'), findsNothing);
+      expect(find.text('Ended'), findsNothing);
       expect(find.byIcon(Icons.history_rounded), findsNothing);
     });
 
@@ -1116,7 +1116,7 @@ void _visualStructure() {
       await tester.pumpWidget(
         wrap(at(DateTime(2026, 8, 28, 9)), DateTime(2026, 8, 28, 14)),
       );
-      expect(find.text('ENDED'), findsOneWidget);
+      expect(find.text('Ended'), findsOneWidget);
     });
 
     testWidgets('an event running right now counts as future', (tester) async {
@@ -1126,7 +1126,7 @@ void _visualStructure() {
           DateTime(2026, 8, 28, 14),
         ),
       );
-      expect(find.text('ENDED'), findsNothing);
+      expect(find.text('Ended'), findsNothing);
     });
   });
 }
@@ -1168,8 +1168,8 @@ void _statusAndGrouping() {
   group('status hierarchy', () {
     testWidgets('open with no sensor shows no pill at all', (tester) async {
       await tester.pumpWidget(wrap(DiningRow(location: loc('Beanz'))));
-      expect(find.text('OPEN'), findsNothing);
-      expect(find.text('CLOSED'), findsNothing);
+      expect(find.text('Open'), findsNothing);
+      expect(find.text('Closed'), findsNothing);
       expect(find.textContaining('%'), findsNothing);
     });
 
@@ -1178,26 +1178,26 @@ void _statusAndGrouping() {
         wrap(DiningRow(location: loc('Crossroads', percent: 86))),
       );
       expect(find.text('86%'), findsOneWidget);
-      expect(find.text('OPEN'), findsNothing);
+      expect(find.text('Open'), findsNothing);
     });
 
-    testWidgets('over capacity shows BUSY, never a percentage', (tester) async {
+    testWidgets('over capacity shows Busy, never a percentage', (tester) async {
       await tester.pumpWidget(
         wrap(
           DiningRow(location: loc('Midnight Oil', percent: 100, over: true)),
         ),
       );
-      expect(find.text('BUSY'), findsOneWidget);
+      expect(find.text('Busy'), findsOneWidget);
       expect(find.textContaining('%'), findsNothing);
     });
 
-    testWidgets('closed shows CLOSED', (tester) async {
+    testWidgets('closed shows Closed', (tester) async {
       await tester.pumpWidget(
         wrap(DiningRow(location: loc('Gracie', open: false))),
       );
-      expect(find.textContaining('CLOSED ·'), findsOneWidget);
+      expect(find.textContaining('Closed ·'), findsOneWidget);
       expect(
-        find.text('CLOSED'),
+        find.text('Closed'),
         findsNothing,
         reason: 'closed status belongs in the subtitle, not a repeated pill',
       );
@@ -1217,7 +1217,7 @@ void _statusAndGrouping() {
         ),
       );
       // The whole point: 13 identical pills was noise.
-      expect(find.text('OPEN'), findsNothing);
+      expect(find.text('Open'), findsNothing);
     });
   });
 

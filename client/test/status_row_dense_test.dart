@@ -26,9 +26,9 @@ const _names = [
 ];
 
 const _statuses = [
-  'OPEN · until 6:00 PM',
+  'Open · until 6:00 PM',
   // long enough to be cut in two lines at the larger text sizes
-  'CLOSED · opens tomorrow at 11:00 AM and again for dinner after five',
+  'Closed · opens tomorrow at 11:00 AM and again for dinner after five',
 ];
 
 Widget _pill() => Container(

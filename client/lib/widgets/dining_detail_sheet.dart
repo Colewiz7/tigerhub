@@ -170,7 +170,7 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
 
             if (location.occupancy != null) ...[
               const SizedBox(height: 20),
-              Text('HOW BUSY', style: text.labelSmall),
+              Text('How busy', style: text.labelSmall),
               const SizedBox(height: 10),
               if (hourly.isEmpty)
                 const PrimingPlaceholder(label: 'Loading occupancy')
@@ -194,7 +194,7 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  Text('ON THE MENU TODAY', style: text.labelSmall),
+                  Text('On the menu today', style: text.labelSmall),
                   const Spacer(),
                   Text(
                     '${_menu!.value!.dishes.length}',

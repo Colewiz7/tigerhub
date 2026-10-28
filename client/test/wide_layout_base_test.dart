@@ -216,6 +216,16 @@ const _shorterCopySizes = <({String cases, int card, String old, String now})>[
   ),
 ];
 
+// status words went sentence case after the base, geometry stayed put
+String _sentenceCaseStatus(String text) => text.replaceAllMapped(
+  RegExp(r'\b(OPEN|ENDED|ALL DAY)\b'),
+  (m) => switch (m[0]) {
+    'OPEN' => 'Open',
+    'ENDED' => 'Ended',
+    _ => 'All day',
+  },
+);
+
 String _expectedEmptySize(String key, int card, String old) {
   for (final e in _shorterCopySizes) {
     if (e.card == card && e.old == old && key.contains(e.cases)) return e.now;
@@ -420,7 +430,11 @@ void main() {
                 );
               }
               expect(lines, expected, reason: 'geometry moved');
-              expect(texts, fixture.text[key], reason: 'row text changed');
+              expect(
+                texts,
+                [for (final t in fixture.text[key]!) _sentenceCaseStatus(t)],
+                reason: 'row text changed',
+              );
 
               // The empty state block: same size and top as the base, and
               // centered across its card (the base left aligned it).

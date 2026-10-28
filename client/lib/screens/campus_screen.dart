@@ -761,15 +761,15 @@ class _TodayLine extends StatelessWidget {
 
     // Status is always stated in words. Colour never carries it alone.
     final (label, detail) = switch (today.state) {
-      ServiceState.open => ('OPEN', 'until ${_clockAt(today.closesAt!)}'),
+      ServiceState.open => ('Open', 'until ${_clockAt(today.closesAt!)}'),
       // Between spans is not the same as finished, and saying "closed" alone
       // would send someone away minutes before it reopens.
       ServiceState.closedUntilLater => (
-        'CLOSED',
+        'Closed',
         'opens ${_clockAt(today.opensAt!)}',
       ),
       ServiceState.closedForDay => (
-        'CLOSED',
+        'Closed',
         today.spans.isEmpty ? 'not open today' : 'for the day',
       ),
       ServiceState.unknown => ('', ''),

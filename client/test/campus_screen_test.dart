@@ -413,7 +413,7 @@ void main() {
 
     final statusLines = labels
         .where(
-          (d) => d.startsWith('OPEN \u00b7 ') || d.startsWith('CLOSED \u00b7 '),
+          (d) => d.startsWith('Open \u00b7 ') || d.startsWith('Closed \u00b7 '),
         )
         .toList();
 
@@ -428,7 +428,7 @@ void main() {
 
     // Status is stated in words, never by the dot alone.
     for (final line in statusLines) {
-      expect(line, anyOf(startsWith('OPEN'), startsWith('CLOSED')));
+      expect(line, anyOf(startsWith('Open'), startsWith('Closed')));
     }
   });
 

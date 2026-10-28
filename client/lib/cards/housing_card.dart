@@ -163,7 +163,7 @@ class _AreaChips extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('WHERE DO YOU LIVE', style: text.labelSmall),
+        Text('Where do you live', style: text.labelSmall),
         const SizedBox(height: 12),
         Wrap(
           spacing: 7,
