@@ -20,9 +20,9 @@ import 'touch_target.dart';
 /// This is a fixed count, not a measurement, and it departs from the spec's
 /// "measure the box, don't cap rows" (the UI style overrides): the owner's
 /// condense target makes a phone card as tall as its content, so there is no
-/// box to measure. "Dining card, 4 rows" is that target. Every phone cap comes
-/// from this one number.
-const int phonePreviewRows = 4;
+/// box to measure. A Today card answers one question in at most 3 rows. Every
+/// phone cap comes from this one number.
+const int phonePreviewRows = 3;
 
 /// [phonePreviewRows] on a phone, less [reserved] rows for what else the card
 /// shows (a group header counts as a row, a week strip as one). Null (no cap)

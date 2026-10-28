@@ -303,15 +303,15 @@ void main() {
         brightness: Brightness.light,
         scale: 2,
       );
-      // A phone previews four rows (phonePreviewRows), then counts the rest.
-      expect(find.text('+2 more'), findsOneWidget);
-      expect(find.textContaining('+2 chefs'), findsNothing);
+      // A phone previews three rows (phonePreviewRows), then counts the rest.
+      expect(find.text('+3 more'), findsOneWidget);
+      expect(find.textContaining('+3 chefs'), findsNothing);
 
       // One left over reads "+1 more", never "+1 chefs".
       await _pump(
         tester,
         result: Result(
-          value: ChefCollection(data: many.take(5).toList(), stale: false),
+          value: ChefCollection(data: many.take(4).toList(), stale: false),
           state: DataState.ok,
         ),
         size: const Size(390, 844),

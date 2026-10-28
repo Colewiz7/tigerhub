@@ -81,7 +81,8 @@ void main() {
   });
 
   testWidgets('turning the keyword rules off brings it back', (tester) async {
-    await pumpToday(tester, [robots, resume]);
+    await pumpToday(tester, [resume]);
+    expect(find.text('Resume workshop'), findsNothing);
     await Preferences.instance.setKeywordRulesEnabled(false);
     await tester.pump();
 
@@ -90,7 +91,7 @@ void main() {
   });
 
   testWidgets('muting after the first paint takes the event off', (tester) async {
-    await pumpToday(tester, [robots, chess]);
+    await pumpToday(tester, [chess]);
     expect(find.text('Chess night'), findsWidgets);
 
     await Preferences.instance.setMuted('chess', true);

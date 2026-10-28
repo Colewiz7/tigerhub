@@ -220,14 +220,14 @@ void main() {
         of: find.byType(CardShell).first,
         matching: find.byType(StatusRow),
       );
-      expect(rows, findsNWidgets(4));
+      expect(rows, findsNWidgets(3));
       final firstRow = tester.getRect(
         find.descendant(of: rows.first, matching: find.byType(Material)).first,
       );
       expect(firstRow.top - dining.top, 56);
       // rows 52 tall, 4 apart
       final tops = [
-        for (var i = 0; i < 4; i++)
+        for (var i = 0; i < 3; i++)
           tester
               .getRect(
                 find
@@ -238,7 +238,7 @@ void main() {
       ];
       expect(firstRow.height, 52);
       expect(tops[1] - tops[0], 56);
-      expect(tops[3] - tops[2], 56);
+      expect(tops[2] - tops[1], 56);
 
       // inline hero pill, 28 tall, right of the title; no scalloped blob
       final pill = tester.getRect(
@@ -251,14 +251,14 @@ void main() {
       expect(pill.right, dining.right - 16);
       expect(find.text('14 open'), findsOneWidget);
 
-      // footer: one 28 text row, "+10 open", directly under the rows
-      final footer = find.text('+10 open');
+      // footer: one 28 text row, "+11 open", directly under the rows
+      final footer = find.text('+11 open');
       expect(footer, findsOneWidget);
       expect(tester.getSize(footer).height, lessThanOrEqualTo(28));
 
-      // 4 rows: about 330 tall. 344: the footer's 48 tall hit region (see the
-      // footer test below) is real layout space, 12 more than a 36 block.
-      expect(dining.height, 344);
+      // 3 rows: 288. The footer's 48 tall hit region (see the footer test
+      // below) is real layout space, 12 more than a 36 block.
+      expect(dining.height, 288);
 
       final chefRow = tester.getRect(
         find
@@ -375,12 +375,12 @@ void main() {
     });
 
     testWidgets(
-      '$name: the "+10 open" footer is a 28 row with a 48 hit region',
+      '$name: the "+11 open" footer is a 28 row with a 48 hit region',
       (tester) async {
         final taps = <int>[];
         await pumpHome(tester, size, onGoToTab: taps.add);
 
-        final label = find.text('+10 open');
+        final label = find.text('+11 open');
         final visual = tester.getRect(label);
         expect(visual.height, lessThanOrEqualTo(28));
         final target = tester.getRect(
@@ -404,7 +404,7 @@ void main() {
       (tester) async {
         await pumpHome(tester, size, scale: 2);
         final rows = find.byType(DiningRow);
-        for (var i = 0; i < 4; i++) {
+        for (var i = 0; i < 3; i++) {
           final texts = find.descendant(
             of: rows.at(i),
             matching: find.byType(Text),
@@ -427,7 +427,7 @@ void main() {
       await pumpHome(tester, size);
       // every dashboard row: dining, events and chefs
       final rows = find.byType(StatusRow);
-      expect(rows.evaluate().length, greaterThanOrEqualTo(8));
+      expect(rows.evaluate().length, greaterThanOrEqualTo(6));
       for (var i = 0; i < rows.evaluate().length; i++) {
         final height = tester
             .getRect(
