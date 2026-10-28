@@ -16,6 +16,8 @@ import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
 import 'package:tigerhub/widgets/status_row.dart';
 
+import 'golden_harness.dart';
+
 class _DiningBackend implements Backend {
   _DiningBackend(
     this.features, {
@@ -152,6 +154,11 @@ void main() {
       await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
 
       expect(find.text('Visiting chefs'), findsWidgets);
+      expect(
+        find.byWidgetPredicate((w) => w is GroupHeader && w.title == 'Visiting chefs'),
+        findsNothing,
+        reason: 'plain header, no filled bar',
+      );
       expect(find.text('Chef Marco'), findsOneWidget);
       expect(find.text('Italian · 11 AM to 2 PM\nCrossroads'), findsOneWidget);
       expect(find.text('Sichuan · 11 AM to 2 PM\nGracie’s'), findsOneWidget);
@@ -404,4 +411,29 @@ void main() {
       const TextSelection(baseOffset: 0, extentOffset: 6),
     );
   });
+
+  final goldenChefs = _chefsBody([
+    _chef(1, 'Chef Marco', cuisine: 'Italian', place: 'Crossroads'),
+    _chef(2, 'Chef Lin', cuisine: 'Sichuan', place: 'Gracie’s'),
+    _chef(3, 'Chef Amara Okonkwo-Reyes', cuisine: 'West African', place: 'Global Village Plaza'),
+  ]);
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      for (final scale in [1.0, 2.0]) {
+        final name = 'dining_chefs_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${scale.toInt()}x';
+        goldenWidgets(name, (tester) async {
+          await pumpDining(
+            tester,
+            const [],
+            size: size,
+            brightness: brightness,
+            scale: scale,
+            backend: _DiningBackend(const [], chefs: goldenChefs),
+          );
+          expect(find.text('Chef Marco'), findsOneWidget);
+          await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name.png'));
+        });
+      }
+    }
+  }
 }

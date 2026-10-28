@@ -494,10 +494,16 @@ class _VisitingChefsGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GroupHeader(
-          icon: AppIconKind.visitingChef,
-          title: 'Visiting chefs',
-          count: chefs.length,
+        // plain text, not the filled bar the other groups use
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+          child: Semantics(
+            header: true,
+            child: Text(
+              'Visiting chefs',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
         ),
         for (final chef in chefs)
           StatusRow(
