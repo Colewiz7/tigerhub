@@ -125,6 +125,41 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('a header flips its expanded flag when tapped', (tester) async {
+    final handle = tester.ensureSemantics();
+    await pump(tester, menu);
+
+    void expectExpanded(String station, String label, bool open, String reason) {
+      expect(
+        tester.getSemantics(header(station)),
+        matchesSemantics(
+          label: label,
+          isButton: true,
+          hasTapAction: true,
+          hasExpandedState: true,
+          isExpanded: open,
+        ),
+        reason: reason,
+      );
+    }
+
+    expectExpanded('Grill', 'Grill, 2 items', true, 'first section starts open');
+    expectExpanded('Asian', 'Asian, 1 item', false, 'later sections start folded');
+
+    await tester.tap(header('Asian'));
+    await tester.pumpAndSettle();
+    expectExpanded('Asian', 'Asian, 1 item', true, 'after one tap');
+
+    await tester.tap(header('Asian'));
+    await tester.pumpAndSettle();
+    expectExpanded('Asian', 'Asian, 1 item', false, 'after a second tap');
+
+    await tester.tap(header('Grill'));
+    await tester.pumpAndSettle();
+    expectExpanded('Grill', 'Grill, 2 items', false, 'the open one folds too');
+    handle.dispose();
+  });
+
   testWidgets('a dietary filter opens the sections that hold a match', (tester) async {
     await Preferences.instance.toggleDiet('Vegan');
     await pump(

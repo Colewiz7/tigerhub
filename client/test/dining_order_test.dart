@@ -46,6 +46,15 @@ class _Backend implements Backend {
           'last_updated': now,
           'availability': 'available',
         };
+      case '/dining/specials':
+        return {
+          'data': [
+            {'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Elsewhere'},
+          ],
+          'stale': false,
+          'last_updated': now,
+          'availability': 'available',
+        };
     }
     return {'data': <dynamic>[], 'stale': false, 'last_updated': null};
   }
@@ -61,7 +70,7 @@ void main() {
   });
   tearDown(RitClock.reset);
 
-  testWidgets('chefs, then trucks today, then places, then upcoming trucks', (tester) async {
+  Future<void> pumpDining(WidgetTester tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(390, 4000);
     addTearDown(tester.view.reset);
@@ -91,16 +100,35 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+  }
 
-    double top(Finder finder) {
-      expect(finder, findsOneWidget);
-      return tester.getTopLeft(finder).dy;
-    }
+  double top(WidgetTester tester, Finder finder) {
+    expect(finder, findsOneWidget);
+    return tester.getTopLeft(finder).dy;
+  }
 
-    final chef = top(find.text('Chef Marco'));
-    final truck = top(find.text('Taco Truck'));
-    final place = top(find.text('Crossroads').last);
-    final later = top(find.text('Pie Truck'));
+  // Today's published menu sits after the trucks and before the places
+  testWidgets('today’s published menu sits between the trucks and the places', (tester) async {
+    await pumpDining(tester);
+
+    final chef = top(tester, find.text('Chef Marco'));
+    final truck = top(tester, find.text('Taco Truck'));
+    final menu = top(tester, find.text('Tomato bisque'));
+    final place = top(tester, find.text('Crossroads').last);
+    final later = top(tester, find.text('Pie Truck'));
+    expect(chef, lessThan(truck));
+    expect(truck, lessThan(menu));
+    expect(menu, lessThan(place));
+    expect(place, lessThan(later));
+  });
+
+  testWidgets('chefs, then trucks today, then places, then upcoming trucks', (tester) async {
+    await pumpDining(tester);
+
+    final chef = top(tester, find.text('Chef Marco'));
+    final truck = top(tester, find.text('Taco Truck'));
+    final place = top(tester, find.text('Crossroads').last);
+    final later = top(tester, find.text('Pie Truck'));
     expect(chef, lessThan(truck));
     expect(truck, lessThan(place));
     expect(place, lessThan(later));
