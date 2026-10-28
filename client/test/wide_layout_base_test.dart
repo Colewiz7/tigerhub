@@ -226,6 +226,12 @@ String _sentenceCaseStatus(String text) => text.replaceAllMapped(
   },
 );
 
+// today hides ended events after the base: SWE loses Old meeting, so its
+// count drops and its next event leads the group. geometry stayed put
+String _endedDropsOff(String text) => text
+    .replaceAll('SWE ¦ 2 ¦ Old meeting ¦ Sat 1 Jan, 10:00 AM ¦ Sat 1 Jan, 10:00 AM ¦ Ended', 'SWE ¦ 1 ¦ Meeting 1 ¦ SAU 2nd floor ¦ Fri 2 Jan, 10:00 AM')
+    .replaceAll('SWE ¦ 2', 'SWE ¦ 1');
+
 String _expectedEmptySize(String key, int card, String old) {
   for (final e in _shorterCopySizes) {
     if (e.card == card && e.old == old && key.contains(e.cases)) return e.now;
@@ -432,7 +438,7 @@ void main() {
               expect(lines, expected, reason: 'geometry moved');
               expect(
                 texts,
-                [for (final t in fixture.text[key]!) _sentenceCaseStatus(t)],
+                [for (final t in fixture.text[key]!) _endedDropsOff(_sentenceCaseStatus(t))],
                 reason: 'row text changed',
               );
 

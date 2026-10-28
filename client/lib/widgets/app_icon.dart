@@ -37,7 +37,6 @@ enum AppIconKind {
   time(CupertinoIcons.clock, Icons.schedule_rounded),
   location(CupertinoIcons.location, Icons.location_on_rounded),
   hidden(CupertinoIcons.eye_slash, Icons.visibility_off_rounded),
-  past(CupertinoIcons.arrow_counterclockwise, Icons.history_rounded),
   boost(CupertinoIcons.star_fill, Icons.star_rounded),
   celebration(CupertinoIcons.sparkles, Icons.celebration_rounded),
   school(CupertinoIcons.book, Icons.school_rounded),

@@ -149,13 +149,10 @@ class _Compact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = CampusTime.nowUtc();
+    // today hands over upcoming events only, so the first is next
     final ordered = [...events]
       ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
-    final next = ordered
-        .where((event) => (event.endsAt ?? event.startsAt).isAfter(now))
-        .firstOrNull;
-    return EventRow(event: next ?? ordered.first, dense: true);
+    return EventRow(event: ordered.first, dense: true);
   }
 }
 

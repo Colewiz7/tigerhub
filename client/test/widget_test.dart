@@ -1098,7 +1098,9 @@ void _visualStructure() {
         ),
       );
       expect(find.text('Ended'), findsOneWidget);
-      expect(find.byIcon(Icons.history_rounded), findsOneWidget);
+      // the word says it, no refresh arrow
+      expect(find.byIcon(Icons.history_rounded), findsNothing);
+      expect(find.byIcon(iconForEventType(null).material), findsOneWidget);
     });
 
     testWidgets('an upcoming event is not marked', (tester) async {

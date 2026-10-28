@@ -141,7 +141,7 @@ class EventRow extends StatelessWidget {
       dense: dense,
       icon: forceDimmed
           ? AppIconKind.hidden
-          : (isPast ? AppIconKind.past : iconForEventType(event.eventType)),
+          : iconForEventType(event.eventType),
       title: boosted ? '✦ ${event.title}' : event.title,
       subtitle: condensed ? denseSubtitle : (place ?? when),
       accent: boosted

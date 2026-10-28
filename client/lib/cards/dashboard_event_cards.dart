@@ -56,14 +56,8 @@ class ScopedEventsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // today hands over upcoming events only
     final events = _scopedEvents(result, organizerKey);
-    final future = events
-        .where(
-          (event) =>
-              (event.endsAt ?? event.startsAt).isAfter(CampusTime.nowUtc()),
-        )
-        .toList();
-    final shown = future.isEmpty ? events : future;
 
     return CardShell(
       title: organizerName(result, organizerKey),
@@ -84,14 +78,14 @@ class ScopedEventsCard extends StatelessWidget {
           // more" button: the cap was a guess, and every other card counts its
           // overflow the same way.
           : BoundedList(
-              itemCount: shown.length,
+              itemCount: events.length,
               itemHeight: StatusRow.heightFor(context, dense: true),
               dense: true,
               maxRows: phoneRowCap(context),
               noun: 'events',
               onShowAll: onShowAll,
               itemBuilder: (context, index) =>
-                  EventRow(event: shown[index], dense: true),
+                  EventRow(event: events[index], dense: true),
             ),
     );
   }

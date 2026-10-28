@@ -20,6 +20,7 @@ import 'cards/housing_card.dart';
 import 'cards/visiting_chefs_card.dart';
 import 'cards/academic_dates_card.dart';
 import 'config.dart';
+import 'data/campus_time.dart';
 import 'models/api_models.dart';
 import 'motion/reduce_motion.dart';
 import 'services/api.dart';
@@ -323,6 +324,30 @@ class _HomeScreenState extends State<HomeScreen> {
     return values;
   }
 
+  // today shows what is still ahead, ended events drop off
+  Result<Collection<CampusEvent>> get _upcomingEvents {
+    final result = widget.events;
+    final value = result.value;
+    if (value == null) return result;
+    final now = CampusTime.nowUtc();
+    return Result(
+      value: Collection(
+        data: [
+          for (final event in value.data)
+            if ((event.endsAt ?? event.startsAt).isAfter(now)) event,
+        ],
+        stale: value.stale,
+        lastUpdated: value.lastUpdated,
+        dropped: value.dropped,
+        availability: value.availability,
+      ),
+      state: result.state,
+      fetchedAt: result.fetchedAt,
+      error: result.error,
+      dropped: result.dropped,
+    );
+  }
+
   List<({String key, String name})> get _diningCategories {
     final found = <String, String>{};
     for (final location
@@ -371,21 +396,21 @@ class _HomeScreenState extends State<HomeScreen> {
           onShowAll: () => widget.onGoToTab(1),
         ),
         ModuleType.generalEvents => EventsCard(
-          result: widget.events,
+          result: _upcomingEvents,
           organizerKey: card.scope,
           compact: card.size == CardSize.compact,
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(2),
         ),
         ModuleType.clubEvents => ScopedEventsCard(
-          result: widget.events,
+          result: _upcomingEvents,
           organizerKey: card.scope,
           compact: card.size == CardSize.compact,
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(2),
         ),
         ModuleType.calendar => CalendarCard(
-          result: widget.events,
+          result: _upcomingEvents,
           organizerKey: card.scope,
           compact: card.size == CardSize.compact,
           dragHandle: controls,
