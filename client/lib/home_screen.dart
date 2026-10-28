@@ -27,6 +27,7 @@ import 'models/api_models.dart';
 import 'motion/reduce_motion.dart';
 import 'services/api.dart';
 import 'services/dashboard.dart';
+import 'services/smart_order.dart';
 import 'services/event_filter.dart';
 import 'services/preferences.dart';
 import 'theme/tokens.dart';
@@ -222,10 +223,16 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // smart order and filters move cards
+  void _onPreferences() {
+    if (mounted) setState(() {});
+  }
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScrolled);
+    Preferences.instance.addListener(_onPreferences);
     _tickMinute();
     _restoreOrder();
     _recreationSub = widget.api.recreation().listen((result) {
@@ -244,6 +251,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _scrollController
       ..removeListener(_onScrolled)
       ..dispose();
+    Preferences.instance.removeListener(_onPreferences);
     _minute?.cancel();
     _recreationSub?.cancel();
     _mapSub?.cancel();
@@ -410,6 +418,23 @@ class _HomeScreenState extends State<HomeScreen> {
   // saved mutes and hide words apply too
   Result<Collection<CampusEvent>> get _filteredUpcomingEvents =>
       _upcoming(true);
+
+  /// What Today shows first. The saved order, unless smart order is on and
+  /// nothing is being edited.
+  List<String> get _displayOrder {
+    if (_editing || !Preferences.instance.todaySmartOrder) return _order;
+    final now = CampusTime.nowUtc();
+    final wall = CampusTime.fieldsOf(now);
+    final cards = [
+      for (final id in _order) ?_instance(id),
+    ];
+    final ordered = smartOrder(
+      cards,
+      wallMinute: wall.hour * 60 + wall.minute,
+      eventSoon: eventWithinHour(_filteredUpcomingEvents.value?.data ?? const [], now),
+    );
+    return [for (final card in ordered) card.id];
+  }
 
   // boost words only break ties in up next
   Set<String> get _boostedUids {
@@ -607,33 +632,34 @@ class _HomeScreenState extends State<HomeScreen> {
         final gutter = phone ? Insets.phoneCardGap / 2 : _cardGutter;
         final sideInset = phone ? Insets.phoneMargin - gutter : 8.0;
         final twoUp = phone && phoneTwoUp(width: constraints.maxWidth, textScale: MediaQuery.textScalerOf(context).scale(1));
-        final pairs = twoUp ? phonePairs([for (final id in _order) _instance(id)]) : const <int>{};
+        final shown = _displayOrder;
+        final pairs = twoUp ? phonePairs([for (final id in shown) _instance(id)]) : const <int>{};
 
         final children = [
-          for (var index = 0; index < _order.length; index++)
+          for (var index = 0; index < shown.length; index++)
             Semantics(
-              key: ValueKey(_order[index]),
+              key: ValueKey(shown[index]),
               container: true,
               sortKey: OrdinalSortKey(index.toDouble()),
               customSemanticsActions: {
                 if (_editing && index > 0)
                   const CustomSemanticsAction(label: 'Move up'): () =>
-                      _moveCard(_order[index], -1),
-                if (_editing && index < _order.length - 1)
+                      _moveCard(shown[index], -1),
+                if (_editing && index < shown.length - 1)
                   const CustomSemanticsAction(label: 'Move down'): () =>
-                      _moveCard(_order[index], 1),
+                      _moveCard(shown[index], 1),
               },
               label: dashboardCardSemanticsLabel(
-                _instance(_order[index]),
+                _instance(shown[index]),
                 index + 1,
-                _order.length,
+                shown.length,
               ),
               child: SizedBox(
                 width: pairs.contains(index)
                     ? (constraints.maxWidth - sideInset * 2) / 2
                     : (constraints.maxWidth - sideInset * 2) /
                           columns *
-                          ((_instance(_order[index])?.size.columns ?? 1).clamp(
+                          ((_instance(shown[index])?.size.columns ?? 1).clamp(
                             1,
                             columns,
                           )),
@@ -641,7 +667,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 // height. Wider windows divide the viewport into cells.
                 height: phone
                     ? null
-                    : (_instance(_order[index])?.size == CardSize.compact
+                    : (_instance(shown[index])?.size == CardSize.compact
                               ? cardHeight * .58
                               : cardHeight) +
                           gutter * 2,
@@ -653,8 +679,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Stack(
                     children: [
                       pairs.contains(index)
-                          ? CompactPair(child: _cardFor(_order[index]))
-                          : _cardFor(_order[index]),
+                          ? CompactPair(child: _cardFor(shown[index]))
+                          : _cardFor(shown[index]),
                     ],
                   ),
                 ),

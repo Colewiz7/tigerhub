@@ -17,6 +17,7 @@ import 'about_section.dart';
 import 'appearance_section.dart';
 import 'dining_section.dart';
 import 'events_section.dart';
+import 'today_section.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({
@@ -31,6 +32,13 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SectionScaffold(
         sections: [
+          SectionSpec(
+            id: 'today',
+            title: 'Today',
+            subtitle: 'Smart order',
+            icon: AppIconKind.todayTab,
+            builder: (context) => const TodaySection(),
+          ),
           SectionSpec(
             id: 'events',
             title: 'Events',
