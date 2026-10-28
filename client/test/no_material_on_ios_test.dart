@@ -117,7 +117,7 @@ void main() {
       await tester.pumpAndSettle();
       check('today, customizing');
       final diningOptions = find.descendant(
-        of: find.ancestor(of: find.text('Dining'), matching: find.byType(CardShell)),
+        of: find.ancestor(of: find.text('Eat now'), matching: find.byType(CardShell)),
         matching: find.byTooltip('Customize card'),
       );
       await tester.ensureVisible(diningOptions.first);

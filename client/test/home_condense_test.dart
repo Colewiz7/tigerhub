@@ -275,9 +275,9 @@ void main() {
       // title, the "2 today" pill and the three 32 wide edit controls do not fit
       // on one row of a 358 (or 408) wide card, so the title wraps beside the
       // controls and the header, which keeps the same height in edit mode, is
-      // taller than 32: 56 (16 + 56 + 8 = 80). At 390 the link chevron after
-      // the title wraps it once more, 66. Pinned here so a change shows.
-      expect(chefRow.top - chefs.top, size.width < 400 ? 90 : 80);
+      // taller than 32 at 390: 56 (16 + 56 + 8 = 80). The linked header
+      // drops the glyph, so at 440 it now fits in 32. Pinned so a change shows.
+      expect(chefRow.top - chefs.top, size.width < 400 ? 80 : 56);
 
       report(name, {
         'chefsTopToFirstRow': chefRow.top - chefs.top,
@@ -325,7 +325,7 @@ void main() {
               )
               .first,
         );
-        expect(row.top - box.top, size.width < 400 ? 90 : 80);
+        expect(row.top - box.top, size.width < 400 ? 80 : 56);
       },
     );
 
@@ -355,7 +355,7 @@ void main() {
       tester,
     ) async {
       await pumpHome(tester, size);
-      final title = tester.widget<Text>(find.text('Dining')).style!;
+      final title = tester.widget<Text>(find.text('Eat now')).style!;
       expect(title.fontSize, 22);
       expect(title.letterSpacing, 0);
       // the first row's two lines: name, then status
@@ -374,12 +374,12 @@ void main() {
     });
 
     testWidgets(
-      '$name: the Dining header is the link, with a 48 hit region',
+      '$name: the Eat now header is the link, with a 48 hit region',
       (tester) async {
         final taps = <int>[];
         await pumpHome(tester, size, onGoToTab: taps.add);
 
-        final label = find.text('Dining');
+        final label = find.text('Eat now');
         final visual = tester.getRect(label);
         final target = tester.getRect(
           find.ancestor(of: label, matching: find.byType(InkWell)).first,

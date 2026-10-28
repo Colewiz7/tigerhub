@@ -63,9 +63,9 @@ void main() {
     return taps;
   }
 
-  testWidgets('the Dining header opens the Dining tab and Events opens Events', (tester) async {
+  testWidgets('the Eat now header opens the Dining tab and Events opens Events', (tester) async {
     final taps = await pumpToday(tester);
-    await tester.tap(find.text('Dining'));
+    await tester.tap(find.text('Eat now'));
     await tester.pump();
     await tester.tap(find.text('Events'));
     await tester.pump();
@@ -85,7 +85,7 @@ void main() {
   testWidgets('the header is announced as a button that says where it goes', (tester) async {
     final handle = tester.ensureSemantics();
     await pumpToday(tester);
-    final link = find.bySemanticsLabel('Dining, opens Dining');
+    final link = find.bySemanticsLabel('Eat now, opens Dining');
     expect(link, findsOneWidget);
     expect(tester.getSemantics(link), isSemantics(isButton: true, hasTapAction: true));
     handle.dispose();
@@ -96,8 +96,8 @@ void main() {
     await tester.scrollUntilVisible(find.text('Customize'), 300, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text('Customize'));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Dining'), -300, scrollable: find.byType(Scrollable).first);
-    await tester.tap(find.text('Dining'), warnIfMissed: false);
+    await tester.scrollUntilVisible(find.text('Eat now'), -300, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Eat now'), warnIfMissed: false);
     await tester.pump();
     expect(taps, isEmpty);
   });

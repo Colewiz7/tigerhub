@@ -11,6 +11,7 @@ import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../theme/semantic.dart';
+import '../theme/tokens.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/app_icon.dart';
@@ -52,6 +53,19 @@ int compareForDisplay(
     }
   }
   return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+}
+
+/// Eat now on a phone: your open spots, then other open places, then your
+/// closed spots, which only reach the card when rows are left over.
+List<DiningLocation> eatNowOrder(List<DiningLocation> locations, Set<String> pinned) {
+  bool isPinned(DiningLocation l) => pinned.contains('${l.id}');
+  List<DiningLocation> sorted(bool Function(DiningLocation) test) =>
+      [...locations.where(test)]..sort(compareForDisplay);
+  return [
+    ...sorted((l) => l.isOpen && isPinned(l)),
+    ...sorted((l) => l.isOpen && !isPinned(l)),
+    ...sorted((l) => !l.isOpen && isPinned(l)),
+  ];
 }
 
 /// Group locations into the configured categories, in configured order.
@@ -131,8 +145,9 @@ class DiningCard extends StatelessWidget {
               if (location.category == category) location,
           ];
     final openNow = locations.where((l) => l.isOpen).length;
+    // the phone card answers one question, wide keeps its name
     final title = category == null || locations.isEmpty
-        ? 'Dining'
+        ? (Insets.phone(context) ? 'Eat now' : 'Dining')
         : locations.first.categoryName;
 
     return CardShell(
@@ -180,8 +195,12 @@ class _List extends StatelessWidget {
   Widget _build(BuildContext context) {
     // Shared ordering, so the card preview and the Dining tab agree.
     final pinned = Preferences.instance.pinnedDining;
-    final sorted = [...locations]
-      ..sort((a, b) => compareForDisplay(a, b, pinned: pinned));
+    final sorted = Insets.phone(context)
+        ? eatNowOrder(locations, pinned)
+        : ([...locations]..sort((a, b) => compareForDisplay(a, b, pinned: pinned)));
+    if (sorted.isEmpty) {
+      return const EmptyState(kind: EmptyKind.allClosed);
+    }
 
     return BoundedList(
       itemCount: limit == null ? sorted.length : sorted.length.clamp(0, limit!),

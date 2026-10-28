@@ -168,7 +168,8 @@ class CardShell extends StatelessWidget {
         label: openLabel == null ? title : '$title, $openLabel',
         excludeSemantics: true,
         onTap: editing ? null : onOpen,
-        child: _CardTitle(title: title, glyph: glyph, legacy: false, chevron: true),
+        // title and chevron only, as the wireframe draws it
+        child: _CardTitle(title: title, glyph: null, legacy: false, chevron: true),
       ),
       freshness: FittedBox(
         fit: BoxFit.scaleDown,
