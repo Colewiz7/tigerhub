@@ -23,6 +23,7 @@ import 'package:tigerhub/screens/events_screen.dart';
 import 'package:tigerhub/screens/map_screen.dart';
 import 'package:tigerhub/screens/settings/settings_screen.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/dashboard.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
@@ -48,6 +49,23 @@ const _deviceShots = bool.fromEnvironment('DEVICE_SHOTS');
 const _scrollBy = 600.0;
 const _detailId = 23;
 const _detailName = 'The Cafe & Market at Crossroads';
+
+// the redesign's card set, not the shipped defaults
+const _todayCards = [
+  CardInstance(id: 'dining-0', type: ModuleType.diningStatus),
+  CardInstance(id: 'events-0', type: ModuleType.generalEvents),
+  CardInstance(id: 'shuttles-0', type: ModuleType.shuttles, size: CardSize.compact),
+  CardInstance(id: 'chefs-0', type: ModuleType.visitingChefs, size: CardSize.compact),
+  CardInstance(id: 'facility-0', type: ModuleType.facilityHours, size: CardSize.compact, scope: 'Judson/Hale Aquatics Center'),
+  CardInstance(id: 'package-0', type: ModuleType.packagePickup, size: CardSize.compact),
+];
+
+// global village home, crossroads pinned
+Future<void> _seedToday() async {
+  await Preferences.instance.setHome(area: 'global-village');
+  if (!Preferences.instance.isPinned(_detailId)) await Preferences.instance.togglePinned(_detailId);
+  await DashboardStore.save(_todayCards);
+}
 
 const _tabs = [
   ('today', HomeScreen),
@@ -245,6 +263,7 @@ void main() {
 
     // skips the first run setup screen
     await Preferences.instance.markSetupSeen();
+    await _seedToday();
     final scheme = SchemeController()..restore();
     addTearDown(scheme.dispose);
     await tester.pumpWidget(_app(ApiClient(backend: _FixtureBackend()), scheme));
@@ -275,6 +294,19 @@ void main() {
         if (appearance == Brightness.light) await deviceShot('${name}_${mode}_top', type);
         await _scrollDown(tester, root);
         await tabShot('${name}_${mode}_scrolled');
+
+        if (type == HomeScreen) {
+          // edit mode, from the button at the end of the page
+          final edit = find.text('Edit Today');
+          await tester.scrollUntilVisible(edit, 300, scrollable: find.byWidget(_mainScrollable(root).widget));
+          await tester.tap(edit);
+          await _settle(tester);
+          await _toTop(tester, root);
+          await tabShot('${name}_${mode}_edit');
+          await tester.scrollUntilVisible(find.text('Done'), 300, scrollable: find.byWidget(_mainScrollable(root).widget));
+          await tester.tap(find.text('Done'));
+          await _settle(tester);
+        }
 
         if (type == DiningScreen) {
           await _toTop(tester, root);
