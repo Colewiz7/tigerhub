@@ -101,4 +101,20 @@ void main() {
     await tester.pump();
     expect(taps, isEmpty);
   });
+
+  testWidgets('in edit mode the chevron hides', (tester) async {
+    await pumpToday(tester);
+    Finder chevrons() => find.byKey(const ValueKey('card-link-chevron'));
+    bool shown(Element e) => (e.widget as Visibility).visible;
+    expect(chevrons().evaluate().every(shown), isTrue);
+
+    await tester.scrollUntilVisible(find.text('Customize'), 300, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Customize'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Eat now'), -300, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
+
+    expect(chevrons().evaluate(), isNotEmpty);
+    expect(chevrons().evaluate().any(shown), isFalse);
+  });
 }

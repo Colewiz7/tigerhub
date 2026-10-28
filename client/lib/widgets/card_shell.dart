@@ -169,7 +169,7 @@ class CardShell extends StatelessWidget {
         excludeSemantics: true,
         onTap: editing ? null : onOpen,
         // title and chevron only, as the wireframe draws it
-        child: _CardTitle(title: title, glyph: null, legacy: false, chevron: true),
+        child: _CardTitle(title: title, glyph: null, legacy: false, chevron: true, chevronHidden: editing),
       ),
       freshness: FittedBox(
         fit: BoxFit.scaleDown,
@@ -260,11 +260,15 @@ class _CardTitle extends StatelessWidget {
     required this.glyph,
     required this.legacy,
     this.chevron = false,
+    this.chevronHidden = false,
   });
 
   final String title;
   final AppIconKind? glyph;
   final bool chevron;
+
+  /// Edit mode, where the link does nothing.
+  final bool chevronHidden;
 
   /// The 600pt and wider title, as it was before the phone condense: given a
   /// finite height it keeps only the lines that fit and ellipsizes past them.
@@ -288,11 +292,16 @@ class _CardTitle extends StatelessWidget {
         Flexible(child: Text(title, style: style)),
         if (chevron) ...[
           const SizedBox(width: 4),
-          Icon(
-            AppIconKind.chevron.of(context),
-            size: 17,
-            applyTextScaling: true,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          // keeps its room, so editing moves nothing
+          Visibility.maintain(
+            key: const ValueKey('card-link-chevron'),
+            visible: !chevronHidden,
+            child: Icon(
+              AppIconKind.chevron.of(context),
+              size: 17,
+              applyTextScaling: true,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ],
       ],
