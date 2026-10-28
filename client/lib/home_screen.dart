@@ -274,6 +274,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // The calendar's value is the seven-day shape, which needs the two
       // column footprint. Other modules start at their least expensive size.
       size: defaultSizeFor(type),
+      // a facility card starts on the pool
+      scope: type == ModuleType.facilityHours ? defaultFacilityName(_recreation.value?.data ?? const []) : null,
     );
     setState(() {
       _instances = [..._instances, card];
@@ -466,6 +468,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         ModuleType.visitingChefs => VisitingChefsCard(
           result: widget.chefs,
+          compact: card.size == CardSize.compact,
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(1),
         ),
