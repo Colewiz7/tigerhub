@@ -254,8 +254,9 @@ void main() {
       expect(find.textContaining('open', findRichText: true), findsOneWidget);
       expect(find.text('+11 open'), findsNothing);
 
-      // 56 to the first row, 3 rows of 52 plus their 4 gap, 16 padding
-      expect(dining.height, 56 + 3 * 56 + 16);
+      // 56 to the first row, 3 rows of 52 with a 4 hairline band between
+      // them, 16 padding
+      expect(dining.height, 56 + 3 * 52 + 2 * 4 + 16);
 
       final chefRow = tester.getRect(
         find

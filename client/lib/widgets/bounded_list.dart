@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 import 'card_shell.dart';
 import 'more_row.dart';
+import 'status_row.dart';
 import 'touch_target.dart';
 
 /// How many rows a dashboard card previews on a phone before its "+N" footer.
@@ -85,7 +86,10 @@ class BoundedList extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (var i = 0; i < shown; i++) itemBuilder(context, i),
+              for (var i = 0; i < shown; i++) ...[
+                if (i > 0 && CardShell.flatRowsOf(context)) const RowSeparator(),
+                itemBuilder(context, i),
+              ],
               if (footerHidden > 0)
                 SizedBox(
                   height: footer,

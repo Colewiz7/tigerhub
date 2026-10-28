@@ -110,6 +110,9 @@ void main() {
 
       check('today');
       await tester.scrollUntilVisible(find.text('Customize'), 300, scrollable: find.byType(Scrollable).first);
+      // built in the cache extent is not on screen
+      await tester.ensureVisible(find.text('Customize'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Customize'));
       await tester.pumpAndSettle();
       check('today, customizing');

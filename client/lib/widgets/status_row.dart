@@ -13,6 +13,7 @@ import 'package:flutter/rendering.dart';
 
 import '../theme/tokens.dart';
 import 'app_icon.dart';
+import 'card_shell.dart';
 import 'context_actions.dart';
 
 /// How prominent a row is. Dimmed rows recede without disappearing.
@@ -123,8 +124,10 @@ class StatusRow extends StatelessWidget {
     final dimmed = emphasis == RowEmphasis.dimmed;
     final tint = accent ?? scheme.primary;
     final dense = _isDense(context);
+    // in a phone card the row is no surface of its own
+    final flat = dense && CardShell.flatRowsOf(context);
     final largeText = MediaQuery.textScalerOf(context).scale(1) > 1;
-    final rowGap = dense ? denseGap : gap;
+    final rowGap = flat ? 0.0 : (dense ? denseGap : gap);
     final badge = dense ? denseBadgeSize : badgeSize;
     final titleStyle = dense
         ? text.titleMedium?.copyWith(
@@ -154,7 +157,7 @@ class StatusRow extends StatelessWidget {
         hint: semanticHint,
         child: Material(
           elevation: 0,
-          color: scheme.surfaceContainerHigh,
+          color: flat ? Colors.transparent : scheme.surfaceContainerHigh,
           borderRadius: Shapes.inner,
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -168,7 +171,8 @@ class StatusRow extends StatelessWidget {
                 // on longer copy. Eight preserves the touch target and gives
                 // the typography its actual measured height.
                 padding: EdgeInsets.symmetric(
-                  horizontal: dense ? 10 : 12,
+                  // flat rows line up with the card title
+                  horizontal: flat ? 0 : (dense ? 10 : 12),
                   vertical: dense ? 4 : 8,
                 ),
                 child: Row(
@@ -271,6 +275,31 @@ class StatusRow extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The hairline between two flat rows, inset to where their text starts. It
+/// takes the place of the row gap, so the row pitch is unchanged.
+class RowSeparator extends StatelessWidget {
+  const RowSeparator({super.key});
+
+  // badge plus the gap after it
+  static const double inset = StatusRow.denseBadgeSize + 10;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    height: StatusRow.denseGap,
+    child: Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(start: inset),
+        child: SizedBox(
+          height: 1 / MediaQuery.devicePixelRatioOf(context),
+          width: double.infinity,
+          child: ColoredBox(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+      ),
+    ),
+  );
 }
 
 /// The text of a dense row: name, status and the trailing widget.

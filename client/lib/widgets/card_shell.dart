@@ -56,6 +56,11 @@ class CardShell extends StatelessWidget {
   static bool linkedOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<_CardLinked>() != null;
 
+  /// Whether rows here sit flat in a phone card, an inset group with
+  /// hairlines, rather than each being its own filled surface.
+  static bool flatRowsOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_FlatRows>() != null;
+
   final String title;
 
   /// Phones: the header (title and a chevron) opens the full list. Inert in
@@ -81,7 +86,12 @@ class CardShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (onOpen != null && Insets.phone(context)) return _linked(context);
+    if (!Insets.phone(context)) return _card(context);
+    // phones only, wide stays as it was
+    return _FlatRows(child: onOpen == null ? _card(context) : _linked(context));
+  }
+
+  Widget _card(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
     return Material(
@@ -218,6 +228,13 @@ class _CardLinked extends InheritedWidget {
 
   @override
   bool updateShouldNotify(_CardLinked oldWidget) => false;
+}
+
+class _FlatRows extends InheritedWidget {
+  const _FlatRows({required super.child});
+
+  @override
+  bool updateShouldNotify(_FlatRows oldWidget) => false;
 }
 
 /// A Flexible when the column it sits in has a height to share, the child as
