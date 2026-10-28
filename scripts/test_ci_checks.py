@@ -165,6 +165,98 @@ class EmDashTests(unittest.TestCase):
         self.assertEqual(copy_style.em_dash_lines("s = '${a}//'; t = '—';\n"), [1])
 
 
+class StatusCaseTests(unittest.TestCase):
+    def test_caps_status_word_in_string_fails(self):
+        self.assertEqual(copy_style.all_caps_status_lines("a\nlabel = 'OPEN';\n"), [2])
+
+    def test_caps_word_with_detail_fails(self):
+        self.assertEqual(copy_style.all_caps_status_lines("s = 'CLOSED · opens ${t}';\n"), [1])
+
+    def test_two_word_status_fails(self):
+        self.assertEqual(copy_style.all_caps_status_lines("s = \"ALL DAY\";\n"), [1])
+
+    def test_each_status_word_fails(self):
+        for word in copy_style.STATUS_WORDS:
+            self.assertEqual(copy_style.all_caps_status_lines("s = '%s';\n" % word), [1], word)
+
+    def test_sentence_case_passes(self):
+        self.assertEqual(copy_style.all_caps_status_lines("s = 'Open · until 9'; t = 'Busy'; u = 'All day';\n"), [])
+
+    def test_comment_passes(self):
+        self.assertEqual(copy_style.all_caps_status_lines("// a green OPEN pill\n/* ENDED */\nx = 1;\n"), [])
+
+    def test_identifier_passes(self):
+        self.assertEqual(copy_style.all_caps_status_lines("final OPEN = ServiceState.OPEN;\n"), [])
+
+    def test_word_inside_longer_caps_passes(self):
+        self.assertEqual(copy_style.all_caps_status_lines("s = 'OPENING_HOURS'; t = 'FULLTIME';\n"), [])
+
+    def test_interpolated_code_passes(self):
+        self.assertEqual(copy_style.all_caps_status_lines("s = '${OPEN} left';\n"), [])
+
+
+def caps(src):
+    return copy_style.all_caps_word_lines(src)
+
+
+class CapsWordTests(unittest.TestCase):
+    def test_text_fails(self):
+        self.assertEqual(caps("a\nText('OPEN');\n"), [2])
+
+    def test_const_text_and_text_span_fail(self):
+        self.assertEqual(caps("const Text('ADD A CARD');\nTextSpan(text: 'ABOUT');\n"), [1, 2])
+
+    def test_tooltip_fails(self):
+        self.assertEqual(caps("IconButton(\n  icon: i,\n  tooltip: 'CLOSE',\n);\n"), [3])
+
+    def test_caption_constant_fails(self):
+        self.assertEqual(caps("const dueCaption = 'DAYS TO GO';\nstatic const _weekdays = ['MON', 'TUE'];\n"), [1, 2])
+
+    def test_copy_getter_fails(self):
+        self.assertEqual(caps("String get _label => n == 1 ? 'ONE MORE' : 'MORE';\n"), [1])
+
+    def test_named_copy_arg_in_ternary_fails(self):
+        src = "CardHero(\n  value: d == 0 ? 'NOW' : '$d',\n  label: d == 0\n      ? 'TODAY'\n      : (d == 1 ? 'DAY TO GO' : 'DAYS TO GO'),\n);\n"
+        self.assertEqual(caps(src), [2, 4, 5])
+
+    def test_caps_word_beside_interpolation_fails(self):
+        self.assertEqual(caps("_Tag(label: 'CONTAINS ${x}');\n"), [1])
+
+    def test_regexp_passes(self):
+        self.assertEqual(caps("final re = RegExp('ABC');\nText(s.replaceAll(RegExp('ABC'), ''));\n"), [])
+
+    def test_plain_constant_passes(self):
+        self.assertEqual(caps("const key = 'HOME';\nconst _order = ['MONDAY', 'TUESDAY'];\n"), [])
+
+    def test_non_copy_args_pass(self):
+        self.assertEqual(caps("DropdownMenuItem(value: 'ALL', child: x);\nfoo('BAR', key: 'BAZ');\n"), [])
+
+    def test_opt_out_passes(self):
+        self.assertEqual(caps("Text('NASA'); // copy-style: allow-caps\nText('NASA');\n"), [2])
+
+    def test_sentence_case_passes(self):
+        self.assertEqual(caps("Text('Add a card'); const weekLabel = 'This week';\n"), [])
+
+    def test_acronyms_pass(self):
+        self.assertEqual(caps("Text('View on RIT'); Text('5:00 PM'); Text('SHED makerspace');\n"), [])
+
+    def test_env_key_with_underscore_passes(self):
+        self.assertEqual(caps("Text(env['FORCE_SEED']);\n"), [])
+
+    def test_map_key_passes(self):
+        self.assertEqual(caps("final h = Platform.environment['HOME'];\nText(env['HOME'] ?? '');\n"), [])
+
+    def test_date_format_pattern_passes(self):
+        self.assertEqual(caps("DateFormat('EEE, MMM d');\nText(DateFormat(\n  'MMMM',\n).format(d));\n"), [])
+
+    def test_comment_and_identifier_pass(self):
+        self.assertEqual(caps("// Text('ADD A CARD')\nfinal SIZE = 1;\n"), [])
+
+    def test_ci_scope_skips_parsers(self):
+        for path in ("client/lib/data/ical.dart", "client/lib/services/todays_hours.dart", "client/lib/config.dart"):
+            self.assertTrue(path.startswith(copy_style.UI_EXEMPT), path)
+        self.assertFalse("client/lib/home_screen.dart".startswith(copy_style.UI_EXEMPT))
+
 
 class RulesInCodeTests(unittest.TestCase):
     # rules live in copy_style.py, no repo doc

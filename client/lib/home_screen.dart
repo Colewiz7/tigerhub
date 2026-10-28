@@ -15,11 +15,13 @@ import 'cards/dining_card.dart';
 import 'cards/dashboard_event_cards.dart';
 import 'cards/dashboard_campus_cards.dart';
 import 'cards/calendar_card.dart';
+import 'cards/event_row.dart' show eventEnd;
 import 'cards/events_card.dart';
 import 'cards/housing_card.dart';
 import 'cards/visiting_chefs_card.dart';
 import 'cards/academic_dates_card.dart';
 import 'config.dart';
+import 'data/campus_time.dart';
 import 'models/api_models.dart';
 import 'motion/reduce_motion.dart';
 import 'services/api.dart';
@@ -323,6 +325,30 @@ class _HomeScreenState extends State<HomeScreen> {
     return values;
   }
 
+  // today shows what is still ahead, ended events drop off
+  Result<Collection<CampusEvent>> get _upcomingEvents {
+    final result = widget.events;
+    final value = result.value;
+    if (value == null) return result;
+    final now = CampusTime.nowUtc();
+    return Result(
+      value: Collection(
+        data: [
+          for (final event in value.data)
+            if (eventEnd(event).isAfter(now)) event,
+        ],
+        stale: value.stale,
+        lastUpdated: value.lastUpdated,
+        dropped: value.dropped,
+        availability: value.availability,
+      ),
+      state: result.state,
+      fetchedAt: result.fetchedAt,
+      error: result.error,
+      dropped: result.dropped,
+    );
+  }
+
   List<({String key, String name})> get _diningCategories {
     final found = <String, String>{};
     for (final location
@@ -371,21 +397,21 @@ class _HomeScreenState extends State<HomeScreen> {
           onShowAll: () => widget.onGoToTab(1),
         ),
         ModuleType.generalEvents => EventsCard(
-          result: widget.events,
+          result: _upcomingEvents,
           organizerKey: card.scope,
           compact: card.size == CardSize.compact,
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(2),
         ),
         ModuleType.clubEvents => ScopedEventsCard(
-          result: widget.events,
+          result: _upcomingEvents,
           organizerKey: card.scope,
           compact: card.size == CardSize.compact,
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(2),
         ),
         ModuleType.calendar => CalendarCard(
-          result: widget.events,
+          result: _upcomingEvents,
           organizerKey: card.scope,
           compact: card.size == CardSize.compact,
           dragHandle: controls,
@@ -739,7 +765,7 @@ class _EditBar extends StatelessWidget {
                         ),
                       ],
                     ),
-                    Text('SIZE', style: text.labelSmall),
+                    Text('Size', style: text.labelSmall),
                     const SizedBox(height: 6),
                     Wrap(
                       spacing: 7,
@@ -759,7 +785,7 @@ class _EditBar extends StatelessWidget {
                     ),
                     if (selected!.type == ModuleType.diningStatus) ...[
                       const SizedBox(height: 12),
-                      Text('DINING CATEGORY', style: text.labelSmall),
+                      Text('Dining category', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
                         icon: Icon(AppIconKind.dropdown.of(context)),
@@ -796,7 +822,7 @@ class _EditBar extends StatelessWidget {
                         selected!.type == ModuleType.clubEvents ||
                         selected!.type == ModuleType.calendar) ...[
                       const SizedBox(height: 12),
-                      Text('ORGANIZATION', style: text.labelSmall),
+                      Text('Organization', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
                         icon: Icon(AppIconKind.dropdown.of(context)),
@@ -829,7 +855,7 @@ class _EditBar extends StatelessWidget {
                     ],
                     if (selected!.type == ModuleType.facilityHours) ...[
                       const SizedBox(height: 12),
-                      Text('FACILITY', style: text.labelSmall),
+                      Text('Facility', style: text.labelSmall),
                       const SizedBox(height: 6),
                       DropdownButtonFormField<String>(
                         icon: Icon(AppIconKind.dropdown.of(context)),
@@ -869,7 +895,7 @@ class _EditBar extends StatelessWidget {
           ],
           if (editing && hidden.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('ADD A CARD', style: text.labelSmall),
+            Text('Add a card', style: text.labelSmall),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,

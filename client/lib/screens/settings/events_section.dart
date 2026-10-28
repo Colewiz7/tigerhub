@@ -9,6 +9,7 @@ import '../../services/filter_profiles.dart';
 import '../../services/preferences.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/more_row.dart' show counted;
 import '../../widgets/status_row.dart';
 import '../../widgets/tab_bar.dart';
 
@@ -59,7 +60,7 @@ class _EventsSectionState extends State<EventsSection> {
         const SizedBox(height: 26),
         _SectionHeading(
           title: 'Organizers',
-          subtitle: '${facets.length} organizers, '
+          subtitle: '${counted(facets.length, 'organizers')}, '
               '${muted.length} muted. Mechanical, and it kills most of the noise.',
           action: muted.isEmpty
               ? null
@@ -273,7 +274,7 @@ class _KeywordEditorState extends State<_KeywordEditor> {
               children: [
                 AppIcon(widget.icon, color: scheme.primary),
                 const SizedBox(width: 9),
-                Text(widget.title.toUpperCase(), style: text.labelSmall),
+                Text(widget.title, style: text.labelSmall),
               ],
             ),
             const SizedBox(height: 6),

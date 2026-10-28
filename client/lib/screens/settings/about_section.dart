@@ -127,7 +127,7 @@ class AboutSection extends StatelessWidget {
           child: Text(AppConfig.disclaimer, style: text.bodyMedium),
         ),
         const SizedBox(height: 22),
-        Text('DATA SOURCES', style: text.labelSmall),
+        Text('Data sources', style: text.labelSmall),
         const SizedBox(height: 10),
         for (final source in _sources)
           StatusRow(

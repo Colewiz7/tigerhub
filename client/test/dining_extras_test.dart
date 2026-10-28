@@ -23,6 +23,7 @@ import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/cache.dart';
+import 'package:tigerhub/widgets/jump_list.dart';
 import 'package:tigerhub/widgets/link_button.dart';
 import 'package:tigerhub/widgets/status_row.dart';
 import 'package:tigerhub/theme/app_theme.dart';
@@ -121,6 +122,9 @@ class _Slow implements Backend {
   void close() {}
 }
 
+// the dining list, not the search field's own scrollable
+final _list = find.descendant(of: find.byType(JumpList), matching: find.byType(Scrollable)).first;
+
 // pinned to Wed Oct 14 2026, in season
 final _today = DateTime.utc(2026, 10, 14, 16);
 
@@ -215,6 +219,25 @@ void main() {
       expect(find.text('Today · 11 a.m. to 2 p.m. · Global Village Plaza'), findsOneWidget);
       expect(find.text('Tomorrow · 11 a.m. to 2 p.m. · Lot G'), findsOneWidget);
       expect(find.text('Fri, Oct 16 · 5 p.m. to 8 p.m. · Gracie’s lawn'), findsOneWidget);
+    });
+
+    testWidgets('places come first, then todays trucks, then later days in their own section', (tester) async {
+      await pumpDining(tester, _body(_six), size: const Size(390, 3200));
+
+      double top(String text) => tester.getTopLeft(find.text(text).first).dy;
+      expect(top('Crossroads'), lessThan(top('Food trucks')));
+      expect(top('Food trucks'), lessThan(top('Taco Loco')));
+      expect(top('Taco Loco'), lessThan(top('Upcoming food trucks')));
+      for (final later in ['Pierogi Pals', 'Smokestack BBQ', 'Bao Down', 'Waffle Wagon', 'Curry Up']) {
+        expect(top('Upcoming food trucks'), lessThan(top(later)), reason: later);
+      }
+    });
+
+    testWidgets('only later trucks shows just the upcoming section, below places', (tester) async {
+      await pumpDining(tester, _body(_six.skip(1).toList()), size: const Size(390, 3200));
+
+      expect(find.text('Food trucks'), findsNothing);
+      expect(tester.getTopLeft(find.text('Crossroads')).dy, lessThan(tester.getTopLeft(find.text('Upcoming food trucks').first).dy));
     });
 
     testWidgets('lists every truck, with no footer for the rest', (tester) async {
@@ -533,13 +556,11 @@ void main() {
   group('at 2x text', () {
     testWidgets('scrolling to the trucks shows every place whole', (tester) async {
       await pumpDining(tester, _body(_six), size: const Size(390, 844), scale: 2);
-      await tester.scrollUntilVisible(
-        find.text('Curry Up'),
-        300,
-        scrollable: find.byType(Scrollable).first,
-      );
+      // trucks sit below the places now
+      await tester.scrollUntilVisible(find.text('Curry Up'), 300, scrollable: _list);
 
       expect(tester.takeException(), isNull);
+      await tester.scrollUntilVisible(find.text('Taco Loco'), -300, scrollable: _list);
       final place = find.text('Today · 11 a.m. to 2 p.m. · Global Village Plaza');
       expect(place, findsOneWidget);
       expect(tester.renderObject<RenderParagraph>(place).didExceedMaxLines, isFalse);
@@ -547,6 +568,7 @@ void main() {
 
     testWidgets('ensureVisible on the last truck row does not throw', (tester) async {
       await pumpDining(tester, _body(_six), size: const Size(390, 844), scale: 2);
+      await tester.scrollUntilVisible(find.text('Curry Up'), 300, scrollable: _list);
       await tester.ensureVisible(find.text('Curry Up'));
       await tester.pumpAndSettle();
 

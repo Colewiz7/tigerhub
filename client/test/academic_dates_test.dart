@@ -49,7 +49,7 @@ void main() {
 
     expect(find.text('Academic Dates'), findsOneWidget);
     expect(find.text('Add/drop ends'), findsOneWidget);
-    expect(find.text('NOW'), findsOneWidget);
-    expect(find.text('TODAY'), findsOneWidget);
+    expect(find.text('Now'), findsOneWidget);
+    expect(find.text('Today'), findsOneWidget);
   });
 }

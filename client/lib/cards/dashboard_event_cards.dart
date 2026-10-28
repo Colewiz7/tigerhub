@@ -9,6 +9,7 @@ import '../widgets/app_icon.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/more_row.dart' show counted;
 import '../widgets/status_row.dart';
 import 'event_row.dart';
 
@@ -56,14 +57,8 @@ class ScopedEventsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // today hands over upcoming events only
     final events = _scopedEvents(result, organizerKey);
-    final future = events
-        .where(
-          (event) =>
-              (event.endsAt ?? event.startsAt).isAfter(CampusTime.nowUtc()),
-        )
-        .toList();
-    final shown = future.isEmpty ? events : future;
 
     return CardShell(
       title: organizerName(result, organizerKey),
@@ -74,7 +69,7 @@ class ScopedEventsCard extends StatelessWidget {
       hero: events.isEmpty
           ? null
           : Text(
-              '${events.length} events',
+              counted(events.length, 'events'),
               style: Theme.of(context).textTheme.labelLarge
                   ?.copyWith(color: Theme.of(context).colorScheme.primary),
             ),
@@ -84,14 +79,14 @@ class ScopedEventsCard extends StatelessWidget {
           // more" button: the cap was a guess, and every other card counts its
           // overflow the same way.
           : BoundedList(
-              itemCount: shown.length,
+              itemCount: events.length,
               itemHeight: StatusRow.heightFor(context, dense: true),
               dense: true,
               maxRows: phoneRowCap(context),
               noun: 'events',
               onShowAll: onShowAll,
               itemBuilder: (context, index) =>
-                  EventRow(event: shown[index], dense: true),
+                  EventRow(event: events[index], dense: true),
             ),
     );
   }
@@ -118,7 +113,7 @@ class EventCalendarCard extends StatefulWidget {
 class _EventCalendarCardState extends State<EventCalendarCard> {
   int _selectedDay = 0;
 
-  static const _weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
+  static const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   @override
   Widget build(BuildContext context) {

@@ -147,7 +147,9 @@ void main() {
         tester,
         const Occupancy(count: 75, maxOcc: 150, percentFull: 50),
       );
-      expect(find.text('50%'), findsOneWidget);
+      // labelled, a bare 50% read as a number with no meaning
+      expect(find.text('50% full'), findsOneWidget);
+      expect(find.text('50%'), findsNothing);
     });
 
     testWidgets('over capacity says busy, not a precise percentage', (
@@ -162,7 +164,7 @@ void main() {
           overCapacity: true,
         ),
       );
-      expect(find.text('BUSY'), findsOneWidget);
+      expect(find.text('Busy'), findsOneWidget);
       expect(
         find.textContaining('%'),
         findsNothing,
@@ -198,7 +200,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('21%'), findsNothing);
+      expect(find.textContaining('21%'), findsNothing);
       expect(find.textContaining('here'), findsNothing);
     });
   });
@@ -828,7 +830,7 @@ void _screenshotReview() {
           ),
         );
         expect(find.text('6'), findsOneWidget);
-        expect(find.text('OPEN'), findsOneWidget);
+        expect(find.text('Open'), findsOneWidget);
         // The unrelated location's number must not be the hero.
         expect(find.text('165'), findsNothing);
       },
@@ -995,10 +997,10 @@ void _visualStructure() {
         ),
       );
       expect(find.text('Beanz'), findsOneWidget);
-      expect(find.text('OPEN · until 10:00 PM'), findsOneWidget);
+      expect(find.text('Open · until 10:00 PM'), findsOneWidget);
       expect(find.byIcon(Icons.local_cafe_rounded), findsOneWidget);
       // No standalone pill. The subtitle still states the status in text.
-      expect(find.text('OPEN'), findsNothing);
+      expect(find.text('Open'), findsNothing);
     });
 
     testWidgets('a closed row is dimmed relative to an open one', (
@@ -1097,8 +1099,10 @@ void _visualStructure() {
           DateTime(2026, 8, 28, 14),
         ),
       );
-      expect(find.text('ENDED'), findsOneWidget);
-      expect(find.byIcon(Icons.history_rounded), findsOneWidget);
+      expect(find.text('Ended'), findsOneWidget);
+      // the word says it, no refresh arrow
+      expect(find.byIcon(Icons.history_rounded), findsNothing);
+      expect(find.byIcon(iconForEventType(null).material), findsOneWidget);
     });
 
     testWidgets('an upcoming event is not marked', (tester) async {
@@ -1108,15 +1112,26 @@ void _visualStructure() {
           DateTime(2026, 8, 28, 14),
         ),
       );
-      expect(find.text('ENDED'), findsNothing);
+      expect(find.text('Ended'), findsNothing);
       expect(find.byIcon(Icons.history_rounded), findsNothing);
     });
 
-    testWidgets('an event with no end uses its start', (tester) async {
-      await tester.pumpWidget(
-        wrap(at(DateTime(2026, 8, 28, 9)), DateTime(2026, 8, 28, 14)),
-      );
-      expect(find.text('ENDED'), findsOneWidget);
+    // no end means on until the campus day is over, not over at its start
+    testWidgets('an event with no end runs to the end of its campus day', (tester) async {
+      final start = DateTime.utc(2026, 8, 28, 13);
+      await tester.pumpWidget(wrap(at(start), DateTime.utc(2026, 8, 28, 18)));
+      expect(find.text('Ended'), findsNothing);
+      await tester.pumpWidget(wrap(at(start), DateTime.utc(2026, 8, 29, 4, 1)));
+      expect(find.text('Ended'), findsOneWidget);
+    });
+
+    // an all day event starts at campus midnight and is on until the next one
+    testWidgets('an all day event is not ended during its day', (tester) async {
+      final fair = CampusEvent(uid: 'fair', source: 'drupal', title: 'Career fair', startsAt: DateTime.utc(2026, 10, 14, 4), allDay: true);
+      await tester.pumpWidget(wrap(fair, DateTime.utc(2026, 10, 14, 16)));
+      expect(find.text('Ended'), findsNothing);
+      await tester.pumpWidget(wrap(fair, DateTime.utc(2026, 10, 15, 4, 1)));
+      expect(find.text('Ended'), findsOneWidget);
     });
 
     testWidgets('an event running right now counts as future', (tester) async {
@@ -1126,7 +1141,7 @@ void _visualStructure() {
           DateTime(2026, 8, 28, 14),
         ),
       );
-      expect(find.text('ENDED'), findsNothing);
+      expect(find.text('Ended'), findsNothing);
     });
   });
 }
@@ -1168,8 +1183,8 @@ void _statusAndGrouping() {
   group('status hierarchy', () {
     testWidgets('open with no sensor shows no pill at all', (tester) async {
       await tester.pumpWidget(wrap(DiningRow(location: loc('Beanz'))));
-      expect(find.text('OPEN'), findsNothing);
-      expect(find.text('CLOSED'), findsNothing);
+      expect(find.text('Open'), findsNothing);
+      expect(find.text('Closed'), findsNothing);
       expect(find.textContaining('%'), findsNothing);
     });
 
@@ -1177,27 +1192,27 @@ void _statusAndGrouping() {
       await tester.pumpWidget(
         wrap(DiningRow(location: loc('Crossroads', percent: 86))),
       );
-      expect(find.text('86%'), findsOneWidget);
-      expect(find.text('OPEN'), findsNothing);
+      expect(find.text('86% full'), findsOneWidget);
+      expect(find.text('Open'), findsNothing);
     });
 
-    testWidgets('over capacity shows BUSY, never a percentage', (tester) async {
+    testWidgets('over capacity shows Busy, never a percentage', (tester) async {
       await tester.pumpWidget(
         wrap(
           DiningRow(location: loc('Midnight Oil', percent: 100, over: true)),
         ),
       );
-      expect(find.text('BUSY'), findsOneWidget);
+      expect(find.text('Busy'), findsOneWidget);
       expect(find.textContaining('%'), findsNothing);
     });
 
-    testWidgets('closed shows CLOSED', (tester) async {
+    testWidgets('closed shows Closed', (tester) async {
       await tester.pumpWidget(
         wrap(DiningRow(location: loc('Gracie', open: false))),
       );
-      expect(find.textContaining('CLOSED ·'), findsOneWidget);
+      expect(find.textContaining('Closed ·'), findsOneWidget);
       expect(
-        find.text('CLOSED'),
+        find.text('Closed'),
         findsNothing,
         reason: 'closed status belongs in the subtitle, not a repeated pill',
       );
@@ -1217,7 +1232,7 @@ void _statusAndGrouping() {
         ),
       );
       // The whole point: 13 identical pills was noise.
-      expect(find.text('OPEN'), findsNothing);
+      expect(find.text('Open'), findsNothing);
     });
   });
 
@@ -1801,7 +1816,7 @@ void _menus() {
       // wrong failure.
       expect(find.text('Cheese Danish'), findsOneWidget);
       expect(find.text('Plain Bagel'), findsOneWidget);
-      expect(find.text('CONTAINS MILK'), findsOneWidget);
+      expect(find.text('Contains milk'), findsOneWidget);
     });
 
     testWidgets('a dietary filter demotes rather than deletes', (tester) async {

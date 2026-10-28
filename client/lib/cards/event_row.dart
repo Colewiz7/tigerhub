@@ -40,6 +40,21 @@ AppIconKind iconForEventType(String? type) {
   return AppIconKind.event;
 }
 
+/// When an event is over, on the campus clock.
+///
+/// A timed event with an end ends then. With no end it runs to the end of
+/// its campus start day, since a missing end is not a zero length event. An
+/// all day event runs to the end of its last campus day; an iCal all day end
+/// is the exclusive midnight after that day.
+DateTime eventEnd(CampusEvent event) {
+  final end = event.endsAt;
+  if (!event.allDay && end != null) return end;
+  final last = end != null && end.isAfter(event.startsAt)
+      ? CampusTime.dateOf(end.subtract(const Duration(microseconds: 1)))
+      : CampusTime.dateOf(event.startsAt);
+  return CampusTime.wall(last.year, last.month, last.day + 1);
+}
+
 class EventRow extends StatelessWidget {
   const EventRow({
     super.key,
@@ -107,9 +122,7 @@ class EventRow extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final moment = now ?? CampusTime.nowUtc();
 
-    // An event is past once its end has gone by, or its start if it has no end.
-    final ends = event.endsAt ?? event.startsAt;
-    final isPast = ends.isBefore(moment) || forceDimmed;
+    final isPast = !eventEnd(event).isAfter(moment) || forceDimmed;
 
     final when = event.allDay ? 'All day' : formatDayAndClock(event.startsAt);
 
@@ -119,21 +132,21 @@ class EventRow extends StatelessWidget {
     final sameDay =
         CampusTime.dateOf(event.startsAt) == CampusTime.dateOf(moment);
     final stamp = event.allDay
-        ? 'ALL DAY'
+        ? 'All day'
         : (sameDay
               ? formatClock(event.startsAt)
               : formatDayAndClock(event.startsAt));
 
     // The dashboard row says the time once, in the status line, with the place
     // after a middle dot ("Fri 5:00 PM · SAU"), and keeps the trailing slot
-    // for "ENDED". The standard row keeps the time on the right.
+    // for "Ended". The standard row keeps the time on the right.
     final place = event.location?.isNotEmpty == true ? event.location! : null;
     // Only on phones: dense is ignored at 600pt and up, which keep base text.
     final condensed = dense && Insets.phone(context);
     final denseWhen = event.allDay ? 'All day' : stamp;
     final denseSubtitle = place == null ? denseWhen : '$denseWhen · $place';
     final ended = Text(
-      'ENDED',
+      'Ended',
       style: text.labelSmall?.copyWith(color: semantic.closed),
     );
 
@@ -141,7 +154,7 @@ class EventRow extends StatelessWidget {
       dense: dense,
       icon: forceDimmed
           ? AppIconKind.hidden
-          : (isPast ? AppIconKind.past : iconForEventType(event.eventType)),
+          : iconForEventType(event.eventType),
       title: boosted ? '✦ ${event.title}' : event.title,
       subtitle: condensed ? denseSubtitle : (place ?? when),
       accent: boosted

@@ -69,7 +69,7 @@ class VisitingChefsCard extends StatelessWidget {
               // Main's wording, which the wide layout keeps from the base
               // commit. The title already says chefs; the shorter pill keeps
               // room for the edit controls beside it on a 390 wide phone.
-              label: all.length == 1 ? 'CHEF TODAY' : 'CHEFS TODAY',
+              label: all.length == 1 ? 'Chef today' : 'Chefs today',
               pill: '${all.length} today',
             ),
       child: switch ((result.isPriming, all.isEmpty)) {

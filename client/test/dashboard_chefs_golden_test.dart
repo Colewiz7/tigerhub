@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/home_screen.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
@@ -26,7 +27,12 @@ void main() {
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
+    // the academic dates card counts days to its next date, so the day is
+    // pinned: tue oct 27 2026, noon on campus
+    RitClock.pin(DateTime.utc(2026, 10, 27, 16));
   });
+
+  tearDown(RitClock.reset);
 
   // the ios set uses the iOS phone sizes
   for (final (ios, size) in const [(false, Size(390, 844)), (false, Size(430, 932)), (true, Size(390, 844)), (true, Size(440, 956))]) {

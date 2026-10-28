@@ -134,7 +134,7 @@ class _DishRow extends StatelessWidget {
                     const SizedBox(width: 10),
                     // Flagged, not removed.
                     _Tag(
-                      label: 'CONTAINS ${flagged.first.toUpperCase()}',
+                      label: 'Contains ${flagged.first.toLowerCase()}',
                       foreground: semantic.closed,
                       background: semantic.closedContainer,
                       icon: AppIconKind.warning,

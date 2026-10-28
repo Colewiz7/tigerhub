@@ -124,7 +124,7 @@ class EventsCard extends StatelessWidget {
       // decide whether there is anything happening now.
       hero: events.isEmpty
           ? null
-          : CardHero(value: '$today', label: 'TODAY', filled: today > 0),
+          : CardHero(value: '$today', label: 'Today', filled: today > 0),
       child: switch ((result.isPriming, events.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading events'),
         (_, true) => EmptyState(
@@ -149,13 +149,10 @@ class _Compact extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = CampusTime.nowUtc();
+    // today hands over upcoming events only, so the first is next
     final ordered = [...events]
       ..sort((a, b) => a.startsAt.compareTo(b.startsAt));
-    final next = ordered
-        .where((event) => (event.endsAt ?? event.startsAt).isAfter(now))
-        .firstOrNull;
-    return EventRow(event: next ?? ordered.first, dense: true);
+    return EventRow(event: ordered.first, dense: true);
   }
 }
 

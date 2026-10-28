@@ -95,6 +95,7 @@ void main() {
       for (final icon in {kind.cupertino, kind.material}) {
         await _expectInkInsideCircle(tester, icon, 18, StatusRow.badgeSize);
         await _expectInkInsideCircle(tester, icon, 18, StatusRow.denseBadgeSize);
+        await _expectInkInsideCircle(tester, icon, StatusRow.fillIconSize, StatusRow.badgeSize);
       }
     }
     for (final kind in EmptyKind.values) {
@@ -150,6 +151,23 @@ void main() {
         expect(tester.getSize(circle), Size(side, side));
         expect(tester.widget<Icon>(icon).icon, _expected(kind));
         _expectGlyphSize(tester.getSize(_glyph(icon)), 18);
+        _expectInsideCircle(tester, circle, _glyph(icon));
+      }
+    }
+  }, variant: _platforms);
+
+  testWidgets('campus rows and nav: the filled glyph stays in 42', (tester) async {
+    for (final kind in AppIconKind.values) {
+      for (final row in [
+        StatusRow(icon: kind, title: 'Title', subtitle: 'Subtitle', iconSize: StatusRow.fillIconSize),
+        SectionNavRow(spec: SectionSpec(id: kind.name, title: 'Title', subtitle: 'Subtitle', icon: kind, builder: (_) => const SizedBox()), active: false, onTap: () {}, iconSize: StatusRow.fillIconSize),
+      ]) {
+        await tester.pumpWidget(_wrap(row));
+        final circle = _circle.first;
+        final icon = find.descendant(of: circle, matching: find.byType(Icon));
+        expect(tester.getSize(circle), const Size(42, 42));
+        expect(tester.widget<Icon>(icon).icon, _expected(kind));
+        _expectGlyphSize(tester.getSize(_glyph(icon)), StatusRow.fillIconSize);
         _expectInsideCircle(tester, circle, _glyph(icon));
       }
     }

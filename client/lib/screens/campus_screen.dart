@@ -125,6 +125,7 @@ class _CampusScreenState extends State<CampusScreen> {
     // Five unrelated things used to stack in one scroll, so anything below the
     // first two disappeared. Same nav idiom as Settings.
     return SectionScaffold(
+      iconSize: StatusRow.fillIconSize,
       sections: [
         SectionSpec(
           id: 'mail',
@@ -140,14 +141,14 @@ class _CampusScreenState extends State<CampusScreen> {
         SectionSpec(
           id: 'find',
           title: 'Find on campus',
-          subtitle: 'Fountains, restrooms, blue lights, bus stops',
+          subtitle: 'Fountains, restrooms, blue lights',
           icon: AppIconKind.find,
           builder: (context) => _FindSection(api: widget.api, kinds: _kinds),
         ),
         SectionSpec(
           id: 'dates',
           title: 'Academic dates',
-          subtitle: 'Deadlines, breaks, reading days and finals',
+          subtitle: 'Deadlines, breaks and finals',
           icon: AppIconKind.academicDates,
           builder: (context) => _AcademicDatesSection(now: widget.now),
         ),
@@ -164,7 +165,7 @@ class _CampusScreenState extends State<CampusScreen> {
         SectionSpec(
           id: 'safety',
           title: 'Safety',
-          subtitle: 'Emergency, text and non-emergency contacts',
+          subtitle: 'Emergency, text and other numbers',
           icon: AppIconKind.safety,
           builder: (context) => const _SafetySection(),
         ),
@@ -361,6 +362,8 @@ class _ShuttleSection extends StatelessWidget {
           for (final route in routes)
             StatusRow(
               icon: AppIconKind.shuttle,
+              iconSize: StatusRow.fillIconSize,
+              wrapSubtitle: true,
               title: '${route.number} · ${route.name}',
               subtitle: route.hours,
               actions: [MenuAction.copy('${route.number} · ${route.name}\n${route.hours}')],
@@ -404,6 +407,8 @@ class _AcademicDatesSection extends StatelessWidget {
           for (var index = 0; index < upcoming.length; index++)
             StatusRow(
               icon: index == 0 ? AppIconKind.upcoming : AppIconKind.day,
+              iconSize: StatusRow.fillIconSize,
+              wrapSubtitle: true,
               title: upcoming[index].title,
               subtitle: upcoming[index].detail,
               actions: [
@@ -463,6 +468,8 @@ class _SafetySection extends StatelessWidget {
       for (final contact in contacts)
         StatusRow(
           icon: contact.icon,
+          iconSize: StatusRow.fillIconSize,
+          wrapSubtitle: true,
           title: contact.label,
           subtitle: contact.number,
           trailing: Icon(
@@ -563,6 +570,8 @@ class _FindSection extends StatelessWidget {
         for (final kind in kinds.value?.data ?? const <PlaceKind>[])
           StatusRow(
             icon: iconForPlaceKind(kind.kind),
+            iconSize: StatusRow.fillIconSize,
+            wrapSubtitle: true,
             title: kind.kindName,
             subtitle: '${kind.count} on campus',
             onTap: () => showModalBottomSheet<void>(
@@ -685,22 +694,25 @@ class _Heading extends StatelessWidget {
   }
 }
 
-/// Weekday order for display, and a compact "Mon to Fri" style label.
+/// Weekday order for display, and a compact "Mon to Fri" style label. The
+/// config spells days in capitals, so lookups go through [_weekIndex].
 const _weekOrder = [
-  'MONDAY',
-  'TUESDAY',
-  'WEDNESDAY',
-  'THURSDAY',
-  'FRIDAY',
-  'SATURDAY',
-  'SUNDAY',
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
 ];
+
+int _weekIndex(String day) => _weekOrder.indexOf(day.toLowerCase());
 
 String _dayLabel(List<String> days) {
   if (days.isEmpty) return '';
-  final indices = days.map(_weekOrder.indexOf).toList()..sort();
+  final indices = days.map(_weekIndex).toList()..sort();
   final short = [
-    for (final i in indices) _weekOrder[i].substring(0, 3).toLowerCase(),
+    for (final i in indices) _weekOrder[i].substring(0, 3),
   ];
   final capitalised = [
     for (final s in short) '${s[0].toUpperCase()}${s.substring(1)}',
@@ -761,15 +773,15 @@ class _TodayLine extends StatelessWidget {
 
     // Status is always stated in words. Colour never carries it alone.
     final (label, detail) = switch (today.state) {
-      ServiceState.open => ('OPEN', 'until ${_clockAt(today.closesAt!)}'),
+      ServiceState.open => ('Open', 'until ${_clockAt(today.closesAt!)}'),
       // Between spans is not the same as finished, and saying "closed" alone
       // would send someone away minutes before it reopens.
       ServiceState.closedUntilLater => (
-        'CLOSED',
+        'Closed',
         'opens ${_clockAt(today.opensAt!)}',
       ),
       ServiceState.closedForDay => (
-        'CLOSED',
+        'Closed',
         today.spans.isEmpty ? 'not open today' : 'for the day',
       ),
       ServiceState.unknown => ('', ''),
@@ -860,7 +872,7 @@ class _PostOfficeBlock extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.32),
                   ),
-                  child: AppIcon(AppIconKind.mail, color: scheme.primary),
+                  child: AppIcon(AppIconKind.mail, size: StatusRow.fillIconSize, color: scheme.primary),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -1118,7 +1130,7 @@ class _ServiceHeading extends StatelessWidget {
 
     final name = Text(_serviceLabel(service), style: text.titleMedium);
     final label = Text(
-      season.toUpperCase(),
+      '${season[0].toUpperCase()}${season.substring(1)}',
       style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
     );
 
@@ -1160,7 +1172,7 @@ class _DaySpans extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          label.toUpperCase(),
+          label,
           textAlign: TextAlign.center,
           style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
         ),
@@ -1308,6 +1320,8 @@ class _RecreationRow extends StatelessWidget {
 
     return StatusRow(
       icon: _icon(facility.name),
+      iconSize: StatusRow.fillIconSize,
+      wrapSubtitle: true,
       title: facility.name,
       subtitle: hours,
       accent: open ? semantic.open : semantic.closed,
@@ -1422,9 +1436,8 @@ class _ShedHoursBlock extends StatelessWidget {
 
     final rules = [...space.hours]
       ..sort(
-        (a, b) => _weekOrder
-            .indexOf(a.days.isEmpty ? '' : a.days.first)
-            .compareTo(_weekOrder.indexOf(b.days.isEmpty ? '' : b.days.first)),
+        (a, b) => _weekIndex(a.days.isEmpty ? '' : a.days.first)
+            .compareTo(_weekIndex(b.days.isEmpty ? '' : b.days.first)),
       );
 
     return Padding(
@@ -1447,7 +1460,7 @@ class _ShedHoursBlock extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.32),
                   ),
-                  child: AppIcon(AppIconKind.makerspace, color: scheme.primary),
+                  child: AppIcon(AppIconKind.makerspace, size: StatusRow.fillIconSize, color: scheme.primary),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -1529,6 +1542,8 @@ class _EquipmentBlock extends StatelessWidget {
         for (final room in rooms)
           StatusRow(
             icon: _iconForRoom(room.room),
+            iconSize: StatusRow.fillIconSize,
+            wrapSubtitle: true,
             title: room.room,
             subtitle:
                 '${room.machines} machine${room.machines == 1 ? '' : 's'}',

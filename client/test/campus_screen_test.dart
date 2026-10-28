@@ -28,10 +28,13 @@ import 'package:tigerhub/screens/campus_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/widgets/empty_state.dart';
+import 'package:tigerhub/widgets/section_nav.dart';
 import 'package:url_launcher_platform_interface/method_channel_url_launcher.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 import 'golden_harness.dart';
+import 'support/truncation.dart';
 
 /// Serves the same envelopes LocalBackend does, from captured fixtures, with no
 /// network and no clock dependence.
@@ -219,7 +222,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Add/drop ends'), findsOneWidget);
-    expect(find.textContaining('Last day of the fall'), findsOneWidget);
+    expect(find.text('Last day to add or drop'), findsOneWidget);
   });
 
   testWidgets('safety contacts dial the exact official number', (tester) async {
@@ -340,6 +343,110 @@ void main() {
     }
   }
 
+  // static copy fits one line on the phones we ship to. At large text it gets
+  // two; these still need a third at 2x, beside a trailing date or in a nav row
+  const needThirdLineAt2x = {
+    390: {
+      'Fountains, restrooms, blue lights',
+      'No classes October 12–13',
+      'Last day to drop with a W',
+      'Graduation applications due',
+      'Final exams begin December 9',
+      'First day of spring add/drop',
+    },
+    440: {
+      'Graduation applications due',
+      'Final exams begin December 9',
+      'First day of spring add/drop',
+    },
+  };
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    for (final platform in const [TargetPlatform.iOS, TargetPlatform.android]) {
+      for (final textScale in const [1.0, 2.0]) {
+        testWidgets('no row subtitle is cut short at ${size.width.toInt()} on ${platform.name} at ${textScale}x', (tester) async {
+          await pumpCampus(tester, size: size, platform: platform, textScale: textScale);
+          final cut = <String>{};
+          final wraps = <String>{};
+          final oneLine = <String>{};
+          Finder vertical() => find.byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down).first;
+          void collect() {
+            cut.addAll(truncatedRowText(tester));
+            wraps.addAll(multiLineRowText(tester));
+            oneLine.addAll(singleLineRowText(tester));
+          }
+
+          // lists build lazily, so walk each one to its end
+          Future<void> walk() async {
+            final list = tester.state<ScrollableState>(vertical());
+            while (true) {
+              collect();
+              final before = list.position.pixels;
+              list.position.jumpTo((before + 300).clamp(0, list.position.maxScrollExtent));
+              await tester.pumpAndSettle();
+              if (list.position.pixels == before) break;
+            }
+          }
+
+          const titles = ['Mail', 'Find on campus', 'Academic dates', 'Shuttles', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace'];
+          await walk();
+          // open each section as the nav list brings it on screen
+          final nav = tester.state<ScrollableState>(vertical());
+          nav.position.jumpTo(0);
+          await tester.pumpAndSettle();
+          final visited = <String>{};
+          while (true) {
+            for (final title in titles) {
+              final row = find.descendant(of: find.byType(SectionNavRow), matching: find.text(title)).hitTestable();
+              if (visited.contains(title) || row.evaluate().isEmpty) continue;
+              visited.add(title);
+              await tester.tap(row);
+              await tester.pumpAndSettle();
+              await walk();
+              await tester.pageBack();
+              await tester.pumpAndSettle();
+            }
+            final before = nav.position.pixels;
+            nav.position.jumpTo((before + 300).clamp(0, nav.position.maxScrollExtent));
+            await tester.pumpAndSettle();
+            if (nav.position.pixels == before) break;
+          }
+          expect(visited, titles.toSet(), reason: 'every section opened');
+          if (textScale == 1) {
+            expect(cut, isEmpty);
+            expect(wraps, isEmpty, reason: 'one line at 1x');
+          } else {
+            expect(oneLine, isEmpty, reason: 'two lines at large text');
+            expect(cut, needThirdLineAt2x[size.width.toInt()]);
+          }
+        });
+      }
+    }
+  }
+
+  // dinings food truck rows draw 18 in a 32 circle, campus fills its circles the same
+  for (final platform in const [TargetPlatform.iOS, TargetPlatform.android]) {
+    testWidgets('every campus circle holds its glyph at the dining ratio, ${platform.name}', (tester) async {
+      await pumpCampus(tester, platform: platform);
+      final circles = find.byWidgetPredicate((w) => w is Container && w.decoration is BoxDecoration && (w.decoration! as BoxDecoration).shape == BoxShape.circle);
+      var checked = 0;
+      for (final title in const ['Mail', 'Find on campus', 'Academic dates', 'Shuttles', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace']) {
+        await tester.tap(find.descendant(of: find.byType(SectionNavRow), matching: find.text(title)));
+        await tester.pumpAndSettle();
+        for (final circle in circles.evaluate()) {
+          final icon = find.descendant(of: find.byWidget(circle.widget), matching: find.byType(Icon));
+          // the empty state mark has its own size
+          if (icon.evaluate().isEmpty || find.ancestor(of: find.byWidget(circle.widget), matching: find.byType(EmptyState)).evaluate().isNotEmpty) continue;
+          final outer = tester.getRect(find.byWidget(circle.widget));
+          expect(tester.widget<Icon>(icon.first).size! / outer.width, closeTo(18 / 32, 0.01), reason: '$title circle');
+          final glyph = tester.getRect(find.descendant(of: icon.first, matching: find.byType(RichText)));
+          expect(outer.contains(glyph.topLeft) && outer.contains(glyph.bottomRight - const Offset(0.001, 0.001)), isTrue, reason: '$title glyph $glyph outside $outer');
+          checked++;
+        }
+      }
+      expect(checked, greaterThan(20));
+    });
+  }
+
   testWidgets('with no dialer the number is copied instead', (tester) async {
     UrlLauncherPlatform.instance = _FakeLauncher(succeeds: false);
     String? copied;
@@ -413,7 +520,7 @@ void main() {
 
     final statusLines = labels
         .where(
-          (d) => d.startsWith('OPEN \u00b7 ') || d.startsWith('CLOSED \u00b7 '),
+          (d) => d.startsWith('Open \u00b7 ') || d.startsWith('Closed \u00b7 '),
         )
         .toList();
 
@@ -428,7 +535,7 @@ void main() {
 
     // Status is stated in words, never by the dot alone.
     for (final line in statusLines) {
-      expect(line, anyOf(startsWith('OPEN'), startsWith('CLOSED')));
+      expect(line, anyOf(startsWith('Open'), startsWith('Closed')));
     }
   });
 
@@ -443,7 +550,7 @@ void main() {
         .toSet();
 
     expect(
-      labels.any((d) => d == 'FALL' || d == 'SUMMER'),
+      labels.any((d) => d == 'Fall' || d == 'Summer'),
       isTrue,
       reason: 'the hours shown belong to a season that is never named',
     );
@@ -461,11 +568,11 @@ void main() {
     await pumpCampus(tester);
 
     // The shipping window closes over lunch, arriving as two rules on the same
-    // weekdays. Captioning each half "MON TO FRI" reads as two separate rules.
+    // weekdays. Captioning each half "Mon to Fri" reads as two separate rules.
     final labels = tester
         .widgetList<Text>(find.byType(Text))
         .map((t) => t.data ?? '')
-        .where((d) => d == 'MON TO FRI')
+        .where((d) => d == 'Mon to Fri')
         .length;
 
     expect(labels, greaterThan(0), reason: 'no weekday hours rendered at all');

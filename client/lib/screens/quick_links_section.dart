@@ -18,6 +18,8 @@ class QuickLinksSection extends StatelessWidget {
         StatusRow(
           key: ValueKey(link.label),
           icon: AppIconKind.link,
+          iconSize: StatusRow.fillIconSize,
+          wrapSubtitle: true,
           title: link.label,
           subtitle: link.subtitle ?? Uri.parse(link.url).host,
           semanticHint: 'Opens externally',

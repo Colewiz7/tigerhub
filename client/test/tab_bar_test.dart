@@ -15,7 +15,12 @@ import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
 import 'package:tigerhub/motion/gesture.dart';
+import 'package:tigerhub/home_screen.dart';
+import 'package:tigerhub/screens/campus_screen.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
+import 'package:tigerhub/screens/events_screen.dart';
+import 'package:tigerhub/screens/map_screen.dart';
+import 'package:tigerhub/widgets/campus_map.dart' show CampusMapView;
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/app_icon.dart';
@@ -51,6 +56,25 @@ class _MapBackend extends _Backend {
     return {'data': features, 'stale': false, 'last_updated': null};
   }
 }
+
+// enough of everything that each tab scrolls
+class _FullBackend extends _Backend {
+  @override
+  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async {
+    if (path != '/events') return super.fetch(path, q);
+    final soon = DateTime.now().toUtc().add(const Duration(days: 1));
+    return {
+      'data': [
+        for (var i = 0; i < 30; i++)
+          {'uid': 'e$i', 'source': 'test', 'title': 'Event $i', 'starts_at': soon.add(Duration(hours: i)).toIso8601String(), 'organizer': 'Club ${i % 6}', 'organizer_key': 'club${i % 6}'},
+      ],
+      'stale': false,
+      'last_updated': null,
+    };
+  }
+}
+
+const _tabScreens = [HomeScreen, DiningScreen, EventsScreen, MapScreen, CampusScreen];
 
 final _ios = TargetPlatformVariant.only(TargetPlatform.iOS);
 final _material = TargetPlatformVariant({TargetPlatform.android, TargetPlatform.linux});
@@ -194,6 +218,36 @@ void main() {
     final lastBottom = [for (final e in rows.evaluate()) tester.getRect(find.byWidget(e.widget)).bottom].reduce((a, b) => a > b ? a : b);
     expect(lastBottom, lessThanOrEqualTo(barTop - AppTabBar.contentGap), reason: 'the last row hides behind the bar');
   }, variant: _all);
+
+  // every tab, both bars, both phones: the last thing a list holds clears the bar
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    testWidgets('${size.width.toInt()}: every tab scrolls its last item fully above the bar', (tester) async {
+      _phone(tester, size);
+      await _pumpShell(tester, backend: _FullBackend());
+      final hidden = <String>[];
+      for (final (i, tab) in const ['Today', 'Dining', 'Events', 'Map', 'Campus'].indexed) {
+        await tester.tap(tabLabel(tab));
+        await tester.pumpAndSettle();
+        final barTop = tester.getRect(find.byType(AppTabBar)).top;
+        final screen = find.byType(_tabScreens[i]);
+        if (tab == 'Map') {
+          // the map doesnt scroll, it stops short of the bar
+          final map = tester.getRect(find.descendant(of: screen, matching: find.byType(CampusMapView)));
+          if (map.bottom > barTop - AppTabBar.contentGap) hidden.add('$tab ${map.bottom} > ${barTop - AppTabBar.contentGap}');
+          continue;
+        }
+        final list = _vertical(tester, screen);
+        // campus's eight rows fit at 1x, the last one still has to clear the bar
+        if (tab != 'Campus') expect(list.position.maxScrollExtent, greaterThan(0), reason: '$tab has to scroll for this to mean anything');
+        list.position.jumpTo(list.position.maxScrollExtent);
+        await tester.pumpAndSettle();
+        final content = find.descendant(of: find.byWidget(list.widget), matching: find.byWidgetPredicate((w) => w is Material || w is RichText));
+        final last = [for (final e in content.evaluate()) tester.getRect(find.byWidget(e.widget)).bottom].reduce(math.max);
+        if (last > barTop - AppTabBar.contentGap) hidden.add('$tab $last > ${barTop - AppTabBar.contentGap}');
+      }
+      expect(hidden, isEmpty, reason: 'the last item hides behind the bar');
+    }, variant: _all);
+  }
 
   testWidgets('a vertical swipe on the capsule scrolls the list, a tap there still only picks a tab', (tester) async {
     _phone(tester, const Size(390, 844));

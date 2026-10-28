@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,12 +9,21 @@ import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/cache.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
+import 'package:tigerhub/widgets/empty_state.dart';
+import 'package:tigerhub/widgets/status_row.dart';
 
 class _DiningBackend implements Backend {
-  const _DiningBackend(this.features);
+  _DiningBackend(this.features, {this.availability, this.failures = 0});
 
   final List<Map<String, dynamic>> features;
+  final String? availability;
+
+  // specials fetches that throw before one succeeds
+  int failures;
+  int specialsFetches = 0;
 
   @override
   Future<Map<String, dynamic>> fetch(
@@ -20,7 +31,12 @@ class _DiningBackend implements Backend {
     Map<String, String>? query,
   ]) async {
     if (path == '/dining/specials') {
-      return {'data': features, 'stale': false, 'last_updated': null};
+      specialsFetches++;
+      if (failures > 0) {
+        failures--;
+        throw const SocketException('offline');
+      }
+      return {'data': features, 'stale': false, 'last_updated': null, if (availability != null) 'availability': availability};
     }
     throw UnimplementedError(path);
   }
@@ -34,11 +50,14 @@ void main() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
   });
+  // the cache singleton keeps its first store, so empty it between tests
+  setUp(() => ResponseCache.instance.prune(olderThan: const Duration(days: -1)));
 
   Future<void> pumpDining(
     WidgetTester tester,
     List<Map<String, dynamic>> features, {
     Size size = const Size(1000, 900),
+    _DiningBackend? backend,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
@@ -51,7 +70,7 @@ void main() {
         ),
         home: Scaffold(
           body: DiningScreen(
-            api: ApiClient(backend: _DiningBackend(features)),
+            api: ApiClient(backend: backend ?? _DiningBackend(features)),
             result: Result(
               value: Collection(
                 data: const [
@@ -102,8 +121,99 @@ void main() {
   ) async {
     await pumpDining(tester, const []);
 
-    expect(find.text('No menu features today'), findsOneWidget);
+    expect(find.text('No menus published yet today'), findsOneWidget);
     expect(find.text('Crossroads'), findsOneWidget);
+  });
+
+  // 10 pm: TigerCenter loads with every menu empty
+  testWidgets('loaded but empty is quiet text, no warning and no header', (
+    tester,
+  ) async {
+    await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
+
+    expect(find.text('No menus published yet today'), findsOneWidget);
+    expect(find.byType(EmptyState), findsNothing);
+    expect(find.byIcon(AppIconKind.sourceDown.of(tester.element(find.byType(DiningScreen)))), findsNothing);
+    expect(find.text('Today’s published menu'), findsNothing);
+    expect(find.text('Retry'), findsNothing);
+  });
+
+  testWidgets('a source that never loaded says so and offers Retry', (
+    tester,
+  ) async {
+    await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'unavailable'));
+
+    expect(find.text('Couldn’t load menus'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(find.text('Today’s published menu'), findsNothing);
+  });
+
+  // the cache said empty, then the refresh failed: that is a failure, not a quiet day
+  testWidgets('a cached empty menu with a failed refresh offers Retry, which works', (
+    tester,
+  ) async {
+    await ResponseCache.instance.write('/dining/specials', {'data': <dynamic>[], 'stale': false, 'last_updated': null, 'availability': 'empty'});
+    final backend = _DiningBackend(const [
+      {'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'},
+    ], failures: 1);
+    await pumpDining(tester, const [], backend: backend);
+
+    expect(find.text('Couldn’t load menus'), findsOneWidget);
+    expect(find.text('No menus published yet today'), findsNothing);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(backend.specialsFetches, 2);
+    expect(find.text('Couldn’t load menus'), findsNothing);
+    expect(find.text('Tomato bisque'), findsOneWidget);
+  });
+
+  testWidgets('a cached empty menu with a good refresh is the quiet line', (
+    tester,
+  ) async {
+    await ResponseCache.instance.write('/dining/specials', {'data': <dynamic>[], 'stale': false, 'last_updated': null, 'availability': 'empty'});
+    await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
+
+    expect(find.text('No menus published yet today'), findsOneWidget);
+    expect(find.text('Retry'), findsNothing);
+  });
+
+  // menus in hand stay up when a refresh fails, no failure line over them
+  testWidgets('cached menus stay when the refresh fails', (tester) async {
+    await ResponseCache.instance.write('/dining/specials', {
+      'data': [
+        {'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'},
+      ],
+      'stale': false,
+      'last_updated': null,
+    });
+    await pumpDining(tester, const [], backend: _DiningBackend(const [], failures: 1));
+
+    expect(find.text('Tomato bisque'), findsOneWidget);
+    expect(find.text('Today’s published menu'), findsOneWidget);
+    expect(find.text('Couldn’t load menus'), findsNothing);
+  });
+
+  testWidgets('a failed fetch offers Retry, which fetches again', (
+    tester,
+  ) async {
+    final backend = _DiningBackend(const [
+      {'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'},
+    ], failures: 1);
+    await pumpDining(tester, const [], backend: backend);
+
+    expect(find.text('Couldn’t load menus'), findsOneWidget);
+    expect(find.text('Today’s published menu'), findsNothing);
+    expect(backend.specialsFetches, 1);
+
+    await tester.tap(find.text('Retry'));
+    await tester.pumpAndSettle();
+
+    expect(backend.specialsFetches, 2);
+    expect(find.text('Couldn’t load menus'), findsNothing);
+    expect(find.text('Today’s published menu'), findsOneWidget);
+    expect(find.text('Tomato bisque'), findsOneWidget);
   });
 
   testWidgets(
@@ -143,6 +253,20 @@ void main() {
     expect(find.text('No matching locations'), findsOneWidget);
   });
 
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    testWidgets('chips start on the content edge and the count has its own line at ${size.width.toInt()}', (tester) async {
+      await pumpDining(tester, const [], size: size);
+
+      final edge = tester.getRect(find.byType(StatusRow).first).left;
+      final open = tester.getRect(find.widgetWithText(FilterChip, 'Open'));
+      final pinned = tester.getRect(find.widgetWithText(FilterChip, 'Pinned'));
+      final count = tester.getRect(find.text('2 places'));
+      expect(open.left, edge);
+      expect(count.left, edge);
+      expect(count.top, greaterThanOrEqualTo(pinned.bottom));
+    });
+  }
+
   testWidgets('filters wrap cleanly on a phone-width screen', (tester) async {
     await pumpDining(tester, const [], size: const Size(360, 700));
 
@@ -156,7 +280,7 @@ void main() {
   ) async {
     await pumpDining(tester, const []);
     await tester.enterText(find.byType(TextField), 'coffee');
-    await tester.tap(find.text('Today’s published menu'));
+    await tester.tap(find.text('No menus published yet today'));
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);

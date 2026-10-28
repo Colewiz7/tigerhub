@@ -19,7 +19,7 @@ final List<AcademicMilestone> academicMilestones = [
   AcademicMilestone(
     DateTime(2026, 8, 31),
     'Add/drop ends',
-    'Last day of the fall add/drop period',
+    'Last day to add or drop',
   ),
   AcademicMilestone(DateTime(2026, 9, 7), 'Labor Day', 'University closed'),
   AcademicMilestone(
@@ -35,12 +35,12 @@ final List<AcademicMilestone> academicMilestones = [
   AcademicMilestone(
     DateTime(2026, 11, 25),
     'Thanksgiving break begins',
-    'No classes; university closes at 2 p.m.',
+    'RIT closes at 2 p.m.',
   ),
   AcademicMilestone(
     DateTime(2026, 12, 7),
     'Last day of fall classes',
-    'Fall graduation application deadline',
+    'Graduation applications due',
   ),
   AcademicMilestone(
     DateTime(2026, 12, 8),
@@ -55,7 +55,7 @@ final List<AcademicMilestone> academicMilestones = [
   AcademicMilestone(
     DateTime(2027, 1, 19),
     'Add/drop ends',
-    'Last day of the spring add/drop period',
+    'Last day to add or drop',
   ),
   AcademicMilestone(
     DateTime(2027, 3, 7),
@@ -70,7 +70,7 @@ final List<AcademicMilestone> academicMilestones = [
   AcademicMilestone(
     DateTime(2027, 4, 26),
     'Last day of spring classes',
-    'Spring graduation application deadline',
+    'Graduation applications due',
   ),
   AcademicMilestone(
     DateTime(2027, 4, 27),
