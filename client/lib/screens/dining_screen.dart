@@ -327,33 +327,41 @@ class _DiningFilters extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              FilterChip(
-                label: const Text('Open'),
-                avatar: Icon(AppIconKind.time.of(context), size: 17),
-                selected: openOnly,
-                onSelected: onOpenChanged,
-              ),
-              FilterChip(
-                label: Text(
-                  'Pinned${pinnedCount == 0 ? '' : ' ($pinnedCount)'}',
+          // chips and count sit on the list's left edge
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                FilterChip(
+                  label: const Text('Open'),
+                  avatar: Icon(AppIconKind.time.of(context), size: 17),
+                  selected: openOnly,
+                  onSelected: onOpenChanged,
                 ),
-                avatar: Icon(AppIconKind.pinned.of(context), size: 17),
-                selected: pinnedOnly,
-                onSelected: pinnedCount == 0 ? null : onPinnedChanged,
-              ),
-              Text(
-                '$resultCount ${resultCount == 1 ? 'place' : 'places'}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              if (filtered) ...[
-                TextButton(onPressed: onClear, child: const Text('Clear all')),
+                FilterChip(
+                  label: Text(
+                    'Pinned${pinnedCount == 0 ? '' : ' ($pinnedCount)'}',
+                  ),
+                  avatar: Icon(AppIconKind.pinned.of(context), size: 17),
+                  selected: pinnedOnly,
+                  onSelected: pinnedCount == 0 ? null : onPinnedChanged,
+                ),
+                if (filtered) ...[
+                  TextButton(onPressed: onClear, child: const Text('Clear all')),
+                ],
               ],
-            ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Text(
+              '$resultCount ${resultCount == 1 ? 'place' : 'places'}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
           ),
         ],
       ),

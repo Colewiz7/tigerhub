@@ -12,6 +12,7 @@ import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
+import 'package:tigerhub/widgets/status_row.dart';
 
 class _DiningBackend implements Backend {
   _DiningBackend(this.features, {this.availability, this.failures = 0});
@@ -201,6 +202,20 @@ void main() {
     expect(find.text('Crossroads'), findsNothing);
     expect(find.text('No matching locations'), findsOneWidget);
   });
+
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    testWidgets('chips start on the content edge and the count has its own line at ${size.width.toInt()}', (tester) async {
+      await pumpDining(tester, const [], size: size);
+
+      final edge = tester.getRect(find.byType(StatusRow).first).left;
+      final open = tester.getRect(find.widgetWithText(FilterChip, 'Open'));
+      final pinned = tester.getRect(find.widgetWithText(FilterChip, 'Pinned'));
+      final count = tester.getRect(find.text('2 places'));
+      expect(open.left, edge);
+      expect(count.left, edge);
+      expect(count.top, greaterThanOrEqualTo(pinned.bottom));
+    });
+  }
 
   testWidgets('filters wrap cleanly on a phone-width screen', (tester) async {
     await pumpDining(tester, const [], size: const Size(360, 700));
