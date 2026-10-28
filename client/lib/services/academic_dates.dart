@@ -5,14 +5,34 @@
 /// build cannot present an expired deadline as upcoming.
 library;
 
+import 'package:intl/intl.dart';
+
 import '../data/campus_time.dart';
 
 class AcademicMilestone {
-  const AcademicMilestone(this.date, this.title, this.detail);
+  const AcademicMilestone(this.date, this.title, this.detail, {this.end});
 
   final DateTime date;
   final String title;
   final String detail;
+
+  /// Last day of a multi-day entry, or null for a single day.
+  final DateTime? end;
+
+  /// The last day this entry is still current.
+  DateTime get lastDay => end ?? date;
+
+  /// "Nov 26–27" or "Dec 19–Jan 10" for a range, [single] for one day.
+  String dateText(DateFormat single) {
+    final last = end;
+    if (last == null) return single.format(date);
+    final month = DateFormat('MMM');
+    final day = DateFormat('d');
+    final tail = last.month == date.month
+        ? day.format(last)
+        : '${month.format(last)} ${day.format(last)}';
+    return '${month.format(date)} ${day.format(date)}–$tail';
+  }
 }
 
 final List<AcademicMilestone> academicMilestones = [
@@ -38,6 +58,12 @@ final List<AcademicMilestone> academicMilestones = [
     'RIT closes at 2 p.m.',
   ),
   AcademicMilestone(
+    DateTime(2026, 11, 26),
+    'Thanksgiving holiday',
+    'Classes resume Nov 30',
+    end: DateTime(2026, 11, 27),
+  ),
+  AcademicMilestone(
     DateTime(2026, 12, 7),
     'Last day of fall classes',
     'Graduation applications due',
@@ -46,6 +72,18 @@ final List<AcademicMilestone> academicMilestones = [
     DateTime(2026, 12, 8),
     'Reading day',
     'Final exams begin December 9',
+  ),
+  AcademicMilestone(
+    DateTime(2026, 12, 19),
+    'Fall to spring break',
+    'Between semesters',
+    end: DateTime(2027, 1, 10),
+  ),
+  AcademicMilestone(
+    DateTime(2026, 12, 25),
+    'Employee holidays',
+    'RIT designated holidays',
+    end: DateTime(2027, 1, 1),
   ),
   AcademicMilestone(
     DateTime(2027, 1, 11),
@@ -82,6 +120,18 @@ final List<AcademicMilestone> academicMilestones = [
     'Commencement begins',
     'Ceremonies May 7–8',
   ),
+  AcademicMilestone(
+    DateTime(2027, 5, 9),
+    'Spring to summer break',
+    'Between semester and term',
+    end: DateTime(2027, 5, 11),
+  ),
+  AcademicMilestone(
+    DateTime(2027, 8, 13),
+    'Summer to fall break',
+    'Between term and semester',
+    end: DateTime(2027, 8, 22),
+  ),
 ];
 
 List<AcademicMilestone> upcomingAcademicMilestones({
@@ -92,7 +142,7 @@ List<AcademicMilestone> upcomingAcademicMilestones({
   final clock = now ?? CampusTime.wallNow();
   final today = DateTime(clock.year, clock.month, clock.day);
   final upcoming = academicMilestones
-      .where((item) => !item.date.isBefore(today))
+      .where((item) => !item.lastDay.isBefore(today))
       .toList();
   return limit == null || upcoming.length <= limit
       ? upcoming

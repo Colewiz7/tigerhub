@@ -279,14 +279,7 @@ class DiningRow extends StatelessWidget {
       emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
       onTap: client == null
           ? null
-          : () => showModalBottomSheet<void>(
-              context: context,
-              showDragHandle: true,
-              isScrollControlled: true,
-              constraints: const BoxConstraints(maxWidth: 720),
-              builder: (context) =>
-                  DiningDetailSheet(location: location, api: client),
-            ),
+          : () => DiningDetailPage.open(context, location, client),
       trailing: trailing,
     );
   }

@@ -559,9 +559,10 @@ class Dish {
     calories: (json['calories'] as num?)?.toDouble(),
   );
 
-  bool get isVegan => dietary.any((d) => d.toLowerCase() == 'vegan');
+  // whole tags, so "Non-Vegetarian" is not vegetarian
+  bool get isVegan => dietary.any((d) => d.trim().toLowerCase() == 'vegan');
   bool get isVegetarian =>
-      dietary.any((d) => d.toLowerCase().contains('vegetarian')) || isVegan;
+      dietary.any((d) => d.trim().toLowerCase() == 'vegetarian') || isVegan;
 
   /// A "may contain traces" note is a weaker claim than a listed allergen, so
   /// the two are separated rather than merged.

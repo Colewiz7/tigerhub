@@ -119,7 +119,7 @@ Widget _eventRow(CampusEvent event) => Padding(padding: const EdgeInsets.all(8),
 
 AcademicMilestone get _firstDate => upcomingAcademicMilestones(now: _day).first;
 
-String _dateText(AcademicMilestone m, String pattern) => '${m.title}\n${DateFormat(pattern).format(m.date)}\n${m.detail}';
+String _dateText(AcademicMilestone m, String pattern) => '${m.title}\n${m.dateText(DateFormat(pattern))}\n${m.detail}';
 
 final menuSurfaces = <MenuSurface>[
   MenuSurface(

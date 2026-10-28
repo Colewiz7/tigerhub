@@ -130,7 +130,7 @@ class VisitingChefsCard extends StatelessWidget {
             icon: AppIconKind.menu,
             title: all[index].name,
             subtitle: [
-              ?_window(all[index]),
+              ?window(all[index]),
               all[index].locationName,
             ].where((s) => s.isNotEmpty).join(' · '),
           ),
@@ -141,7 +141,7 @@ class VisitingChefsCard extends StatelessWidget {
 
   /// "11:00 AM to 2:00 PM", on the campus clock. Null when RIT gave no time,
   /// which is never filled in by guessing.
-  static String? _window(MenuItem chef) {
+  static String? window(MenuItem chef) {
     final start = chef.startsAt;
     final end = chef.endsAt;
     if (start != null && end != null) {
@@ -178,7 +178,7 @@ class _ChefRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final window = VisitingChefsCard._window(chef);
+    final window = VisitingChefsCard.window(chef);
     final cuisine = showCuisine ? chef.cuisine : null;
 
     return Semantics(

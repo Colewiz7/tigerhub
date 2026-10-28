@@ -22,15 +22,50 @@ import '../widgets/occupancy_chart.dart';
 import '../services/subscriptions.dart';
 import 'app_icon.dart';
 
+/// The detail as a pushed page, so there is always a back button and iOS gets
+/// its edge swipe. A full height modal sheet had neither once the menu was long.
+class DiningDetailPage extends StatelessWidget {
+  const DiningDetailPage({super.key, required this.location, required this.api});
+
+  final DiningLocation location;
+  final ApiClient api;
+
+  static Future<void> open(
+    BuildContext context,
+    DiningLocation location,
+    ApiClient api,
+  ) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => DiningDetailPage(location: location, api: api),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    // names the route for screen readers, so the body leaves the name out
+    appBar: AppBar(title: Text(location.name)),
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: DiningDetailSheet(location: location, api: api, showName: false),
+      ),
+    ),
+  );
+}
+
 class DiningDetailSheet extends StatefulWidget {
   const DiningDetailSheet({
     super.key,
     required this.location,
     required this.api,
+    this.showName = true,
   });
 
   final DiningLocation location;
   final ApiClient api;
+
+  /// False when the page's app bar already carries the name.
+  final bool showName;
 
   @override
   State<DiningDetailSheet> createState() => _DiningDetailSheetState();
@@ -91,6 +126,7 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
     final nowHour = CampusTime.fieldsOf(CampusTime.nowUtc()).hour;
 
     return SafeArea(
+      top: false,
       child: SingleChildScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
@@ -105,10 +141,11 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        location.name,
-                        style: text.titleLarge?.copyWith(fontSize: 24),
-                      ),
+                      if (widget.showName)
+                        Text(
+                          location.name,
+                          style: text.titleLarge?.copyWith(fontSize: 24),
+                        ),
                       if (location.summary != null) ...[
                         const SizedBox(height: 3),
                         Text(location.summary!, style: text.bodySmall),
@@ -194,14 +231,18 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  Text('On the menu today', style: text.labelSmall),
-                  const Spacer(),
+                  Expanded(
+                    child: Text('On the menu today', style: text.labelSmall),
+                  ),
+                  const SizedBox(width: 8),
                   Text(
                     '${_menu!.value!.dishes.length}',
                     style: text.labelSmall,
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+              const DietLegend(),
               const SizedBox(height: 10),
               MenuSection(menu: _menu!.value!, prefs: _prefs),
             ],

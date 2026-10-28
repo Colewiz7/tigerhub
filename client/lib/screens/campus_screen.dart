@@ -308,10 +308,10 @@ class _AcademicDatesSection extends StatelessWidget {
               title: upcoming[index].title,
               subtitle: upcoming[index].detail,
               actions: [
-                MenuAction.copy('${upcoming[index].title}\n${formatter.format(upcoming[index].date)}\n${upcoming[index].detail}'),
+                MenuAction.copy('${upcoming[index].title}\n${upcoming[index].dateText(formatter)}\n${upcoming[index].detail}'),
               ],
               trailing: Text(
-                formatter.format(upcoming[index].date),
+                upcoming[index].dateText(formatter),
                 textAlign: TextAlign.end,
                 style: Theme.of(context).textTheme.bodySmall,
               ),

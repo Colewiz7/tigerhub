@@ -274,14 +274,14 @@ void main() {
     check('settings');
   });
 
-  testWidgets('closing a sheet does not bring the keyboard back',
+  testWidgets('closing a detail page does not bring the keyboard back',
       (tester) async {
     await pumpShell(tester);
     await focusDiningSearch(tester);
 
     await tester.tap(find.text(_Backend.name(0)));
     await tester.pumpAndSettle();
-    Navigator.of(tester.element(find.byType(BottomSheet))).pop();
+    await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expectNoField(tester, 'after closing the sheet');
   }, variant: _platforms);

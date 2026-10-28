@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -24,13 +26,17 @@ class AcademicDatesCard extends StatelessWidget {
     final today = CampusTime.wallDate();
     // Whole calendar days, counted in UTC so a device DST change cannot make a
     // 23 or 25 hour day round the count down by one.
+    // A range already under way counts as today.
     final daysAway = dates.isEmpty
         ? null
-        : DateTime.utc(
-            dates.first.date.year,
-            dates.first.date.month,
-            dates.first.date.day,
-          ).difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+        : math.max(
+            0,
+            DateTime.utc(
+              dates.first.date.year,
+              dates.first.date.month,
+              dates.first.date.day,
+            ).difference(DateTime.utc(today.year, today.month, today.day)).inDays,
+          );
 
     return CardShell(
       glyph: AppIconKind.events,
@@ -69,10 +75,10 @@ class AcademicDatesCard extends StatelessWidget {
                 title: dates[index].title,
                 subtitle: dates[index].detail,
                 actions: [
-                  MenuAction.copy('${dates[index].title}\n${formatter.format(dates[index].date)}\n${dates[index].detail}'),
+                  MenuAction.copy('${dates[index].title}\n${dates[index].dateText(formatter)}\n${dates[index].detail}'),
                 ],
                 trailing: Text(
-                  formatter.format(dates[index].date),
+                  dates[index].dateText(formatter),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
