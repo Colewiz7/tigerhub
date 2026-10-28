@@ -320,6 +320,19 @@ class _StatusPill extends StatelessWidget {
   );
 }
 
+/// Below this a sensor reading says Quiet, not a small percent.
+const int quietBelowPercent = 15;
+
+/// The occupancy pill's words: Busy over capacity, Quiet under 15% full,
+/// otherwise "N% full". Null with no percent reading.
+String? occupancyLabel(Occupancy occupancy) {
+  final percent = occupancy.percentFull;
+  if (percent == null) return null;
+  if (occupancy.overCapacity) return 'Busy';
+  if (percent < quietBelowPercent) return 'Quiet';
+  return '$percent% full';
+}
+
 class _OccupancyPill extends StatelessWidget {
   const _OccupancyPill({required this.occupancy});
 
@@ -345,7 +358,7 @@ class _OccupancyPill extends StatelessWidget {
     final over = occupancy.overCapacity;
     return _pill(
       context,
-      over ? 'Busy' : '$percent% full',
+      occupancyLabel(occupancy)!,
       over ? semantic.busy : semantic.open,
       over ? semantic.busyContainer : semantic.openContainer,
     );
