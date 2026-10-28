@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../config.dart';
+import '../../data/sources/rit_chefs.dart'
+    show chefsDiagnostics, chefsDiagnosticsLines;
 import '../../services/frame_monitor.dart';
 import '../../services/frame_stats.dart';
 import '../../theme/tokens.dart';
@@ -85,7 +87,12 @@ class _FrameStatsScreenState extends State<FrameStatsScreen> {
   }
 
   Future<void> _copy(BuildContext context) async {
-    final text = _stats.report(_header(context));
+    final text = [
+      _stats.report(_header(context)),
+      'Visiting chefs',
+      ...chefsDiagnosticsLines(chefsDiagnostics.value),
+      '',
+    ].join('\n');
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
     setState(() => _copied = true);
@@ -190,6 +197,26 @@ class _FrameStatsScreenState extends State<FrameStatsScreen> {
             _Card(
               title: 'Scroll',
               child: _Buckets(summary: stats.scrollSummary, tabs: stats.tabs),
+            ),
+            const SizedBox(height: Insets.phoneCardGap),
+            // What rit.edu last returned, for a "Menus unavailable" seen on a
+            // phone. Read on the one second refresh like everything above.
+            _Card(
+              title: 'Visiting chefs',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (final line in chefsDiagnosticsLines(
+                    chefsDiagnostics.value,
+                  ))
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: Insets.phoneRowGap,
+                      ),
+                      child: Text(line, style: text.bodySmall),
+                    ),
+                ],
+              ),
             ),
           ],
         ),

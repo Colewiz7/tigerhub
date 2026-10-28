@@ -471,6 +471,10 @@ class LocalBackend implements Backend {
   Future<Map<String, dynamic>> _visitingChefs() async {
     final (tigerCenter, tcAt) = await _snapshot('tigercenter_dining');
     final (rit, _) = await _snapshot(ritChefsSource);
+    // The stored report, so the frame stats screen has one after a restart.
+    if (rit?['diagnostics'] case final Map<String, dynamic> report) {
+      chefsDiagnostics.value = report;
+    }
 
     final view = visitingChefsView(
       tigerCenter: tigerCenter,

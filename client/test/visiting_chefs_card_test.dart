@@ -351,7 +351,30 @@ void main() {
       expect(find.text('Menus unavailable'), findsOneWidget);
       expect(find.text('No visiting chefs today'), findsNothing);
       expect(find.text('Updated 5m ago'), findsNothing);
-      expect(find.text('RIT dining menus'), findsOneWidget);
+      expect(find.text('View on RIT'), findsOneWidget);
+    });
+
+    testWidgets('View on RIT is a 48pt link with a keyboard focus ring', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await pumpState(tester, 'unavailable');
+      final link = find.ancestor(
+        of: find.text('View on RIT'),
+        matching: find.byType(InkWell),
+      );
+      expect(tester.getSize(link).height, greaterThanOrEqualTo(48));
+      expect(
+        tester.getSemantics(find.text('View on RIT')),
+        matchesSemantics(label: 'View on RIT', isLink: true, hasTapAction: true),
+      );
+
+      final ring = find.byKey(const ValueKey('focus-ring'));
+      expect(ring, findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      expect(ring, findsOneWidget);
+      semantics.dispose();
     });
   });
 

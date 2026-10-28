@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/data/sources/rit_chefs.dart';
 import 'package:tigerhub/screens/settings/about_section.dart';
 import 'package:tigerhub/screens/settings/frame_stats_screen.dart';
 import 'package:tigerhub/services/frame_monitor.dart';
@@ -32,7 +33,27 @@ FrameStats sampleStats() {
   return s;
 }
 
-Widget app(Widget home, {Brightness brightness = Brightness.light, double scale = 1}) =>
+/// One page read and one failed, so the card shows both kinds of line.
+const Map<String, dynamic> sampleChefReport = {
+  'menus': {
+    'at': '2026-10-23T16:32:00-04:00',
+    'status': 200,
+    'bytes': 147441,
+    'parsed': 5,
+    'skipped': 0,
+    'untimed': 0,
+    'reason': null,
+  },
+  'schedule': {
+    'at': '2026-10-23T16:32:00-04:00',
+    'status': null,
+    'error': 'TimeoutException',
+  },
+};
+
+List<String> sampleChefLines() => chefsDiagnosticsLines(sampleChefReport);
+
+Widget app(Widget home,{Brightness brightness = Brightness.light, double scale = 1}) =>
     Builder(
       builder: (context) => MediaQuery(
         data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
@@ -107,6 +128,9 @@ void main() {
     });
   });
 
+  setUp(() => chefsDiagnostics.value = sampleChefReport);
+  tearDown(() => chefsDiagnostics.value = null);
+
   group('screen', () {
     Future<void> pumpScreen(WidgetTester tester, FrameStats stats) async {
       tester.view.devicePixelRatio = 1;
@@ -115,6 +139,30 @@ void main() {
       await tester.pumpWidget(app(FrameStatsScreen(stats: stats)));
       await tester.pump();
     }
+
+    testWidgets('shows what the last chefs fetch returned', (tester) async {
+      await pumpScreen(tester, sampleStats());
+      await tester.drag(
+        find.byType(SingleChildScrollView),
+        const Offset(0, -5000),
+      );
+      await tester.pump();
+      expect(find.text('Visiting chefs'), findsOneWidget);
+      for (final line in sampleChefLines()) {
+        expect(find.text(line), findsOneWidget);
+      }
+    });
+
+    testWidgets('says so before any chefs fetch', (tester) async {
+      chefsDiagnostics.value = null;
+      await pumpScreen(tester, sampleStats());
+      await tester.drag(
+        find.byType(SingleChildScrollView),
+        const Offset(0, -5000),
+      );
+      await tester.pump();
+      expect(find.text('No chefs fetch yet'), findsOneWidget);
+    });
 
     testWidgets('shows the numbers and every tab', (tester) async {
       await pumpScreen(tester, sampleStats());
@@ -159,6 +207,8 @@ void main() {
       expect(copied, contains('TigerHub'));
       expect(copied, contains('Text scale 1.00'));
       expect(copied, contains('Tab switch (first 500 ms)'));
+      expect(copied, contains('Visiting chefs\n${sampleChefLines()[0]}\n'));
+      expect(copied, contains(sampleChefLines()[1]));
       expect(find.text('Copied'), findsOneWidget);
       await tester.pump(const Duration(seconds: 3));
       expect(find.text('Copy report'), findsOneWidget);
