@@ -1316,9 +1316,9 @@ class EditControls extends StatelessWidget {
       // 32 to see, 48 to tap
       children: [
         HitSlopTarget(child: _DragHandle(onActivate: onInspect)),
-        const SizedBox(width: 6),
+        const SizedBox(width: 16),
         HitSlopTarget(child: _InspectButton(selected: selected, onTap: onInspect)),
-        const SizedBox(width: 6),
+        const SizedBox(width: 16),
         HitSlopTarget(child: _RemoveButton(onTap: onRemove)),
       ],
     ),

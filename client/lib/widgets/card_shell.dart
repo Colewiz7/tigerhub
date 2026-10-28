@@ -16,8 +16,9 @@ import 'app_icon.dart';
 import 'freshness.dart';
 
 /// Width of the edit controls row: handle, Inspect and Remove at 32 each with
-/// 6 between. The header layout depends on it.
-const double editControlsWidth = 32 * 3 + 6 * 2;
+/// 16 between, so their 48 touch squares meet without overlap. The header
+/// layout depends on it.
+const double editControlsWidth = 32 * 3 + 16 * 2;
 
 /// Gap between the title column, the hero and the edit controls.
 const double _headerGap = 10;

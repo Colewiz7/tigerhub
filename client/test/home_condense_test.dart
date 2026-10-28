@@ -226,7 +226,9 @@ void main() {
       final firstRow = tester.getRect(
         find.descendant(of: rows.first, matching: find.byType(Material)).first,
       );
-      expect(firstRow.top - dining.top, 56);
+      // 128 wide controls dont fit beside the pill at 390
+      final diningHeader = size.width < 400 ? 80 : 56;
+      expect(firstRow.top - dining.top, diningHeader);
       // rows 52 tall, 4 apart
       final tops = [
         for (var i = 0; i < 3; i++)
@@ -259,7 +261,7 @@ void main() {
 
       // 56 to the first row, 3 rows of 52 with a 4 hairline band between
       // them, 16 padding
-      expect(dining.height, 56 + 3 * 52 + 2 * 4 + 16);
+      expect(dining.height, diningHeader + 3 * 52 + 2 * 4 + 16);
 
       final chefRow = tester.getRect(
         find
@@ -275,12 +277,12 @@ void main() {
             .first,
       );
       // Visiting Chefs with data: the target is 56, and it is NOT met. The
-      // title, the "2 today" pill and the three 32 wide edit controls do not fit
-      // on one row of a 358 (or 408) wide card, so the title wraps beside the
+      // title, the "2 today" pill and the 128 wide edit controls do not fit on
+      // one row of a 358 (or 408) wide card, so the title wraps beside the
       // controls and the header, which keeps the same height in edit mode, is
-      // taller than 32 at 390: 56 (16 + 56 + 8 = 80). The linked header
-      // drops the glyph, so at 440 it now fits in 32. Pinned so a change shows.
-      expect(chefRow.top - chefs.top, size.width < 400 ? 80 : 56);
+      // taller than 32 at both widths: 56 (16 + 56 + 8 = 80). Pinned so a
+      // change shows.
+      expect(chefRow.top - chefs.top, 80);
 
       report(name, {
         'chefsTopToFirstRow': chefRow.top - chefs.top,
@@ -328,7 +330,7 @@ void main() {
               )
               .first,
         );
-        expect(row.top - box.top, size.width < 400 ? 80 : 56);
+        expect(row.top - box.top, 80);
       },
     );
 

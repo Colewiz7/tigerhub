@@ -90,10 +90,19 @@ void main() {
     final right = tester.getRect(finders[2]);
     expect(controlAt(tester, boxes, left.center.translate(-23.5, 0)), 0);
     expect(controlAt(tester, boxes, right.center.translate(23.5, 0)), 2);
-    // between two controls the nearer one takes it
-    final middle = tester.getRect(finders[1]);
-    expect(controlAt(tester, boxes, Offset(middle.left - 2, middle.center.dy)), 1);
-    expect(controlAt(tester, boxes, Offset(middle.left - 5, middle.center.dy)), 0);
+  });
+
+  testWidgets('the 48 squares of neighbouring controls do not overlap', (tester) async {
+    await pumpEditing(tester);
+    final finders = controls();
+    final boxes = [for (final f in finders) tester.renderObject(f)];
+    for (var i = 0; i < 2; i++) {
+      final a = tester.getRect(finders[i]);
+      final b = tester.getRect(finders[i + 1]);
+      expect(b.center.dx - a.center.dx, greaterThanOrEqualTo(48), reason: 'pitch $i');
+      expect(controlAt(tester, boxes, a.center.translate(23.5, 0)), i, reason: 'control $i right edge');
+      expect(controlAt(tester, boxes, b.center.translate(-23.5, 0)), i + 1, reason: 'control ${i + 1} left edge');
+    }
   });
 
   testWidgets('a tap 7 above Inspect opens the card options, 7 below Remove removes a card', (tester) async {
