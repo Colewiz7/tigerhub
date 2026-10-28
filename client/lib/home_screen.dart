@@ -15,6 +15,7 @@ import 'cards/dining_card.dart';
 import 'cards/dashboard_event_cards.dart';
 import 'cards/dashboard_campus_cards.dart';
 import 'cards/calendar_card.dart';
+import 'cards/event_row.dart' show eventEnd;
 import 'cards/events_card.dart';
 import 'cards/housing_card.dart';
 import 'cards/visiting_chefs_card.dart';
@@ -334,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
       value: Collection(
         data: [
           for (final event in value.data)
-            if ((event.endsAt ?? event.startsAt).isAfter(now)) event,
+            if (eventEnd(event).isAfter(now)) event,
         ],
         stale: value.stale,
         lastUpdated: value.lastUpdated,

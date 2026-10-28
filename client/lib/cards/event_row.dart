@@ -40,6 +40,21 @@ AppIconKind iconForEventType(String? type) {
   return AppIconKind.event;
 }
 
+/// When an event is over, on the campus clock.
+///
+/// A timed event with an end ends then. With no end it runs to the end of
+/// its campus start day, since a missing end is not a zero length event. An
+/// all day event runs to the end of its last campus day; an iCal all day end
+/// is the exclusive midnight after that day.
+DateTime eventEnd(CampusEvent event) {
+  final end = event.endsAt;
+  if (!event.allDay && end != null) return end;
+  final last = end != null && end.isAfter(event.startsAt)
+      ? CampusTime.dateOf(end.subtract(const Duration(microseconds: 1)))
+      : CampusTime.dateOf(event.startsAt);
+  return CampusTime.wall(last.year, last.month, last.day + 1);
+}
+
 class EventRow extends StatelessWidget {
   const EventRow({
     super.key,
@@ -107,9 +122,7 @@ class EventRow extends StatelessWidget {
     final text = Theme.of(context).textTheme;
     final moment = now ?? CampusTime.nowUtc();
 
-    // An event is past once its end has gone by, or its start if it has no end.
-    final ends = event.endsAt ?? event.startsAt;
-    final isPast = ends.isBefore(moment) || forceDimmed;
+    final isPast = !eventEnd(event).isAfter(moment) || forceDimmed;
 
     final when = event.allDay ? 'All day' : formatDayAndClock(event.startsAt);
 

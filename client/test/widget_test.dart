@@ -1116,10 +1116,21 @@ void _visualStructure() {
       expect(find.byIcon(Icons.history_rounded), findsNothing);
     });
 
-    testWidgets('an event with no end uses its start', (tester) async {
-      await tester.pumpWidget(
-        wrap(at(DateTime(2026, 8, 28, 9)), DateTime(2026, 8, 28, 14)),
-      );
+    // no end means on until the campus day is over, not over at its start
+    testWidgets('an event with no end runs to the end of its campus day', (tester) async {
+      final start = DateTime.utc(2026, 8, 28, 13);
+      await tester.pumpWidget(wrap(at(start), DateTime.utc(2026, 8, 28, 18)));
+      expect(find.text('Ended'), findsNothing);
+      await tester.pumpWidget(wrap(at(start), DateTime.utc(2026, 8, 29, 4, 1)));
+      expect(find.text('Ended'), findsOneWidget);
+    });
+
+    // an all day event starts at campus midnight and is on until the next one
+    testWidgets('an all day event is not ended during its day', (tester) async {
+      final fair = CampusEvent(uid: 'fair', source: 'drupal', title: 'Career fair', startsAt: DateTime.utc(2026, 10, 14, 4), allDay: true);
+      await tester.pumpWidget(wrap(fair, DateTime.utc(2026, 10, 14, 16)));
+      expect(find.text('Ended'), findsNothing);
+      await tester.pumpWidget(wrap(fair, DateTime.utc(2026, 10, 15, 4, 1)));
       expect(find.text('Ended'), findsOneWidget);
     });
 
