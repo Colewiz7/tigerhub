@@ -104,7 +104,7 @@ void main() {
 
     String firstTitle(WidgetTester tester) {
       final shells = find.byType(CardShell);
-      final tops = {for (final title in ['Visiting Chefs', 'Up next', 'Eat now']) title: tester.getTopLeft(find.descendant(of: shells, matching: find.text(title))).dy};
+      final tops = {for (final title in ['Visiting chefs', 'Up next', 'Eat now']) title: tester.getTopLeft(find.descendant(of: shells, matching: find.text(title))).dy};
       return (tops.entries.toList()..sort((a, b) => a.value.compareTo(b.value))).first.key;
     }
 
@@ -112,7 +112,7 @@ void main() {
       RitClock.pin(_wall(12));
       await pumpToday(tester);
       expect(Preferences.instance.todaySmartOrder, isFalse);
-      expect(firstTitle(tester), 'Visiting Chefs');
+      expect(firstTitle(tester), 'Visiting chefs');
     });
 
     testWidgets('on at noon puts Eat now first and saves nothing', (tester) async {
@@ -137,7 +137,7 @@ void main() {
       expect(firstTitle(tester), 'Eat now');
       await tester.tap(find.text('Edit Today'));
       await tester.pumpAndSettle();
-      expect(firstTitle(tester), 'Visiting Chefs');
+      expect(firstTitle(tester), 'Visiting chefs');
     });
 
     testWidgets('the Settings switch turns it on', (tester) async {

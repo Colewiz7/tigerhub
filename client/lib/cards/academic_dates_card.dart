@@ -34,7 +34,7 @@ class AcademicDatesCard extends StatelessWidget {
 
     return CardShell(
       glyph: AppIconKind.events,
-      title: 'Academic Dates',
+      title: 'Academic dates',
       dragHandle: dragHandle,
       onOpen: onShowAll,
       openLabel: 'opens Campus',

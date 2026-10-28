@@ -336,11 +336,11 @@ void main() {
         brightness: Brightness.light,
         scale: 1,
       );
-      final link = find.bySemanticsLabel('Visiting Chefs, shows all chefs');
+      final link = find.bySemanticsLabel('Visiting chefs, shows all chefs');
       expect(link, findsOneWidget);
       expect(tester.getSemantics(link), isSemantics(isButton: true, hasTapAction: true));
 
-      await tester.tap(find.text('Visiting Chefs'));
+      await tester.tap(find.text('Visiting chefs'));
       await tester.pumpAndSettle();
       expect(find.text('6 visiting chefs today'), findsOneWidget);
       handle.dispose();
@@ -441,7 +441,7 @@ void main() {
         scale: 1,
       );
       expect(pill, findsNothing);
-      final band = find.ancestor(of: find.text('Visiting Chefs'), matching: find.byType(InkWell)).first;
+      final band = find.ancestor(of: find.text('Visiting chefs'), matching: find.byType(InkWell)).first;
       expect(tester.getSize(band).height, greaterThanOrEqualTo(48));
       // a tap at the edge of the band, off the text, still opens the sheet
       final rect = tester.getRect(band);
@@ -501,7 +501,7 @@ void main() {
           scale: scale,
         );
         // a phone opens it from the header
-        await tester.tap(find.text('Visiting Chefs'));
+        await tester.tap(find.text('Visiting chefs'));
         await tester.pumpAndSettle();
         await expectLater(
           find.byType(MaterialApp),
@@ -595,7 +595,7 @@ void main() {
           scale: 1,
           height: width >= 600 ? 560 : null,
         );
-        await tester.tap(width >= 600 ? pill : find.text('Visiting Chefs'));
+        await tester.tap(width >= 600 ? pill : find.text('Visiting chefs'));
         await tester.pumpAndSettle();
         final shape = tester.widget<BottomSheet>(sheet).shape!
             as RoundedRectangleBorder;

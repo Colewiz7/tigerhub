@@ -75,7 +75,7 @@ class VisitingChefsCard extends StatelessWidget {
     return CardShell(
       // The toque is this section's identity, per the adoption spec.
       glyph: AppIconKind.visitingChef,
-      title: 'Visiting Chefs',
+      title: 'Visiting chefs',
       state: result.state,
       // The age of the chefs themselves, not of the request. ApiClient stamps
       // every response with the moment it arrived, which put "updated just

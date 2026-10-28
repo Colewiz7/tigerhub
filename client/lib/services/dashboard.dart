@@ -196,15 +196,15 @@ class CardInstance {
 /// library and the inspector. Kept beside the type rather than in the widget
 /// layer so the Add Card flow and the renderer cannot disagree.
 const Map<ModuleType, String> moduleLabels = {
-  ModuleType.diningStatus: 'Dining',
-  ModuleType.generalEvents: 'Events',
+  ModuleType.diningStatus: 'Eat now',
+  ModuleType.generalEvents: 'Up next',
   ModuleType.clubEvents: 'Club events',
   ModuleType.calendar: 'Calendar',
-  ModuleType.visitingChefs: 'Visiting Chefs',
-  ModuleType.mailingAddress: 'Mailing Address',
+  ModuleType.visitingChefs: 'Visiting chefs',
+  ModuleType.mailingAddress: 'Mailing address',
   ModuleType.facilityHours: 'Facility hours',
   ModuleType.campusMap: 'Campus map',
-  ModuleType.academicDates: 'Academic Dates',
+  ModuleType.academicDates: 'Academic dates',
   ModuleType.shuttles: 'Shuttles',
   ModuleType.packagePickup: 'Package pickup',
 };

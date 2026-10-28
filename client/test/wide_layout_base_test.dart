@@ -5,8 +5,9 @@
 /// data and with every card empty, to numbers measured on base commit edc9f6c
 /// with this same test (see [_measure]): card size, title and hero size and
 /// place, where the content starts, the first row, the edit controls, and the
-/// empty state block. Only the cases listed under [_housingOldHeight] and
-/// [_shorterCopySizes] are exempt, because shorter copy changed their size.
+/// empty state block. Only the cases listed under [_housingOldHeight],
+/// [_shorterCopySizes] and [_sentenceCaseTitleWidths] are exempt, because
+/// shorter copy changed their size.
 ///
 /// The one deliberate difference is the empty state block's horizontal place:
 /// the owner's list says empty states are centered in their card, and the base
@@ -236,6 +237,33 @@ String _endedDropsOff(String text) => text
     .replaceAll('SWE ¦ 2 ¦ Old meeting ¦ Sat 1 Jan, 10:00 AM ¦ Sat 1 Jan, 10:00 AM ¦ Ended', 'SWE ¦ 1 ¦ Meeting 1 ¦ SAU 2nd floor ¦ Fri 2 Jan, 10:00 AM')
     .replaceAll('SWE ¦ 2', 'SWE ¦ 1');
 
+// "Visiting Chefs" and "Mailing Address" went sentence case after the base.
+// The lower case letter is narrower, so only the title's width changes;
+// its place, its height and everything after it stay put.
+const _chefsCard = 2;
+const _sentenceCaseTitleWidths = <({int card, String old, String now})>[
+  (card: _chefsCard, old: '186.3', now: '183.2'),
+  (card: _chefsCard, old: '371.2', now: '365.1'),
+  (card: _chefsCard, old: '371.0', now: '365.1'),
+  (card: _housing, old: '209.8', now: '207.3'),
+  (card: _housing, old: '418.1', now: '413.1'),
+];
+
+String _sentenceCaseTitle(int card, String line) {
+  final fields = line.split(' | ');
+  final title = fields[1];
+  final at = title.lastIndexOf(',');
+  final x = title.indexOf('x', at);
+  for (final e in _sentenceCaseTitleWidths) {
+    if (e.card == card && title.substring(at + 1, x) == e.old) {
+      fields[1] = '${title.substring(0, at + 1)}${e.now}${title.substring(x)}';
+    }
+  }
+  return fields.join(' | ');
+}
+
+String _sentenceCaseTitles(String text) => text.replaceAll('Visiting Chefs', 'Visiting chefs').replaceAll('Mailing Address', 'Mailing address');
+
 String _expectedEmptySize(String key, int card, String old) {
   for (final e in _shorterCopySizes) {
     if (e.card == card && e.old == old && key.contains(e.cases)) return e.now;
@@ -436,7 +464,9 @@ void main() {
               debugPrint('],');
             } else {
               final fixture = _loadBase();
-              final expected = [...fixture.base[key]!];
+              final expected = [
+                for (final (i, line) in fixture.base[key]!.indexed) _sentenceCaseTitle(i, line),
+              ];
               if (key.startsWith('1024 @ 2.0x')) {
                 expected[_housing] = expected[_housing].replaceFirst(
                   _housingOldHeight,
@@ -446,7 +476,7 @@ void main() {
               expect(lines, expected, reason: 'geometry moved');
               expect(
                 texts,
-                [for (final t in fixture.text[key]!) _endedDropsOff(_sentenceCaseStatus(t)).replaceAll('+1 organizers', '+1 organizer')],
+                [for (final t in fixture.text[key]!) _sentenceCaseTitles(_endedDropsOff(_sentenceCaseStatus(t))).replaceAll('+1 organizers', '+1 organizer')],
                 reason: 'row text changed',
               );
 
