@@ -170,11 +170,16 @@ class _List extends StatelessWidget {
   final int? limit;
 
   @override
-  Widget build(BuildContext context) {
-    // Shared ordering, so the card preview and the Dining tab agree.
-    final sorted = [...locations]..sort(compareForDisplay);
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Preferences.instance,
+    builder: (context, _) => _build(context),
+  );
 
-    final openNow = sorted.where((location) => location.isOpen).length;
+  Widget _build(BuildContext context) {
+    // Shared ordering, so the card preview and the Dining tab agree.
+    final pinned = Preferences.instance.pinnedDining;
+    final sorted = [...locations]
+      ..sort((a, b) => compareForDisplay(a, b, pinned: pinned));
 
     return BoundedList(
       itemCount: limit == null ? sorted.length : sorted.length.clamp(0, limit!),
@@ -182,10 +187,10 @@ class _List extends StatelessWidget {
       dense: true,
       maxRows: phoneRowCap(context),
       noun: 'open',
-      // Open rows sort first, so visible capacity is consumed by open
-      // locations before closed ones. The footer and the hero badge then count
-      // the same population.
-      hiddenCountBuilder: (shown) => (openNow - shown).clamp(0, openNow),
+      // The footer counts open places left out, so it matches the hero badge
+      // even when a closed pin takes a row.
+      hiddenCountBuilder: (shown) =>
+          sorted.skip(shown).where((location) => location.isOpen).length,
       onShowAll: onShowAll,
       itemBuilder: (context, index) =>
           DiningRow(location: sorted[index], dense: true),
