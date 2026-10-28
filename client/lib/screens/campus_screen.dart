@@ -125,6 +125,7 @@ class _CampusScreenState extends State<CampusScreen> {
     // Five unrelated things used to stack in one scroll, so anything below the
     // first two disappeared. Same nav idiom as Settings.
     return SectionScaffold(
+      iconSize: StatusRow.fillIconSize,
       sections: [
         SectionSpec(
           id: 'mail',
@@ -361,6 +362,7 @@ class _ShuttleSection extends StatelessWidget {
           for (final route in routes)
             StatusRow(
               icon: AppIconKind.shuttle,
+              iconSize: StatusRow.fillIconSize,
               title: '${route.number} · ${route.name}',
               subtitle: route.hours,
               actions: [MenuAction.copy('${route.number} · ${route.name}\n${route.hours}')],
@@ -404,6 +406,7 @@ class _AcademicDatesSection extends StatelessWidget {
           for (var index = 0; index < upcoming.length; index++)
             StatusRow(
               icon: index == 0 ? AppIconKind.upcoming : AppIconKind.day,
+              iconSize: StatusRow.fillIconSize,
               title: upcoming[index].title,
               subtitle: upcoming[index].detail,
               actions: [
@@ -463,6 +466,7 @@ class _SafetySection extends StatelessWidget {
       for (final contact in contacts)
         StatusRow(
           icon: contact.icon,
+          iconSize: StatusRow.fillIconSize,
           title: contact.label,
           subtitle: contact.number,
           trailing: Icon(
@@ -563,6 +567,7 @@ class _FindSection extends StatelessWidget {
         for (final kind in kinds.value?.data ?? const <PlaceKind>[])
           StatusRow(
             icon: iconForPlaceKind(kind.kind),
+            iconSize: StatusRow.fillIconSize,
             title: kind.kindName,
             subtitle: '${kind.count} on campus',
             onTap: () => showModalBottomSheet<void>(
@@ -860,7 +865,7 @@ class _PostOfficeBlock extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.32),
                   ),
-                  child: AppIcon(AppIconKind.mail, color: scheme.primary),
+                  child: AppIcon(AppIconKind.mail, size: StatusRow.fillIconSize, color: scheme.primary),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -1308,6 +1313,7 @@ class _RecreationRow extends StatelessWidget {
 
     return StatusRow(
       icon: _icon(facility.name),
+      iconSize: StatusRow.fillIconSize,
       title: facility.name,
       subtitle: hours,
       accent: open ? semantic.open : semantic.closed,
@@ -1447,7 +1453,7 @@ class _ShedHoursBlock extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: scheme.primary.withValues(alpha: 0.32),
                   ),
-                  child: AppIcon(AppIconKind.makerspace, color: scheme.primary),
+                  child: AppIcon(AppIconKind.makerspace, size: StatusRow.fillIconSize, color: scheme.primary),
                 ),
                 const SizedBox(width: 13),
                 Expanded(
@@ -1529,6 +1535,7 @@ class _EquipmentBlock extends StatelessWidget {
         for (final room in rooms)
           StatusRow(
             icon: _iconForRoom(room.room),
+            iconSize: StatusRow.fillIconSize,
             title: room.room,
             subtitle:
                 '${room.machines} machine${room.machines == 1 ? '' : 's'}',

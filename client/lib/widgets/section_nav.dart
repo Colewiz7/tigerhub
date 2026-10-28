@@ -41,11 +41,15 @@ class SectionScaffold extends StatefulWidget {
     required this.sections,
     this.navWidth = 330,
     this.twoPaneFrom = 900,
+    this.iconSize = 18,
   });
 
   final List<SectionSpec> sections;
   final double navWidth;
   final double twoPaneFrom;
+
+  /// Glyph size in each nav row's circle.
+  final double iconSize;
 
   @override
   State<SectionScaffold> createState() => _SectionScaffoldState();
@@ -73,6 +77,7 @@ class _SectionScaffoldState extends State<SectionScaffold> {
       return _NavList(
         sections: widget.sections,
         selected: null,
+        iconSize: widget.iconSize,
         onSelect: (section) => Navigator.of(context).push(
           MaterialPageRoute<void>(
             builder: (context) => Scaffold(
@@ -97,6 +102,7 @@ class _SectionScaffoldState extends State<SectionScaffold> {
           child: _NavList(
             sections: widget.sections,
             selected: section.id,
+            iconSize: widget.iconSize,
             onSelect: (s) => setState(() => _selected = s.id),
           ),
         ),
@@ -151,11 +157,13 @@ class _NavList extends StatelessWidget {
     required this.sections,
     required this.selected,
     required this.onSelect,
+    required this.iconSize,
   });
 
   final List<SectionSpec> sections;
   final String? selected;
   final ValueChanged<SectionSpec> onSelect;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -166,6 +174,7 @@ class _NavList extends StatelessWidget {
         SectionNavRow(
           spec: section,
           active: section.id == selected,
+          iconSize: iconSize,
           onTap: () => onSelect(section),
         ),
     ],
@@ -178,11 +187,13 @@ class SectionNavRow extends StatelessWidget {
     required this.spec,
     required this.active,
     required this.onTap,
+    this.iconSize = 18,
   });
 
   final SectionSpec spec;
   final bool active;
   final VoidCallback onTap;
+  final double iconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -221,8 +232,8 @@ class SectionNavRow extends StatelessWidget {
                       shape: BoxShape.circle,
                       color: badge,
                     ),
-                    // 18 in 42, same as StatusRow
-                    child: AppIcon(spec.icon, color: iconColor),
+                    // same glyph size as StatusRow
+                    child: AppIcon(spec.icon, size: iconSize, color: iconColor),
                   ),
                   const SizedBox(width: 13),
                   Expanded(

@@ -28,6 +28,8 @@ import 'package:tigerhub/screens/campus_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/widgets/empty_state.dart';
+import 'package:tigerhub/widgets/section_nav.dart';
 import 'package:url_launcher_platform_interface/method_channel_url_launcher.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -338,6 +340,30 @@ void main() {
         });
       }
     }
+  }
+
+  // dinings food truck rows draw 18 in a 32 circle, campus fills its circles the same
+  for (final platform in const [TargetPlatform.iOS, TargetPlatform.android]) {
+    testWidgets('every campus circle holds its glyph at the dining ratio, ${platform.name}', (tester) async {
+      await pumpCampus(tester, platform: platform);
+      final circles = find.byWidgetPredicate((w) => w is Container && w.decoration is BoxDecoration && (w.decoration! as BoxDecoration).shape == BoxShape.circle);
+      var checked = 0;
+      for (final title in const ['Mail', 'Find on campus', 'Academic dates', 'Shuttles', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace']) {
+        await tester.tap(find.descendant(of: find.byType(SectionNavRow), matching: find.text(title)));
+        await tester.pumpAndSettle();
+        for (final circle in circles.evaluate()) {
+          final icon = find.descendant(of: find.byWidget(circle.widget), matching: find.byType(Icon));
+          // the empty state mark has its own size
+          if (icon.evaluate().isEmpty || find.ancestor(of: find.byWidget(circle.widget), matching: find.byType(EmptyState)).evaluate().isNotEmpty) continue;
+          final outer = tester.getRect(find.byWidget(circle.widget));
+          expect(tester.widget<Icon>(icon.first).size! / outer.width, closeTo(18 / 32, 0.01), reason: '$title circle');
+          final glyph = tester.getRect(find.descendant(of: icon.first, matching: find.byType(RichText)));
+          expect(outer.contains(glyph.topLeft) && outer.contains(glyph.bottomRight - const Offset(0.001, 0.001)), isTrue, reason: '$title glyph $glyph outside $outer');
+          checked++;
+        }
+      }
+      expect(checked, greaterThan(20));
+    });
   }
 
   testWidgets('with no dialer the number is copied instead', (tester) async {

@@ -32,7 +32,11 @@ class StatusRow extends StatelessWidget {
     this.dense = false,
     this.subtitleMaxLines = 2,
     this.actions = const [],
+    this.iconSize = 18,
   });
+
+  /// Glyph size in the badge circle.
+  final double iconSize;
 
   /// max subtitle lines, null shows all
   /// null only outside BoundedList
@@ -96,6 +100,9 @@ class StatusRow extends StatelessWidget {
 
   static const double gap = 8;
   static const double badgeSize = 42;
+
+  // dinings food truck rows draw 18 in 32, this is that ratio in 42
+  static const double fillIconSize = 24;
 
   @override
   Widget build(BuildContext context) =>
@@ -174,7 +181,7 @@ class StatusRow extends StatelessWidget {
                         ),
                         // 18 in a 42px circle. At 21 the glyph very nearly filled
                         // its box, leaving a ring too thin to read as a badge.
-                        child: AppIcon(icon, color: tint),
+                        child: AppIcon(icon, size: iconSize, color: tint),
                       ),
                     ),
                     SizedBox(width: dense ? 10 : 13),
