@@ -71,7 +71,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final shown = _shownText(tester);
-    expect(shown, containsAll(['Open · until 10:00 PM', 'Closed · hours unavailable', 'Busy', 'Ended', 'All day', 'Closed']));
+    // the clock in the subtitle follows TZ, the status word does not
+    expect(shown.where((line) => line.startsWith('Open · until ')), isNotEmpty);
+    expect(shown, containsAll(['Closed · hours unavailable', 'Busy', 'Ended', 'All day', 'Closed']));
     final shouted = [for (final line in shown) if (_shouted.hasMatch(line)) line];
     expect(shouted, isEmpty);
   });
