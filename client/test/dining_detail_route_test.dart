@@ -108,6 +108,23 @@ void main() {
     }
   }
 
+  testWidgets('the app bar is titled with the location, so the route is announced', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await open(tester, width: 390, scale: 1);
+
+    final title = find.descendant(of: find.byType(AppBar), matching: find.text('Gracies'));
+    expect(title, findsOneWidget);
+    expect(
+      tester.getSemantics(title),
+      matchesSemantics(label: 'Gracies', namesRoute: true, isHeader: true),
+    );
+    // said once on screen, not again in the body
+    expect(find.text('Gracies'), findsOneWidget);
+    handle.dispose();
+  });
+
   testWidgets('detail shows the diet legend above the menu', (tester) async {
     await open(tester, width: 390, scale: 1);
 

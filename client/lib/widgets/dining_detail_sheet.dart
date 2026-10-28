@@ -42,11 +42,12 @@ class DiningDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(),
+    // names the route for screen readers, so the body leaves the name out
+    appBar: AppBar(title: Text(location.name)),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
-        child: DiningDetailSheet(location: location, api: api),
+        child: DiningDetailSheet(location: location, api: api, showName: false),
       ),
     ),
   );
@@ -57,10 +58,14 @@ class DiningDetailSheet extends StatefulWidget {
     super.key,
     required this.location,
     required this.api,
+    this.showName = true,
   });
 
   final DiningLocation location;
   final ApiClient api;
+
+  /// False when the page's app bar already carries the name.
+  final bool showName;
 
   @override
   State<DiningDetailSheet> createState() => _DiningDetailSheetState();
@@ -136,10 +141,11 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        location.name,
-                        style: text.titleLarge?.copyWith(fontSize: 24),
-                      ),
+                      if (widget.showName)
+                        Text(
+                          location.name,
+                          style: text.titleLarge?.copyWith(fontSize: 24),
+                        ),
                       if (location.summary != null) ...[
                         const SizedBox(height: 3),
                         Text(location.summary!, style: text.bodySmall),
