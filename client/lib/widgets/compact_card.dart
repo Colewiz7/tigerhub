@@ -7,6 +7,17 @@ import 'package:flutter/material.dart';
 import '../theme/tokens.dart';
 import 'app_icon.dart';
 
+/// Marks a compact card that shares its row with another. Both then take the
+/// height of a full card, caption line included, so the pair lines up.
+class CompactPair extends InheritedWidget {
+  const CompactPair({super.key, required super.child});
+
+  static bool of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<CompactPair>() != null;
+
+  @override
+  bool updateShouldNotify(CompactPair oldWidget) => false;
+}
+
 class CompactCard extends StatelessWidget {
   const CompactCard({
     super.key,
@@ -36,6 +47,14 @@ class CompactCard extends StatelessWidget {
   final bool quiet;
 
   static TextStyle? valueStyle(BuildContext context) => Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 17, height: 1.25, letterSpacing: 0);
+
+  /// A card with one line each of label, value and caption.
+  static double fullHeight(BuildContext context, {bool editing = false}) {
+    final scaler = MediaQuery.textScalerOf(context);
+    final pad = Insets.cardPaddingFor(context);
+    final lines = scaler.scale(15) * 1.3 + 4 + scaler.scale(17) * 1.25 + 2 + scaler.scale(14) * 1.3;
+    return pad * 2 + lines + (editing ? 32 + 6 : 0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,28 +103,32 @@ class CompactCard extends StatelessWidget {
       ),
     );
 
+    final minHeight = CompactPair.of(context) ? fullHeight(context, editing: editing) : 0.0;
     return Material(
       elevation: 0,
       color: scheme.surfaceContainerLow,
       borderRadius: Shapes.cardFor(context),
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: editing ? null : onOpen,
-        canRequestFocus: !editing && onOpen != null,
-        excludeFromSemantics: true,
-        child: Padding(
-          padding: EdgeInsets.all(Insets.cardPaddingFor(context)),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // controls get their own row, a half cell is narrow
-              if (editing) ...[
-                Align(alignment: Alignment.centerRight, child: dragHandle),
-                const SizedBox(height: 6),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: minHeight),
+        child: InkWell(
+          onTap: editing ? null : onOpen,
+          canRequestFocus: !editing && onOpen != null,
+          excludeFromSemantics: true,
+          child: Padding(
+            padding: EdgeInsets.all(Insets.cardPaddingFor(context)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // controls get their own row, a half cell is narrow
+                if (editing) ...[
+                  Align(alignment: Alignment.centerRight, child: dragHandle),
+                  const SizedBox(height: 6),
+                ],
+                body,
               ],
-              body,
-            ],
+            ),
           ),
         ),
       ),

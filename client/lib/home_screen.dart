@@ -31,6 +31,7 @@ import 'services/preferences.dart';
 import 'theme/tokens.dart';
 import 'widgets/app_icon.dart';
 import 'widgets/card_shell.dart' show editControlsWidth;
+import 'widgets/compact_card.dart' show CompactPair;
 import 'widgets/context_actions.dart' show ContextActionsScope;
 import 'widgets/tab_bar.dart';
 import 'widgets/touch_target.dart';
@@ -105,6 +106,32 @@ int homeGridColumns(double width, double available, int count) {
   }
 
   return best;
+}
+
+/// Types whose compact size on a phone is a [CompactCard].
+const Set<ModuleType> compactBodyTypes = {
+  ModuleType.visitingChefs,
+  ModuleType.facilityHours,
+};
+
+/// Two up only while a half card still holds its value.
+bool phoneTwoUp({required double width, required double textScale}) => width >= 360 && textScale <= 1.35;
+
+/// Positions that share a row on a phone: two compact cards next to each
+/// other in reading order. A compact card on its own stays full width, and
+/// the saved order never changes.
+Set<int> phonePairs(List<CardInstance?> cards) {
+  bool half(int i) {
+    final card = cards[i];
+    return card != null && card.size == CardSize.compact && compactBodyTypes.contains(card.type);
+  }
+
+  final paired = <int>{};
+  for (var i = 0; i + 1 < cards.length; i++) {
+    if (paired.contains(i)) continue;
+    if (half(i) && half(i + 1)) paired.addAll([i, i + 1]);
+  }
+  return paired;
 }
 
 class HomeScreen extends StatefulWidget {
@@ -533,6 +560,8 @@ class _HomeScreenState extends State<HomeScreen> {
         final phone = Insets.phone(context);
         final gutter = phone ? Insets.phoneCardGap / 2 : _cardGutter;
         final sideInset = phone ? Insets.phoneMargin - gutter : 8.0;
+        final twoUp = phone && phoneTwoUp(width: constraints.maxWidth, textScale: MediaQuery.textScalerOf(context).scale(1));
+        final pairs = twoUp ? phonePairs([for (final id in _order) _instance(id)]) : const <int>{};
 
         final children = [
           for (var index = 0; index < _order.length; index++)
@@ -554,13 +583,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 _order.length,
               ),
               child: SizedBox(
-                width:
-                    (constraints.maxWidth - sideInset * 2) /
-                    columns *
-                    ((_instance(_order[index])?.size.columns ?? 1).clamp(
-                      1,
-                      columns,
-                    )),
+                width: pairs.contains(index)
+                    ? (constraints.maxWidth - sideInset * 2) / 2
+                    : (constraints.maxWidth - sideInset * 2) /
+                          columns *
+                          ((_instance(_order[index])?.size.columns ?? 1).clamp(
+                            1,
+                            columns,
+                          )),
                 // Phones size a card to its content, so there is no cell
                 // height. Wider windows divide the viewport into cells.
                 height: phone
@@ -574,7 +604,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   // A Stack, as before the header controls moved into the
                   // card: it hands the card loose constraints, so a card
                   // keeps its natural height inside its cell.
-                  child: Stack(children: [_cardFor(_order[index])]),
+                  child: Stack(
+                    children: [
+                      pairs.contains(index)
+                          ? CompactPair(child: _cardFor(_order[index]))
+                          : _cardFor(_order[index]),
+                    ],
+                  ),
                 ),
               ),
             ),
