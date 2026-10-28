@@ -286,8 +286,9 @@ class _StatusPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
       child: Text(
         label,
+        // no tracking, so "50% full" leaves the name its one line
         style: Theme.of(context).textTheme.labelSmall
-            ?.copyWith(color: foreground),
+            ?.copyWith(color: foreground, letterSpacing: 0),
       ),
     ),
   );
@@ -318,7 +319,7 @@ class _OccupancyPill extends StatelessWidget {
     final over = occupancy.overCapacity;
     return _pill(
       context,
-      over ? 'Busy' : '$percent%',
+      over ? 'Busy' : '$percent% full',
       over ? semantic.busy : semantic.open,
       over ? semantic.busyContainer : semantic.openContainer,
     );

@@ -147,7 +147,9 @@ void main() {
         tester,
         const Occupancy(count: 75, maxOcc: 150, percentFull: 50),
       );
-      expect(find.text('50%'), findsOneWidget);
+      // labelled, a bare 50% read as a number with no meaning
+      expect(find.text('50% full'), findsOneWidget);
+      expect(find.text('50%'), findsNothing);
     });
 
     testWidgets('over capacity says busy, not a precise percentage', (
@@ -198,7 +200,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('21%'), findsNothing);
+      expect(find.textContaining('21%'), findsNothing);
       expect(find.textContaining('here'), findsNothing);
     });
   });
@@ -1179,7 +1181,7 @@ void _statusAndGrouping() {
       await tester.pumpWidget(
         wrap(DiningRow(location: loc('Crossroads', percent: 86))),
       );
-      expect(find.text('86%'), findsOneWidget);
+      expect(find.text('86% full'), findsOneWidget);
       expect(find.text('Open'), findsNothing);
     });
 
