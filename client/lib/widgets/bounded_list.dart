@@ -12,7 +12,9 @@ library;
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import 'card_shell.dart';
 import 'more_row.dart';
+import 'status_row.dart';
 import 'touch_target.dart';
 
 /// How many rows a dashboard card previews on a phone before its "+N" footer.
@@ -20,9 +22,9 @@ import 'touch_target.dart';
 /// This is a fixed count, not a measurement, and it departs from the spec's
 /// "measure the box, don't cap rows" (the UI style overrides): the owner's
 /// condense target makes a phone card as tall as its content, so there is no
-/// box to measure. "Dining card, 4 rows" is that target. Every phone cap comes
-/// from this one number.
-const int phonePreviewRows = 4;
+/// box to measure. A Today card answers one question in at most 3 rows. Every
+/// phone cap comes from this one number.
+const int phonePreviewRows = 3;
 
 /// [phonePreviewRows] on a phone, less [reserved] rows for what else the card
 /// shows (a group header counts as a row, a week strip as one). Null (no cap)
@@ -76,13 +78,18 @@ class BoundedList extends StatelessWidget {
           // lines), so there is no row height to divide: the preview is the
           // first [cap] rows.
           final shown = itemCount < cap ? itemCount : cap;
-          final footerHidden =
-              hiddenCountBuilder?.call(shown) ?? itemCount - shown;
+          // a linked header replaces the footer, the hero counts the rest
+          final footerHidden = CardShell.linkedOf(context)
+              ? 0
+              : hiddenCountBuilder?.call(shown) ?? itemCount - shown;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              for (var i = 0; i < shown; i++) itemBuilder(context, i),
+              for (var i = 0; i < shown; i++) ...[
+                if (i > 0 && CardShell.flatRowsOf(context)) const RowSeparator(),
+                itemBuilder(context, i),
+              ],
               if (footerHidden > 0)
                 SizedBox(
                   height: footer,

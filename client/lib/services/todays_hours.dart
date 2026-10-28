@@ -135,6 +135,98 @@ TodaysHours todaysHours({
   );
 }
 
+/// The next time [service] opens after [now], looking up to a week ahead. Null
+/// when no rule in [rules] ever opens it.
+DateTime? nextOpening({
+  required String service,
+  required List<HoursRule> rules,
+  required DateTime now,
+}) {
+  final moment = now.toUtc();
+  final fields = CampusTime.fieldsOf(moment);
+  for (var ahead = 0; ahead <= 7; ahead++) {
+    // calendar days, so a dst change cant skip one
+    final day = DateTime.utc(fields.year, fields.month, fields.day + ahead);
+    final weekday = _weekdayNames[day.weekday - 1];
+    DateTime? first;
+    for (final rule in rules) {
+      if (rule.service != service || !rule.days.contains(weekday)) continue;
+      final opens = _at(day, rule.opensAt);
+      if (opens == null || !opens.isAfter(moment)) continue;
+      if (first == null || opens.isBefore(first)) first = opens;
+    }
+    if (first != null) return first;
+  }
+  return null;
+}
+
+/// Which season's hours are in force.
+///
+/// RIT publishes fall and summer separately. Showing both at once is noise:
+/// nobody standing outside the post office in September cares what July looked
+/// like. Fall term runs roughly late August to mid May.
+String currentSeason(DateTime now) {
+  final month = now.month;
+  final isSummer = month == 6 || month == 7 || (month == 8 && now.day < 22);
+  return isSummer ? 'summer' : 'fall';
+}
+
+/// Minutes after midnight for an `HH:MM` clock, or null when it is not one.
+int? clockMinutes(String clock) {
+  final parts = clock.split(':');
+  if (parts.length < 2) return null;
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) return null;
+  return hour * 60 + minute;
+}
+
+/// A clock in words: 7 AM, 4:30 PM, midnight. [minute] may run past 1440 for
+/// a window that ends after midnight.
+String clockLabel(int minute) {
+  final m = minute % 1440;
+  if (m == 0) return 'midnight';
+  final hour = m ~/ 60;
+  final h12 = hour % 12 == 0 ? 12 : hour % 12;
+  final mm = m % 60;
+  final suffix = hour < 12 ? 'AM' : 'PM';
+  return mm == 0 ? '$h12 $suffix' : '$h12:${mm.toString().padLeft(2, '0')} $suffix';
+}
+
+enum ChangeKind { opens, closes, closedToday }
+
+/// What happens next at a place with these [spans] today, at [nowMinute]
+/// campus minutes after midnight. Spans that touch count as one, so a pool
+/// with back to back sessions says when it really closes.
+({ChangeKind kind, int? minute}) nextChange(
+  List<({String opens, String closes})> spans,
+  int nowMinute,
+) {
+  final windows = <({int opens, int closes})>[];
+  for (final span in spans) {
+    final opens = clockMinutes(span.opens);
+    var closes = clockMinutes(span.closes);
+    if (opens == null || closes == null) continue;
+    if (closes <= opens) closes += 1440;
+    windows.add((opens: opens, closes: closes));
+  }
+  windows.sort((a, b) => a.opens.compareTo(b.opens));
+  final merged = <({int opens, int closes})>[];
+  for (final w in windows) {
+    if (merged.isNotEmpty && w.opens <= merged.last.closes) {
+      final last = merged.removeLast();
+      merged.add((opens: last.opens, closes: w.closes > last.closes ? w.closes : last.closes));
+    } else {
+      merged.add(w);
+    }
+  }
+  for (final w in merged) {
+    if (nowMinute < w.opens) return (kind: ChangeKind.opens, minute: w.opens);
+    if (nowMinute < w.closes) return (kind: ChangeKind.closes, minute: w.closes);
+  }
+  return (kind: ChangeKind.closedToday, minute: null);
+}
+
 /// Every service this office runs, in the order the rules list them, so the
 /// display order stays the config's decision rather than alphabetical.
 List<String> servicesIn(List<HoursRule> rules) {

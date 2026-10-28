@@ -66,6 +66,8 @@ class ScopedEventsCard extends StatelessWidget {
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
+      onOpen: onShowAll,
+      openLabel: 'opens Events',
       hero: events.isEmpty
           ? null
           : Text(

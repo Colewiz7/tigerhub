@@ -20,17 +20,23 @@ import 'cards/events_card.dart';
 import 'cards/housing_card.dart';
 import 'cards/visiting_chefs_card.dart';
 import 'cards/academic_dates_card.dart';
-import 'config.dart';
+import 'cards/shuttles_card.dart';
+import 'cards/package_pickup_card.dart';
 import 'data/campus_time.dart';
 import 'models/api_models.dart';
 import 'motion/reduce_motion.dart';
 import 'services/api.dart';
 import 'services/dashboard.dart';
+import 'services/smart_order.dart';
+import 'services/event_filter.dart';
+import 'services/preferences.dart';
 import 'theme/tokens.dart';
 import 'widgets/app_icon.dart';
 import 'widgets/card_shell.dart' show editControlsWidth;
+import 'widgets/compact_card.dart' show CompactPair;
 import 'widgets/context_actions.dart' show ContextActionsScope;
 import 'widgets/tab_bar.dart';
+import 'widgets/today_header.dart';
 import 'widgets/touch_target.dart';
 
 /// The icon each module type shows in the card library and the hidden chips.
@@ -46,6 +52,8 @@ const Map<ModuleType, AppIconKind> moduleIcons = {
   ModuleType.facilityHours: AppIconKind.gym,
   ModuleType.campusMap: AppIconKind.map,
   ModuleType.academicDates: AppIconKind.academicDates,
+  ModuleType.shuttles: AppIconKind.shuttle,
+  ModuleType.packagePickup: AppIconKind.mail,
 };
 
 /// Card height. Cards grow to use spare vertical room, but stop before they
@@ -105,6 +113,34 @@ int homeGridColumns(double width, double available, int count) {
   return best;
 }
 
+/// Types whose compact size on a phone is a [CompactCard].
+const Set<ModuleType> compactBodyTypes = {
+  ModuleType.visitingChefs,
+  ModuleType.facilityHours,
+  ModuleType.shuttles,
+  ModuleType.packagePickup,
+};
+
+/// Two up only while a half card still holds its value.
+bool phoneTwoUp({required double width, required double textScale}) => width >= 360 && textScale <= 1.35;
+
+/// Positions that share a row on a phone: two compact cards next to each
+/// other in reading order. A compact card on its own stays full width, and
+/// the saved order never changes.
+Set<int> phonePairs(List<CardInstance?> cards) {
+  bool half(int i) {
+    final card = cards[i];
+    return card != null && card.size == CardSize.compact && compactBodyTypes.contains(card.type);
+  }
+
+  final paired = <int>{};
+  for (var i = 0; i + 1 < cards.length; i++) {
+    if (paired.contains(i)) continue;
+    if (half(i) && half(i + 1)) paired.addAll([i, i + 1]);
+  }
+  return paired;
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -115,6 +151,7 @@ class HomeScreen extends StatefulWidget {
     required this.areas,
     required this.onRefresh,
     required this.onGoToTab,
+    this.onOpenSettings,
   });
 
   final ApiClient api;
@@ -127,6 +164,10 @@ class HomeScreen extends StatefulWidget {
   /// The "+N more" footers land on the matching tab.
   final ValueChanged<int> onGoToTab;
 
+  /// The shell's gear. When set, Today heads itself with the mark, the date
+  /// and the gear.
+  final VoidCallback? onOpenSettings;
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -134,6 +175,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _scrollController = ScrollController();
   final _gridKey = GlobalKey();
+  final _headerKey = GlobalKey();
+
+  /// The large date has scrolled under the top edge.
+  bool _collapsed = false;
+
+  void _onScrolled() {
+    final header = _headerKey.currentContext?.size?.height;
+    final collapsed = header != null && _scrollController.hasClients && _scrollController.offset >= header - 8;
+    if (collapsed != _collapsed) setState(() => _collapsed = collapsed);
+  }
 
   List<String> _order = [for (final card in defaultDashboard) card.id];
 
@@ -153,10 +204,36 @@ class _HomeScreenState extends State<HomeScreen> {
   );
   StreamSubscription<Result<Collection<RecreationFacility>>>? _recreationSub;
   StreamSubscription<Result<Collection<CampusMapFeature>>>? _mapSub;
+  Result<Collection<PostOffice>> _offices = const Result(
+    value: null,
+    state: DataState.priming,
+  );
+  StreamSubscription<Result<Collection<PostOffice>>>? _officesSub;
+
+  // ended events leave without new data
+  Timer? _minute;
+
+  void _tickMinute() {
+    final now = CampusTime.nowUtc();
+    final wait = Duration(seconds: 60 - now.second, milliseconds: -now.millisecond);
+    _minute = Timer(wait, () {
+      if (!mounted) return;
+      setState(() {});
+      _tickMinute();
+    });
+  }
+
+  // smart order and filters move cards
+  void _onPreferences() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScrolled);
+    Preferences.instance.addListener(_onPreferences);
+    _tickMinute();
     _restoreOrder();
     _recreationSub = widget.api.recreation().listen((result) {
       if (mounted) setState(() => _recreation = result);
@@ -164,13 +241,21 @@ class _HomeScreenState extends State<HomeScreen> {
     _mapSub = widget.api.campusMap().listen((result) {
       if (mounted) setState(() => _campusMap = result);
     });
+    _officesSub = widget.api.postOffices().listen((result) {
+      if (mounted) setState(() => _offices = result);
+    });
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _scrollController
+      ..removeListener(_onScrolled)
+      ..dispose();
+    Preferences.instance.removeListener(_onPreferences);
+    _minute?.cancel();
     _recreationSub?.cancel();
     _mapSub?.cancel();
+    _officesSub?.cancel();
     super.dispose();
   }
 
@@ -257,6 +342,8 @@ class _HomeScreenState extends State<HomeScreen> {
       // The calendar's value is the seven-day shape, which needs the two
       // column footprint. Other modules start at their least expensive size.
       size: defaultSizeFor(type),
+      // a facility card starts on the pool
+      scope: type == ModuleType.facilityHours ? defaultFacilityName(_recreation.value?.data ?? const []) : null,
     );
     setState(() {
       _instances = [..._instances, card];
@@ -326,16 +413,59 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // today shows what is still ahead, ended events drop off
-  Result<Collection<CampusEvent>> get _upcomingEvents {
+  Result<Collection<CampusEvent>> get _upcomingEvents => _upcoming(false);
+
+  // saved mutes and hide words apply too
+  Result<Collection<CampusEvent>> get _filteredUpcomingEvents =>
+      _upcoming(true);
+
+  /// What Today shows first. The saved order, unless smart order is on and
+  /// nothing is being edited.
+  List<String> get _displayOrder {
+    if (_editing || !Preferences.instance.todaySmartOrder) return _order;
+    final now = CampusTime.nowUtc();
+    final wall = CampusTime.fieldsOf(now);
+    final cards = [
+      for (final id in _order) ?_instance(id),
+    ];
+    final ordered = smartOrder(
+      cards,
+      wallMinute: wall.hour * 60 + wall.minute,
+      eventSoon: eventWithinHour(_filteredUpcomingEvents.value?.data ?? const [], now),
+    );
+    return [for (final card in ordered) card.id];
+  }
+
+  // boost words only break ties in up next
+  Set<String> get _boostedUids {
+    final data = widget.events.value?.data;
+    if (data == null) return const {};
+    return {
+      for (final group in filterEvents(data, Preferences.instance).groups)
+        for (final item in group.visible)
+          if (item.boosted) item.event.uid,
+    };
+  }
+
+  Result<Collection<CampusEvent>> _upcoming(bool applyFilters) {
     final result = widget.events;
     final value = result.value;
     if (value == null) return result;
     final now = CampusTime.nowUtc();
+    final visible = applyFilters
+        ? {
+            for (final group
+                in filterEvents(value.data, Preferences.instance).groups)
+              for (final item in group.visible) item.event,
+          }
+        : null;
     return Result(
       value: Collection(
         data: [
           for (final event in value.data)
-            if (eventEnd(event).isAfter(now)) event,
+            if (eventEnd(event).isAfter(now) &&
+                (visible == null || visible.contains(event)))
+              event,
         ],
         stale: value.stale,
         lastUpdated: value.lastUpdated,
@@ -396,12 +526,16 @@ class _HomeScreenState extends State<HomeScreen> {
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(1),
         ),
-        ModuleType.generalEvents => EventsCard(
-          result: _upcomingEvents,
-          organizerKey: card.scope,
-          compact: card.size == CardSize.compact,
-          dragHandle: controls,
-          onShowAll: () => widget.onGoToTab(2),
+        ModuleType.generalEvents => ListenableBuilder(
+          listenable: Preferences.instance,
+          builder: (context, _) => EventsCard(
+            result: _filteredUpcomingEvents,
+            boosted: _boostedUids,
+            organizerKey: card.scope,
+            compact: card.size == CardSize.compact,
+            dragHandle: controls,
+            onShowAll: () => widget.onGoToTab(2),
+          ),
         ),
         ModuleType.clubEvents => ScopedEventsCard(
           result: _upcomingEvents,
@@ -419,6 +553,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         ModuleType.visitingChefs => VisitingChefsCard(
           result: widget.chefs,
+          compact: card.size == CardSize.compact,
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(1),
         ),
@@ -432,6 +567,7 @@ class _HomeScreenState extends State<HomeScreen> {
           facilityName: card.scope,
           compact: card.size == CardSize.compact,
           dragHandle: controls,
+          onShowAll: () => widget.onGoToTab(4),
         ),
         ModuleType.campusMap => DashboardMapCard(
           result: _campusMap,
@@ -439,6 +575,16 @@ class _HomeScreenState extends State<HomeScreen> {
           dragHandle: controls,
         ),
         ModuleType.academicDates => AcademicDatesCard(
+          dragHandle: controls,
+          onShowAll: () => widget.onGoToTab(4),
+        ),
+        ModuleType.shuttles => ShuttlesCard(
+          dragHandle: controls,
+          onShowAll: () => widget.onGoToTab(4),
+        ),
+        ModuleType.packagePickup => PackagePickupCard(
+          areas: widget.areas,
+          offices: _offices,
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(4),
         ),
@@ -455,13 +601,16 @@ class _HomeScreenState extends State<HomeScreen> {
   static const double _maxCardHeight = homeMaxCardHeight;
   static const double _cardGutter = 6;
 
+  // room kept for edit today, wide cells unchanged
+  static const double _pageEndHeight = 64;
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Fill the viewport when there is room, without ever shrinking below
         // the height the cards were designed against.
-        final available = constraints.maxHeight - _Colophon.height;
+        final available = constraints.maxHeight - _pageEndHeight;
         final columns = homeGridColumns(
           constraints.maxWidth,
           available,
@@ -482,39 +631,43 @@ class _HomeScreenState extends State<HomeScreen> {
         final phone = Insets.phone(context);
         final gutter = phone ? Insets.phoneCardGap / 2 : _cardGutter;
         final sideInset = phone ? Insets.phoneMargin - gutter : 8.0;
+        final twoUp = phone && phoneTwoUp(width: constraints.maxWidth, textScale: MediaQuery.textScalerOf(context).scale(1));
+        final shown = _displayOrder;
+        final pairs = twoUp ? phonePairs([for (final id in shown) _instance(id)]) : const <int>{};
 
         final children = [
-          for (var index = 0; index < _order.length; index++)
+          for (var index = 0; index < shown.length; index++)
             Semantics(
-              key: ValueKey(_order[index]),
+              key: ValueKey(shown[index]),
               container: true,
               sortKey: OrdinalSortKey(index.toDouble()),
               customSemanticsActions: {
                 if (_editing && index > 0)
                   const CustomSemanticsAction(label: 'Move up'): () =>
-                      _moveCard(_order[index], -1),
-                if (_editing && index < _order.length - 1)
+                      _moveCard(shown[index], -1),
+                if (_editing && index < shown.length - 1)
                   const CustomSemanticsAction(label: 'Move down'): () =>
-                      _moveCard(_order[index], 1),
+                      _moveCard(shown[index], 1),
               },
               label: dashboardCardSemanticsLabel(
-                _instance(_order[index]),
+                _instance(shown[index]),
                 index + 1,
-                _order.length,
+                shown.length,
               ),
               child: SizedBox(
-                width:
-                    (constraints.maxWidth - sideInset * 2) /
-                    columns *
-                    ((_instance(_order[index])?.size.columns ?? 1).clamp(
-                      1,
-                      columns,
-                    )),
+                width: pairs.contains(index)
+                    ? (constraints.maxWidth - sideInset * 2) / 2
+                    : (constraints.maxWidth - sideInset * 2) /
+                          columns *
+                          ((_instance(shown[index])?.size.columns ?? 1).clamp(
+                            1,
+                            columns,
+                          )),
                 // Phones size a card to its content, so there is no cell
                 // height. Wider windows divide the viewport into cells.
                 height: phone
                     ? null
-                    : (_instance(_order[index])?.size == CardSize.compact
+                    : (_instance(shown[index])?.size == CardSize.compact
                               ? cardHeight * .58
                               : cardHeight) +
                           gutter * 2,
@@ -523,14 +676,25 @@ class _HomeScreenState extends State<HomeScreen> {
                   // A Stack, as before the header controls moved into the
                   // card: it hands the card loose constraints, so a card
                   // keeps its natural height inside its cell.
-                  child: Stack(children: [_cardFor(_order[index])]),
+                  child: HitSlopRegion(
+                    child: Stack(
+                      children: [
+                        pairs.contains(index)
+                            ? CompactPair(child: _cardFor(shown[index]))
+                            : _cardFor(shown[index]),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
         ];
 
+        final openSettings = widget.onOpenSettings;
+        final date = CampusTime.wallDate();
+
         // Long-press is a drag in edit mode, so row menus are off there.
-        return ContextActionsScope(
+        final page = ContextActionsScope(
           enabled: !_editing,
           child: RefreshIndicator(
             onRefresh: widget.onRefresh,
@@ -538,6 +702,10 @@ class _HomeScreenState extends State<HomeScreen> {
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               controller: _scrollController,
               slivers: [
+                if (openSettings != null)
+                  SliverToBoxAdapter(
+                    child: TodayHeader(key: _headerKey, date: date, onOpenSettings: openSettings),
+                  ),
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: sideInset),
                   sliver: SliverToBoxAdapter(
@@ -575,8 +743,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       });
                       _announce(
                         _editing
-                            ? 'Customize mode on. Select a card to edit it.'
-                            : 'Customize mode off',
+                            ? 'Editing Today. Select a card to edit it.'
+                            : 'Done editing Today',
                       );
                     },
                     onAdd: _addCard,
@@ -591,11 +759,27 @@ class _HomeScreenState extends State<HomeScreen> {
                     onMove: (delta) => _moveCard(_selectedId!, delta),
                   ),
                 ),
-                const SliverToBoxAdapter(child: _Colophon()),
                 SliverToBoxAdapter(child: SizedBox(height: TabBarInset.of(context))),
               ],
             ),
           ),
+        );
+        if (openSettings == null) return page;
+        return Stack(
+          children: [
+            page,
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: AnimatedSwitcher(
+                duration: reduceMotion(context) ? Duration.zero : const Duration(milliseconds: 160),
+                child: _collapsed
+                    ? TodayCollapsedBar(date: date, onOpenSettings: openSettings)
+                    : const SizedBox.shrink(),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -646,6 +830,8 @@ class _EditBar extends StatelessWidget {
     ModuleType.facilityHours,
     ModuleType.campusMap,
     ModuleType.academicDates,
+    ModuleType.shuttles,
+    ModuleType.packagePickup,
   ];
 
   Future<void> _showLibrary(BuildContext context) async {
@@ -678,6 +864,8 @@ class _EditBar extends StatelessWidget {
                   ModuleType.facilityHours => 'See today’s recreation hours',
                   ModuleType.campusMap => 'Keep campus wayfinding on Today',
                   ModuleType.academicDates => 'Keep the next deadline visible',
+                  ModuleType.shuttles => 'Routes from home and until when',
+                  ModuleType.packagePickup => 'Your post office counter hours',
                   _ => 'Add another ${moduleLabels[type]!.toLowerCase()} card',
                 }),
                 trailing: Icon(AppIconKind.add.of(context)),
@@ -695,6 +883,24 @@ class _EditBar extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
 
+    // the end of the page, one quiet button
+    if (!editing) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
+        child: Center(
+          child: _BarPill(
+            onTap: onToggle,
+            icon: AppIconKind.tune,
+            label: 'Edit Today',
+            background: Colors.transparent,
+            outline: scheme.outlineVariant,
+            iconColor: scheme.onSurfaceVariant,
+            labelColor: scheme.onSurface,
+          ),
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
       child: Column(
@@ -709,13 +915,11 @@ class _EditBar extends StatelessWidget {
             children: [
               _BarPill(
                 onTap: onToggle,
-                icon: editing ? AppIconKind.check : AppIconKind.tune,
-                label: editing ? 'Done' : 'Customize',
-                background: editing
-                    ? scheme.primary
-                    : scheme.surfaceContainerHigh,
-                iconColor: editing ? scheme.onPrimary : scheme.onSurfaceVariant,
-                labelColor: editing ? scheme.onPrimary : scheme.onSurface,
+                icon: AppIconKind.check,
+                label: 'Done',
+                background: scheme.primary,
+                iconColor: scheme.onPrimary,
+                labelColor: scheme.onPrimary,
               ),
               if (editing) ...[
                 _BarPill(
@@ -962,6 +1166,7 @@ class _BarPill extends StatelessWidget {
     required this.background,
     required this.iconColor,
     required this.labelColor,
+    this.outline,
   });
 
   final VoidCallback onTap;
@@ -970,6 +1175,9 @@ class _BarPill extends StatelessWidget {
   final Color background;
   final Color iconColor;
   final Color labelColor;
+
+  /// A hairline edge, for a pill with no fill.
+  final Color? outline;
 
   @override
   Widget build(BuildContext context) {
@@ -981,14 +1189,14 @@ class _BarPill extends StatelessWidget {
     return Material(
       elevation: 0,
       color: background,
-      shape: Shapes.pill,
+      shape: outline == null ? Shapes.pill : StadiumBorder(side: BorderSide(color: outline!)),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 40),
           child: Padding(
-            // The spec's pill-x of 13, which is what lets "Customize" fit a
+            // The spec's pill-x of 13, which is what lets "Edit Today" fit a
             // 390 wide phone at 2x text.
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
             child: Row(
@@ -1085,22 +1293,6 @@ class _InspectButton extends StatelessWidget {
   }
 }
 
-class _Colophon extends StatelessWidget {
-  const _Colophon();
-
-  static const double height = 64;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(26, 14, 26, 26),
-    child: Text(
-      AppConfig.disclaimer,
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.bodySmall,
-    ),
-  );
-}
-
 /// The edit mode controls in a card header: drag handle, Inspect, Remove.
 ///
 /// One row, so the three can never overlap each other at any width or text
@@ -1121,12 +1313,13 @@ class EditControls extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(
     width: editControlsWidth,
     child: Row(
+      // 32 to see, 48 to tap
       children: [
-        _DragHandle(onActivate: onInspect),
+        HitSlopTarget(child: _DragHandle(onActivate: onInspect)),
         const SizedBox(width: 6),
-        _InspectButton(selected: selected, onTap: onInspect),
+        HitSlopTarget(child: _InspectButton(selected: selected, onTap: onInspect)),
         const SizedBox(width: 6),
-        _RemoveButton(onTap: onRemove),
+        HitSlopTarget(child: _RemoveButton(onTap: onRemove)),
       ],
     ),
   );

@@ -20,6 +20,7 @@ import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/shuttles.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
 import 'package:tigerhub/data/sources/recreation.dart';
 import 'package:tigerhub/data/static_config.dart';
@@ -111,6 +112,7 @@ void main() {
     }
     StaticConfig.overrideForTesting(files);
     config = StaticConfig.instance;
+    ShuttleSchedule.overrideForTesting(ShuttleSchedule.parse(jsonDecode(File('assets/config/shuttles.json').readAsStringSync()) as Map<String, dynamic>));
   });
 
   setUpAll(() async {

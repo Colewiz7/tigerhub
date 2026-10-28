@@ -13,7 +13,7 @@ import 'package:tigerhub/cards/event_row.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/campus_time.dart';
 import 'package:tigerhub/models/api_models.dart';
-import 'package:tigerhub/screens/campus_screen.dart' show currentSeason;
+import 'package:tigerhub/services/todays_hours.dart' show currentSeason;
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
@@ -700,7 +700,7 @@ void _dynamicColour() {
       controller.dispose();
     });
 
-    testWidgets('palette icon tooltip identifies source and action', (
+    testWidgets('the palette choice lives in Appearance, not on Today', (
       tester,
     ) async {
       final controller = SchemeController();
@@ -714,13 +714,15 @@ void _dynamicColour() {
       );
       await tester.pump();
 
-      // The app bar now also carries a settings tooltip, so target the
-      // palette one by its message rather than by type alone.
-      final tooltip = tester
-          .widgetList<Tooltip>(find.byType(Tooltip))
-          .firstWhere((t) => (t.message ?? '').contains('Theme source'));
-      expect(tooltip.message, contains('Theme source: built-in palette'));
-      expect(tooltip.message, contains('Tap to follow the wallpaper'));
+      // the old lock duplicated appearance
+      final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip)).map((t) => t.message ?? '');
+      expect(tooltips.where((m) => m.contains('Theme source')), isEmpty);
+
+      await tester.tap(find.bySemanticsLabel('Open settings'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Appearance').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Built-in palette'), findsOneWidget);
 
       await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();

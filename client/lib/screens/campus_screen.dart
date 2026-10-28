@@ -15,6 +15,7 @@ import '../widgets/empty_state.dart';
 import '../cards/housing_card.dart';
 import '../models/api_models.dart';
 import '../data/campus_time.dart';
+import '../data/shuttles.dart';
 import '../services/todays_hours.dart';
 import '../services/api.dart';
 import '../services/open_link.dart';
@@ -195,103 +196,6 @@ class _CampusScreenState extends State<CampusScreen> {
   }
 }
 
-typedef _ShuttleRoute = ({
-  int number,
-  String name,
-  String hours,
-  bool weekday,
-  bool weekend,
-});
-
-const _campusConnection3 = (
-  number: 3,
-  name: 'Campus Connection Shuttle',
-  hours: '7:00 AM–11:16 PM',
-  weekday: true,
-  weekend: false,
-);
-const _campusConnection4 = (
-  number: 4,
-  name: 'Campus Connection Shuttle',
-  hours: '5:00 AM–6:00 PM',
-  weekday: true,
-  weekend: false,
-);
-const _campusConnection5 = (
-  number: 5,
-  name: 'Campus Connection Shuttle',
-  hours: '11:20 AM–4:30 PM',
-  weekday: true,
-  weekend: false,
-);
-const _eastMorning = (
-  number: 9,
-  name: 'Early Morning East Residence',
-  hours: '7:00 AM–6:51 PM',
-  weekday: true,
-  weekend: false,
-);
-const _eastEvening = (
-  number: 11,
-  name: 'East Residence Shuttle',
-  hours: '7:00 PM–11:56 PM',
-  weekday: true,
-  weekend: false,
-);
-const _retail = (
-  number: 12,
-  name: 'Retail Shuttle',
-  hours: '7:00 AM–11:50 PM',
-  weekday: false,
-  weekend: true,
-);
-const _campusInn = (
-  number: 13,
-  name: 'Campus & Inn Shuttle',
-  hours: '7:47 AM–12:33 AM',
-  weekday: false,
-  weekend: true,
-);
-const _perkins = (
-  number: 7,
-  name: 'Perkins Green',
-  hours: '7:00 AM–6:47 PM',
-  weekday: true,
-  weekend: false,
-);
-
-const Map<String, List<_ShuttleRoute>> _shuttlesByHome = {
-  'global-village': [
-    _campusConnection3,
-    _campusConnection4,
-    _campusConnection5,
-    _retail,
-    _campusInn,
-  ],
-  'residence-halls': [
-    _campusConnection3,
-    _campusConnection4,
-    _campusConnection5,
-    _eastMorning,
-    _eastEvening,
-    _retail,
-    _campusInn,
-  ],
-  'perkins-green': [_perkins, _eastMorning, _eastEvening, _campusInn],
-  'riverknoll': [
-    _campusConnection3,
-    _campusConnection4,
-    _campusConnection5,
-    _campusInn,
-  ],
-  'university-commons': [
-    _campusConnection3,
-    _campusConnection4,
-    _campusConnection5,
-    _campusInn,
-  ],
-};
-
 class _ShuttleSection extends StatelessWidget {
   const _ShuttleSection({required this.areas, this.now});
 
@@ -299,44 +203,33 @@ class _ShuttleSection extends StatelessWidget {
   final DateTime? now;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ValueListenableBuilder(
+    valueListenable: ShuttleSchedule.current,
+    builder: (context, schedule, _) => _build(context, schedule),
+  );
+
+  Widget _build(BuildContext context, ShuttleSchedule? schedule) {
     final homeId = Preferences.instance.homeArea;
     final home = areas.where((area) => area.id == homeId).firstOrNull;
     final clock = now ?? CampusTime.wallNow();
-    final weekend =
-        clock.weekday == DateTime.saturday || clock.weekday == DateTime.sunday;
-    final laborDay = clock.year == 2026 && clock.month == 9 && clock.day == 7;
-    final routes = laborDay
-        ? const <_ShuttleRoute>[
-            (
-              number: 1,
-              name: 'RIT RTS Connection (Holiday)',
-              hours: 'See the holiday timetable',
-              weekday: true,
-              weekend: true,
-            ),
-            (
-              number: 14,
-              name: 'Campus & Inn Break Shuttle',
-              hours: '7:20 AM–12:06 AM',
-              weekday: true,
-              weekend: true,
-            ),
-          ]
-        : (_shuttlesByHome[homeId] ?? const <_ShuttleRoute>[])
-              .where((route) => weekend ? route.weekend : route.weekday)
-              .toList();
+    final holiday = schedule?.holidayOn(clock);
+    final breakDays = schedule?.breakOn(clock);
+    final routes = schedule?.routesOn(homeId, clock) ?? const <ShuttleRoute>[];
 
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
       children: [
         _Heading(
-          title: laborDay
-              ? 'Labor Day service'
+          title: holiday != null
+              ? '${holiday.name} service'
+              : breakDays != null
+              ? '${breakDays.name} service'
               : 'Today from ${home?.name ?? 'home'}',
-          subtitle: laborDay
-              ? 'Reduced service published for Monday, September 7.'
+          subtitle: holiday != null
+              ? 'Reduced service published for ${DateFormat('EEEE, MMMM d').format(clock)}.'
+              : breakDays != null
+              ? 'Break shuttle only. Scheduled windows, not live arrivals.'
               : 'Scheduled windows, not live arrivals. Arrive at the stop at least five minutes early.',
           state: DataState.ok,
         ),
@@ -346,7 +239,10 @@ class _ShuttleSection extends StatelessWidget {
             title: 'Set your housing area',
             compact: false,
           )
-        else if (!laborDay && !_shuttlesByHome.containsKey(homeId))
+        // the table is still loading
+        else if (schedule == null)
+          const SizedBox.shrink()
+        else if (holiday == null && !schedule.covers(homeId))
           const EmptyState(
             kind: EmptyKind.notFound,
             title: 'No routes for this area',
@@ -741,17 +637,6 @@ String _serviceLabel(String service) => switch (service) {
   'shipping_window' => 'Shipping window',
   _ => 'Hours',
 };
-
-/// Which season's hours are in force.
-///
-/// RIT publishes fall and summer separately. Showing both at once is noise:
-/// nobody standing outside the post office in September cares what July looked
-/// like. Fall term runs roughly late August to mid May.
-String currentSeason(DateTime now) {
-  final month = now.month;
-  final isSummer = month == 6 || month == 7 || (month == 8 && now.day < 22);
-  return isSummer ? 'summer' : 'fall';
-}
 
 /// One line per service: what it is doing right now.
 ///

@@ -1,0 +1,33 @@
+{
+  "last_verified": "2026-10-28",
+  "source_url": "https://www.rit.edu/parking/campus-shuttles",
+  "source_note": "Fall 2026 Shuttle Schedule by Residence. Hours of operation per route, not departures. Live arrivals are in TripShot. The page has no Greek houses section. Break routes run on breaks only and are kept for completeness.",
+  "term": "Fall 2026",
+  "routes": [
+    {"number": 3, "name": "Campus Connection Shuttle", "starts_at": "07:00", "ends_at": "23:16", "days": "weekday"},
+    {"number": 4, "name": "Campus Connection Shuttle", "starts_at": "05:00", "ends_at": "18:00", "days": "weekday"},
+    {"number": 5, "name": "Campus Connection Shuttle", "starts_at": "11:20", "ends_at": "16:30", "days": "weekday"},
+    {"number": 7, "name": "Perkins", "starts_at": "07:00", "ends_at": "18:47", "days": "weekday"},
+    {"number": 9, "name": "Early Morning East Residence Shuttle", "starts_at": "07:00", "ends_at": "18:51", "days": "weekday"},
+    {"number": 11, "name": "East Residence Shuttle", "starts_at": "19:00", "ends_at": "23:56", "days": "weekday"},
+    {"number": 12, "name": "Retail", "starts_at": "07:00", "ends_at": "23:50", "days": "weekend"},
+    {"number": 13, "name": "Campus & Inn Shuttle", "starts_at": "07:47", "ends_at": "00:33", "days": "weekend"},
+    {"number": 14, "name": "Campus & Inn Break Shuttle", "starts_at": "07:20", "ends_at": "00:06", "days": "breaks"},
+    {"number": 1, "name": "RIT RTS Connection (Holiday)", "note": "See the holiday timetable", "days": "holiday"}
+  ],
+  "breaks_source": "RIT academic calendar, the same dates as Academic dates in the app. Only breaks with a published first and last day are listed.",
+  "breaks": [
+    {"name": "Fall break", "from": "2026-10-12", "to": "2026-10-13"},
+    {"name": "Spring break", "from": "2027-03-07", "to": "2027-03-14"}
+  ],
+  "holidays": [
+    {"name": "Labor Day", "date": "2026-09-07"}
+  ],
+  "areas": {
+    "global-village": [3, 4, 5, 12, 13, 14],
+    "residence-halls": [3, 4, 5, 9, 11, 12, 13, 14],
+    "perkins-green": [7, 9, 11, 13, 14],
+    "riverknoll": [3, 4, 5, 13, 14],
+    "university-commons": [3, 4, 5, 13, 14]
+  }
+}

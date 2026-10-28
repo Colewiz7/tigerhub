@@ -55,6 +55,7 @@ class Preferences extends ChangeNotifier {
   static const _homeAreaKey = 'housing_area';
   static const _homeUnitKey = 'housing_unit';
   static const _setupSeenKey = 'setup_seen';
+  static const _smartOrderKey = 'today_smart_order';
 
   Set<String> _muted = {};
   Set<String> _pinned = {};
@@ -63,6 +64,7 @@ class Preferences extends ChangeNotifier {
   List<String> _hide = defaultHideKeywords;
   List<String> _boost = defaultBoostKeywords;
   bool _keywordRulesEnabled = true;
+  bool _smartOrder = false;
   bool _loaded = false;
 
   String? _homeArea;
@@ -85,6 +87,16 @@ class Preferences extends ChangeNotifier {
   List<String> get boostKeywords => _boost;
   bool get keywordRulesEnabled => _keywordRulesEnabled;
 
+  /// Today lifts Eat now at meal times and Up next before an event. Off
+  /// unless turned on, and never saved into the card order.
+  bool get todaySmartOrder => _smartOrder;
+
+  Future<void> setTodaySmartOrder(bool enabled) async {
+    _smartOrder = enabled;
+    notifyListeners();
+    await ResponseCache.instance.writeOrder(_smartOrderKey, [enabled ? 'true' : 'false']);
+  }
+
   Future<void> load() async {
     final cache = ResponseCache.instance;
     _muted = (await cache.readOrder(_mutedKey)).toSet();
@@ -101,6 +113,9 @@ class Preferences extends ChangeNotifier {
 
     final flags = await cache.readOrder(_keywordsEnabledKey);
     _keywordRulesEnabled = flags.isEmpty || flags.first == 'true';
+
+    final smart = await cache.readOrder(_smartOrderKey);
+    _smartOrder = smart.isNotEmpty && smart.first == 'true';
 
     // These keys are the ones the housing card already wrote, so anyone who
     // picked an area before this existed keeps their choice.
@@ -261,6 +276,7 @@ class Preferences extends ChangeNotifier {
     _hide = defaultHideKeywords;
     _boost = defaultBoostKeywords;
     _keywordRulesEnabled = true;
+    _smartOrder = false;
     _homeArea = null;
     _homeUnit = '';
     _setupSeen = false;

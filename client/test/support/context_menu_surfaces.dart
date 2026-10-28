@@ -15,6 +15,7 @@ import 'package:tigerhub/cards/event_row.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/campus_time.dart';
 import 'package:tigerhub/data/rit_clock.dart';
+import 'package:tigerhub/data/shuttles.dart';
 import 'package:tigerhub/data/sources/recreation.dart';
 import 'package:tigerhub/data/static_config.dart';
 import 'package:tigerhub/models/api_models.dart';
@@ -68,6 +69,7 @@ Future<void> prepareMenuEnvironment() async {
     files[name] = jsonDecode(File('assets/config/$name.json').readAsStringSync()) as Map<String, dynamic>;
   }
   StaticConfig.overrideForTesting(files);
+  ShuttleSchedule.overrideForTesting(ShuttleSchedule.parse(jsonDecode(File('assets/config/shuttles.json').readAsStringSync()) as Map<String, dynamic>));
   SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
   RitClock.pin(CampusTime.wall(2026, 8, 30, 12));
   await Preferences.instance.setHome(area: 'global-village');

@@ -70,7 +70,7 @@ void main() {
 
   // campus midnight oct 14 is 04:00 utc, oct 15 is 04:00 utc the next day.
   // every instant here is utc, so the result is the same in any device zone
-  final allDay = CampusEvent(uid: 'fair', source: 'drupal', title: 'Career fair', startsAt: DateTime.utc(2026, 10, 14, 4), allDay: true, organizer: 'RIT', organizerKey: 'rit');
+  final allDay = CampusEvent(uid: 'fair', source: 'drupal', title: 'Homecoming fair', startsAt: DateTime.utc(2026, 10, 14, 4), allDay: true, organizer: 'RIT', organizerKey: 'rit');
   final open = CampusEvent(uid: 'talk', source: 'test', title: 'Open studio', startsAt: DateTime.utc(2026, 10, 14, 15), organizer: 'Art Club', organizerKey: 'art');
   final multi = CampusEvent(uid: 'expo', source: 'campusgroups', title: 'Art expo', startsAt: DateTime.utc(2026, 10, 13, 4), endsAt: DateTime.utc(2026, 10, 15, 4), allDay: true, organizer: 'Gallery', organizerKey: 'gallery');
 
@@ -83,10 +83,12 @@ void main() {
   for (final MapEntry(key: moment, value: (now, shown)) in days.entries) {
     testWidgets('with no end, an all day event, a timed one and the last day of a multi day one ${shown ? 'show' : 'are gone'} $moment', (tester) async {
       RitClock.pin(now);
-      // one at a time, the card folds a third organizer into "+1 organizers"
+      // up next lists timed events, all day ones count in the hero
       for (final event in [allDay, open, multi]) {
         await pumpToday(tester, [event]);
-        expect(find.text(event.title), shown ? findsWidgets : findsNothing, reason: event.title);
+        final listed = shown && !event.allDay;
+        expect(find.text(event.title), listed ? findsWidgets : findsNothing, reason: event.title);
+        expect(find.text('1 today'), shown ? findsOneWidget : findsNothing, reason: event.title);
         expect(find.text('Ended'), findsNothing);
       }
     });

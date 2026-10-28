@@ -109,16 +109,20 @@ void main() {
       Finder tab(String label) => find.descendant(of: find.byType(AppTabBar), matching: find.text(label));
 
       check('today');
-      await tester.scrollUntilVisible(find.text('Customize'), 300, scrollable: find.byType(Scrollable).first);
-      await tester.tap(find.text('Customize'));
+      await tester.scrollUntilVisible(find.text('Edit Today'), 300, scrollable: find.byType(Scrollable).first);
+      // built in the cache extent is not on screen
+      await tester.ensureVisible(find.text('Edit Today'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit Today'));
       await tester.pumpAndSettle();
       check('today, customizing');
+      // back to the top, clear of the short date bar
+      tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0);
+      await tester.pumpAndSettle();
       final diningOptions = find.descendant(
-        of: find.ancestor(of: find.text('Dining'), matching: find.byType(CardShell)),
+        of: find.ancestor(of: find.text('Eat now'), matching: find.byType(CardShell)),
         matching: find.byTooltip('Customize card'),
       );
-      await tester.ensureVisible(diningOptions.first);
-      await tester.pumpAndSettle();
       await tester.tap(diningOptions.first);
       await tester.pumpAndSettle();
       // the dining card's options carry a dropdown, the arrow is a framework default
@@ -159,6 +163,9 @@ void main() {
       await tester.tap(find.byTooltip('Back'));
       await tester.pumpAndSettle();
 
+      // the gear lives on today
+      await tester.tap(tab('Today'));
+      await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsLabel('Open settings'));
       await tester.pumpAndSettle();
       check('settings');

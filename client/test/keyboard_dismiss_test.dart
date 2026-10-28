@@ -26,7 +26,7 @@ import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/campus_map.dart';
 import 'package:tigerhub/widgets/places_sheet.dart';
 import 'package:tigerhub/widgets/tab_bar.dart';
-import 'package:tigerhub/widgets/wordmark.dart';
+import 'package:tigerhub/widgets/large_title.dart';
 
 import 'support/tabs.dart';
 
@@ -225,7 +225,7 @@ void main() {
     await pumpShell(tester);
     await focusDiningSearch(tester);
 
-    await tester.tap(find.byType(Wordmark));
+    await tester.tap(find.byType(LargeTitle));
     await tester.pump();
     expect(focused(tester, search(DiningScreen)), isFalse);
     expectNoField(tester, 'after tapping outside');
@@ -266,6 +266,9 @@ void main() {
       await tester.pumpAndSettle();
       check(tab);
     }
+    // the gear lives on today
+    await tester.tap(tabLabel('Today'));
+    await tester.pumpAndSettle();
     await tester.tap(find.bySemanticsLabel('Open settings'));
     await tester.pumpAndSettle();
     check('settings');

@@ -22,7 +22,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/data/campus_time.dart';
-import 'package:tigerhub/screens/campus_screen.dart';
+import 'package:tigerhub/services/todays_hours.dart';
 
 void main() {
   test('the occupancy hour comes from the campus clock', () {

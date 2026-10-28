@@ -122,9 +122,9 @@ void main() {
   Future<void> toggleCustomize(WidgetTester tester) async {
     await scrollTo(tester, bottom: true);
     await tester.tap(
-      find.text('Customize').evaluate().isEmpty
+      find.text('Edit Today').evaluate().isEmpty
           ? find.text('Done')
-          : find.text('Customize'),
+          : find.text('Edit Today'),
     );
     await tester.pumpAndSettle();
     await scrollTo(tester, bottom: false);
@@ -236,7 +236,7 @@ void main() {
       await tester.pump();
 
       await scrollTo(tester, bottom: true);
-      await tester.tap(find.text('Customize'));
+      await tester.tap(find.text('Edit Today'));
       await tester.pump();
       await scrollTo(tester, bottom: false);
 
@@ -265,15 +265,15 @@ void main() {
     );
   });
 
-  testWidgets('customize mode on and off are announced', (tester) async {
+  testWidgets('edit mode on and off are announced', (tester) async {
     final spoken = announcements(tester);
     await pumpHome(tester);
 
     await toggleCustomize(tester);
-    expect(spoken.last, 'Customize mode on. Select a card to edit it.');
+    expect(spoken.last, 'Editing Today. Select a card to edit it.');
 
     await toggleCustomize(tester);
-    expect(spoken.last, 'Customize mode off');
+    expect(spoken.last, 'Done editing Today');
     expect(spoken, hasLength(2));
   });
 
@@ -607,14 +607,14 @@ void main() {
     }
   }
 
-  testWidgets('a tap just outside the Customize pill, inside its 48 box, works', (
+  testWidgets('a tap just outside the Edit Today pill, inside its 48 box, works', (
     tester,
   ) async {
     await pumpHome(tester, height: 2800);
     await scrollTo(tester, bottom: true);
     final pill = tester.getRect(
       find
-          .ancestor(of: find.text('Customize'), matching: find.byType(Material))
+          .ancestor(of: find.text('Edit Today'), matching: find.byType(Material))
           .first,
     );
     expect(pill.height, lessThan(48));
@@ -851,7 +851,7 @@ void main() {
             if (size.value.height > 2000) {
               // the tall images must show every card and the whole bar
               expect(position(tester).maxScrollExtent, 0);
-              final bar = tester.getRect(find.text(edit ? 'Done' : 'Customize'));
+              final bar = tester.getRect(find.text(edit ? 'Done' : 'Edit Today'));
               expect(bar.bottom, lessThanOrEqualTo(size.value.height));
               expect(
                 tester.getRect(find.byType(CardShell).at(3)).bottom,

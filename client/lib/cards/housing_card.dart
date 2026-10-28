@@ -100,7 +100,7 @@ class _HousingCardState extends State<HousingCard> {
 
     return CardShell(
       glyph: AppIconKind.mail,
-      title: 'Mailing Address',
+      title: 'Mailing address',
       state: widget.areas.state,
       fetchedAt: widget.areas.fetchedAt,
       dragHandle: widget.dragHandle,

@@ -82,8 +82,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final customize = find.byIcon(Icons.tune_rounded);
-    expect(customize, findsOneWidget, reason: 'no Customize control found');
+    final customize = find.text('Edit Today');
+    expect(customize, findsOneWidget, reason: 'no Edit Today control found');
 
     await tester.tap(customize, warnIfMissed: false);
     await tester.pumpAndSettle();

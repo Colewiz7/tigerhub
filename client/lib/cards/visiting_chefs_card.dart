@@ -20,11 +20,21 @@ import '../services/open_link.dart';
 import '../theme/tokens.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
+import '../widgets/compact_card.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/focus_ring.dart';
 import '../widgets/freshness.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
+
+/// The compact answer. Null while loading, so nothing is claimed.
+String? chefsCompactValue(Result<Collection<MenuItem>> result) {
+  if (result.isPriming) return null;
+  final all = result.value?.data ?? const <MenuItem>[];
+  if (all.isNotEmpty) return '${all.length} today';
+  final down = (result.value?.availability ?? Availability.available) == Availability.unavailable;
+  return down ? 'Unavailable' : 'None today';
+}
 
 class VisitingChefsCard extends StatelessWidget {
   const VisitingChefsCard({
@@ -32,10 +42,14 @@ class VisitingChefsCard extends StatelessWidget {
     required this.result,
     this.dragHandle,
     this.onShowAll,
+    this.compact = false,
   });
 
   final Result<Collection<MenuItem>> result;
   final Widget? dragHandle;
+
+  /// On a phone, one value: "5 today".
+  final bool compact;
 
   /// Not used by this card any more. It went to the Dining tab, which lists
   /// TigerCenter specials and has none of these chefs, so "+N more" now opens
@@ -47,16 +61,30 @@ class VisitingChefsCard extends StatelessWidget {
     final value = result.value;
     final availability = value?.availability ?? Availability.available;
 
+    if (compact && Insets.phone(context)) {
+      return CompactCard(
+        label: 'Visiting chefs',
+        value: chefsCompactValue(result),
+        quiet: all.isEmpty,
+        dragHandle: dragHandle,
+        onOpen: all.isEmpty ? null : () => _showAllChefs(context, all),
+        openLabel: 'shows every chef',
+      );
+    }
+
     return CardShell(
       // The toque is this section's identity, per the adoption spec.
       glyph: AppIconKind.visitingChef,
-      title: 'Visiting Chefs',
+      title: 'Visiting chefs',
       state: result.state,
       // The age of the chefs themselves, not of the request. ApiClient stamps
       // every response with the moment it arrived, which put "updated just
       // now" over a first run outage that had never held any chefs.
       fetchedAt: value?.lastUpdated,
       dragHandle: dragHandle,
+      // no chefs tab, the header opens the sheet
+      onOpen: all.isEmpty ? null : () => _showAllChefs(context, all),
+      openLabel: 'shows all chefs',
       // This feed is already scoped to today, so its count is honest and
       // immediately useful. The individual chef name remains the hero of each
       // row; this is the one card-level number. It stays in the header at

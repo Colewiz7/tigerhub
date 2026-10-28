@@ -11,6 +11,7 @@ import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../theme/semantic.dart';
+import '../theme/tokens.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/app_icon.dart';
@@ -52,6 +53,19 @@ int compareForDisplay(
     }
   }
   return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+}
+
+/// Eat now on a phone: your open spots, then other open places, then your
+/// closed spots, which only reach the card when rows are left over.
+List<DiningLocation> eatNowOrder(List<DiningLocation> locations, Set<String> pinned) {
+  bool isPinned(DiningLocation l) => pinned.contains('${l.id}');
+  List<DiningLocation> sorted(bool Function(DiningLocation) test) =>
+      [...locations.where(test)]..sort(compareForDisplay);
+  return [
+    ...sorted((l) => l.isOpen && isPinned(l)),
+    ...sorted((l) => l.isOpen && !isPinned(l)),
+    ...sorted((l) => !l.isOpen && isPinned(l)),
+  ];
 }
 
 /// Group locations into the configured categories, in configured order.
@@ -131,8 +145,9 @@ class DiningCard extends StatelessWidget {
               if (location.category == category) location,
           ];
     final openNow = locations.where((l) => l.isOpen).length;
+    // the phone card answers one question, wide keeps its name
     final title = category == null || locations.isEmpty
-        ? 'Dining'
+        ? (Insets.phone(context) ? 'Eat now' : 'Dining')
         : locations.first.categoryName;
 
     return CardShell(
@@ -141,6 +156,8 @@ class DiningCard extends StatelessWidget {
       state: result.state,
       fetchedAt: result.fetchedAt,
       dragHandle: dragHandle,
+      onOpen: onShowAll,
+      openLabel: 'opens Dining',
       // Card level, not location level. The hero has to answer the question
       // this card exists to answer, which is what is open right now.
       hero: locations.isEmpty
@@ -170,11 +187,20 @@ class _List extends StatelessWidget {
   final int? limit;
 
   @override
-  Widget build(BuildContext context) {
-    // Shared ordering, so the card preview and the Dining tab agree.
-    final sorted = [...locations]..sort(compareForDisplay);
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Preferences.instance,
+    builder: (context, _) => _build(context),
+  );
 
-    final openNow = sorted.where((location) => location.isOpen).length;
+  Widget _build(BuildContext context) {
+    // Shared ordering, so the card preview and the Dining tab agree.
+    final pinned = Preferences.instance.pinnedDining;
+    final sorted = Insets.phone(context)
+        ? eatNowOrder(locations, pinned)
+        : ([...locations]..sort((a, b) => compareForDisplay(a, b, pinned: pinned)));
+    if (sorted.isEmpty) {
+      return const EmptyState(kind: EmptyKind.allClosed);
+    }
 
     return BoundedList(
       itemCount: limit == null ? sorted.length : sorted.length.clamp(0, limit!),
@@ -182,10 +208,10 @@ class _List extends StatelessWidget {
       dense: true,
       maxRows: phoneRowCap(context),
       noun: 'open',
-      // Open rows sort first, so visible capacity is consumed by open
-      // locations before closed ones. The footer and the hero badge then count
-      // the same population.
-      hiddenCountBuilder: (shown) => (openNow - shown).clamp(0, openNow),
+      // The footer counts open places left out, so it matches the hero badge
+      // even when a closed pin takes a row.
+      hiddenCountBuilder: (shown) =>
+          sorted.skip(shown).where((location) => location.isOpen).length,
       onShowAll: onShowAll,
       itemBuilder: (context, index) =>
           DiningRow(location: sorted[index], dense: true),
@@ -287,6 +313,19 @@ class _StatusPill extends StatelessWidget {
   );
 }
 
+/// Below this a sensor reading says Quiet, not a small percent.
+const int quietBelowPercent = 15;
+
+/// The occupancy pill's words: Busy over capacity, Quiet under 15% full,
+/// otherwise "N% full". Null with no percent reading.
+String? occupancyLabel(Occupancy occupancy) {
+  final percent = occupancy.percentFull;
+  if (percent == null) return null;
+  if (occupancy.overCapacity) return 'Busy';
+  if (percent < quietBelowPercent) return 'Quiet';
+  return '$percent% full';
+}
+
 class _OccupancyPill extends StatelessWidget {
   const _OccupancyPill({required this.occupancy});
 
@@ -312,7 +351,7 @@ class _OccupancyPill extends StatelessWidget {
     final over = occupancy.overCapacity;
     return _pill(
       context,
-      over ? 'Busy' : '$percent% full',
+      occupancyLabel(occupancy)!,
       over ? semantic.busy : semantic.open,
       over ? semantic.busyContainer : semantic.openContainer,
     );
