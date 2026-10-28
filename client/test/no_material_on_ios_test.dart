@@ -116,12 +116,13 @@ void main() {
       await tester.tap(find.text('Customize'));
       await tester.pumpAndSettle();
       check('today, customizing');
+      // back to the top, clear of the short date bar
+      tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0);
+      await tester.pumpAndSettle();
       final diningOptions = find.descendant(
         of: find.ancestor(of: find.text('Eat now'), matching: find.byType(CardShell)),
         matching: find.byTooltip('Customize card'),
       );
-      await tester.ensureVisible(diningOptions.first);
-      await tester.pumpAndSettle();
       await tester.tap(diningOptions.first);
       await tester.pumpAndSettle();
       // the dining card's options carry a dropdown, the arrow is a framework default

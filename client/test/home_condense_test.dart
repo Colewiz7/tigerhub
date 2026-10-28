@@ -3,7 +3,7 @@
 /// Measures what the owner's targets name: page margin 16, card padding 16,
 /// radius 24, rows 52 with a 4 gap and a 32 icon circle, an inline 28 hero
 /// pill, a one line 28 "+N open" footer, card gap 10, cards as tall as their
-/// content and a 48 masthead. Run with --dart-define=MEASURE=true to print the
+/// content and a header that scrolls with them. Run with --dart-define=MEASURE=true to print the
 /// numbers.
 library;
 
@@ -25,6 +25,7 @@ import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/card_shell.dart';
 import 'package:tigerhub/widgets/scalloped_badge.dart' show CardHero;
 import 'package:tigerhub/widgets/status_row.dart';
+import 'package:tigerhub/widgets/today_header.dart';
 
 import 'golden_harness.dart';
 
@@ -138,7 +139,7 @@ void main() {
     addTearDown(tester.platformDispatcher.clearAllTestValues);
   }
 
-  HomeScreen home(ValueChanged<int>? onGoToTab) => HomeScreen(
+  HomeScreen home(ValueChanged<int>? onGoToTab, {bool header = false}) => HomeScreen(
     api: ApiClient(backend: _EmptyBackend()),
     dining: _dining,
     events: _events,
@@ -146,6 +147,7 @@ void main() {
     areas: _ok<HousingArea>(const []),
     onRefresh: () async {},
     onGoToTab: onGoToTab ?? (_) {},
+    onOpenSettings: header ? () {} : null,
   );
 
   Future<void> pumpHome(
@@ -155,6 +157,7 @@ void main() {
     Brightness brightness = Brightness.dark,
     double? boxHeight,
     ValueChanged<int>? onGoToTab,
+    bool header = false,
   }) async {
     phoneView(tester, size, scale: scale);
     await tester.pumpWidget(
@@ -168,7 +171,7 @@ void main() {
                 color: Theme.of(context).scaffoldBackgroundColor,
                 child: Align(
                   alignment: Alignment.topCenter,
-                  child: SizedBox(height: boxHeight, child: home(onGoToTab)),
+                  child: SizedBox(height: boxHeight, child: home(onGoToTab, header: header)),
                 ),
               ),
             ),
@@ -457,10 +460,10 @@ void main() {
     }
   }
 
-  // The real shell on a phone: the masthead is 48 tall.
+  // The real shell on a phone: Today heads itself, the shell adds nothing.
   for (final size in const [Size(390, 844), Size(440, 956)]) {
     testWidgets(
-      '${size.width.toInt()}x${size.height.toInt()}: masthead is 48',
+      '${size.width.toInt()}x${size.height.toInt()}: Today starts at the top, its header is 48 and the date',
       (tester) async {
         phoneView(tester, size);
         final scheme = SchemeController();
@@ -475,9 +478,13 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        final mastheadHeight = tester.getTopLeft(find.byType(HomeScreen)).dy;
-        report('masthead ${size.width.toInt()}', {'height': mastheadHeight});
-        expect(mastheadHeight, 48);
+        expect(tester.getTopLeft(find.byType(HomeScreen)).dy, 0);
+        // the mark row: a 48 gear, 2 above
+        final gear = tester.getRect(find.byTooltip('Settings'));
+        expect(gear.top, 2);
+        expect(gear.height, 48);
+        final header = tester.getRect(find.byType(TodayHeader));
+        report('header ${size.width.toInt()}', {'height': header.height});
         scheme.dispose();
       },
     );
@@ -485,13 +492,13 @@ void main() {
 
   // Acceptance: at 440x956, two full cards and the start of a third show on
   // Today. The Today content area is the window less the top safe area (62 on
-  // the 17 Pro Max), the 48 masthead and the tab bar (121 including its safe
-  // area today).
+  // the 17 Pro Max) and the tab bar (121 including its safe area). The header
+  // scrolls with the cards, so it is inside that area.
   testWidgets('440x956: two full cards and at least the start of a third on Today', (
     tester,
   ) async {
-    const content = 956 - 62 - 48 - 121.0;
-    await pumpHome(tester, const Size(440, 956), boxHeight: content);
+    const content = 956 - 62 - 121.0;
+    await pumpHome(tester, const Size(440, 956), boxHeight: content, header: true);
     final first = card(tester, 0);
     final second = card(tester, 1);
     final third = card(tester, 2);

@@ -36,6 +36,7 @@ import 'widgets/card_shell.dart' show editControlsWidth;
 import 'widgets/compact_card.dart' show CompactPair;
 import 'widgets/context_actions.dart' show ContextActionsScope;
 import 'widgets/tab_bar.dart';
+import 'widgets/today_header.dart';
 import 'widgets/touch_target.dart';
 
 /// The icon each module type shows in the card library and the hidden chips.
@@ -150,6 +151,7 @@ class HomeScreen extends StatefulWidget {
     required this.areas,
     required this.onRefresh,
     required this.onGoToTab,
+    this.onOpenSettings,
   });
 
   final ApiClient api;
@@ -162,6 +164,10 @@ class HomeScreen extends StatefulWidget {
   /// The "+N more" footers land on the matching tab.
   final ValueChanged<int> onGoToTab;
 
+  /// The shell's gear. When set, Today heads itself with the mark, the date
+  /// and the gear.
+  final VoidCallback? onOpenSettings;
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -169,6 +175,16 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _scrollController = ScrollController();
   final _gridKey = GlobalKey();
+  final _headerKey = GlobalKey();
+
+  /// The large date has scrolled under the top edge.
+  bool _collapsed = false;
+
+  void _onScrolled() {
+    final header = _headerKey.currentContext?.size?.height;
+    final collapsed = header != null && _scrollController.hasClients && _scrollController.offset >= header - 8;
+    if (collapsed != _collapsed) setState(() => _collapsed = collapsed);
+  }
 
   List<String> _order = [for (final card in defaultDashboard) card.id];
 
@@ -210,6 +226,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScrolled);
     _tickMinute();
     _restoreOrder();
     _recreationSub = widget.api.recreation().listen((result) {
@@ -225,7 +242,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _scrollController
+      ..removeListener(_onScrolled)
+      ..dispose();
     _minute?.cancel();
     _recreationSub?.cancel();
     _mapSub?.cancel();
@@ -641,8 +660,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
         ];
 
+        final openSettings = widget.onOpenSettings;
+        final date = CampusTime.wallDate();
+
         // Long-press is a drag in edit mode, so row menus are off there.
-        return ContextActionsScope(
+        final page = ContextActionsScope(
           enabled: !_editing,
           child: RefreshIndicator(
             onRefresh: widget.onRefresh,
@@ -650,6 +672,10 @@ class _HomeScreenState extends State<HomeScreen> {
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               controller: _scrollController,
               slivers: [
+                if (openSettings != null)
+                  SliverToBoxAdapter(
+                    child: TodayHeader(key: _headerKey, date: date, onOpenSettings: openSettings),
+                  ),
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: sideInset),
                   sliver: SliverToBoxAdapter(
@@ -708,6 +734,23 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+        );
+        if (openSettings == null) return page;
+        return Stack(
+          children: [
+            page,
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: AnimatedSwitcher(
+                duration: reduceMotion(context) ? Duration.zero : const Duration(milliseconds: 160),
+                child: _collapsed
+                    ? TodayCollapsedBar(date: date, onOpenSettings: openSettings)
+                    : const SizedBox.shrink(),
+              ),
+            ),
+          ],
         );
       },
     );

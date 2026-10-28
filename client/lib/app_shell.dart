@@ -27,7 +27,6 @@ import 'services/preferences.dart';
 import 'services/api.dart';
 import 'widgets/app_icon.dart';
 import 'widgets/large_title.dart';
-import 'widgets/wordmark.dart';
 import 'theme/dynamic_theme.dart';
 import 'theme/tokens.dart';
 import 'widgets/tab_bar.dart';
@@ -261,15 +260,12 @@ class _AppShellState extends State<AppShell>
               bottom: false,
               child: Column(
                 children: [
-                  // the mark is todays alone, map stays full height
-                  if (_showSettings || _index == 0)
-                    _Masthead(
-                      scheme: widget.scheme,
-                      settingsOpen: _showSettings,
-                      onSettings: () =>
-                          setState(() => _showSettings = !_showSettings),
+                  // today heads itself, map stays full height
+                  if (_showSettings)
+                    _SettingsHeader(
+                      onClose: () => setState(() => _showSettings = false),
                     )
-                  else if (_index != 3)
+                  else if (_index != 0 && _index != 3)
                     LargeTitle(tabs[_index].label),
                   Expanded(
                     // content runs to the screen bottom, under the bar
@@ -298,6 +294,7 @@ class _AppShellState extends State<AppShell>
                                             areas: _areas,
                                             onRefresh: _refreshFromUser,
                                             onGoToTab: _go,
+                                            onOpenSettings: () => setState(() => _showSettings = true),
                                           ),
                                           DiningScreen(result: _dining, api: widget.api),
                                           EventsScreen(result: _events),
@@ -443,93 +440,25 @@ const List<LogicalKeyboardKey> _digits = [
   LogicalKeyboardKey.digit5,
 ];
 
-class _Masthead extends StatelessWidget {
-  const _Masthead({
-    required this.scheme,
-    required this.settingsOpen,
-    required this.onSettings,
-  });
+/// Settings is a screen of its own: a large title and Close.
+class _SettingsHeader extends StatelessWidget {
+  const _SettingsHeader({required this.onClose});
 
-  final SchemeController scheme;
-  final bool settingsOpen;
-  final VoidCallback onSettings;
+  final VoidCallback onClose;
 
   @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    final state = scheme.state;
-
-    // 48 tall on phones: a 32 logo and the 36 icon buttons, 6 above and below.
-    final phone = Insets.phone(context);
-    return Padding(
-      padding: phone
-          ? const EdgeInsets.fromLTRB(Insets.phoneMargin, 6, Insets.phoneMargin, 6)
-          : const EdgeInsets.fromLTRB(26, 20, 26, 12),
-      child: Row(
-        children: [
-          Image.asset(
-            'assets/images/tigerhub-mascot.png',
-            height: phone ? 32 : 44,
-            filterQuality: FilterQuality.medium,
-            excludeFromSemantics: true,
-          ),
-          const SizedBox(width: 8),
-          Wordmark(height: phone ? 32 : null),
-          const Spacer(),
-          Tooltip(
-            message: settingsOpen ? 'Close settings' : 'Settings',
-            child: Semantics(
-              button: true,
-              toggled: settingsOpen,
-              label: settingsOpen ? 'Close settings' : 'Open settings',
-              child: InkWell(
-                onTap: onSettings,
-                borderRadius: BorderRadius.circular(20),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Icon(
-                    (settingsOpen ? AppIconKind.close : AppIconKind.settings).of(context),
-                    size: 24,
-                    color: settingsOpen
-                        ? colors.primary
-                        : colors.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 4),
-          // The palette escape hatch. An unusual wallpaper can produce an
-          // unreadable scheme, so pinning the known-good seed is always one
-          // tap away rather than requiring a rebuild.
-          Tooltip(
-            message: state.isDynamic
-                ? 'Theme source: wallpaper\n${state.detail ?? ''}\nTap to use the built-in palette'
-                : 'Theme source: built-in palette\n${state.detail ?? ''}\nTap to follow the wallpaper',
-            child: Semantics(
-              button: true,
-              toggled: !state.isDynamic,
-              label: state.isDynamic
-                  ? 'Use built-in color palette'
-                  : 'Follow wallpaper colors',
-              child: InkWell(
-                onTap: () => scheme.setForceSeed(!scheme.forcedToSeed),
-                borderRadius: BorderRadius.circular(20),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Icon(
-                    (state.isDynamic ? AppIconKind.appearance : AppIconKind.lock).of(context),
-                    size: 24,
-                    color: state.isDynamic
-                        ? colors.primary
-                        : colors.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Expanded(child: LargeTitle('Settings')),
+      Padding(
+        padding: EdgeInsets.only(top: 4, right: Insets.phone(context) ? 6 : 16),
+        child: HeaderIconButton(
+          icon: AppIconKind.close,
+          tooltip: 'Close settings',
+          onTap: onClose,
+        ),
       ),
-    );
-  }
+    ],
+  );
 }
