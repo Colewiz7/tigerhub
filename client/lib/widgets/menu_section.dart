@@ -57,32 +57,57 @@ class MenuSection extends StatelessWidget {
       );
     }
 
-    // Matching dishes first, the rest still visible below.
-    final wanted = <Dish>[];
-    final rest = <Dish>[];
-    for (final dish in menu.dishes) {
-      (_matchesDiet(dish) ? wanted : rest).add(dish);
-    }
     final filtering = prefs.dietFilters.isNotEmpty;
+    final restCount = menu.dishes.where((d) => !_matchesDiet(d)).length;
+
+    // Station order is the order the feed first names them, Other last.
+    final stations = <String, List<Dish>>{};
+    for (final dish in menu.dishes) {
+      stations.putIfAbsent(stationOf(dish), () => []).add(dish);
+    }
+    final names = [
+      for (final name in stations.keys)
+        if (name != otherStation) name,
+      if (stations.containsKey(otherStation)) otherStation,
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final dish in wanted) _DishRow(dish: dish, prefs: prefs),
-        if (filtering && rest.isNotEmpty) ...[
-          const SizedBox(height: 12),
+        if (filtering && restCount > 0) ...[
           Text(
-            '${rest.length} more that do not match your filters',
+            '$restCount more that do not match your filters',
             style: text.bodySmall,
           ),
           const SizedBox(height: 8),
         ],
-        for (final dish in rest)
-          _DishRow(dish: dish, prefs: prefs, demoted: filtering),
+        for (var i = 0; i < names.length; i++)
+          _StationSection(
+            key: ValueKey('station-section-${names[i]}'),
+            station: names[i],
+            // A filter opens every section with a match, so folding never
+            // hides a dish the person asked for.
+            initiallyOpen:
+                i == 0 || (filtering && stations[names[i]]!.any(_matchesDiet)),
+            // Matching dishes first, the rest still visible below.
+            dishes: [
+              ...stations[names[i]]!.where(_matchesDiet),
+              ...stations[names[i]]!.where((d) => !_matchesDiet(d)),
+            ],
+            prefs: prefs,
+            demoteUnmatched: filtering,
+            matches: _matchesDiet,
+          ),
         const SizedBox(height: 14),
         _Caveat(),
       ],
     );
+  }
+
+  /// The station a dish is served from, which is its published category.
+  static String stationOf(Dish dish) {
+    final category = dish.category?.trim();
+    return category == null || category.isEmpty ? otherStation : category;
   }
 
   bool _matchesDiet(Dish dish) {
@@ -95,12 +120,104 @@ class MenuSection extends StatelessWidget {
   }
 }
 
+/// Where a dish goes when the feed names no category.
+const String otherStation = 'Other';
+
+class _StationSection extends StatefulWidget {
+  const _StationSection({
+    super.key,
+    required this.station,
+    required this.initiallyOpen,
+    required this.dishes,
+    required this.prefs,
+    required this.demoteUnmatched,
+    required this.matches,
+  });
+
+  final String station;
+  final bool initiallyOpen;
+  final List<Dish> dishes;
+  final Preferences prefs;
+  final bool demoteUnmatched;
+  final bool Function(Dish) matches;
+
+  @override
+  State<_StationSection> createState() => _StationSectionState();
+}
+
+class _StationSectionState extends State<_StationSection> {
+  late bool _open = widget.initiallyOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final text = Theme.of(context).textTheme;
+    final count = widget.dishes.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          label: '${widget.station}, $count ${count == 1 ? 'item' : 'items'}',
+          excludeSemantics: true,
+          onTap: () => setState(() => _open = !_open),
+          child: InkWell(
+            key: ValueKey('station-${widget.station}'),
+            borderRadius: Shapes.inner,
+            onTap: () => setState(() => _open = !_open),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(child: Text(widget.station, style: text.titleSmall)),
+                    const SizedBox(width: 8),
+                    Text('$count', style: text.labelSmall),
+                    const SizedBox(width: 6),
+                    AnimatedRotation(
+                      turns: _open ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 150),
+                      child: Icon(
+                        AppIconKind.expand.of(context),
+                        size: 18,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_open)
+          for (final dish in widget.dishes)
+            _DishRow(
+              dish: dish,
+              prefs: widget.prefs,
+              showCategory: false,
+              demoted: widget.demoteUnmatched && !widget.matches(dish),
+            ),
+        const SizedBox(height: 4),
+      ],
+    );
+  }
+}
+
 class _DishRow extends StatelessWidget {
-  const _DishRow({required this.dish, required this.prefs, this.demoted = false});
+  const _DishRow({
+    required this.dish,
+    required this.prefs,
+    this.demoted = false,
+    this.showCategory = true,
+  });
 
   final Dish dish;
   final Preferences prefs;
   final bool demoted;
+  final bool showCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +259,7 @@ class _DishRow extends StatelessWidget {
                   ],
                 ],
               ),
-              if (dish.category != null) ...[
+              if (showCategory && dish.category != null) ...[
                 const SizedBox(height: 2),
                 Text(dish.category!, style: text.bodySmall),
               ],
