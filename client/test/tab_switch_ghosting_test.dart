@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:tigerhub/widgets/segmented_picker.dart';
 import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/screens/campus_screen.dart';
@@ -254,6 +255,9 @@ void main() {
       }
     }
 
+    // the default view lists only what is open
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
     expectOneList('at rest');
     // Walk the whole list so every location is on screen at some point.
     for (var n = 0; n < 12; n++) {
@@ -265,9 +269,9 @@ void main() {
     expect(seen.length, _categories * _perCategory,
         reason: 'some locations were never on screen, so never checked');
 
-    for (final chip in ['Open', 'Open', 'Pinned (1)', 'Pinned (1)']) {
-      await tester.tap(find.textContaining(chip).first);
-      await step('after $chip');
+    for (final segment in ['Open now', 'All', 'Favorites', 'All']) {
+      await tester.tap(find.text(segment));
+      await step('after $segment');
     }
 
     await tester.enterText(diningSearch(), 'number 1');
@@ -462,7 +466,7 @@ void main() {
     await tester.tap(tabLabel('Dining'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.textContaining('Open').first);
+    await tester.tap(find.text('All'));
     await tester.pumpAndSettle();
     await tester.drag(find.byType(ListView), const Offset(0, -400));
     await tester.pumpAndSettle();
@@ -475,9 +479,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(diningScroll(tester).pixels, offset);
-    final chip = tester.widget<FilterChip>(
-      find.widgetWithText(FilterChip, 'Open'),
+    final picker = tester.widget<SegmentedPicker<DiningView>>(
+      find.byType(SegmentedPicker<DiningView>),
     );
-    expect(chip.selected, isTrue, reason: 'the Open filter was reset');
+    expect(picker.value, DiningView.all, reason: 'the view was reset');
   });
 }

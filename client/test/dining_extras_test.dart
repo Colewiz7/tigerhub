@@ -24,7 +24,7 @@ import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/cache.dart';
 import 'package:tigerhub/widgets/jump_list.dart';
-import 'package:tigerhub/widgets/link_button.dart';
+import 'package:tigerhub/widgets/segmented_picker.dart';
 import 'package:tigerhub/widgets/status_row.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:url_launcher_platform_interface/method_channel_url_launcher.dart';
@@ -595,14 +595,20 @@ void main() {
     });
   });
 
-  group('header links', () {
-    testWidgets('open exactly the two urls, externally', (tester) async {
-      await pumpDining(tester, _body(const []));
+  group('toolbar menu', () {
+    Future<void> pick(WidgetTester tester, String label) async {
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label));
+      await tester.pump();
+    }
 
-      await tester.tap(find.text('Order online'));
-      await tester.pump();
-      await tester.tap(find.text('Check balance'));
-      await tester.pump();
+    testWidgets('Order online and Check balance open exactly the two urls, externally', (tester) async {
+      await pumpDining(tester, _body(const []));
+      expect(find.text('Order online'), findsNothing);
+
+      await pick(tester, 'Order online');
+      await pick(tester, 'Check balance');
 
       expect(launcher.opened, ['https://ondemand.rit.edu/', 'https://tigerspend.rit.edu/']);
       expect(launcher.modes, everyElement(PreferredLaunchMode.externalApplication));
@@ -619,7 +625,7 @@ void main() {
       addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
       await pumpDining(tester, _body(const []));
 
-      await tester.tap(find.text('Check balance'));
+      await pick(tester, 'Check balance');
       await tester.pump();
       await tester.pump();
 
@@ -627,66 +633,26 @@ void main() {
       expect(find.text('Check balance copied'), findsOneWidget);
     });
 
-    for (final link in const [
-      (label: 'Order online', url: 'https://ondemand.rit.edu/'),
-      (label: 'Check balance', url: 'https://tigerspend.rit.edu/'),
-    ]) {
-      testWidgets('${link.label} is a labelled button with a 48pt target', (tester) async {
-        final handle = tester.ensureSemantics();
-        await pumpDining(tester, _body(const []));
-
-        final node = tester.getSemantics(find.bySemanticsLabel(link.label));
-        expect(node.label, link.label);
-        expect(node.hint, 'Opens externally');
-        expect(node.flagsCollection.isButton, isTrue);
-        expect(node.flagsCollection.isLink, isTrue);
-
-        final box = tester.getRect(find.ancestor(of: find.text(link.label), matching: find.byType(InkWell)).first);
-        expect(box.height, greaterThanOrEqualTo(48));
-        expect(box.width, greaterThanOrEqualTo(48));
-        handle.dispose();
-      });
-    }
-
-    testWidgets('keyboard focus draws the 2px ring', (tester) async {
+    testWidgets('the menu items are 48pt targets', (tester) async {
       await pumpDining(tester, _body(const []));
-      expect(find.byKey(const ValueKey('focus-ring')), findsNothing);
-
-      final order = find.widgetWithText(LinkButton, 'Order online');
-      final balance = find.widgetWithText(LinkButton, 'Check balance');
-      Finder ringIn(Finder pill) => find.descendant(of: pill, matching: find.byKey(const ValueKey('focus-ring')));
-
-      for (var i = 0; i < 6 && ringIn(order).evaluate().isEmpty; i++) {
-        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-        await tester.pump();
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      for (final label in ['Order online', 'Check balance', 'Edit groups']) {
+        final item = tester.getRect(find.ancestor(of: find.text(label), matching: find.byType(InkWell)).first);
+        expect(item.height, greaterThanOrEqualTo(48), reason: label);
       }
-
-      expect(ringIn(order), findsOneWidget);
-      expect(ringIn(balance), findsNothing);
-      final decoration = tester.widget<DecoratedBox>(ringIn(order)).decoration as ShapeDecoration;
-      expect((decoration.shape as RoundedRectangleBorder).side.width, 2);
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
-
-      expect(ringIn(balance), findsOneWidget);
-      expect(ringIn(order), findsNothing);
+      expect(tester.getRect(find.byTooltip('More')).shortestSide, greaterThanOrEqualTo(48));
     });
 
-    testWidgets('large text wraps the pills and keeps the full label', (tester) async {
+    testWidgets('large text keeps the full labels', (tester) async {
       await pumpDining(tester, _body(const []), size: const Size(320, 700), scale: 2);
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('Order online'), findsOneWidget);
-      expect(find.text('Check balance'), findsOneWidget);
       for (final label in ['Order online', 'Check balance']) {
         final paragraph = tester.renderObject<RenderParagraph>(find.text(label));
         expect(paragraph.didExceedMaxLines, isFalse, reason: label);
-        final pill = tester.getRect(find.ancestor(of: find.text(label), matching: find.byType(InkWell)).first);
-        final text = tester.getRect(find.text(label));
-        expect(pill.inflate(0.5).contains(text.topLeft), isTrue, reason: label);
-        expect(pill.inflate(0.5).contains(text.bottomRight), isTrue, reason: label);
-        expect(pill.right, lessThanOrEqualTo(320), reason: label);
       }
     });
   });
@@ -697,7 +663,7 @@ void main() {
         final name = 'dining_extras_${size.width.toInt()}x${size.height.toInt()}_${brightness.name}_${scale.toInt()}x';
         goldenWidgets(name, (tester) async {
           await pumpDining(tester, _body(_six), size: size, brightness: brightness, scale: scale);
-          expect(find.text('Order online'), findsOneWidget);
+          expect(find.byType(SegmentedPicker<DiningView>), findsOneWidget);
           expect(find.text('Taco Loco'), findsOneWidget);
           await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name.png'));
         });

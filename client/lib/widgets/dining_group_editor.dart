@@ -4,7 +4,6 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 
-import '../theme/tokens.dart';
 import 'app_icon.dart';
 
 class EditGroupHeader extends StatelessWidget {
@@ -27,7 +26,6 @@ class EditGroupHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     return Semantics(
       container: true,
@@ -40,14 +38,12 @@ class EditGroupHeader extends StatelessWidget {
         const CustomSemanticsAction(label: 'Delete group'): ?onDelete,
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 4),
-        padding: const EdgeInsets.only(left: 12),
-        decoration: BoxDecoration(color: scheme.primary.withValues(alpha: 0.14), borderRadius: Shapes.small),
+        padding: const EdgeInsets.only(left: 4),
         child: Row(
           children: [
             Expanded(
               child: ExcludeSemantics(
-                child: Text(name, style: text.titleMedium?.copyWith(color: scheme.primary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                child: Text(name, style: text.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
             ),
             _Button(icon: AppIconKind.edit, label: 'Rename', onTap: onRename),

@@ -105,6 +105,23 @@ AppIconKind iconForVenue(String name) {
 }
 
 // first match wins, crossroads and artesano say cafe too
+// the type filter's words, one per venue icon
+String venueTypeLabel(AppIconKind kind) => switch (kind) {
+  AppIconKind.diningHall => 'Dining hall',
+  AppIconKind.cafe => 'Coffee',
+  AppIconKind.grocery => 'Market',
+  AppIconKind.bakery => 'Bakery',
+  AppIconKind.iceCream => 'Ice cream',
+  AppIconKind.smoothie => 'Smoothies',
+  AppIconKind.deli => 'Deli',
+  AppIconKind.restaurant => 'Restaurant',
+  AppIconKind.soup => 'Soup',
+  AppIconKind.patio => 'Patio',
+  AppIconKind.truck => 'Food truck',
+  AppIconKind.diningOffice => 'Office',
+  _ => 'Other',
+};
+
 const _venueIcons = [
   (['gracie', 'commons', 'brick city', 'ritz', 'crossroads'], AppIconKind.diningHall),
   (['artesano', 'bakery'], AppIconKind.bakery),
@@ -236,7 +253,11 @@ class DiningRow extends StatelessWidget {
     this.api,
     this.dense = false,
     this.onMove,
+    this.grouped = false,
   });
+
+  // drawn inside an inset group
+  final bool grouped;
 
   final DiningLocation location;
 
@@ -284,6 +305,7 @@ class DiningRow extends StatelessWidget {
     final client = api;
     final moving = onMove;
     return StatusRow(
+      grouped: grouped,
       dense: dense,
       icon: Preferences.instance.isPinned(location.id)
           ? AppIconKind.pinned

@@ -90,6 +90,8 @@ void main() {
       await Preferences.instance.togglePinned(32);
       await Preferences.instance.toggleHidden(481);
       await pumpDiningScreen(tester);
+      await tester.tap(find.text('All'));
+      await tester.pumpAndSettle();
       expect(find.text('Pinned'), findsOneWidget);
       expect(find.text('Dorm side'), findsOneWidget);
       expect(find.text('Other'), findsNothing);
@@ -105,8 +107,12 @@ void main() {
     testWidgets('Open now leaves hidden places out', (tester) async {
       await Preferences.instance.toggleHidden(21);
       await pumpDiningScreen(tester);
+      // the default view is Open now, which has no Hidden section
+      expect(find.textContaining('Hidden'), findsNothing);
+      await tester.tap(find.text('All'));
+      await tester.pumpAndSettle();
       expect(find.text('Hidden (1)'), findsOneWidget);
-      await tester.tap(find.widgetWithText(FilterChip, 'Open'));
+      await tester.tap(find.text('Open now'));
       await tester.pumpAndSettle();
       expect(find.textContaining('Hidden'), findsNothing);
       expect(find.text("Gracie's"), findsNothing);

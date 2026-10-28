@@ -16,12 +16,10 @@ void main() {
   testWidgets('Pin from the menu moves the place into Pinned', (tester) async {
     MenuProbe().install(tester);
     await pumpDiningScreen(tester);
-    // the filter chip is the one Pinned until a section joins it
-    expect(find.text('Pinned'), findsOneWidget);
+    expect(find.text('Pinned'), findsNothing);
     await secondaryTap(tester, find.text("Gracie's"));
     await tapMenuItem(tester, 'Pin');
     expect(find.text('Pinned'), findsOneWidget);
-    expect(find.text('Pinned (1)'), findsOneWidget);
     expect(find.text("Gracie's"), findsOneWidget);
     expect(Preferences.instance.isPinned(21), isTrue);
   });
@@ -32,7 +30,10 @@ void main() {
     await secondaryTap(tester, find.text("Gracie's"));
     await tapMenuItem(tester, 'Hide');
     expect(find.text("Gracie's"), findsNothing);
-    expect(find.text('Hidden (1)'), findsOneWidget);
+    // Open now keeps hidden places out, All lists them
+    expect(find.text('Hidden (1)'), findsNothing);
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Hidden (1)'));
     await tester.pumpAndSettle();
     await secondaryTap(tester, find.text("Gracie's"));

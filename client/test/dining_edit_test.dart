@@ -13,6 +13,8 @@ import 'support/dining_harness.dart';
 
 Future<void> _edit(WidgetTester tester) async {
   await pumpDiningScreen(tester);
+  await tester.tap(find.byTooltip('More'));
+  await tester.pumpAndSettle();
   await tester.tap(find.text('Edit groups'));
   await tester.pumpAndSettle();
 }
@@ -62,7 +64,7 @@ void main() {
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Move to group'), findsNothing);
-    expect(find.text('Edit groups'), findsOneWidget);
+    expect(find.byTooltip('More'), findsOneWidget);
   });
 
   testWidgets('Move down swaps a default group with the next one', (tester) async {
@@ -140,6 +142,8 @@ void main() {
 
   testWidgets('an empty Other has no header in edit mode', (tester) async {
     await pumpDiningScreen(tester, places: [place(21, "Gracie's")]);
+    await tester.tap(find.byTooltip('More'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Edit groups'));
     await tester.pumpAndSettle();
     expect(find.text('Other'), findsNothing);
