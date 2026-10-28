@@ -438,7 +438,7 @@ void main() {
               expect(lines, expected, reason: 'geometry moved');
               expect(
                 texts,
-                [for (final t in fixture.text[key]!) _endedDropsOff(_sentenceCaseStatus(t))],
+                [for (final t in fixture.text[key]!) _endedDropsOff(_sentenceCaseStatus(t)).replaceAll('+1 organizers', '+1 organizer')],
                 reason: 'row text changed',
               );
 

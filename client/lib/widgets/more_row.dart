@@ -16,6 +16,12 @@ import 'app_icon.dart';
 import 'focus_ring.dart';
 import 'touch_target.dart';
 
+/// "1 event", "2 events". [plural] is the noun as most counts read it; one
+/// drops its trailing s. A noun with no s ("open", "more") stays as is.
+String counted(int count, String plural) => '$count ${nounFor(count, plural)}';
+
+String nounFor(int count, String plural) => count == 1 && plural.endsWith('s') ? plural.substring(0, plural.length - 1) : plural;
+
 class MoreRow extends StatelessWidget {
   const MoreRow({
     super.key,
@@ -67,7 +73,7 @@ class MoreRow extends StatelessWidget {
                       // text merges in and it reads twice.
                       ExcludeSemantics(
                         child: Text(
-                          '+$hidden $noun',
+                          '+${counted(hidden, noun)}',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
                                 color: muted,
@@ -120,7 +126,7 @@ class MoreRow extends StatelessWidget {
                   children: [
                     ExcludeSemantics(
                       child: Text(
-                        '+$hidden $noun',
+                        '+${counted(hidden, noun)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: muted,
                           fontWeight: AppTheme.weight(Weights.medium),
@@ -144,5 +150,5 @@ class MoreRow extends StatelessWidget {
 
   /// "+2 more events", or just "+2 more" when the noun is the default, which
   /// is the visible footer text.
-  String get _label => noun == 'more' ? '+$hidden more' : '+$hidden more $noun';
+  String get _label => noun == 'more' ? '+$hidden more' : '+$hidden more ${nounFor(hidden, noun)}';
 }

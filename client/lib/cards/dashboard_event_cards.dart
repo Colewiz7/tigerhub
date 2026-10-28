@@ -9,6 +9,7 @@ import '../widgets/app_icon.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/more_row.dart' show counted;
 import '../widgets/status_row.dart';
 import 'event_row.dart';
 
@@ -68,7 +69,7 @@ class ScopedEventsCard extends StatelessWidget {
       hero: events.isEmpty
           ? null
           : Text(
-              '${events.length} events',
+              counted(events.length, 'events'),
               style: Theme.of(context).textTheme.labelLarge
                   ?.copyWith(color: Theme.of(context).colorScheme.primary),
             ),

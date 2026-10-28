@@ -18,6 +18,7 @@ import '../widgets/jump_list.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
 import '../widgets/hidden_footer.dart';
+import '../widgets/more_row.dart' show counted;
 import '../widgets/search_field.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/status_row.dart';
@@ -260,7 +261,7 @@ class _TotalFooter extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Text(
-        '$hidden events hidden by your filters. Adjust them in Settings.',
+        '${counted(hidden, 'events')} hidden by your filters. Adjust them in Settings.',
         style: Theme.of(context).textTheme.bodySmall,
       ),
     );
