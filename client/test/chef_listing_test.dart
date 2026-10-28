@@ -14,6 +14,8 @@ import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 
+import 'golden_harness.dart';
+
 MenuItem _chef(int id, DateTime? start, DateTime? end) => MenuItem(id: id, name: 'Chef $id', locationName: 'RITZ', startsAt: start, endsAt: end);
 
 Result<Collection<MenuItem>> _ok(List<MenuItem> data) => Result(value: ChefCollection(data: data, stale: false), state: DataState.ok);
@@ -28,6 +30,7 @@ Future<void> _pump(WidgetTester tester, Widget card) async {
 }
 
 void main() {
+  setUpAll(loadGoldenFonts);
   tearDown(RitClock.reset);
 
   final end = CampusTime.wall(2026, 10, 14, 14);
@@ -113,12 +116,106 @@ void main() {
       expect(chefsCompactValue(_ok(chefs)), '1 today');
     });
 
-    test('all hidden reads none today, an outage still reads unavailable', () {
+    test('all hidden reads no more chefs, a quiet day none today, an outage unavailable', () {
       RitClock.pin(CampusTime.wall(2026, 10, 14, 22));
       final ended = _ok([chefs[0], chefs[1]]);
-      expect(chefsCompactValue(ended), 'None today');
+      expect(chefsCompactValue(ended), 'No more chefs');
+      expect(chefsCompactValue(_ok(const [])), 'None today');
       final down = Result<Collection<MenuItem>>(value: ChefCollection(data: const [], stale: false, availability: Availability.unavailable), state: DataState.ok);
       expect(chefsCompactValue(down), 'Unavailable');
+    });
+  });
+
+  group('next cutoff', () {
+    test('is the soonest end plus grace still ahead', () {
+      final chefs = [
+        _chef(1, start, end),
+        _chef(2, CampusTime.wall(2026, 10, 14, 16), CampusTime.wall(2026, 10, 14, 19)),
+        _chef(3, null, null),
+      ];
+      expect(nextChefCutoff(chefs, now: CampusTime.wall(2026, 10, 14, 12)), end.add(chefGrace));
+      expect(nextChefCutoff(chefs, now: CampusTime.wall(2026, 10, 14, 15)), CampusTime.wall(2026, 10, 14, 19, 30));
+      expect(nextChefCutoff(chefs, now: CampusTime.wall(2026, 10, 14, 20)), isNull);
+      expect(nextChefCutoff([_chef(3, null, null)]), isNull);
+    });
+  });
+
+  group('timer', () {
+    final chef = _chef(1, CampusTime.wall(2026, 10, 14, 11), CampusTime.wall(2026, 10, 14, 14));
+
+    testWidgets('hides the chef at the cutoff with no data refresh', (tester) async {
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 13, 50));
+      await _pump(tester, VisitingChefsCard(result: _ok([chef])));
+      expect(find.text('Chef 1'), findsOneWidget);
+
+      // the clock reaches the cutoff and the one shot fires
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 14, 30));
+      await tester.pump(const Duration(minutes: 39));
+      expect(find.text('Chef 1'), findsOneWidget);
+      await tester.pump(const Duration(minutes: 1));
+      expect(find.text('Chef 1'), findsNothing);
+      expect(find.text('No more chefs today'), findsOneWidget);
+      // nothing left to arm, so a ticking timer would fail the test here
+    });
+
+    testWidgets('the compact card flips at the cutoff too', (tester) async {
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 13, 50));
+      await _pump(tester, VisitingChefsCard(compact: true, result: _ok([chef])));
+      expect(find.text('1 today'), findsOneWidget);
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 14, 30));
+      await tester.pump(const Duration(minutes: 40));
+      expect(find.text('No more chefs'), findsOneWidget);
+    });
+
+    testWidgets('rearms for the next chef after one drops', (tester) async {
+      final late = _chef(2, null, CampusTime.wall(2026, 10, 14, 16));
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 13, 50));
+      await _pump(tester, VisitingChefsCard(result: _ok([chef, late])));
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 14, 30));
+      await tester.pump(const Duration(minutes: 40));
+      expect(find.text('Chef 1'), findsNothing);
+      expect(find.text('Chef 2'), findsOneWidget);
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 16, 30));
+      await tester.pump(const Duration(minutes: 120));
+      expect(find.text('Chef 2'), findsNothing);
+    });
+
+    testWidgets('a new result rearms the timer', (tester) async {
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 13, 50));
+      await _pump(tester, VisitingChefsCard(result: _ok(const [])));
+      // same tree, so this is didUpdateWidget on the live state
+      await _pump(tester, VisitingChefsCard(result: _ok([chef])));
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 14, 30));
+      await tester.pump(const Duration(minutes: 40));
+      expect(find.text('Chef 1'), findsNothing);
+    });
+
+    testWidgets('dispose leaves no pending timer', (tester) async {
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 13, 50));
+      await _pump(tester, VisitingChefsCard(result: _ok([chef])));
+      expect(tester.binding.transientCallbackCount, 0);
+      await tester.pumpWidget(const SizedBox());
+      // the harness fails the test if the armed timer is still pending
+    });
+  });
+
+  group('compact copy', () {
+    testWidgets('no more chefs fits one line at 1x in the narrowest paired half cell', (tester) async {
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 22));
+      // two up starts at 360, where a card is 360 / 2 - 16 margin - 5 gap wide
+      tester.view.physicalSize = const Size(360, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFF76902));
+      final theme = AppTheme.from(scheme);
+      final themed = theme.copyWith(textTheme: theme.textTheme.apply(fontFamily: AppTheme.fontFamily));
+      // real font so the width is honest
+      final card = VisitingChefsCard(compact: true, result: _ok([_chef(1, CampusTime.wall(2026, 10, 14, 11), CampusTime.wall(2026, 10, 14, 14))]));
+      await tester.pumpWidget(MaterialApp(theme: themed, home: Scaffold(body: Align(alignment: Alignment.topLeft, child: SizedBox(width: 159, child: card)))));
+      await tester.pumpAndSettle();
+      final text = find.text('No more chefs');
+      expect(text, findsOneWidget);
+      expect(tester.getSize(text).height, lessThan(17 * 1.25 * 1.5));
     });
   });
 
