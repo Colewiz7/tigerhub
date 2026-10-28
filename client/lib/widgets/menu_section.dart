@@ -236,13 +236,17 @@ class _DishRow extends StatelessWidget {
     ];
 
     final mark = classifyDish(dish);
-    final colors = DietPalette.of(context)[mark.kind];
+    final tint = DietPalette.of(context)[mark.kind];
 
-    return Opacity(
-      opacity: demoted ? 0.55 : 1,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Container(
+    // A dish that misses the filter keeps full contrast text. It recedes by
+    // losing its tint, dropping a size and saying so, never by fading.
+    final fill = demoted ? scheme.surfaceContainerLow : tint.container;
+    final ink = demoted ? scheme.onSurfaceVariant : tint.onContainer;
+    final colors = (container: fill, onContainer: ink, accent: tint.accent, onAccent: tint.onAccent);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Container(
           key: ValueKey('dish-${dish.name}'),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
@@ -258,7 +262,8 @@ class _DishRow extends StatelessWidget {
                   Expanded(
                     child: Text(
                       dish.name,
-                      style: text.titleMedium?.copyWith(color: colors.onContainer),
+                      style: (demoted ? text.titleSmall : text.titleMedium)
+                          ?.copyWith(color: colors.onContainer),
                     ),
                   ),
                   if (flagged.isNotEmpty) ...[
@@ -298,26 +303,33 @@ class _DishRow extends StatelessWidget {
                         icon: dietIcon(mark.kind),
                       ),
                     for (final tag in dish.dietary)
-                      if (tag != mark.tag)
+                      if (tag.trim() != mark.tag)
                         _Tag(
-                          label: tag,
+                          label: tag.trim(),
                           foreground: scheme.onSurfaceVariant,
                           background: scheme.surfaceContainerHighest,
                         ),
                     for (final allergen in dish.allergens)
-                      if (allergen != mark.tag)
-                      _Tag(
-                        label: allergen,
-                        foreground: scheme.onSurfaceVariant,
-                        background: scheme.surfaceContainerHighest,
-                      ),
+                      if (allergen.trim() != mark.tag)
+                        _Tag(
+                          label: allergen.trim(),
+                          foreground: scheme.onSurfaceVariant,
+                          background: scheme.surfaceContainerHighest,
+                        ),
                   ],
+                ),
+              ],
+              if (demoted) ...[
+                const SizedBox(height: 9),
+                _Tag(
+                  label: 'Doesn’t match',
+                  foreground: scheme.onSurfaceVariant,
+                  background: scheme.surfaceContainerHighest,
                 ),
               ],
             ],
           ),
         ),
-      ),
     );
   }
 }

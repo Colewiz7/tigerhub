@@ -31,8 +31,10 @@ double _contrast(Color a, Color b) {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-ColorScheme _scheme(Brightness b) =>
-    ColorScheme.fromSeed(seedColor: const Color(0xFFF76902), brightness: b);
+const _orange = Color(0xFFF76902);
+
+ColorScheme _scheme(Brightness b, [Color seed = _orange]) =>
+    ColorScheme.fromSeed(seedColor: seed, brightness: b);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -59,14 +61,29 @@ void main() {
         _dish('a', allergens: ['May Contain Traces of Fish']),
       ),
       'unrelated allergens': (DietClass.other, _dish('a', allergens: ['Milk', 'Egg'])),
+      'non-vegetarian is not vegetarian': (DietClass.other, _dish('a', diet: ['Non-Vegetarian'])),
+      'non vegetarian is not vegetarian': (DietClass.other, _dish('a', diet: ['non vegetarian'])),
+      'non-vegan is not vegan': (DietClass.other, _dish('a', diet: ['Non-Vegan'])),
+      'a longer tag is not vegetarian': (DietClass.other, _dish('a', diet: ['Vegetarian Option'])),
+      'padded vegetarian': (DietClass.vegetarian, _dish('a', diet: ['  Vegetarian '])),
+      'padded vegan': (DietClass.vegan, _dish('a', diet: ['\tVegan\n'])),
+      'padded pork': (DietClass.pork, _dish('a', diet: [' Pork '])),
+      'padded fish allergen': (DietClass.fish, _dish('a', allergens: [' Fish '])),
     };
     for (final entry in cases.entries) {
       test(entry.key, () => expect(dietClassOf(entry.value.$2), entry.value.$1));
     }
 
-    test('the label is the tag as published', () {
+    test('the label is the tag as published, trimmed', () {
       expect(classifyDish(_dish('a', diet: ['bEEf'])).tag, 'bEEf');
+      expect(classifyDish(_dish('a', diet: [' Vegan '])).tag, 'Vegan');
       expect(classifyDish(_dish('a')).tag, isNull);
+    });
+
+    test('the diet filter agrees: non-vegetarian is not vegetarian', () {
+      expect(_dish('a', diet: ['Non-Vegetarian']).isVegetarian, isFalse);
+      expect(_dish('a', diet: [' Vegetarian ']).isVegetarian, isTrue);
+      expect(_dish('a', diet: ['Non-Vegan']).isVegan, isFalse);
     });
   });
 
@@ -103,6 +120,7 @@ void main() {
     Widget Function(Widget menu)? wrap,
     double width = 390,
     double scale = 1,
+    Color seed = _orange,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = Size(width, 2400);
@@ -113,7 +131,7 @@ void main() {
     );
     await tester.pumpWidget(
       MaterialApp(
-        theme: AppTheme.from(_scheme(brightness)),
+        theme: AppTheme.from(_scheme(brightness, seed)),
         builder: (context, child) => MediaQuery(
           data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(scale)),
           child: child!,
@@ -200,24 +218,101 @@ void main() {
       );
     });
 
-    for (final brightness in Brightness.values) {
-      testWidgets('rendered name and label text read at 4.5:1 in ${brightness.name}', (
-        tester,
-      ) async {
-        await pumpMenu(tester, dishes, brightness: brightness);
-        final palette = DietPalette.from(_scheme(brightness));
+    // every Text in the row, against the fill it is actually painted on
+    void expectReadable(WidgetTester tester, String dish, String state) {
+      final row = find.byKey(ValueKey('dish-$dish'));
+      expect(row, findsOneWidget, reason: dish);
+      final rowFill = (tester.widget<Container>(row).decoration! as BoxDecoration).color!;
 
-        for (final (name, kind) in [
-          ('Tofu bowl', DietClass.vegan),
-          ('Cheese slice', DietClass.vegetarian),
-          ('Brisket', DietClass.beef),
-          ('Ham melt', DietClass.pork),
-        ]) {
-          final text = tester.widget<Text>(find.text(name));
-          expect(text.style?.color, palette[kind].onContainer, reason: name);
+      void check(Element element, Color fill) {
+        final text = element.widget as Text;
+        final color = text.style?.color;
+        expect(color, isNotNull, reason: '$dish "${text.data}" has no explicit color ($state)');
+        expect(
+          _contrast(color!, fill),
+          greaterThanOrEqualTo(4.5),
+          reason: '$dish "${text.data}" $state',
+        );
+      }
+
+      final painted = <Element>{};
+      for (final material in find.descendant(of: row, matching: find.byType(Material)).evaluate()) {
+        final fill = (material.widget as Material).color!;
+        for (final text in find.descendant(
+          of: find.byWidget(material.widget),
+          matching: find.byType(Text),
+        ).evaluate()) {
+          painted.add(text);
+          check(text, fill);
         }
-      });
+      }
+      for (final text in find.descendant(of: row, matching: find.byType(Text)).evaluate()) {
+        if (!painted.contains(text)) check(text, rowFill);
+      }
+      expect(
+        find.ancestor(of: row, matching: find.byType(Opacity)),
+        findsNothing,
+        reason: '$dish is faded, which no contrast check can see ($state)',
+      );
     }
+
+    final everyClass = [
+      _dish('Tofu bowl', diet: ['Vegan', 'Vegetarian']),
+      _dish('Cheese slice', diet: ['Vegetarian']),
+      _dish('Brisket', diet: ['Beef']),
+      _dish('Ham melt', diet: ['Pork']),
+      _dish('Roast bird', diet: ['Chicken'], category: 'Grill'),
+      _dish('Fish fry', allergens: ['Fish', 'Milk']),
+      _dish('Plain rice', allergens: ['Gluten']),
+    ];
+
+    const seeds = {
+      'orange': _orange,
+      'blue': Color(0xFF1565C0),
+      'green': Color(0xFF2E7D32),
+      'purple': Color(0xFF6750A4),
+    };
+
+    for (final brightness in Brightness.values) {
+      for (final seed in seeds.entries) {
+        testWidgets('rendered text reads at 4.5:1, ${brightness.name}, ${seed.key} seed', (
+          tester,
+        ) async {
+          await pumpMenu(tester, everyClass, brightness: brightness, seed: seed.value);
+          for (final dish in everyClass) {
+            expectReadable(tester, dish.name, 'unfiltered');
+          }
+        });
+
+        testWidgets('demoted rows still read at 4.5:1, ${brightness.name}, ${seed.key} seed', (
+          tester,
+        ) async {
+          await Preferences.instance.toggleDiet('Vegan');
+          await pumpMenu(tester, everyClass, brightness: brightness, seed: seed.value);
+          for (final dish in everyClass) {
+            expectReadable(tester, dish.name, 'demoted by a Vegan filter');
+          }
+        });
+      }
+    }
+
+    testWidgets('a demoted row says so in words, a matching row does not', (tester) async {
+      await Preferences.instance.toggleDiet('Vegan');
+      await pumpMenu(tester, everyClass);
+
+      Finder label(String dish) => find.descendant(
+        of: find.byKey(ValueKey('dish-$dish')),
+        matching: find.text('Doesn’t match'),
+      );
+      expect(label('Tofu bowl'), findsNothing);
+      expect(label('Brisket'), findsOneWidget);
+      expect(label('Plain rice'), findsOneWidget);
+    });
+
+    testWidgets('no filter, no demotion label', (tester) async {
+      await pumpMenu(tester, everyClass);
+      expect(find.text('Doesn’t match'), findsNothing);
+    });
   });
 
   group('legend', () {

@@ -32,10 +32,14 @@ const _proteinTags = <DietClass, Set<String>>{
   DietClass.fish: {'fish'},
 };
 
-/// The class and the published tag that decided it. Meat wins over vegetarian
-/// when a dish carries both, since that is the claim to avoid getting wrong.
+/// The class and the published tag that decided it, trimmed. Tags match whole,
+/// so "Non-Vegetarian" is not vegetarian. Meat wins over vegetarian when a dish
+/// carries both, since that is the claim to avoid getting wrong.
 ({DietClass kind, String? tag}) classifyDish(Dish dish) {
-  final tags = [...dish.dietary, ...dish.allergens];
+  final tags = [
+    for (final tag in [...dish.dietary, ...dish.allergens]) tag.trim(),
+  ];
+  final dietary = [for (final tag in dish.dietary) tag.trim()];
 
   for (final entry in _proteinTags.entries) {
     for (final tag in tags) {
@@ -44,11 +48,11 @@ const _proteinTags = <DietClass, Set<String>>{
       }
     }
   }
-  for (final tag in dish.dietary) {
+  for (final tag in dietary) {
     if (tag.toLowerCase() == 'vegan') return (kind: DietClass.vegan, tag: tag);
   }
-  for (final tag in dish.dietary) {
-    if (tag.toLowerCase().contains('vegetarian')) {
+  for (final tag in dietary) {
+    if (tag.toLowerCase() == 'vegetarian') {
       return (kind: DietClass.vegetarian, tag: tag);
     }
   }
