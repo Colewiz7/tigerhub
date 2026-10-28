@@ -159,6 +159,9 @@ void main() {
       await tester.tap(find.byTooltip('Back'));
       await tester.pumpAndSettle();
 
+      // the gear lives on today
+      await tester.tap(tab('Today'));
+      await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsLabel('Open settings'));
       await tester.pumpAndSettle();
       check('settings');

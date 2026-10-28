@@ -25,6 +25,7 @@ import 'services/subscriptions.dart';
 import 'services/preferences.dart';
 import 'services/api.dart';
 import 'widgets/app_icon.dart';
+import 'widgets/large_title.dart';
 import 'widgets/wordmark.dart';
 import 'theme/dynamic_theme.dart';
 import 'theme/tokens.dart';
@@ -258,12 +259,16 @@ class _AppShellState extends State<AppShell>
               bottom: false,
               child: Column(
                 children: [
-                  _Masthead(
-                    scheme: widget.scheme,
-                    settingsOpen: _showSettings,
-                    onSettings: () =>
-                        setState(() => _showSettings = !_showSettings),
-                  ),
+                  // the mark is todays alone, map stays full height
+                  if (_showSettings || _index == 0)
+                    _Masthead(
+                      scheme: widget.scheme,
+                      settingsOpen: _showSettings,
+                      onSettings: () =>
+                          setState(() => _showSettings = !_showSettings),
+                    )
+                  else if (_index != 3)
+                    LargeTitle(tabs[_index].label),
                   Expanded(
                     // content runs to the screen bottom, under the bar
                     child: Builder(
