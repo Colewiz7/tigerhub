@@ -108,6 +108,8 @@ class _FixtureBackend implements Backend {
       case '/campus/map':
         return {'data': _map, 'stale': false, 'last_updated': null};
     }
+    // a saved home makes the housing card ask, and the empty fallback below is not an address
+    if (path.endsWith('/address')) throw const SocketException('not in the fixtures');
     return {'data': <dynamic>[], 'stale': false, 'last_updated': null};
   }
 
