@@ -133,6 +133,7 @@ void main() {
     Brightness brightness = Brightness.light,
     double textScale = 1,
     TargetPlatform? platform,
+    DateTime? now,
   }) async {
     tester.view.devicePixelRatio = 1.0;
     tester.view.physicalSize = size;
@@ -158,7 +159,7 @@ void main() {
         home: Scaffold(
           body: CampusScreen(
             api: ApiClient(backend: _FixtureBackend(config)),
-            now: DateTime(2026, 8, 30),
+            now: now ?? DateTime(2026, 8, 30),
             areas: Result(
               value: Collection(
                 data: config.housingAreas.map(HousingArea.fromJson).toList(),
@@ -224,6 +225,57 @@ void main() {
     expect(find.text('Add/drop ends'), findsOneWidget);
     expect(find.text('Last day to add or drop'), findsOneWidget);
   });
+
+  testWidgets('academic dates shows breaks as ranges', (tester) async {
+    Future<void> openOn(DateTime day) async {
+      await tester.pumpWidget(const SizedBox());
+      await pumpCampus(tester, now: day);
+      await tester.tap(find.text('Academic dates'));
+      await tester.pumpAndSettle();
+    }
+
+    await openOn(DateTime(2026, 11, 26));
+    expect(find.text('Thanksgiving holiday'), findsOneWidget);
+    expect(find.text('Nov 26–27'), findsOneWidget);
+    expect(find.text('Classes resume Nov 30'), findsOneWidget);
+
+    await openOn(DateTime(2026, 12, 8));
+    expect(find.text('Fall to spring break'), findsOneWidget);
+    expect(find.text('Dec 19–Jan 10'), findsOneWidget);
+    expect(find.text('Employee holidays'), findsOneWidget);
+    expect(find.text('Dec 25–Jan 1'), findsOneWidget);
+
+    await openOn(DateTime(2027, 5, 8));
+    expect(find.text('Spring to summer break'), findsOneWidget);
+    expect(find.text('May 9–11'), findsOneWidget);
+    expect(find.text('Summer to fall break'), findsOneWidget);
+    expect(find.text('Aug 13–22'), findsOneWidget);
+  });
+
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    // at 2x the long subtitles take a third line, see needThirdLineAt2x
+    for (final textScale in const [1.0]) {
+      testWidgets('break rows fit on one line at ${size.width.toInt()} at ${textScale}x', (tester) async {
+        for (final day in [DateTime(2026, 11, 26), DateTime(2026, 12, 8), DateTime(2027, 5, 8)]) {
+          await tester.pumpWidget(const SizedBox());
+          await pumpCampus(tester, size: size, textScale: textScale, now: day);
+          await tester.tap(find.text('Academic dates'));
+          await tester.pumpAndSettle();
+          const breakRows = {
+            'Classes resume Nov 30',
+            'Between semesters',
+            'RIT designated holidays',
+            'Between semester and term',
+            'Between term and semester',
+          };
+          expect(truncatedRowText(tester).toSet().intersection(breakRows), isEmpty, reason: 'cut from $day');
+          if (textScale == 1) {
+            expect(multiLineRowText(tester).toSet().intersection(breakRows), isEmpty, reason: 'one line at 1x from $day');
+          }
+        }
+      });
+    }
+  }
 
   testWidgets('safety contacts dial the exact official number', (tester) async {
     final launcher = _FakeLauncher(succeeds: true);
@@ -352,12 +404,11 @@ void main() {
       'Last day to drop with a W',
       'Graduation applications due',
       'Final exams begin December 9',
-      'First day of spring add/drop',
+      'Classes resume Nov 30',
     },
     440: {
       'Graduation applications due',
       'Final exams begin December 9',
-      'First day of spring add/drop',
     },
   };
   for (final size in const [Size(390, 844), Size(440, 956)]) {
