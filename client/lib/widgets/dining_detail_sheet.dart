@@ -22,6 +22,36 @@ import '../widgets/occupancy_chart.dart';
 import '../services/subscriptions.dart';
 import 'app_icon.dart';
 
+/// The detail as a pushed page, so there is always a back button and iOS gets
+/// its edge swipe. A full height modal sheet had neither once the menu was long.
+class DiningDetailPage extends StatelessWidget {
+  const DiningDetailPage({super.key, required this.location, required this.api});
+
+  final DiningLocation location;
+  final ApiClient api;
+
+  static Future<void> open(
+    BuildContext context,
+    DiningLocation location,
+    ApiClient api,
+  ) => Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => DiningDetailPage(location: location, api: api),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(),
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 720),
+        child: DiningDetailSheet(location: location, api: api),
+      ),
+    ),
+  );
+}
+
 class DiningDetailSheet extends StatefulWidget {
   const DiningDetailSheet({
     super.key,
@@ -91,6 +121,7 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
     final nowHour = CampusTime.fieldsOf(CampusTime.nowUtc()).hour;
 
     return SafeArea(
+      top: false,
       child: SingleChildScrollView(
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
@@ -194,8 +225,10 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
               const SizedBox(height: 20),
               Row(
                 children: [
-                  Text('On the menu today', style: text.labelSmall),
-                  const Spacer(),
+                  Expanded(
+                    child: Text('On the menu today', style: text.labelSmall),
+                  ),
+                  const SizedBox(width: 8),
                   Text(
                     '${_menu!.value!.dishes.length}',
                     style: text.labelSmall,
