@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../services/clipboard.dart';
 import '../../services/preferences.dart';
 import '../../theme/semantic.dart';
 import '../../theme/tokens.dart';
@@ -48,6 +49,47 @@ class _DiningSectionState extends State<DiningSection> {
       children: [
         Padding(
           padding: const EdgeInsets.only(bottom: 12, top: 4),
+          child: Text('Groups', style: text.titleLarge?.copyWith(fontSize: 21)),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _Action(
+              label: 'Reset groups',
+              enabled: !_prefs.diningLayout.isEmpty,
+              onTap: () {
+                final before = _prefs.diningLayout;
+                showFeedback(context, 'Groups reset', action: SnackBarAction(label: 'Undo', onPressed: () => _prefs.setDiningLayout(before)));
+                _prefs.resetDiningGroups();
+              },
+            ),
+            _Action(
+              label: 'Unhide all',
+              enabled: _prefs.hiddenDining.isNotEmpty,
+              onTap: () {
+                final before = _prefs.hiddenDining;
+                showFeedback(
+                  context,
+                  'Places unhidden',
+                  action: SnackBarAction(
+                    label: 'Undo',
+                    onPressed: () async {
+                      for (final id in before) {
+                        final place = int.tryParse(id);
+                        if (place != null && !_prefs.isHidden(place)) await _prefs.toggleHidden(place);
+                      }
+                    },
+                  ),
+                );
+                _prefs.unhideAllDining();
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 26),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -145,6 +187,47 @@ class _DiningSectionState extends State<DiningSection> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _Action extends StatelessWidget {
+  const _Action({required this.label, required this.enabled, required this.onTap});
+
+  final String label;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      excludeSemantics: true,
+      onTap: enabled ? onTap : null,
+      child: Material(
+        elevation: 0,
+        color: enabled ? scheme.primaryContainer : scheme.onSurface.withValues(alpha: 0.12),
+        shape: Shapes.pill,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+              child: Text(
+                label,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: enabled ? scheme.onPrimaryContainer : scheme.onSurface.withValues(alpha: 0.38),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

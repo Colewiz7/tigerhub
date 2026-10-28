@@ -132,4 +132,26 @@ void main() {
     expect(find.textContaining("Gracie"), findsNothing);
     expect(find.text("Ben and Jerry's"), findsOneWidget);
   });
+
+  testWidgets('group edits do not move the Today card', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 1600);
+    addTearDown(tester.view.reset);
+    Future<List<String>> order() async {
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902))),
+        home: Scaffold(body: SingleChildScrollView(child: DiningCard(result: Result(value: Collection(data: sampleDining, stale: false), state: DataState.ok)))),
+      ));
+      await tester.pumpAndSettle();
+      final names = ["Gracie's", "Ben and Jerry's", 'Crossroads', 'Petals'];
+      final seen = [for (final n in names) if (find.text(n).evaluate().isNotEmpty) n];
+      seen.sort((a, b) => tester.getTopLeft(find.text(a)).dy.compareTo(tester.getTopLeft(find.text(b)).dy));
+      return seen;
+    }
+
+    final before = await order();
+    final defaults = StaticConfig.instance.diningGroups;
+    await Preferences.instance.setDiningLayout(DiningLayout.empty.moveGroup('global_village', -1, defaults).move(21, 'golisano', defaultGroup: 'dorm_side'));
+    expect(await order(), before);
+  });
 }
