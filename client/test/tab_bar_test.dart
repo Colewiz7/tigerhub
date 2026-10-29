@@ -178,7 +178,7 @@ void main() {
   });
 
   for (final (size, top) in const [(Size(390, 844), 47.0), (Size(440, 956), 62.0)]) {
-    testWidgets('${size.width.toInt()}x${size.height.toInt()}: a 60pt glass capsule, 16 in, above the home indicator', (tester) async {
+    testWidgets('${size.width.toInt()}x${size.height.toInt()}: a 60pt glass capsule, 16 in, dipped into the safe area', (tester) async {
       _phone(tester, size, top: top);
       await _pumpShell(tester);
 
@@ -187,7 +187,9 @@ void main() {
       expect(capsule.height, 60);
       expect(capsule.left, 16);
       expect(capsule.right, size.width - 16);
-      expect(capsule.bottom, size.height - 34, reason: 'sits on the safe area, not in it');
+      expect(capsule.bottom, size.height - AppTabBar.capsuleBottom(tester.element(find.byType(AppTabBar))));
+      expect(capsule.bottom, size.height - (34 - AppTabBar.bottomDip));
+      expect(size.height - capsule.bottom, greaterThan(21), reason: 'clears the home indicator');
 
       final clip = tester.widget<ClipRRect>(find.descendant(of: find.byType(AppTabBar), matching: find.byType(ClipRRect)));
       expect(clip.borderRadius, BorderRadius.circular(30), reason: 'full radius');
@@ -880,7 +882,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppTabBar).hitTestable(), findsOneWidget);
-    expect(tester.getRect(find.byType(BackdropFilter)).bottom, 956 - 34, reason: 'not minimized or moved');
+    expect(tester.getRect(find.byType(BackdropFilter)).bottom, 956 - (34 - AppTabBar.bottomDip), reason: 'not minimized or moved');
     expect(Navigator.of(tester.element(viewer)).canPop(), isFalse, reason: 'nothing pushed over the shell');
   }, variant: _ios);
 }

@@ -14,6 +14,7 @@ import 'package:tigerhub/services/frame_stats.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/campus_map.dart';
+import 'package:tigerhub/widgets/segmented_picker.dart';
 
 const west = CampusMapFeature(
   id: 1,
@@ -838,6 +839,21 @@ void main() {
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.bySemanticsLabel('Loading campus map'), findsOneWidget);
+  });
+
+  testWidgets('the Places and Events switch is the shared segmented picker', (tester) async {
+    await tester.pumpWidget(app());
+
+    expect(find.byType(SegmentedPicker<bool>), findsOneWidget);
+    expect(find.byType(SegmentedButton<bool>), findsNothing);
+    expect(
+      find.descendant(of: find.byType(SegmentedPicker<bool>), matching: find.text('Places')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byType(SegmentedPicker<bool>), matching: find.text('Events')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('events mode reports mapped and unmapped events', (tester) async {

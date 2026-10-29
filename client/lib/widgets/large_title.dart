@@ -42,6 +42,20 @@ class HeaderIconButton extends StatelessWidget {
   );
 }
 
+/// A tab's heading for screen readers only. The tab bar already names the tab.
+class SpokenTitle extends StatelessWidget {
+  const SpokenTitle(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    header: true,
+    label: text,
+    child: const SizedBox.shrink(),
+  );
+}
+
 class LargeTitle extends StatelessWidget {
   const LargeTitle(this.text, {super.key});
 
