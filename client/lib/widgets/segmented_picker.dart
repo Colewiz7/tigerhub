@@ -18,7 +18,11 @@ class SegmentedPicker<T extends Object> extends StatelessWidget {
   final Map<T, String> labels;
   final ValueChanged<T> onChanged;
 
-  static const double height = 48;
+  /// What the track draws at.
+  static const double height = 40;
+
+  /// What the picker reserves, so each segment answers taps across 48.
+  static const double hitHeight = 48;
   static const double _inset = 3;
 
   @override
@@ -35,60 +39,68 @@ class SegmentedPicker<T extends Object> extends StatelessWidget {
     final scale = scaler.scale(1).clamp(1.0, 1.15);
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: scaler),
-      child: Container(
-        // the track pads the segments, so add it back to keep each at 48
-        height: (height + 2 * _inset) * scale,
-        padding: const EdgeInsets.all(_inset),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHigh,
-          borderRadius: Shapes.inner,
-        ),
+      child: SizedBox(
+        height: hitHeight * scale,
         child: Stack(
           children: [
-            AnimatedAlign(
-              duration: duration,
-              curve: Curves.easeOutCubic,
-              alignment: Alignment(
-                keys.length < 2 ? 0 : -1 + 2 * at / (keys.length - 1),
-                0,
-              ),
-              child: FractionallySizedBox(
-                widthFactor: 1 / keys.length,
-                heightFactor: 1,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest,
-                    borderRadius: Shapes.small,
+            Center(
+              child: Container(
+                height: height * scale,
+                padding: const EdgeInsets.all(_inset),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHigh,
+                  borderRadius: Shapes.inner,
+                ),
+                child: AnimatedAlign(
+                  duration: duration,
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment(
+                    keys.length < 2 ? 0 : -1 + 2 * at / (keys.length - 1),
+                    0,
+                  ),
+                  child: FractionallySizedBox(
+                    widthFactor: 1 / keys.length,
+                    heightFactor: 1,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: scheme.surfaceContainerHighest,
+                        borderRadius: Shapes.small,
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-            Row(
-              children: [
-                for (final key in keys)
-                  Expanded(
-                    child: Semantics(
-                      button: true,
-                      selected: key == value,
-                      label: labels[key],
-                      excludeSemantics: true,
-                      onTap: () => onChanged(key),
-                      child: InkWell(
-                        borderRadius: Shapes.small,
+            // the labels sit in the full 48, so the tap area outgrows the track
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: _inset),
+              child: Row(
+                children: [
+                  for (final key in keys)
+                    Expanded(
+                      child: Semantics(
+                        button: true,
+                        selected: key == value,
+                        label: labels[key],
+                        excludeSemantics: true,
                         onTap: () => onChanged(key),
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                labels[key]!,
-                                maxLines: 1,
-                                style: text.bodyMedium?.copyWith(
-                                  color: scheme.onSurface,
-                                  fontWeight: key == value
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => onChanged(key),
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  labels[key]!,
+                                  maxLines: 1,
+                                  style: text.bodyMedium?.copyWith(
+                                    color: scheme.onSurface,
+                                    fontWeight: key == value
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                  ),
                                 ),
                               ),
                             ),
@@ -96,8 +108,8 @@ class SegmentedPicker<T extends Object> extends StatelessWidget {
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ],
         ),

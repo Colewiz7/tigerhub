@@ -140,6 +140,41 @@ void main() {
     });
   });
 
+  group('nextChefLine', () {
+    final today = DateTime.utc(2026, 10, 14);
+    UpcomingChef next(DateTime date) => UpcomingChef(date: date, name: 'Chef Lin', locationName: 'Gracie’s');
+
+    test('tomorrow is a word, later days are dated', () {
+      expect(nextChefLine(next(DateTime.utc(2026, 10, 15)), today), 'Next: Tomorrow · Chef Lin · Gracie’s');
+      expect(nextChefLine(next(DateTime.utc(2026, 10, 18)), today), 'Next: Sun, Oct 18 · Chef Lin · Gracie’s');
+    });
+
+    test('a missing place is left out', () {
+      final line = nextChefLine(UpcomingChef(date: DateTime.utc(2026, 10, 15), name: 'Chef Lin', locationName: ''), today);
+      expect(line, 'Next: Tomorrow · Chef Lin');
+    });
+  });
+
+  group('next chef on the card', () {
+    final chef = _chef(1, CampusTime.wall(2026, 10, 14, 11), CampusTime.wall(2026, 10, 14, 14));
+    final next = UpcomingChef(date: DateTime.utc(2026, 10, 15), name: 'Chef Lin', locationName: 'Gracie’s');
+    Result<Collection<MenuItem>> ended(UpcomingChef? next) => Result(value: ChefCollection(data: [chef], stale: false, next: next), state: DataState.ok);
+
+    testWidgets('shows under No more chefs today', (tester) async {
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 15));
+      await _pump(tester, VisitingChefsCard(result: ended(next)));
+      expect(find.text('No more chefs today'), findsOneWidget);
+      expect(find.text('Next: Tomorrow · Chef Lin · Gracie’s'), findsOneWidget);
+    });
+
+    testWidgets('is absent when no next chef is known', (tester) async {
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 15));
+      await _pump(tester, VisitingChefsCard(result: ended(null)));
+      expect(find.text('No more chefs today'), findsOneWidget);
+      expect(find.textContaining('Next:'), findsNothing);
+    });
+  });
+
   group('timer', () {
     final chef = _chef(1, CampusTime.wall(2026, 10, 14, 11), CampusTime.wall(2026, 10, 14, 14));
 

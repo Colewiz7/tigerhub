@@ -260,11 +260,14 @@ class _AppShellState extends State<AppShell>
               bottom: false,
               child: Column(
                 children: [
-                  // today heads itself, map stays full height
+                  // today heads itself, map stays full height, and the tab bar
+                  // already names dining and events
                   if (_showSettings)
                     _SettingsHeader(
                       onClose: () => setState(() => _showSettings = false),
                     )
+                  else if (_index == 1 || _index == 2)
+                    SpokenTitle(tabs[_index].label)
                   else if (_index != 0 && _index != 3)
                     LargeTitle(tabs[_index].label),
                   Expanded(

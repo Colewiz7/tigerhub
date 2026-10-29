@@ -344,6 +344,22 @@ void main() {
       expect(next['location_name'], isNotEmpty);
     });
 
+    test('a day with chefs still names the next chef', () {
+      final view = visitingChefsView(
+        tigerCenter: tigerCenter(),
+        rit: ritSnapshot(
+          scheduleHtml: fixture('rit_visiting_chefs.html'),
+          scheduleAt: '2026-10-14T09:00:00-04:00',
+        ),
+        now: DateTime.utc(2026, 10, 14, 16),
+      );
+      expect(view['availability'], availabilityAvailable);
+      expect(view['items'], isNotEmpty);
+      final next = view['next'] as Map<String, dynamic>;
+      expect(next['date'], '2026-10-15');
+      expect(next['name'], isNotEmpty);
+    });
+
     test('next skips empty days and is null when nothing is upcoming', () {
       final view = visitingChefsView(
         tigerCenter: tigerCenter(),
