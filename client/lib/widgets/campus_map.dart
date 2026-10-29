@@ -1601,9 +1601,11 @@ class CampusMapPainter extends CustomPainter {
       boundsFeatures: boundsFeatures,
     );
     final mapRect = projection.mapRect;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(mapRect.inflate(18), const Radius.circular(32)),
-      Paint()..color = scheme.primary.withValues(alpha: 0.035),
+    // reaches past the canvas so a pan never exposes the layer behind
+    final ground = (Offset.zero & size).inflate(_mapPanMargin);
+    canvas.drawRect(
+      ground,
+      Paint()..color = Color.alphaBlend(scheme.primary.withValues(alpha: 0.035), scheme.surfaceContainerLow),
     );
 
     // A quiet tiger-stripe field gives the map the same identity as the
@@ -1683,7 +1685,7 @@ class CampusMapPainter extends CustomPainter {
     // Ground first, then the paths crossing it, then what you walk into.
     drawFamily(MapFamily.open);
     drawFamily(MapFamily.parking);
-    _paintPaths(canvas, geometry, mapRect);
+    _paintPaths(canvas, geometry, ground);
     for (final family in MapFamily.values.where((family) => family.isBuilt)) {
       drawFamily(family);
     }
@@ -1813,12 +1815,10 @@ class CampusMapPainter extends CustomPainter {
   /// on a campus you cross on foot. Roads stay wider and fainter so they read
   /// as context. A road is also a closed-in shape next to a parking outline,
   /// so form separates them where contrast alone is thin.
-  void _paintPaths(Canvas canvas, _MapGeometry geometry, Rect mapRect) {
+  void _paintPaths(Canvas canvas, _MapGeometry geometry, Rect ground) {
     if (paths.isEmpty) return;
     canvas.save();
-    canvas.clipRRect(
-      RRect.fromRectAndRadius(mapRect.inflate(18), const Radius.circular(32)),
-    );
+    canvas.clipRect(ground);
     // Roads get a casing and centre stroke, like an actual campus map. At the
     // overview scale the dense footway graph is withheld; it fades into the
     // job only when zooming makes those choices useful.
