@@ -2794,7 +2794,7 @@ class _MapLegend extends StatelessWidget {
             _lineEntry('Road', path: false),
             _lineEntry('Walk path', path: true),
             Text(
-              '(c) OpenStreetMap contributors',
+              '(c) OpenStreetMap contributors, ODbL',
               style: TextStyle(
                 fontSize: mapLabelMinSize,
                 height: 1.1,

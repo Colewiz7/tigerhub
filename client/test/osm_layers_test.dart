@@ -250,7 +250,7 @@ void main() {
       ),
     );
     expect(find.text('Water'), findsOneWidget);
-    final credit = find.text('(c) OpenStreetMap contributors');
+    final credit = find.text('(c) OpenStreetMap contributors, ODbL');
     expect(credit, findsOneWidget);
     expect(
       tester.widget<Text>(credit).style!.fontSize,
