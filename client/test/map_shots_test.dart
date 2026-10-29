@@ -140,8 +140,12 @@ void main() {
     final pitch = osm.pitch.firstWhere(
       (ring) => (middle(ring).longitude + 77.66665).abs() < 0.0005,
     );
-    final andrews = osm.street.firstWhere((s) => s.name == 'Andrews Memorial Drive');
-    final longest = andrews.lines.reduce((a, b) => a.length >= b.length ? a : b);
+    // the middle of a street's longest way, where its name is set
+    GeoCoordinate onStreet(String name) {
+      final street = osm.street.firstWhere((s) => s.name == name);
+      final way = street.lines.reduce((a, b) => a.length >= b.length ? a : b);
+      return way[way.length ~/ 2];
+    }
     final door = osm.entrance.firstWhere(
       (e) => e.name == 'Accessible Entrance - Golisano Hall',
     );
@@ -190,8 +194,8 @@ void main() {
         for (final shot in <(String, double, GeoCoordinate)>[
           ('water_3x', 3, lake),
           ('pitch_20x', 20, middle(pitch)),
-          ('street_on_path_8x', 8, longest[longest.length ~/ 2]),
-          ('street_on_path_20x', 20, longest[longest.length ~/ 2]),
+          ('street_on_path_8x', 8, onStreet('Hans J. Christensen Way')),
+          ('street_on_path_20x', 20, onStreet('Greenleaf Court')),
           ('entrance_name_20x', 20, door.at),
         ]) {
           await _write(

@@ -198,6 +198,19 @@ void main() {
       expect(labels.single.candidate.cls.size, greaterThanOrEqualTo(11));
     });
 
+    test('a long real door name wraps to three lines rather than vanishing', () {
+      final long = doors(const [
+        OsmEntrance(door, 'Accessible Entrance - Golisano Hall'),
+      ]);
+      final labels = plan(
+        20,
+        long,
+      ).where((p) => p.candidate.cls == LabelClass.entrance).toList();
+      expect(labels, hasLength(1));
+      expect(labels.single.candidate.text, 'Accessible Entrance - Golisano Hall');
+      expect(labels.single.rect.width, lessThanOrEqualTo(130));
+    });
+
     test('a door label never beats a building label', () {
       final without = plan(
         20,

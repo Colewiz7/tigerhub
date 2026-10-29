@@ -2272,8 +2272,8 @@ class CampusMapPainter extends CustomPainter {
         final ink = geometry.ink(
           name,
           LabelClass.entrance,
-          maxWidth: 110,
-          maxLines: 2,
+          maxWidth: 130,
+          maxLines: 3,
         );
         if (ink == null) continue;
         final w = ink.fill.width;
