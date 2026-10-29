@@ -336,11 +336,9 @@ class DiningRow extends StatelessWidget {
     return StatusRow(
       grouped: grouped,
       dense: dense,
-      icon: Preferences.instance.isPinned(location.id)
-          ? AppIconKind.pinned
-          : iconForPlace(location.id, location.name),
+      icon: iconForPlace(location.id, location.name),
       title: location.name,
-      subtitle: when,
+      subtitle: Preferences.instance.isPinned(location.id) ? 'Pinned · $when' : when,
       accent: accent,
       emphasis: open ? RowEmphasis.normal : RowEmphasis.quiet,
       onTap: client == null

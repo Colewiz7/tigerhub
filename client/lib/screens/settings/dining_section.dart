@@ -68,18 +68,18 @@ class _DiningSectionState extends State<DiningSection> {
               label: 'Unhide all',
               enabled: _prefs.hiddenDining.isNotEmpty,
               onTap: () {
-                final before = _prefs.hiddenDining;
+                final hiddenBefore = _prefs.hiddenDining;
+                final pinnedBefore = _prefs.pinnedDining;
                 showFeedback(
                   context,
                   'Places unhidden',
                   action: SnackBarAction(
                     label: 'Undo',
-                    onPressed: () async {
-                      for (final id in before) {
-                        final place = int.tryParse(id);
-                        if (place != null && !_prefs.isHidden(place)) await _prefs.toggleHidden(place);
-                      }
-                    },
+                    // keep pins made since, a re-hidden place cant stay pinned
+                    onPressed: () => _prefs.restoreDining(
+                      pinned: {..._prefs.pinnedDining, ...pinnedBefore}.difference(hiddenBefore),
+                      hidden: hiddenBefore,
+                    ),
                   ),
                 );
                 _prefs.unhideAllDining();

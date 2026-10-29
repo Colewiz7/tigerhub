@@ -19,6 +19,7 @@ class SegmentedPicker<T extends Object> extends StatelessWidget {
   final ValueChanged<T> onChanged;
 
   static const double height = 48;
+  static const double _inset = 3;
 
   @override
   Widget build(BuildContext context) {
@@ -35,8 +36,9 @@ class SegmentedPicker<T extends Object> extends StatelessWidget {
     return MediaQuery(
       data: MediaQuery.of(context).copyWith(textScaler: scaler),
       child: Container(
-        height: height * scale,
-        padding: const EdgeInsets.all(3),
+        // the track pads the segments, so add it back to keep each at 48
+        height: (height + 2 * _inset) * scale,
+        padding: const EdgeInsets.all(_inset),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerHigh,
           borderRadius: Shapes.inner,

@@ -248,6 +248,15 @@ class Preferences extends ChangeNotifier {
     if (unpinned) await ResponseCache.instance.writeOrder(_pinnedKey, _pinned.toList());
   }
 
+  // undo for hide and unhide all: both sets, since hiding drops the pin
+  Future<void> restoreDining({required Set<String> pinned, required Set<String> hidden}) async {
+    _pinned = {...pinned};
+    _hidden = {...hidden};
+    notifyListeners();
+    await ResponseCache.instance.writeOrder(_pinnedKey, _pinned.toList());
+    await ResponseCache.instance.writeOrder(_hiddenKey, _hidden.toList());
+  }
+
   Future<void> unhideAllDining() async {
     _hidden = {};
     notifyListeners();

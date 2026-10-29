@@ -35,10 +35,18 @@ List<MenuAction> diningActions(DiningLocation location) {
           return;
         }
         // the row leaves the list once hidden, so speak first
+        final key = '${location.id}';
+        final wasPinned = prefs.isPinned(location.id);
         showFeedback(
           context,
           'Hid ${location.name}',
-          action: SnackBarAction(label: 'Undo', onPressed: () => prefs.toggleHidden(location.id)),
+          action: SnackBarAction(
+            label: 'Undo',
+            onPressed: () => prefs.restoreDining(
+              pinned: {...prefs.pinnedDining, if (wasPinned) key},
+              hidden: {...prefs.hiddenDining}..remove(key),
+            ),
+          ),
         );
         prefs.toggleHidden(location.id);
       },
