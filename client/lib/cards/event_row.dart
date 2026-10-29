@@ -19,6 +19,7 @@ import '../widgets/context_actions.dart';
 import '../widgets/event_details_sheet.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
+import '../widgets/status_text.dart';
 
 AppIconKind iconForEventType(String? type) {
   final t = (type ?? '').toLowerCase();
@@ -170,7 +171,7 @@ class EventRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
+                StatusText(
                   stamp,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

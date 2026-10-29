@@ -18,6 +18,7 @@ import '../data/chef_family.dart';
 import '../data/chef_listing.dart';
 import '../data/sources/rit_chefs.dart' show ritDiningPageUrl;
 import '../widgets/empty_state.dart';
+import '../widgets/status_text.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../services/open_link.dart';
@@ -277,7 +278,7 @@ class _ChefRow extends StatelessWidget {
                     ),
                     if (window != null) ...[
                       const SizedBox(height: 2),
-                      Text(
+                      StatusText(
                         window,
                         style: text.bodySmall,
                         maxLines: 2,
