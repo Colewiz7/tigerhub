@@ -6,6 +6,8 @@ library;
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/painting.dart' show TextPainter;
+
 import '../models/api_models.dart';
 
 /// Ground distance between two coordinates in metres, flat-earth, which is
@@ -194,6 +196,84 @@ StraightRun? longestStraightRun(
     }
   }
   return best;
+}
+
+/// The longest run in [lines] that bends gently enough to set text along.
+///
+/// No single bend may exceed [maxBend] radians and the run may turn by no more
+/// than [maxTotal] radians in all, about 57 degrees. A hairpin or an S is left
+/// for the upright label.
+StraightRun? longestGentleRun(
+  List<List<Offset>> lines, {
+  double maxBend = 0.5,
+  double maxTotal = 1.0,
+}) {
+  StraightRun? best;
+  for (final line in lines) {
+    var start = 0;
+    while (start < line.length - 1) {
+      var end = start + 1;
+      var total = 0.0;
+      while (end < line.length - 1) {
+        final bend = _turn(
+          _heading(line[end + 1] - line[end]),
+          _heading(line[end] - line[end - 1]),
+        );
+        if (bend > maxBend || total + bend > maxTotal) break;
+        total += bend;
+        end++;
+      }
+      final points = line.sublist(start, end + 1);
+      var length = 0.0;
+      for (var i = 1; i < points.length; i++) {
+        length += (points[i] - points[i - 1]).distance;
+      }
+      if (best == null || length > best.length) {
+        best = (points: points, length: length, mid: pointAlong(points, .5));
+      }
+      start = end;
+    }
+  }
+  return best;
+}
+
+/// One glyph set on a path: which character, where its centre goes, and the
+/// angle to turn it by so its baseline follows the path.
+typedef PathGlyph = ({int index, Offset at, double angle});
+
+/// A street name laid out glyph by glyph along its run.
+class PathLabel {
+  const PathLabel(this.glyphs, this.inks);
+
+  final List<PathGlyph> glyphs;
+
+  /// The fill and halo of each character, in the order of [glyphs].
+  final List<({TextPainter fill, TextPainter halo})> inks;
+}
+
+/// Sets glyphs of the given [advances] along [points], centred on the run.
+///
+/// Reads left to right: a run that heads leftward is walked backward, so no
+/// glyph is ever upside down. Returns null when the text is longer than the
+/// run, so a label can never spill off its street, or when the path turns so
+/// hard that a glyph would stand on its head anyway.
+List<PathGlyph>? layoutAlongRun(List<Offset> points, List<double> advances) {
+  if (points.length < 2 || advances.isEmpty) return null;
+  final chord = _heading(points.last - points.first);
+  final ordered = chord.abs() > math.pi / 2 ? points.reversed.toList() : points;
+  final metric = (Path()..addPolygon(ordered, false)).computeMetrics().first;
+  final width = advances.fold<double>(0, (a, b) => a + b);
+  if (width > metric.length) return null;
+  var distance = (metric.length - width) / 2;
+  final out = <PathGlyph>[];
+  for (var i = 0; i < advances.length; i++) {
+    final tangent = metric.getTangentForOffset(distance + advances[i] / 2)!;
+    final angle = _heading(tangent.vector);
+    if (angle.abs() > 1.75) return null;
+    out.add((index: i, at: tangent.position, angle: angle));
+    distance += advances[i];
+  }
+  return out;
 }
 
 /// One path of open lines.

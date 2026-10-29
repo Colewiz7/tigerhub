@@ -2097,6 +2097,46 @@ class CampusMapPainter extends CustomPainter {
     return _labelPlan(geometry, geometry.pinBucketsAt(zoom));
   }
 
+  /// A street name set glyph by glyph along [curve], or null when the street
+  /// has no gentle run, or the name is longer than it.
+  LabelCandidate? _pathLabel(
+    _MapGeometry geometry,
+    String name,
+    StraightRun? curve,
+  ) {
+    if (curve == null) return null;
+    final inks = <_Ink>[];
+    for (final char in name.characters) {
+      final ink = geometry.ink(char, LabelClass.street);
+      if (ink == null) return null;
+      inks.add(ink);
+    }
+    final glyphs = layoutAlongRun(
+      [for (final p in curve.points) p * zoom],
+      [for (final ink in inks) ink.fill.width],
+    );
+    if (glyphs == null) return null;
+    // the box round every glyph, for the collision planner
+    Rect? box;
+    for (final glyph in glyphs) {
+      final ink = inks[glyph.index].fill;
+      final rect = Rect.fromCenter(
+        center: glyph.at,
+        width: math.max(ink.width, ink.height),
+        height: math.max(ink.width, ink.height),
+      );
+      box = box == null ? rect : box.expandToInclude(rect);
+    }
+    return LabelCandidate(
+      key: ('street', name),
+      cls: LabelClass.street,
+      size: box!.size,
+      positions: [box],
+      text: name,
+      payload: PathLabel(glyphs, inks),
+    );
+  }
+
   List<PlacedLabel> _labelPlan(_MapGeometry geometry, List<_PinBucket> pins) {
     const glyphGap = _glyphGap;
     final candidates = <LabelCandidate>[];
@@ -2191,6 +2231,13 @@ class CampusMapPainter extends CustomPainter {
         if (ink == null) continue;
         final w = ink.fill.width;
         final h = ink.fill.height;
+        // Set along the street where it bends gently. Anything harder, or too
+        // short for the name, falls back to the upright label below.
+        final onPath = _pathLabel(geometry, street.name, street.curve);
+        if (onPath != null) {
+          osmCandidates.add(onPath);
+          continue;
+        }
         final run = street.run;
         final room = run.length * zoom;
         if (room < w) continue;
@@ -2314,7 +2361,22 @@ class CampusMapPainter extends CustomPainter {
     // and lets more of them fit.
     canvas.scale(1 / zoom);
     for (final label in placed) {
-      final (ink, glyph) = label.candidate.payload! as (_Ink, _Ink?);
+      final payload = label.candidate.payload;
+      if (payload is PathLabel) {
+        // each glyph is turned to the street at its own place along it
+        for (final glyph in payload.glyphs) {
+          final ink = payload.inks[glyph.index];
+          canvas.save();
+          canvas.translate(glyph.at.dx, glyph.at.dy);
+          canvas.rotate(glyph.angle);
+          final at = Offset(-ink.fill.width / 2, -ink.fill.height / 2);
+          ink.halo.paint(canvas, at);
+          ink.fill.paint(canvas, at);
+          canvas.restore();
+        }
+        continue;
+      }
+      final (ink, glyph) = payload! as (_Ink, _Ink?);
       var x = label.rect.left;
       if (glyph != null) {
         final at = Offset(x, label.rect.center.dy - glyph.fill.height / 2);
@@ -2511,7 +2573,12 @@ class _MapGeometry {
     entrancePoints = [for (final door in entrances) door.at];
     for (final street in osm.street) {
       final run = longestStraightRun(projected(street.lines));
-      if (run != null) streets.add((name: street.name, run: run));
+      if (run == null) continue;
+      streets.add((
+        name: street.name,
+        run: run,
+        curve: longestGentleRun(projected(street.lines)),
+      ));
     }
     // the few buildings that keep a name at campus scale, by footprint
     final named = [
@@ -2617,7 +2684,8 @@ class _MapGeometry {
   late final List<Offset> entrancePoints;
 
   /// Each named street with its longest straight run, where its label goes.
-  final List<({String name, StraightRun run})> streets = [];
+  final List<({String name, StraightRun run, StraightRun? curve})> streets =
+      [];
 
   final Map<MapFamily, Path> areas = {};
   final List<_Building> buildings = [];
