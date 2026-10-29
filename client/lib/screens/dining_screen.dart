@@ -65,10 +65,6 @@ class _DiningScreenState extends State<DiningScreen> {
   DiningView? _view;
   AppIconKind? _type;
   bool _editing = false;
-  Result<Collection<MenuItem>> _features = const Result(
-    value: null,
-    state: DataState.priming,
-  );
   Result<Collection<FoodTruck>> _trucks = const Result(
     value: null,
     state: DataState.priming,
@@ -121,7 +117,6 @@ class _DiningScreenState extends State<DiningScreen> {
   }
 
   StreamSubscription<Result<Collection<FoodTruck>>>? _trucksSub;
-  StreamSubscription<Result<Collection<MenuItem>>>? _featuresSub;
   StreamSubscription<Result<Collection<MenuItem>>>? _chefsSub;
   bool _active = true;
 
@@ -132,14 +127,6 @@ class _DiningScreenState extends State<DiningScreen> {
       if (!mounted) return;
       if (result.value == null && _chefs.value != null) return;
       setState(() => _chefs = result);
-    });
-  }
-
-  // also the Retry button
-  void _readFeatures() {
-    _featuresSub?.cancel();
-    _featuresSub = widget.api.diningFeatures().listen((result) {
-      if (mounted) setState(() => _features = result);
     });
   }
 
@@ -178,19 +165,15 @@ class _DiningScreenState extends State<DiningScreen> {
   void initState() {
     super.initState();
     _prefs.addListener(_onChanged);
-    widget.api.menusCached.addListener(_readFeatures);
     _readTrucks();
     _readChefs();
-    _readFeatures();
   }
 
   @override
   void dispose() {
     _prefs.removeListener(_onChanged);
-    widget.api.menusCached.removeListener(_readFeatures);
     _trucksSub?.cancel();
     _chefsSub?.cancel();
-    _featuresSub?.cancel();
     _search.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -322,24 +305,6 @@ class _DiningScreenState extends State<DiningScreen> {
       showHidden: !_editing && view == DiningView.all,
       keepEmpty: _editing,
     );
-    final allMenuItems = [...(_features.value?.data ?? const <MenuItem>[])]
-      ..sort((a, b) {
-        final byLocation = a.locationName.compareTo(b.locationName);
-        if (byLocation != 0) return byLocation;
-        final byCategory = (a.category ?? '').compareTo(b.category ?? '');
-        return byCategory != 0 ? byCategory : a.name.compareTo(b.name);
-      });
-    final menuItems = query.isEmpty
-        ? allMenuItems
-        : allMenuItems
-              .where(
-                (item) =>
-                    item.name.toLowerCase().contains(query) ||
-                    item.locationName.toLowerCase().contains(query) ||
-                    (item.category?.toLowerCase().contains(query) ?? false),
-              )
-              .toList();
-
     final chefs = _todayChefs(query);
     final endedChefs = query.isEmpty && _chefsEnded;
     final nextChef = _chefs.value is ChefCollection ? (_chefs.value as ChefCollection).next : null;
@@ -419,17 +384,6 @@ class _DiningScreenState extends State<DiningScreen> {
                       count: todayTrucks.length,
                       builder: (context) => _FoodTrucksGroup(title: 'Food trucks', trucks: todayTrucks),
                     ),
-                  JumpGroup(
-                    label: 'Today’s menu',
-                    icon: AppIconKind.cutlery,
-                    count: menuItems.length,
-                    builder: (context) => _TodayMenuGroup(
-                      result: _features,
-                      items: menuItems,
-                      filtering: query.isNotEmpty,
-                      onRetry: _readFeatures,
-                    ),
-                  ),
                   if (sections.visibleCount == 0 && sections.hidden.isEmpty)
                     JumpGroup(
                       label: 'No matches',
@@ -663,7 +617,7 @@ class _DiningToolbar extends StatelessWidget {
                 child: SearchField(
                   controller: controller,
                   focusNode: focusNode,
-                  hintText: 'Search dining or today’s menu',
+                  hintText: 'Search dining',
                   onChanged: onQueryChanged,
                 ),
               ),
@@ -853,88 +807,5 @@ class _NoMoreChefsGroup extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-class _TodayMenuGroup extends StatelessWidget {
-  const _TodayMenuGroup({
-    required this.result,
-    required this.items,
-    required this.filtering,
-    required this.onRetry,
-  });
-
-  final Result<Collection<MenuItem>> result;
-  final List<MenuItem> items;
-  final bool filtering;
-  final VoidCallback onRetry;
-
-  // menus in hand always show. without them, a failed fetch or a source
-  // that never loaded is a failure, even over a cached empty day
-  bool get _failed {
-    final value = result.value;
-    if (value != null && value.data.isNotEmpty) return false;
-    return result.error != null || result.state == DataState.failing || value?.availability == Availability.unavailable;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Theme.of(context).textTheme;
-    final quiet = text.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
-    if (items.isNotEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SectionTitle('Today’s published menu'),
-          InsetGroup(
-            children: [
-              for (final item in items)
-                StatusRow(
-                  icon: _menuIcon(item.category),
-                  grouped: true,
-                  title: item.name,
-                  subtitle: [
-                    if (item.category?.trim().isNotEmpty ?? false) item.category!,
-                    item.locationName,
-                  ].join(' · '),
-                ),
-            ],
-          ),
-        ],
-      );
-    }
-    if (_failed) {
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(4, 0, 0, 8),
-        child: Row(
-          children: [
-            Expanded(child: Text('Couldn’t load menus', style: quiet)),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
-      );
-    }
-    if (result.isPriming) {
-      return const PrimingPlaceholder(label: 'Loading today’s menu');
-    }
-    if (filtering) {
-      return const EmptyState(kind: EmptyKind.noEvents, title: 'No matching menu items');
-    }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
-      child: Text('No menus loaded yet. Open a place to load its menu.', style: quiet),
-    );
-  }
-
-  static AppIconKind _menuIcon(String? category) {
-    final value = category?.toLowerCase() ?? '';
-    if (value.contains('soup')) return AppIconKind.visitingChef;
-    if (value.contains('salad')) return AppIconKind.plant;
-    if (value.contains('breakfast')) return AppIconKind.breakfast;
-    if (value.contains('dessert') || value.contains('bakery')) {
-      return AppIconKind.bakery;
-    }
-    if (value.contains('visiting')) return AppIconKind.roomService;
-    return AppIconKind.menu;
   }
 }
