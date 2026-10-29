@@ -22,6 +22,8 @@ import 'package:tigerhub/cards/visiting_chefs_card.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/chef_family.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/data/store.dart';
 import 'package:tigerhub/data/upstream.dart';
 import 'package:tigerhub/data/rit_clock.dart';
@@ -202,6 +204,37 @@ void main() {
       value: ChefCollection(data: long, stale: false),
       state: DataState.ok,
     );
+
+    testWidgets('the cuisine text is gone from the card and the sheet, the icon stays', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        result: _states['available']!,
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 1,
+      );
+      expect(find.textContaining('Korean'), findsNothing);
+      expect(find.byType(AppIcon), findsWidgets);
+      final icons = find.byWidgetPredicate(
+        (w) => w is AppIcon && w.kind == ChefFamily.asianNoodles.icon,
+      );
+      expect(icons, findsOneWidget, reason: 'KO-BQ, Korean fusion cuisine');
+
+      await tester.tap(find.text('Visiting chefs'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Korean'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.byWidgetPredicate(
+            (w) => w is AppIcon && w.kind == ChefFamily.asianNoodles.icon,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
 
     for (final width in [390.0, 440.0]) {
       for (final scale in [1.0, 2.0]) {
@@ -551,8 +584,8 @@ void main() {
         expect(chef, findsOneWidget, reason: 'Chef $i should be in the sheet');
       }
       expect(
-        find.descendant(of: sheet, matching: find.text('Cuisine 7')),
-        findsOneWidget,
+        find.descendant(of: sheet, matching: find.textContaining('Cuisine')),
+        findsNothing,
       );
       expect(
         find.descendant(of: sheet, matching: find.text('8 visiting chefs today')),
@@ -713,16 +746,17 @@ void main() {
 
       await tester.tap(pill);
       await tester.pumpAndSettle();
-      // The sheet's rows read as one node each, with the cuisine.
+      // The sheet's rows read as one node each.
       await tester.scrollUntilVisible(
         find.text('Chef 7'),
         80,
         scrollable: find.descendant(of: sheet, matching: find.byType(Scrollable)),
       );
       expect(
-        find.bySemanticsLabel('Chef 7, 11 AM to 2 PM, RITZ, Cuisine 7'),
+        find.bySemanticsLabel('Chef 7, 11 AM to 2 PM, RITZ'),
         findsOneWidget,
       );
+      expect(find.textContaining('Cuisine'), findsNothing);
       handle.dispose();
     });
   });

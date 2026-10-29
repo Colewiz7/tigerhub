@@ -248,29 +248,23 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
 /// One chef: a badge, the name, then the time and the location, wrapping
 /// rather than cut.
 class _ChefRow extends StatelessWidget {
-  const _ChefRow({required this.chef, this.showCuisine = false});
+  const _ChefRow({required this.chef});
 
   final MenuItem chef;
-
-  /// The card has no room for the cuisine. The sheet that lists every chef does.
-  final bool showCuisine;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final window = VisitingChefsCard.window(chef);
-    final cuisine = showCuisine ? chef.cuisine : null;
 
     return Semantics(
       container: true,
       excludeSemantics: true,
       label: [
         chef.name,
-        ?window,
-        if (chef.locationName.isNotEmpty) chef.locationName,
-        ?cuisine,
-      ].join(', '),
+        ChefDetails.label(window, chef.locationName),
+      ].where((s) => s.isNotEmpty).join(', '),
       child: Material(
         elevation: 0,
         color: scheme.surfaceContainerHigh,
@@ -306,15 +300,6 @@ class _ChefRow extends StatelessWidget {
                         window: window,
                         location: chef.locationName,
                         style: text.bodySmall,
-                      ),
-                    ],
-                    if (cuisine != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        cuisine,
-                        style: text.bodySmall,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ],
@@ -408,7 +393,7 @@ class _ChefsSheet extends StatelessWidget {
               itemCount: chefs.length,
               separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, index) =>
-                  _ChefRow(chef: chefs[index], showCuisine: true),
+                  _ChefRow(chef: chefs[index]),
             ),
           ),
         ],
