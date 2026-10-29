@@ -2085,11 +2085,8 @@ class CampusMapPainter extends CustomPainter {
       return sum +
           (kind.startsWith('_event:') ? int.tryParse(kind.substring(7)) ?? 1 : 1);
     });
-    return selected
-        ? 15.0
-        : counted
-        ? (total >= 10 ? 17.0 : 15.0)
-        : 11.0;
+    if (counted && total >= 10) return 17.0;
+    return selected || counted ? 15.0 : 11.0;
   }
 
   /// The pin count, measured at its screen size of 11 pt.
