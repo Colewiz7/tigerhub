@@ -44,3 +44,19 @@ List<MenuItem> listedChefs(Iterable<MenuItem> chefs, {DateTime? now}) {
       if (chefStillListed(chef, now: instant)) chef,
   ];
 }
+
+const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// all of the chefs the feed lists for today have ended
+bool chefsAllEnded(Iterable<MenuItem> chefs, {DateTime? now}) => chefs.isNotEmpty && listedChefs(chefs, now: now).isEmpty;
+
+// "Next: Tomorrow · Chef Lin · Gracie's", dates on the campus calendar
+String nextChefLine(UpcomingChef next, DateTime today) {
+  final days = next.date.difference(DateTime.utc(today.year, today.month, today.day)).inDays;
+  final day = switch (days) {
+    1 => 'Tomorrow',
+    _ => '${_weekdays[next.date.weekday - 1]}, ${_months[next.date.month - 1]} ${next.date.day}',
+  };
+  return 'Next: ${[day, next.name, next.locationName].where((part) => part.isNotEmpty).join(' · ')}';
+}

@@ -15,6 +15,7 @@ import '../theme/tokens.dart';
 import 'app_icon.dart';
 import 'card_shell.dart';
 import 'context_actions.dart';
+import 'status_text.dart';
 
 /// How prominent a row is. Dimmed rows recede without disappearing. Quiet
 /// rows recede by colour only, so their text keeps full contrast.
@@ -215,7 +216,7 @@ class StatusRow extends StatelessWidget {
                             ),
                             subtitle: subtitle == null
                                 ? null
-                                : Text(
+                                : StatusText(
                                     subtitle!,
                                     style: subtitleStyle,
                                     maxLines: subtitleMaxLines,
@@ -245,7 +246,7 @@ class StatusRow extends StatelessWidget {
                               ),
                               if (subtitle != null) ...[
                                 const SizedBox(height: 2),
-                                Text(
+                                StatusText(
                                   subtitle!,
                                   style: subtitleStyle,
                                   // one line, two at large text when the row

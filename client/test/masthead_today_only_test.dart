@@ -1,5 +1,5 @@
-/// The mark and gear sit on Today only. Dining, Events and Campus get a plain
-/// large title, and Map gets nothing above it.
+/// The mark and gear sit on Today only. Campus gets a plain large title.
+/// Dining and Events get a spoken heading only, and Map gets nothing above it.
 library;
 
 import 'package:flutter/material.dart';
@@ -8,6 +8,8 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/screens/dining_screen.dart';
+import 'package:tigerhub/screens/events_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/large_title.dart';
@@ -45,7 +47,7 @@ void main() {
     expect(mark(), findsOneWidget);
     expect(find.byTooltip('Settings'), findsOneWidget);
 
-    for (final (tab, titled) in [('Dining', true), ('Events', true), ('Map', false), ('Campus', true)]) {
+    for (final (tab, titled) in [('Dining', false), ('Events', false), ('Map', false), ('Campus', true)]) {
       await tester.tap(tabLabel(tab));
       await tester.pumpAndSettle();
       expect(mark(), findsNothing, reason: tab);
@@ -56,5 +58,29 @@ void main() {
     await tester.tap(tabLabel('Today'));
     await tester.pumpAndSettle();
     expect(mark(), findsOneWidget);
+  });
+
+  testWidgets('Dining and Events keep a spoken heading and stay below the status bar', (tester) async {
+    tester.view.devicePixelRatio = 1.0;
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.padding = const FakeViewPadding(top: 47);
+    tester.view.viewPadding = const FakeViewPadding(top: 47);
+    addTearDown(tester.view.reset);
+    final scheme = SchemeController();
+    await scheme.load();
+    addTearDown(scheme.dispose);
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(MaterialApp(home: AppShell(api: ApiClient(backend: _EmptyBackend()), scheme: scheme)));
+    await tester.pumpAndSettle();
+
+    for (final (tab, screen) in [('Dining', DiningScreen), ('Events', EventsScreen)]) {
+      await tester.tap(tabLabel(tab));
+      await tester.pumpAndSettle();
+      final headings = find.semantics.byLabel(tab).evaluate().where((n) => n.getSemanticsData().flagsCollection.isHeader);
+      expect(headings, isNotEmpty, reason: '$tab heading');
+      expect(tester.getTopLeft(find.byType(screen)).dy, greaterThanOrEqualTo(47), reason: '$tab clears the status bar');
+    }
+    semantics.dispose();
   });
 }

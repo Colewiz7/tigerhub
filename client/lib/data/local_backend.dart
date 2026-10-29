@@ -454,7 +454,7 @@ class LocalBackend implements Backend {
     final (snapshot, fetchedAt) = await _snapshot('tigercenter_dining');
     final data = snapshot == null
         ? const <Map<String, dynamic>>[]
-        : menuItemsWithCategory(snapshot, null);
+        : [...menuItemsWithCategory(snapshot, null), ...await _cachedFdDishes(snapshot)];
     return {
       ..._envelope('tigercenter_dining', data, fetchedAt),
       'availability': data.isNotEmpty
@@ -463,6 +463,32 @@ class LocalBackend implements Backend {
           ? availabilityUnavailable
           : availabilityEmpty,
     };
+  }
+
+  // today's dishes from menus already stored, no fetch. places fill in as
+  // their detail pages are opened
+  Future<List<Map<String, dynamic>>> _cachedFdDishes(Map<String, dynamic> dining) async {
+    final store = await _openStore();
+    final today = CampusTime.formatDate(CampusTime.nowUtc());
+    final out = <Map<String, dynamic>>[];
+    for (final raw in dining['locations'] as List<dynamic>? ?? const []) {
+      final location = raw as Map<String, dynamic>;
+      final id = location['id'] as int?;
+      if (id == null) continue;
+      final stored = await store.read('fd_menus_$id');
+      final dishes = dishesOn(stored?.body, today);
+      for (var i = 0; i < dishes.length; i++) {
+        out.add({
+          'id': id * 10000 + i,
+          'location_id': id,
+          'location_name': location['name'],
+          'service_date': today,
+          'name': dishes[i]['name'],
+          'category': dishes[i]['category'],
+        });
+      }
+    }
+    return out;
   }
 
   /// Visiting chefs from rit.edu and TigerCenter, merged (see
