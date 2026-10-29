@@ -613,7 +613,7 @@ class _EventStrip extends StatelessWidget {
                             children: [
                               Text(
                                 group.events.length == 1
-                                    ? group.events.single.title
+                                    ? group.events.single.displayTitle
                                     : '${group.events.length} events',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -665,7 +665,7 @@ class _SelectedEventGroup extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      event.title,
+                      event.displayTitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleSmall,
