@@ -716,6 +716,153 @@ void main() {
     });
   });
 
+  group('editing the order', () {
+    setUp(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.resetCampus();
+    });
+    tearDown(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.resetCampus();
+    });
+
+    final nav = find.byType(SectionNavRow);
+    Finder navRow(String title) => find.descendant(of: nav, matching: find.text(title));
+    double top(WidgetTester tester, String title) => tester.getTopLeft(navRow(title)).dy;
+    Finder rowOf(String title) => find.ancestor(of: navRow(title), matching: find.byType(SectionNavRow)).first;
+    Finder inRow(String title, String tooltip) => find.descendant(of: rowOf(title), matching: find.byTooltip(tooltip));
+
+    Future<void> edit(WidgetTester tester) async {
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Edit shows Move up and Move down on every row, and Done leaves', (tester) async {
+      await pumpCampus(tester);
+      expect(find.byTooltip('Move up'), findsNothing);
+      await edit(tester);
+      expect(find.byTooltip('Move up'), findsNWidgets(7));
+      expect(find.byTooltip('Move down'), findsNWidgets(7));
+      expect(find.text('Edit Campus'), findsOneWidget);
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Move up'), findsNothing);
+      expect(find.text('Edit'), findsOneWidget);
+    });
+
+    testWidgets('Move down swaps a row with the next and the order is kept', (tester) async {
+      await pumpCampus(tester);
+      await edit(tester);
+      expect(top(tester, 'Mail'), lessThan(top(tester, 'Find on campus')));
+      await tester.tap(inRow('Mail', 'Move down'));
+      await tester.pumpAndSettle();
+      expect(top(tester, 'Find on campus'), lessThan(top(tester, 'Mail')));
+      expect(Preferences.instance.campusLayout.order.take(2), ['find', 'mail']);
+
+      await tester.tap(inRow('Mail', 'Move up'));
+      await tester.pumpAndSettle();
+      expect(top(tester, 'Mail'), lessThan(top(tester, 'Find on campus')));
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+    });
+
+    testWidgets('the first row cannot move up and the last cannot move down', (tester) async {
+      await pumpCampus(tester);
+      await edit(tester);
+      IconButton button(Finder f) => tester.widget<IconButton>(find.ancestor(of: f, matching: find.byType(IconButton)).first);
+      expect(button(inRow('Mail', 'Move up')).onPressed, isNull);
+      expect(button(inRow('Mail', 'Move down')).onPressed, isNotNull);
+      expect(button(inRow('SHED makerspace', 'Move down')).onPressed, isNull);
+      expect(button(inRow('SHED makerspace', 'Move up')).onPressed, isNotNull);
+    });
+
+    testWidgets('rows open nothing while editing', (tester) async {
+      await pumpCampus(tester);
+      await edit(tester);
+      await tester.tap(navRow('Quick links'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tiger Spend'), findsNothing);
+      expect(nav, findsNWidgets(7));
+    });
+
+    testWidgets('the buttons are 48 point targets', (tester) async {
+      await pumpCampus(tester);
+      await edit(tester);
+      for (final tooltip in const ['Move up', 'Move down', 'Hide']) {
+        final size = tester.getSize(find.byTooltip(tooltip).first);
+        expect(size.width, greaterThanOrEqualTo(48), reason: tooltip);
+        expect(size.height, greaterThanOrEqualTo(48), reason: tooltip);
+      }
+      expect(tester.getSize(find.widgetWithText(TextButton, 'Done')).height, greaterThanOrEqualTo(48));
+    });
+
+    testWidgets('a row offers Move up, Move down and Hide to assistive tech', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpCampus(tester);
+      await edit(tester);
+      List<String> labels(String title) => [
+        for (final id in find.semantics.byLabel(RegExp('^$title, ')).evaluate().single.getSemanticsData().customSemanticsActionIds ?? const <int>[])
+          CustomSemanticsAction.getAction(id)!.label!,
+      ];
+      expect(labels('Find on campus'), unorderedEquals(['Move up', 'Move down', 'Hide']));
+      // the ends only offer the move that exists
+      expect(labels('Mail'), unorderedEquals(['Move down', 'Hide']));
+      expect(labels('SHED makerspace'), unorderedEquals(['Move up', 'Hide']));
+      handle.dispose();
+    });
+
+    testWidgets('the Move down semantics action moves the row', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpCampus(tester);
+      await edit(tester);
+      final row = find.semantics.byLabel(RegExp('^Mail, '));
+      final id = row.evaluate().single.getSemanticsData().customSemanticsActionIds!.firstWhere((id) => CustomSemanticsAction.getAction(id)!.label == 'Move down');
+      tester.semantics.performAction(row, SemanticsAction.customAction, args: id);
+      await tester.pumpAndSettle();
+      expect(Preferences.instance.campusLayout.order.take(2), ['find', 'mail']);
+      handle.dispose();
+    });
+
+    testWidgets('Hide works from edit mode', (tester) async {
+      await pumpCampus(tester);
+      await edit(tester);
+      await tester.tap(inRow('Quick links', 'Hide'));
+      await tester.pumpAndSettle();
+      expect(navRow('Quick links'), findsNothing);
+      expect(find.text('Hidden (1)'), findsOneWidget);
+      await tester.tap(find.text('Hidden (1)'));
+      await tester.pumpAndSettle();
+      await tester.tap(inRow('Quick links', 'Unhide'));
+      await tester.pumpAndSettle();
+      expect(navRow('Quick links'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+    });
+
+    testWidgets('moving skips a hidden row so the move is seen', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.hideSection('find'));
+      await pumpCampus(tester);
+      await edit(tester);
+      await tester.tap(inRow('Academic dates', 'Move up'));
+      await tester.pumpAndSettle();
+      expect(top(tester, 'Academic dates'), lessThan(top(tester, 'Mail')));
+    });
+
+    testWidgets('the order survives a reload and applies outside edit mode', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.moveSection('shed', -1).moveSection('shed', -1));
+      await pumpCampus(tester);
+      expect(top(tester, 'SHED makerspace'), lessThan(top(tester, 'Quick links')));
+      expect(top(tester, 'Quick links'), lessThan(top(tester, 'Gym and pool')));
+    });
+
+    for (final textScale in [1.0, 2.0]) {
+      testWidgets('edit mode fits a phone at ${textScale}x text', (tester) async {
+        await pumpCampus(tester, size: const Size(390, 844), textScale: textScale);
+        await edit(tester);
+        expect(find.byTooltip('Move up'), findsWidgets);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
+
   group('post offices follow where you live', () {
     const tall = Size(1500, 6000);
     final west = find.text('Global Village Post Office');

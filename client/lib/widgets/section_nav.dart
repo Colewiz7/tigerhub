@@ -11,6 +11,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
 import '../motion/reduce_motion.dart';
 import '../theme/tokens.dart';
@@ -43,6 +44,9 @@ class SectionScaffold extends StatefulWidget {
     required this.sections,
     this.hidden = const [],
     this.rowActions,
+    this.header,
+    this.editing = false,
+    this.onMove,
     this.navWidth = 330,
     this.twoPaneFrom = 900,
     this.iconSize = 18,
@@ -55,6 +59,15 @@ class SectionScaffold extends StatefulWidget {
 
   /// Context menu for a row. Null leaves the rows without one.
   final List<MenuAction> Function(SectionSpec spec, bool hidden)? rowActions;
+
+  /// Sits above the rows.
+  final Widget? header;
+
+  /// Rows carry Move up, Move down and their actions as buttons, and open nothing.
+  final bool editing;
+
+  /// Step is -1 for up and 1 for down.
+  final void Function(SectionSpec spec, int step)? onMove;
   final double navWidth;
   final double twoPaneFrom;
 
@@ -88,6 +101,9 @@ class _SectionScaffoldState extends State<SectionScaffold> {
         sections: widget.sections,
         hidden: widget.hidden,
         rowActions: widget.rowActions,
+        header: widget.header,
+        editing: widget.editing,
+        onMove: widget.onMove,
         selected: null,
         iconSize: widget.iconSize,
         onSelect: (section) => Navigator.of(context).push(
@@ -118,6 +134,9 @@ class _SectionScaffoldState extends State<SectionScaffold> {
             sections: widget.sections,
             hidden: widget.hidden,
             rowActions: widget.rowActions,
+            header: widget.header,
+            editing: widget.editing,
+            onMove: widget.onMove,
             selected: section.id,
             iconSize: widget.iconSize,
             onSelect: (s) => setState(() => _selected = s.id),
@@ -174,6 +193,9 @@ class _NavList extends StatelessWidget {
     required this.sections,
     required this.hidden,
     required this.rowActions,
+    required this.header,
+    required this.editing,
+    required this.onMove,
     required this.selected,
     required this.onSelect,
     required this.iconSize,
@@ -182,20 +204,54 @@ class _NavList extends StatelessWidget {
   final List<SectionSpec> sections;
   final List<SectionSpec> hidden;
   final List<MenuAction> Function(SectionSpec spec, bool hidden)? rowActions;
+  final Widget? header;
+  final bool editing;
+  final void Function(SectionSpec spec, int step)? onMove;
   final String? selected;
   final ValueChanged<SectionSpec> onSelect;
   final double iconSize;
 
-  Widget _row(SectionSpec section, {required bool isHidden}) {
-    final row = SectionNavRow(
-      key: ValueKey('${isHidden ? 'hidden' : 'nav'}-${section.id}'),
+  Widget _row(BuildContext context, SectionSpec section, {required bool isHidden}) {
+    final key = ValueKey('${isHidden ? 'hidden' : 'nav'}-${section.id}');
+    final actions = rowActions?.call(section, isHidden) ?? const <MenuAction>[];
+    if (!editing) {
+      final row = SectionNavRow(
+        key: key,
+        spec: section,
+        active: section.id == selected,
+        iconSize: iconSize,
+        onTap: () => onSelect(section),
+      );
+      return actions.isEmpty ? row : ContextActions(actions: actions, child: row);
+    }
+
+    // a hidden row has no place in the order, so it only offers its actions
+    final at = sections.indexOf(section);
+    final up = !isHidden && at > 0 ? () => onMove?.call(section, -1) : null;
+    final down = !isHidden && at >= 0 && at < sections.length - 1 ? () => onMove?.call(section, 1) : null;
+    return SectionNavRow(
+      key: key,
       spec: section,
       active: section.id == selected,
       iconSize: iconSize,
-      onTap: () => onSelect(section),
+      onTap: null,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!isHidden) ...[
+            _EditButton(icon: AppIconKind.arrowUp, label: 'Move up', onTap: up),
+            _EditButton(icon: AppIconKind.arrowDown, label: 'Move down', onTap: down),
+          ],
+          for (final action in actions)
+            _EditButton(icon: action.icon, label: action.label, onTap: () => action.onSelected(context)),
+        ],
+      ),
+      customActions: {
+        const CustomSemanticsAction(label: 'Move up'): ?up,
+        const CustomSemanticsAction(label: 'Move down'): ?down,
+        for (final action in actions) CustomSemanticsAction(label: action.label): () => action.onSelected(context),
+      },
     );
-    final actions = rowActions?.call(section, isHidden) ?? const <MenuAction>[];
-    return actions.isEmpty ? row : ContextActions(actions: actions, child: row);
   }
 
   @override
@@ -203,14 +259,37 @@ class _NavList extends StatelessWidget {
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(16, 6, 16, 24)),
     children: [
-      for (final section in sections) _row(section, isHidden: false),
+      ?header,
+      for (final section in sections) _row(context, section, isHidden: false),
       if (hidden.isNotEmpty)
         HiddenGroup(
           count: hidden.length,
-          children: [for (final section in hidden) _row(section, isHidden: true)],
+          children: [for (final section in hidden) _row(context, section, isHidden: true)],
         ),
     ],
   );
+}
+
+class _EditButton extends StatelessWidget {
+  const _EditButton({required this.icon, required this.label, required this.onTap});
+
+  final AppIconKind icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ExcludeSemantics(
+      child: IconButton(
+        tooltip: label,
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        padding: EdgeInsets.zero,
+        onPressed: onTap,
+        icon: AppIcon(icon, size: 20, color: onTap == null ? scheme.onSurface.withValues(alpha: 0.38) : scheme.primary),
+      ),
+    );
+  }
 }
 
 class SectionNavRow extends StatelessWidget {
@@ -220,12 +299,21 @@ class SectionNavRow extends StatelessWidget {
     required this.active,
     required this.onTap,
     this.iconSize = 18,
+    this.trailing,
+    this.customActions = const {},
   });
 
   final SectionSpec spec;
   final bool active;
-  final VoidCallback onTap;
+  // null while editing, when the row opens nothing
+  final VoidCallback? onTap;
   final double iconSize;
+
+  // edit mode buttons
+  final Widget? trailing;
+
+  // what assistive tech gets in place of the tap while editing
+  final Map<CustomSemanticsAction, VoidCallback> customActions;
 
   @override
   Widget build(BuildContext context) {
@@ -245,9 +333,11 @@ class SectionNavRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: StatusRow.gap),
       child: Semantics(
-        button: true,
+        container: onTap == null,
+        button: onTap != null,
         selected: active,
         label: '${spec.title}, ${spec.subtitle}',
+        customSemanticsActions: customActions.isEmpty ? null : customActions,
         child: Material(
           elevation: 0,
           color: background,
@@ -283,9 +373,12 @@ class SectionNavRow extends StatelessWidget {
                           maxLines: largeText ? 2 : 1,
                           overflow: TextOverflow.ellipsis,
                         ),
+                        // large text has no room beside the title for the buttons
+                        if (largeText && trailing != null) Align(alignment: Alignment.centerRight, child: trailing),
                       ],
                     ),
                   ),
+                  if (!largeText) ?trailing,
                 ],
               ),
             ),

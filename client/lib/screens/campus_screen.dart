@@ -81,6 +81,8 @@ class _CampusScreenState extends State<CampusScreen> {
   /// visit's results land after the current ones and overwrite them.
   final _subscriptions = Subscriptions();
 
+  bool _editing = false;
+
   @override
   void initState() {
     super.initState();
@@ -196,6 +198,37 @@ class _CampusScreenState extends State<CampusScreen> {
             ? unhideAction((l) => l.showSection(spec.id))
             : hideSectionAction(spec.id, spec.title),
       ],
+      header: _EditBar(editing: _editing, onChanged: (value) => setState(() => _editing = value)),
+      editing: _editing,
+      onMove: (spec, step) => Preferences.instance.setCampusLayout(layout.moveSection(spec.id, step)),
+    );
+  }
+}
+
+/// Edit starts reordering, and Done leaves it.
+class _EditBar extends StatelessWidget {
+  const _EditBar({required this.editing, required this.onChanged});
+
+  final bool editing;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: editing ? Semantics(header: true, child: Text('Edit Campus', style: text.titleLarge)) : const SizedBox.shrink(),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+            onPressed: () => onChanged(!editing),
+            child: Text(editing ? 'Done' : 'Edit'),
+          ),
+        ],
+      ),
     );
   }
 }
