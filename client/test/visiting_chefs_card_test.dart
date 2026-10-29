@@ -237,6 +237,25 @@ void main() {
       });
     }
 
+    testWidgets('from 600pt the time and the location share one line, still coloured', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        result: result,
+        size: const Size(700, 900),
+        brightness: Brightness.light,
+        scale: 1,
+        height: 560,
+      );
+      final time = find.text('11 AM to 2:30 PM');
+      final place = find.text('Kitchen at Brick City');
+      expect(time, findsOneWidget);
+      expect(place, findsOneWidget);
+      expect(tester.getTopLeft(place).dy, closeTo(tester.getTopLeft(find.text('4 PM to 7:30 PM')).dy, 1));
+      expect(tester.widget<Text>(place).style?.color, chefLocationColors[22]!.light);
+    });
+
     testWidgets('the cuisine text is gone from the card and the sheet, the icon stays', (
       tester,
     ) async {

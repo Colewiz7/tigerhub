@@ -210,13 +210,7 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
         ),
         _ => BoundedList(
           itemCount: all.length,
-          // From 600pt a row is a fixed box holding the name and two one line
-          // details, which the base row height leaves one line short.
-          itemHeight:
-              StatusRow.heightFor(context, dense: true) +
-              (Insets.phone(context)
-                  ? 0
-                  : 20 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0)),
+          itemHeight: StatusRow.heightFor(context, dense: true),
           dense: true,
           maxRows: phoneRowCap(context),
           // "+2 more", not "+2 chefs": one left over never reads "+1 chefs".
