@@ -26,7 +26,11 @@ class _DiningBackend implements Backend {
     this.availability,
     this.failures = 0,
     this.chefs,
+    this.onMenu,
   });
+
+  // runs when a place's menu is fetched, the way opening its detail caches it
+  final void Function()? onMenu;
 
   final List<Map<String, dynamic>> features;
   final String? availability;
@@ -52,6 +56,10 @@ class _DiningBackend implements Backend {
       return {'data': features, 'stale': false, 'last_updated': null, if (availability != null) 'availability': availability};
     }
     if (path == '/dining/visiting-chefs' && chefs != null) return chefs!;
+    if (path == '/dining/23/menu') {
+      onMenu?.call();
+      return {'service_date': '2026-10-14', 'location_id': 23, 'dishes': <dynamic>[], 'stale': false, 'last_updated': null};
+    }
     throw UnimplementedError(path);
   }
 
@@ -167,7 +175,7 @@ void main() {
       expect(find.text('Sichuan · 11 AM to 2 PM\nGracie’s'), findsOneWidget);
       expect(
         tester.getTopLeft(find.text('Chef Marco')).dy,
-        lessThan(tester.getTopLeft(find.text('Menus not published yet today')).dy),
+        lessThan(tester.getTopLeft(find.text('No menus loaded yet. Open a place to load its menu.')).dy),
       );
     });
 
@@ -243,11 +251,24 @@ void main() {
     expect(find.text('Soup · Crossroads'), findsOneWidget);
   });
 
+  testWidgets('Today’s menu fills in once a place’s menu is fetched', (tester) async {
+    final features = <Map<String, dynamic>>[];
+    final backend = _DiningBackend(features, onMenu: () => features.add({'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'}));
+    await pumpDining(tester, features, backend: backend);
+    expect(find.text('Tomato bisque'), findsNothing);
+
+    final api = tester.widget<DiningScreen>(find.byType(DiningScreen)).api;
+    await api.menu(23).drain<void>();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tomato bisque'), findsOneWidget);
+  });
+
   testWidgets('the quiet menu line says menus, not chefs', (tester) async {
     await pumpDining(tester, const []);
 
-    expect(find.text('Menus not published yet today'), findsOneWidget);
-    expect(find.textContaining(RegExp('^No ')), findsNothing);
+    expect(find.text('No menus loaded yet. Open a place to load its menu.'), findsOneWidget);
+    expect(find.textContaining(RegExp('chef', caseSensitive: false)), findsNothing);
   });
 
   testWidgets('a quiet menu day explains itself without hiding locations', (
@@ -255,7 +276,7 @@ void main() {
   ) async {
     await pumpDining(tester, const []);
 
-    expect(find.text('Menus not published yet today'), findsOneWidget);
+    expect(find.text('No menus loaded yet. Open a place to load its menu.'), findsOneWidget);
     expect(find.text('Crossroads'), findsOneWidget);
   });
 
@@ -265,7 +286,7 @@ void main() {
   ) async {
     await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
 
-    expect(find.text('Menus not published yet today'), findsOneWidget);
+    expect(find.text('No menus loaded yet. Open a place to load its menu.'), findsOneWidget);
     expect(find.byType(EmptyState), findsNothing);
     expect(find.byIcon(AppIconKind.sourceDown.of(tester.element(find.byType(DiningScreen)))), findsNothing);
     expect(find.text('Today’s published menu'), findsNothing);
@@ -293,7 +314,7 @@ void main() {
     await pumpDining(tester, const [], backend: backend);
 
     expect(find.text('Couldn’t load menus'), findsOneWidget);
-    expect(find.text('Menus not published yet today'), findsNothing);
+    expect(find.text('No menus loaded yet. Open a place to load its menu.'), findsNothing);
 
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
@@ -309,7 +330,7 @@ void main() {
     await ResponseCache.instance.write('/dining/specials', {'data': <dynamic>[], 'stale': false, 'last_updated': null, 'availability': 'empty'});
     await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
 
-    expect(find.text('Menus not published yet today'), findsOneWidget);
+    expect(find.text('No menus loaded yet. Open a place to load its menu.'), findsOneWidget);
     expect(find.text('Retry'), findsNothing);
   });
 
@@ -452,7 +473,7 @@ void main() {
   ) async {
     await pumpDining(tester, const []);
     await tester.enterText(find.byType(TextField), 'coffee');
-    await tester.tap(find.text('Menus not published yet today'));
+    await tester.tap(find.text('No menus loaded yet. Open a place to load its menu.'));
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);

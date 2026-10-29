@@ -167,6 +167,7 @@ class _DiningScreenState extends State<DiningScreen> {
   void initState() {
     super.initState();
     _prefs.addListener(_onChanged);
+    widget.api.menusCached.addListener(_readFeatures);
     _readTrucks();
     _readChefs();
     _readFeatures();
@@ -175,6 +176,7 @@ class _DiningScreenState extends State<DiningScreen> {
   @override
   void dispose() {
     _prefs.removeListener(_onChanged);
+    widget.api.menusCached.removeListener(_readFeatures);
     _trucksSub?.cancel();
     _chefsSub?.cancel();
     _featuresSub?.cancel();
@@ -871,7 +873,7 @@ class _TodayMenuGroup extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
-      child: Text('Menus not published yet today', style: quiet),
+      child: Text('No menus loaded yet. Open a place to load its menu.', style: quiet),
     );
   }
 
