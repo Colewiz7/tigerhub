@@ -503,6 +503,48 @@ void main() {
     });
   }
 
+  // the configured states: edit mode, Hidden (n) open, and the post office on my side
+  for (final brightness in Brightness.values) {
+    for (final textScale in const [1.0, 2.0]) {
+      final suffix = '${brightness.name}_${textScale.toInt()}x.png';
+
+      goldenWidgets('campus_edit_ios_390x844_$suffix', (tester) async {
+        await pumpCampus(tester, size: const Size(390, 844), brightness: brightness, textScale: textScale, platform: TargetPlatform.iOS);
+        await tester.tap(find.text('Edit'));
+        await tester.pumpAndSettle();
+        await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/campus_edit_ios_390x844_$suffix'));
+      });
+
+      goldenWidgets('campus_hidden_ios_390x844_$suffix', (tester) async {
+        await Preferences.instance.setCampusLayout(CampusLayout.empty.hideSection('links').hideSection('shed'));
+        addTearDown(() => Preferences.instance.setCampusLayout(CampusLayout.empty));
+        await pumpCampus(tester, size: const Size(390, 844), brightness: brightness, textScale: textScale, platform: TargetPlatform.iOS);
+        // at 2x the Hidden header and its rows are below the fold
+        if (textScale > 1) await tester.scrollUntilVisible(find.text('Hidden (2)'), 200);
+        await tester.tap(find.text('Hidden (2)'));
+        await tester.pumpAndSettle();
+        if (textScale > 1) await tester.scrollUntilVisible(find.text('SHED makerspace'), 200);
+        await tester.pumpAndSettle();
+        await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/campus_hidden_ios_390x844_$suffix'));
+      });
+
+      goldenWidgets('campus_mail_mine_ios_390x844_$suffix', (tester) async {
+        await Preferences.instance.setHome(area: 'global-village');
+        addTearDown(() async {
+          await Preferences.instance.clearHome();
+          await Preferences.instance.setCampusLayout(CampusLayout.empty);
+        });
+        await pumpCampus(tester, size: const Size(390, 844), brightness: brightness, textScale: textScale, platform: TargetPlatform.iOS);
+        await tester.tap(find.text('Mail'));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(find.text('Show all post offices'), 200);
+        await tester.pumpAndSettle();
+        expect(find.text('DSP Post Office'), findsNothing);
+        await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/campus_mail_mine_ios_390x844_$suffix'));
+      });
+    }
+  }
+
   testWidgets('with no dialer the number is copied instead', (tester) async {
     UrlLauncherPlatform.instance = _FakeLauncher(succeeds: false);
     String? copied;
