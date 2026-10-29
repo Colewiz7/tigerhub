@@ -137,6 +137,8 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
     final all = listedChefs(fetched);
     final value = result.value;
     final availability = value?.availability ?? Availability.available;
+    final upcoming = value is ChefCollection ? value.next : null;
+    final nextLine = all.isEmpty && fetched.isNotEmpty && upcoming != null ? nextChefLine(upcoming, CampusTime.wallDate()) : null;
 
     if (compact && Insets.phone(context)) {
       return CompactCard(
@@ -189,10 +191,20 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
             ),
           ),
         (_, true) => _Centered(
-          EmptyState(
-            kind: EmptyKind.noVisitingChefs,
-            fill: true,
-            title: fetched.isEmpty ? null : 'No more chefs today',
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              EmptyState(
+                kind: EmptyKind.noVisitingChefs,
+                fill: nextLine == null,
+                title: fetched.isEmpty ? null : 'No more chefs today',
+              ),
+              if (nextLine != null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  child: Text(nextLine, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+                ),
+            ],
           ),
         ),
         _ => BoundedList(

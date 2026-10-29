@@ -79,11 +79,13 @@ Map<String, dynamic> _chef(int id, String name, {String? cuisine, String? place}
 Map<String, dynamic> _chefsBody(
   List<Map<String, dynamic>> data, {
   String availability = 'available',
+  Map<String, dynamic>? next,
 }) => {
   'data': data,
   'stale': false,
   'last_updated': null,
   'availability': availability,
+  'next': ?next,
 };
 
 void main() {
@@ -185,11 +187,21 @@ void main() {
       expect(find.text('Chef Marco'), findsOneWidget);
     });
 
-    testWidgets('hides the group once every chef has ended', (tester) async {
+    testWidgets('keeps the group once every chef has ended, with the next chef', (tester) async {
+      RitClock.pin(DateTime.utc(2026, 10, 14, 18, 30));
+      final next = {'date': '2026-10-15', 'name': 'Chef Lin', 'location_name': 'Gracie’s'};
+      await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: _chefsBody(chefs['data'] as List<Map<String, dynamic>>, next: next)));
+      expect(find.text('Chef Marco'), findsNothing);
+      expect(find.text('Visiting chefs'), findsWidgets);
+      expect(find.text('No more chefs today'), findsOneWidget);
+      expect(find.text('Next: Tomorrow · Chef Lin · Gracie’s'), findsOneWidget);
+    });
+
+    testWidgets('an ended day with no next chef still says no more chefs', (tester) async {
       RitClock.pin(DateTime.utc(2026, 10, 14, 18, 30));
       await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
-      expect(find.text('Chef Marco'), findsNothing);
-      expect(find.text('Visiting chefs'), findsNothing);
+      expect(find.text('No more chefs today'), findsOneWidget);
+      expect(find.textContaining('Next:'), findsNothing);
     });
 
     testWidgets('rows are labelled and at least 48pt tall', (tester) async {
