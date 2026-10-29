@@ -36,10 +36,10 @@ import 'fixtures.g.dart';
 // 12:30 edt on the day the fixtures were captured
 final _now = DateTime.utc(2026, 8, 30, 16, 30);
 
-// workflow runs one appearance per drive, by hand you get both
+// workflow runs one appearance per drive; every scheme is dark now
 const _only = String.fromEnvironment('SCREENS_APPEARANCE');
 final _appearances = [
-  for (final b in [Brightness.light, Brightness.dark])
+  for (final b in [Brightness.dark])
     if (_only.isEmpty || b.name == _only) b,
 ];
 
@@ -151,13 +151,10 @@ final Map<String, dynamic> _menu = {
 Widget _app(ApiClient api, SchemeController scheme) => AnimatedBuilder(
   animation: scheme,
   builder: (context, _) {
-    final state = scheme.state;
     return MaterialApp(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.from(state.isDynamic ? state.scheme : SchemeController.builtIn(Brightness.light)),
-      darkTheme: AppTheme.from(state.isDynamic ? state.scheme : SchemeController.builtIn(Brightness.dark)),
-      themeMode: ThemeMode.system,
+      theme: AppTheme.from(scheme.scheme),
       builder: phoneModeBuilder(PhoneMode.fromEnvironment()),
       home: AppShell(api: api, scheme: scheme),
     );
@@ -266,13 +263,13 @@ void main() {
     // skips the first run setup screen
     await Preferences.instance.markSetupSeen();
     await _seedToday();
-    final scheme = SchemeController()..restore();
+    final scheme = SchemeController()..load();
     addTearDown(scheme.dispose);
     await tester.pumpWidget(_app(ApiClient(backend: _FixtureBackend()), scheme));
     await _settle(tester);
 
     for (final appearance in _appearances) {
-      binding.platformDispatcher.platformBrightnessTestValue = appearance;
+      await scheme.select(AppScheme.espresso);
       await _settle(tester);
       final mode = appearance.name;
 
@@ -344,9 +341,8 @@ void main() {
   // the workflow records the screen between the two log lines
   testWidgets('tab bar scrub', (tester) async {
     await Preferences.instance.markSetupSeen();
-    final scheme = SchemeController()..restore();
+    final scheme = SchemeController();
     addTearDown(scheme.dispose);
-    binding.platformDispatcher.platformBrightnessTestValue = Brightness.light;
     await tester.pumpWidget(_app(ApiClient(backend: _FixtureBackend()), scheme));
     await _settle(tester);
 
@@ -376,5 +372,5 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800));
     debugPrint('tab scrub end');
     binding.platformDispatcher.clearPlatformBrightnessTestValue();
-  }, skip: !_appearances.contains(Brightness.light));
+  }, skip: !_appearances.contains(Brightness.dark));
 }

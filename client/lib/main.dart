@@ -29,9 +29,7 @@ class _TigerHubAppState extends State<TigerHubApp> {
   @override
   void initState() {
     super.initState();
-    // Built-in palette unless the user has opted in to following the
-    // wallpaper. This runs on many different desktops.
-    _scheme = SchemeController()..restore();
+    _scheme = SchemeController()..load();
   }
 
   @override
@@ -45,23 +43,12 @@ class _TigerHubAppState extends State<TigerHubApp> {
   Widget build(BuildContext context) => AnimatedBuilder(
         animation: _scheme,
         builder: (context, _) {
-          final state = _scheme.state;
           return MaterialApp(
             title: AppConfig.appName,
             debugShowCheckedModeBanner: false,
-            // Both modes are generated from the same seed and follow the
-            // system, since not everyone runs a dark desktop.
-            theme: AppTheme.from(
-              state.isDynamic
-                  ? state.scheme
-                  : SchemeController.builtIn(Brightness.light),
-            ),
-            darkTheme: AppTheme.from(
-              state.isDynamic
-                  ? state.scheme
-                  : SchemeController.builtIn(Brightness.dark),
-            ),
-            themeMode: ThemeMode.system,
+            // One theme from the stored choice. There is no darkTheme, so the
+            // OS brightness is never consulted.
+            theme: AppTheme.from(_scheme.scheme),
             builder: phoneModeBuilder(_phone),
             home: AppShell(api: _api, scheme: _scheme),
           );

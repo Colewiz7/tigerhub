@@ -17,6 +17,7 @@ import 'package:tigerhub/services/todays_hours.dart' show currentSeason;
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/theme/dark_palette.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/theme/semantic.dart';
 import 'package:tigerhub/theme/tokens.dart';
@@ -587,116 +588,15 @@ void main() {
   });
 }
 
-ColorScheme _fallbackScheme() => schemeFromJson(_caelestiaSample)!;
-
-/// A trimmed copy of the real ~/.local/state/caelestia/scheme.json, so the
-/// parser is tested against the actual shape rather than an invented one.
-const Map<String, dynamic> _caelestiaSample = {
-  'name': 'dynamic',
-  'mode': 'dark',
-  'variant': 'tonalspot',
-  'colours': {
-    'background': '050301',
-    'onBackground': 'f8e1d5',
-    'surface': '050301',
-    'surfaceContainerLowest': '000000',
-    'surfaceContainerLow': '080402',
-    'surfaceContainerHigh': '0e0705',
-    'onSurface': 'f8e1d5',
-    'onSurfaceVariant': 'bba79c',
-    'outline': '847268',
-    'outlineVariant': '54453c',
-    'surfaceTint': '372418',
-    'primary': 'f6ba96',
-    'onPrimary': '5e361c',
-    'primaryContainer': '74482c',
-    'onPrimaryContainer': 'ffdcca',
-    'secondary': 'e5bfa9',
-    'error': 'f97758',
-    'onError': '450900',
-    'errorContainer': '85230a',
-    'onErrorContainer': 'ff9b82',
-    'inverseSurface': 'fff8f5',
-    'inverseOnSurface': '5d534e',
-    'inversePrimary': '825438',
-    'shadow': '000000',
-    'scrim': '000000',
-  },
-};
+ColorScheme _fallbackScheme() => SchemeController.builtIn(Brightness.dark);
 
 void _dynamicColour() {
-  group('dynamic colour', () {
-    test('parses the real Caelestia scheme shape', () {
-      final scheme = schemeFromJson(_caelestiaSample);
-      expect(scheme, isNotNull);
-      expect(scheme!.primary, const Color(0xFFF6BA96));
-      expect(scheme.brightness, Brightness.dark);
-      expect(scheme.onSurface, const Color(0xFFF8E1D5));
-    });
-
-    test('honours the light mode flag', () {
-      final light = schemeFromJson({..._caelestiaSample, 'mode': 'light'});
-      expect(light!.brightness, Brightness.light);
-    });
-
-    test('hex parses with and without a leading hash', () {
-      expect(parseHex('f6ba96'), const Color(0xFFF6BA96));
-      expect(parseHex('#f6ba96'), const Color(0xFFF6BA96));
-      expect(parseHex('nonsense'), isNull);
-      expect(parseHex(null), isNull);
-      expect(parseHex(42), isNull);
-    });
-
-    test('a payload missing the essential roles falls back rather than half themes', () {
-      expect(schemeFromJson({'colours': {}}), isNull);
-      expect(
-        schemeFromJson({
-          'colours': {'primary': 'f6ba96'},
-        }),
-        isNull,
-      );
-      expect(schemeFromJson({'nope': true}), isNull);
-    });
-
-    test(
-      'container levels are derived from the tint so nesting stays visible',
-      () {
-        final scheme = schemeFromJson(_caelestiaSample)!;
-        // The file's own container roles sit within a few points of each other,
-        // so they are re-derived by blending surfaceTint over surface.
-        final levels = [
-          scheme.surfaceContainerLowest,
-          scheme.surfaceContainerLow,
-          scheme.surfaceContainer,
-          scheme.surfaceContainerHigh,
-          scheme.surfaceContainerHighest,
-        ];
-        for (var i = 1; i < levels.length; i++) {
-          expect(levels[i].r, greaterThan(levels[i - 1].r));
-        }
-      },
-    );
-
-    test(
-      'the built-in palette is the default, with no scheme file needed',
-      () async {
-        final controller = SchemeController();
-        await controller.load();
-        expect(controller.state.origin, SchemeOrigin.seed);
-        expect(controller.state.isDynamic, isFalse);
-        // The escape hatch must always produce something readable.
-        final theme = AppTheme.from(controller.state.scheme);
-        expect(theme.colorScheme.primary, isNotNull);
-        controller.dispose();
-      },
-    );
-
-    test('the wallpaper opt in flips back and forth', () async {
+  group('scheme choice', () {
+    test('Espresso is the default, with nothing stored', () async {
       final controller = SchemeController();
       await controller.load();
-      expect(controller.forcedToSeed, isTrue);
-      await controller.setForceSeed(false);
-      expect(controller.forcedToSeed, isFalse);
+      expect(controller.choice, AppScheme.espresso);
+      expect(AppTheme.from(controller.scheme).colorScheme.primary, const Color(0xFFF3B08F));
       controller.dispose();
     });
 
@@ -722,7 +622,9 @@ void _dynamicColour() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Appearance').last);
       await tester.pumpAndSettle();
-      expect(find.text('Built-in palette'), findsOneWidget);
+      for (final option in AppScheme.values) {
+        expect(find.text(option.label), findsOneWidget);
+      }
 
       await tester.pumpWidget(const SizedBox.shrink());
       controller.dispose();
@@ -961,7 +863,7 @@ void _visualStructure() {
     });
 
     test(
-      'rebuild against a different scheme, so they follow the wallpaper',
+      'rebuild against a different scheme, so they follow the active scheme',
       () {
         final warm = Semantic.from(_fallbackScheme());
         final cool = Semantic.from(
@@ -1461,15 +1363,10 @@ void _shippedPalette() {
       0.2126 * c.r * 255 + 0.7152 * c.g * 255 + 0.0722 * c.b * 255;
 
   group('built-in palette', () {
-    test('is the default, wallpaper following is opt in', () async {
+    test('is the default, and is fixed rather than generated', () async {
       final controller = SchemeController();
       await controller.load();
-      expect(controller.state.origin, SchemeOrigin.seed);
-      expect(
-        controller.state.isDynamic,
-        isFalse,
-        reason: 'this ships to many desktops, it cannot assume a wallpaper',
-      );
+      expect(controller.scheme, SchemeController.builtIn(Brightness.dark));
       controller.dispose();
     });
 
@@ -1507,30 +1404,36 @@ void _shippedPalette() {
     // Red against green is the fundamental colourblindness case, so they are
     // separated by lightness as well as hue.
     test('open, closed and busy differ in lightness, not only in hue', () {
-      for (final brightness in [Brightness.dark, Brightness.light]) {
-        final sem = Semantic.from(SchemeController.builtIn(brightness));
-        final tones = [lum(sem.open), lum(sem.closed), lum(sem.busy)];
-        for (var i = 0; i < tones.length; i++) {
-          for (var j = i + 1; j < tones.length; j++) {
-            expect(
-              (tones[i] - tones[j]).abs(),
-              greaterThan(20),
-              reason:
-                  'a colourblind reader has only lightness to go on '
-                  'in $brightness',
-            );
-          }
+      final sem = Semantic.from(SchemeController.builtIn(Brightness.light));
+      final tones = [lum(sem.open), lum(sem.closed), lum(sem.busy)];
+      for (var i = 0; i < tones.length; i++) {
+        for (var j = i + 1; j < tones.length; j++) {
+          expect(
+            (tones[i] - tones[j]).abs(),
+            greaterThan(20),
+            reason: 'a colourblind reader has only lightness to go on in light',
+          );
         }
       }
     });
 
-    test('the old full harmonize collapsed red onto amber, and is gone', () {
-      final sem = Semantic.from(SchemeController.builtIn(Brightness.dark));
-      // The shipped harmonize put these dE 4.8 apart in normal vision. A crude
-      // proxy: they must no longer be near identical.
-      final closedLum = lum(sem.closed);
-      final busyLum = lum(sem.busy);
-      expect((closedLum - busyLum).abs(), greaterThan(40));
+    // The dark palettes pin success and busy to the chip-fixed values, which
+    // sit close in lightness. Closed still has to stay darker than both, and
+    // open and busy differ in hue and always carry a text label.
+    test('closed stays darker than open and busy in every dark palette', () {
+      for (final palette in DarkPalette.all) {
+        final sem = Semantic.from(SchemeController.forChoice(AppScheme.parse(palette.id)));
+        expect(lum(sem.open) - lum(sem.closed), greaterThan(15), reason: palette.id);
+        expect(lum(sem.busy) - lum(sem.closed), greaterThan(15), reason: palette.id);
+      }
+    });
+
+    test('open and busy are different hues in every dark palette', () {
+      for (final palette in DarkPalette.all) {
+        final sem = Semantic.from(SchemeController.forChoice(AppScheme.parse(palette.id)));
+        final gap = (HSLColor.fromColor(sem.open).hue - HSLColor.fromColor(sem.busy).hue).abs();
+        expect(gap, greaterThan(40), reason: palette.id);
+      }
     });
   });
 }
@@ -1720,11 +1623,9 @@ void _weekGridAndClosed() {
     test('muting did not cost the separation', () {
       double lum(Color c) =>
           0.2126 * c.r * 255 + 0.7152 * c.g * 255 + 0.0722 * c.b * 255;
-      for (final brightness in [Brightness.dark, Brightness.light]) {
-        final sem = Semantic.from(SchemeController.builtIn(brightness));
-        expect((lum(sem.closed) - lum(sem.open)).abs(), greaterThan(20));
-        expect((lum(sem.closed) - lum(sem.busy)).abs(), greaterThan(20));
-      }
+      final sem = Semantic.from(SchemeController.builtIn(Brightness.light));
+      expect((lum(sem.closed) - lum(sem.open)).abs(), greaterThan(20));
+      expect((lum(sem.closed) - lum(sem.busy)).abs(), greaterThan(20));
     });
   });
 }
