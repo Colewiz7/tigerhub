@@ -57,7 +57,7 @@ class SettingsScreen extends StatelessWidget {
           SectionSpec(
             id: 'appearance',
             title: 'Appearance',
-            subtitle: 'Theme source, palette',
+            subtitle: 'Theme',
             icon: AppIconKind.appearance,
             builder: (context) => AppearanceSection(scheme: scheme),
           ),

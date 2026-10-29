@@ -151,13 +151,10 @@ final Map<String, dynamic> _menu = {
 Widget _app(ApiClient api, SchemeController scheme) => AnimatedBuilder(
   animation: scheme,
   builder: (context, _) {
-    final state = scheme.state;
     return MaterialApp(
       title: AppConfig.appName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.from(state.isDynamic ? state.scheme : SchemeController.builtIn(Brightness.light)),
-      darkTheme: AppTheme.from(state.isDynamic ? state.scheme : SchemeController.builtIn(Brightness.dark)),
-      themeMode: ThemeMode.system,
+      theme: AppTheme.from(scheme.scheme),
       builder: phoneModeBuilder(PhoneMode.fromEnvironment()),
       home: AppShell(api: api, scheme: scheme),
     );
@@ -266,13 +263,13 @@ void main() {
     // skips the first run setup screen
     await Preferences.instance.markSetupSeen();
     await _seedToday();
-    final scheme = SchemeController()..restore();
+    final scheme = SchemeController()..load();
     addTearDown(scheme.dispose);
     await tester.pumpWidget(_app(ApiClient(backend: _FixtureBackend()), scheme));
     await _settle(tester);
 
     for (final appearance in _appearances) {
-      binding.platformDispatcher.platformBrightnessTestValue = appearance;
+      await scheme.select(appearance == Brightness.light ? AppScheme.light : AppScheme.espresso);
       await _settle(tester);
       final mode = appearance.name;
 
@@ -344,9 +341,8 @@ void main() {
   // the workflow records the screen between the two log lines
   testWidgets('tab bar scrub', (tester) async {
     await Preferences.instance.markSetupSeen();
-    final scheme = SchemeController()..restore();
+    final scheme = SchemeController(initial: AppScheme.light);
     addTearDown(scheme.dispose);
-    binding.platformDispatcher.platformBrightnessTestValue = Brightness.light;
     await tester.pumpWidget(_app(ApiClient(backend: _FixtureBackend()), scheme));
     await _settle(tester);
 

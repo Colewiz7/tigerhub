@@ -305,7 +305,7 @@ class DiningRow extends StatelessWidget {
     final semantic = Semantic.of(context);
     final open = location.isOpen;
 
-    // Harmonized against the wallpaper palette, never a raw hue.
+    // From the active scheme, never a raw hue.
     final accent = open
         ? semantic.open
         : Theme.of(context).colorScheme.onSurfaceVariant;

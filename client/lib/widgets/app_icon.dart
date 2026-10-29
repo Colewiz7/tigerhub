@@ -22,7 +22,6 @@ enum AppIconKind {
   link(CupertinoIcons.arrow_up_right_square, Icons.open_in_new_rounded),
   gym(CupertinoIcons.sportscourt, Icons.fitness_center_rounded),
   appearance(CupertinoIcons.paintbrush, Icons.palette_rounded),
-  wallpaper(CupertinoIcons.photo, Icons.wallpaper_rounded),
   info(CupertinoIcons.info_circle, Icons.info_outline_rounded),
   map(CupertinoIcons.map, Icons.map_rounded),
   mailbox(CupertinoIcons.envelope_badge, Icons.markunread_mailbox_rounded),

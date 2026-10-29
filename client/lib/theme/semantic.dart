@@ -1,9 +1,9 @@
-/// Semantic status colours, harmonized against the live scheme.
+/// Semantic status colours, nudged toward the active scheme.
 ///
-/// The palette is generated from the wallpaper, so a raw `Colors.green` clashes
-/// with it. `Blend.harmonize` rotates a design colour's hue toward the scheme
-/// primary while keeping it recognisably green, red, or amber, which is exactly
-/// the Material You mechanism for this.
+/// A raw `Colors.green` clashes with a warm palette. The design colours are
+/// rotated slightly toward the scheme primary while staying recognisably
+/// green, red, or amber. The built-in dark palettes pin their own success and
+/// busy colours instead.
 ///
 /// Derived once at theme build time and hung off ThemeData as an extension, so
 /// call sites read `Semantic.of(context).open` rather than recomputing.
@@ -15,6 +15,8 @@ import 'package:flutter/material.dart';
 // dependency that could drift from whatever the SDK expects.
 // ignore: depend_on_referenced_packages
 import 'package:material_color_utilities/material_color_utilities.dart';
+
+import 'dark_palette.dart';
 
 @immutable
 class Semantic extends ThemeExtension<Semantic> {
@@ -102,6 +104,24 @@ class Semantic extends ThemeExtension<Semantic> {
 
     final container = dark ? 26.0 : 90.0;
     final onContainer = dark ? 90.0 : 20.0;
+
+    // A built-in dark palette fixes its own success and busy colours, so those
+    // are used as given. Closed keeps the nudged terracotta, with a faint
+    // container so it still recedes.
+    final palette = DarkPalette.of(scheme);
+    if (palette != null) {
+      final closed = at(_redSeed, palette.closedTone, chroma: _closedChroma);
+      return Semantic(
+        open: palette.success,
+        onOpen: palette.success,
+        openContainer: palette.chip(palette.success),
+        closed: closed,
+        closedContainer: palette.chip(closed, alpha: 0.04),
+        busy: palette.busy,
+        onBusy: palette.busy,
+        busyContainer: palette.chip(palette.busy),
+      );
+    }
 
     return Semantic(
       open: at(_greenSeed, tones.open),
