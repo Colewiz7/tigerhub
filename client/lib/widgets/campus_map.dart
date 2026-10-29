@@ -1732,6 +1732,7 @@ class CampusMapPainter extends CustomPainter {
     drawFamily(MapFamily.open);
     drawFamily(MapFamily.parking);
     _paintPaths(canvas, geometry, ground);
+    _paintOsmBuildings(canvas, geometry);
     for (final family in MapFamily.values.where((family) => family.isBuilt)) {
       drawFamily(family);
     }
@@ -1890,33 +1891,66 @@ class CampusMapPainter extends CustomPainter {
   /// extract. Green reuses the grass fill, so the "Green space" legend row
   /// covers it, and a pitch adds the parking edge. No new colours.
   void _paintOsmGround(Canvas canvas, _MapGeometry geometry, Paint? grass) {
-    if (osm.isEmpty) return;
     final water = mapWaterPaints(scheme, zoom: zoom);
     final fill = water.fill;
     final edge = water.edge;
-    if (fill != null) canvas.drawPath(geometry.osmWater, fill);
-    if (edge != null) {
-      edge.strokeWidth /= zoom;
-      canvas.drawPath(geometry.osmWater, edge);
-      canvas.drawPath(
-        geometry.osmWaterway,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5 / zoom
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round
-          ..color = edge.color,
-      );
+    if (fill != null && osm.water.isNotEmpty) {
+      canvas.drawPath(geometry.osmWater, fill);
     }
-    if (grass != null) {
-      canvas.drawPath(geometry.osmGreen, grass);
-      final pitchEdge = mapPitchEdge(scheme, zoom: zoom);
-      if (pitchEdge != null) {
-        pitchEdge.strokeWidth /= zoom;
-        canvas.drawPath(geometry.osmPitchEdge, pitchEdge);
+    if (edge != null) {
+      if (osm.water.isNotEmpty) {
+        final outline = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = edge.strokeWidth / zoom
+          ..color = edge.color;
+        canvas.drawPath(geometry.osmWater, outline);
+      }
+      if (osm.waterway.isNotEmpty) {
+        canvas.drawPath(
+          geometry.osmWaterway,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.5 / zoom
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round
+            ..color = edge.color,
+        );
       }
     }
+    if (grass != null && (osm.park.isNotEmpty || osm.pitch.isNotEmpty)) {
+      canvas.drawPath(geometry.osmGreen, grass);
+    }
+    final pitchEdge = mapPitchEdge(scheme, zoom: zoom);
+    if (pitchEdge != null && osm.pitch.isNotEmpty) {
+      pitchEdge.strokeWidth /= zoom;
+      canvas.drawPath(geometry.osmPitchEdge, pitchEdge);
+    }
   }
+
+  /// Footprints only OpenStreetMap has, in the other-building family. They
+  /// carry no name, no label and no tap target: RIT has nothing to say about
+  /// them, so neither does the map.
+  void _paintOsmBuildings(Canvas canvas, _MapGeometry geometry) {
+    if (osm.building.isEmpty) return;
+    final paints = mapFamilyPaints(MapFamily.otherBuilt, scheme, zoom: zoom);
+    final fill = paints.fill;
+    final edge = paints.edge;
+    if (fill != null) canvas.drawPath(geometry.osmBuildings, fill);
+    if (edge != null) {
+      edge.strokeWidth /= zoom;
+      canvas.drawPath(geometry.osmBuildings, edge);
+    }
+  }
+
+  /// The ids of the buildings that can be labelled, for tests that check OSM
+  /// footprints never join them.
+  @visibleForTesting
+  List<int> labelledBuildingIdsForTest(Size size) => [
+    for (final b in _geometryFor(
+      CampusMapProjection(features, size, boundsFeatures: boundsFeatures),
+    ).buildings)
+      b.feature.id,
+  ];
 
   static _MapGeometry? _geometryCache;
 
@@ -2305,8 +2339,9 @@ class _MapGeometry {
     ];
     osmWater = ringsPath(projected(osm.water));
     osmWaterway = linesPath(projected(osm.waterway));
-    osmGreen = ringsPath(projected([...osm.park, ...osm.pitch]));
-    osmPitchEdge = ringsPath(projected(osm.pitch));
+    // RIT's own outlines, kept so OpenStreetMap can be checked against them
+    final ritBuilt = <List<Offset>>[];
+    final ritOpen = <List<Offset>>[];
     for (final feature in features) {
       if (feature.geometryType == 'Point') continue;
       final family = mapFamily(feature);
@@ -2314,8 +2349,10 @@ class _MapGeometry {
       Rect? largest;
       for (final ring in feature.coordinates) {
         if (ring.length < 3) continue;
-        final outline = Path()
-          ..addPolygon([for (final c in ring) projection.project(c)], true);
+        final points = [for (final c in ring) projection.project(c)];
+        if (family.isBuilt) ritBuilt.add(points);
+        if (family == MapFamily.open) ritOpen.add(points);
+        final outline = Path()..addPolygon(points, true);
         layer.addPath(outline, Offset.zero);
         final bounds = outline.getBounds();
         if (largest == null ||
@@ -2329,6 +2366,20 @@ class _MapGeometry {
         buildings.add((feature: feature, family: family, bounds: largest));
       }
     }
+    // RIT stays authoritative. An OpenStreetMap park whose centre is already
+    // inside one of RIT's green shapes is dropped, a pitch there keeps only
+    // its edge, and a footprint is kept only where RIT has none.
+    bool inRitOpen(List<Offset> ring) =>
+        ritOpen.any((open) => pointInRing(ringCentre(ring), open));
+    final pitches = projected(osm.pitch);
+    osmGreen = ringsPath([
+      for (final ring in projected(osm.park))
+        if (!inRitOpen(ring)) ring,
+      for (final ring in pitches)
+        if (!inRitOpen(ring)) ring,
+    ]);
+    osmPitchEdge = ringsPath(pitches);
+    osmBuildings = ringsPath(outsideRings(projected(osm.building), ritBuilt));
     // the few buildings that keep a name at campus scale, by footprint
     final named = [
       for (final b in buildings)
@@ -2423,6 +2474,9 @@ class _MapGeometry {
   late final Path osmWaterway;
   late final Path osmGreen;
   late final Path osmPitchEdge;
+
+  /// OpenStreetMap footprints RIT does not draw. Unlabeled and not selectable.
+  late final Path osmBuildings;
 
   final Map<MapFamily, Path> areas = {};
   final List<_Building> buildings = [];
