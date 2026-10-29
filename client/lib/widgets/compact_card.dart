@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
 import 'app_icon.dart';
+import 'status_text.dart';
 
 /// Marks a compact card that shares its row with another. Both then take the
 /// height of a full card, caption line included, so the pair lines up.
@@ -97,7 +98,7 @@ class CompactCard extends StatelessWidget {
           ),
           if (caption != null) ...[
             const SizedBox(height: 2),
-            Text(caption!, style: text.bodySmall?.copyWith(fontSize: 14, height: 1.3, letterSpacing: 0)),
+            StatusText(caption!, style: text.bodySmall?.copyWith(fontSize: 14, height: 1.3, letterSpacing: 0)),
           ],
         ],
       ),

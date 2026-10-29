@@ -379,6 +379,8 @@ class CampusEvent {
     this.endsAt,
     this.description,
     this.location,
+    this.building,
+    this.room,
     this.organizer,
     this.organizerKey,
     this.eventType,
@@ -397,6 +399,8 @@ class CampusEvent {
   final String? description;
 
   final String? location;
+  final String? building;
+  final String? room;
   final String? organizer;
   final String? organizerKey;
   final String? eventType;
@@ -411,6 +415,8 @@ class CampusEvent {
     endsAt: _date(json['ends_at']),
     description: json['description'] as String?,
     location: json['location'] as String?,
+    building: json['building'] as String?,
+    room: json['room'] as String?,
     organizer: json['organizer'] as String?,
     organizerKey: json['organizer_key'] as String?,
     eventType: json['event_type'] as String?,
