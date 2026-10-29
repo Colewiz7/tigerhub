@@ -2555,22 +2555,6 @@ class _MapGeometry {
     ]);
     osmPitchEdge = ringsPath(pitches);
     osmBuildings = ringsPath(outsideRings(projected(osm.building), ritBuilt));
-    // A door within a few metres of an RIT accessible entrance pin is the
-    // same door, and the pin already marks it.
-    final ritDoors = [
-      for (final feature in features)
-        if (feature.geometryType == 'Point' &&
-            feature.kind == 'entrance_accessible' &&
-            feature.anchor != null)
-          feature.anchor!,
-    ];
-    for (final door in osm.entrance) {
-      if (ritDoors.any((d) => metresApart(d, door.at) < _sameDoorMetres)) {
-        continue;
-      }
-      entrances.add((at: projection.project(door.at), name: door.name));
-    }
-    entrancePoints = [for (final door in entrances) door.at];
     for (final street in osm.street) {
       final run = longestStraightRun(projected(street.lines));
       if (run == null) continue;
@@ -2600,6 +2584,24 @@ class _MapGeometry {
     categoryOverview =
         pointKinds.length > 1 &&
         pointKinds.every((kind) => !kind.startsWith('_event:'));
+    // A door within a few metres of an RIT accessible entrance pin is the
+    // same door, and the pin already marks it. In the overview no pin is drawn,
+    // so the door stays.
+    final ritDoors = [
+      if (!categoryOverview)
+        for (final feature in features)
+          if (feature.geometryType == 'Point' &&
+              feature.kind == 'entrance_accessible' &&
+              feature.anchor != null)
+            feature.anchor!,
+    ];
+    for (final door in osm.entrance) {
+      if (ritDoors.any((d) => metresApart(d, door.at) < _sameDoorMetres)) {
+        continue;
+      }
+      entrances.add((at: projection.project(door.at), name: door.name));
+    }
+    entrancePoints = [for (final door in entrances) door.at];
     for (final feature in features) {
       if (feature.geometryType != 'Point') continue;
       final anchor = feature.anchor;

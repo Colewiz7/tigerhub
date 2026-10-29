@@ -130,6 +130,32 @@ void main() {
     expect(deduped.points, hasLength(1));
   });
 
+  test('in the all-places overview no pin is drawn, so the door stays', () {
+    final twin = accessibleEntrance(
+      GeoCoordinate(door.longitude + 0.00003, door.latitude),
+    );
+    final fountain = CampusMapFeature(
+      id: 901,
+      kind: 'water',
+      kindName: 'Water fountains',
+      name: 'Fountain',
+      geometryType: 'Point',
+      coordinates: const [
+        [GeoCoordinate(-77.676, 43.0835)],
+      ],
+    );
+    final dots = dotsOf(
+      draw(
+        painter(
+          doors(const [OsmEntrance(door)]),
+          zoom: 8,
+          extra: [twin, fountain],
+        ),
+      ),
+    );
+    expect(dots.first.points, hasLength(1));
+  });
+
   test('a door 20 m from the pin is kept', () {
     final far = accessibleEntrance(
       GeoCoordinate(door.longitude + 0.0003, door.latitude),
