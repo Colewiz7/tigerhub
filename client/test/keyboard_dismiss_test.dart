@@ -26,7 +26,6 @@ import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/campus_map.dart';
 import 'package:tigerhub/widgets/places_sheet.dart';
 import 'package:tigerhub/widgets/tab_bar.dart';
-import 'package:tigerhub/widgets/large_title.dart';
 
 import 'support/tabs.dart';
 
@@ -225,7 +224,8 @@ void main() {
     await pumpShell(tester);
     await focusDiningSearch(tester);
 
-    await tester.tap(find.byType(LargeTitle));
+    // the gap above the search field, where the title used to sit
+    await tester.tapAt(const Offset(200, 2));
     await tester.pump();
     expect(focused(tester, search(DiningScreen)), isFalse);
     expectNoField(tester, 'after tapping outside');

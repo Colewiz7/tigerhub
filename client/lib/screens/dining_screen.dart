@@ -100,6 +100,17 @@ class _DiningScreenState extends State<DiningScreen> {
     ];
   }
 
+  // the feed lists chefs for today and every one has ended
+  bool get _chefsEnded {
+    final chefs = _chefs.value;
+    if (chefs == null || chefs.availability != Availability.available) return false;
+    final today = CampusTime.wallDate();
+    return chefsAllEnded([
+      for (final chef in chefs.data)
+        if (chef.name.isNotEmpty && (chef.startsAt == null || DateUtils.isSameDay(CampusTime.fieldsOf(chef.startsAt!), today))) chef,
+    ]);
+  }
+
   bool get _trucksFresh {
     final trucks = _trucks.value;
     final at = trucks?.lastUpdated;
@@ -167,6 +178,7 @@ class _DiningScreenState extends State<DiningScreen> {
   void initState() {
     super.initState();
     _prefs.addListener(_onChanged);
+    widget.api.menusCached.addListener(_readFeatures);
     _readTrucks();
     _readChefs();
     _readFeatures();
@@ -175,6 +187,7 @@ class _DiningScreenState extends State<DiningScreen> {
   @override
   void dispose() {
     _prefs.removeListener(_onChanged);
+    widget.api.menusCached.removeListener(_readFeatures);
     _trucksSub?.cancel();
     _chefsSub?.cancel();
     _featuresSub?.cancel();
@@ -328,6 +341,8 @@ class _DiningScreenState extends State<DiningScreen> {
               .toList();
 
     final chefs = _todayChefs(query);
+    final endedChefs = query.isEmpty && _chefsEnded;
+    final nextChef = _chefs.value is ChefCollection ? (_chefs.value as ChefCollection).next : null;
 
     // cached trucks show at once
     final trucks = [
@@ -383,6 +398,13 @@ class _DiningScreenState extends State<DiningScreen> {
                 child: JumpList(
                   groups: _editing ? _editGroups(sections, defaults) : [
 
+                  if (chefs.isEmpty && endedChefs)
+                    JumpGroup(
+                      label: 'Visiting chefs',
+                      icon: AppIconKind.visitingChef,
+                      count: 0,
+                      builder: (context) => _NoMoreChefsGroup(next: nextChef),
+                    ),
                   if (chefs.isNotEmpty)
                     JumpGroup(
                       label: 'Visiting chefs',
@@ -805,6 +827,35 @@ class _VisitingChefsGroup extends StatelessWidget {
   }
 }
 
+class _NoMoreChefsGroup extends StatelessWidget {
+  const _NoMoreChefsGroup({required this.next});
+
+  final UpcomingChef? next;
+
+  @override
+  Widget build(BuildContext context) {
+    final line = next;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionTitle('Visiting chefs'),
+        InsetGroup(
+          children: [
+            StatusRow(
+              key: const ValueKey('chefs-ended'),
+              icon: AppIconKind.visitingChef,
+              grouped: true,
+              subtitleMaxLines: null,
+              title: 'No more chefs today',
+              subtitle: line == null ? '' : nextChefLine(line, CampusTime.wallDate()),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class _TodayMenuGroup extends StatelessWidget {
   const _TodayMenuGroup({
     required this.result,
@@ -871,7 +922,7 @@ class _TodayMenuGroup extends StatelessWidget {
     }
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
-      child: Text('Menus not published yet today', style: quiet),
+      child: Text('No menus loaded yet. Open a place to load its menu.', style: quiet),
     );
   }
 

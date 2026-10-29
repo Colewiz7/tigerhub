@@ -683,7 +683,7 @@ Map<String, dynamic> visitingChefsView({
   }
 
   if (items.isNotEmpty) {
-    return {'items': items, 'availability': availabilityAvailable};
+    return {'items': items, 'availability': availabilityAvailable, 'next': _nextChef(schedule, today)};
   }
 
   // The only way to a quiet day. TigerCenter publishing menus without a chef

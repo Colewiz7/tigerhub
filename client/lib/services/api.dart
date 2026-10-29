@@ -12,6 +12,8 @@ library;
 
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show ValueNotifier;
+
 import '../config.dart';
 import '../data/backend.dart';
 import '../data/campus_time.dart';
@@ -208,14 +210,22 @@ class ApiClient {
   /// Today's menu for one location. Only 12 of 24 publish one, so an empty
   /// dish list is a normal answer. A menu with no service_date comes back as
   /// a null value with one drop, never as a dated guess.
-  Stream<Result<MenuDay>> menu(int locationId) =>
-      watch('/dining/$locationId/menu', (j) {
-        try {
-          return MenuDay.fromJson(j);
-        } on MissingTimeException {
-          return null;
-        }
-      });
+  Stream<Result<MenuDay>> menu(int locationId) async* {
+    final results = watch<MenuDay>('/dining/$locationId/menu', (j) {
+      try {
+        return MenuDay.fromJson(j);
+      } on MissingTimeException {
+        return null;
+      }
+    });
+    await for (final result in results) {
+      yield result;
+      // a fetched menu is now cached, so lists built from the cache can refill
+      if (result.state == DataState.ok) menusCached.value++;
+    }
+  }
+
+  final menusCached = ValueNotifier<int>(0);
 
   /// The 24 hour occupancy series for one location. Only the five locations
   /// with a sensor return anything.
