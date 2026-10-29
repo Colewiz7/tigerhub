@@ -21,6 +21,7 @@ import 'app_icon.dart';
 import 'campus_event_mapper.dart';
 import 'empty_state.dart';
 import 'freshness.dart';
+import 'map_style.dart';
 import 'search_field.dart';
 import 'segmented_picker.dart';
 
@@ -264,7 +265,9 @@ class _CampusMapViewState extends State<CampusMapView> {
             child: ClipRRect(
               borderRadius: Shapes.card,
               child: ColoredBox(
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                color: MapPalette.of(
+                  Theme.of(context).colorScheme.brightness,
+                ).ground,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     _viewportSize = constraints.biggest;
@@ -1382,6 +1385,7 @@ enum MapFamily {
   academic(2, 'Academic'),
   residential(2, 'Residential'),
   athletic(2, 'Athletic'),
+  dining(2, 'Dining'),
   otherBuilt(2, 'Other building');
 
   const MapFamily(this.rank, this.label);
@@ -1452,67 +1456,65 @@ MapFamily mapFamily(CampusMapFeature feature) {
   if (name.contains('residential')) return MapFamily.residential;
   if (name.contains('academic')) return MapFamily.academic;
   if (name.contains('athletic')) return MapFamily.athletic;
+  if (name.contains('restaurant') || name.contains('dining')) {
+    return MapFamily.dining;
+  }
   return MapFamily.otherBuilt;
 }
 
-/// The category colours, validated rather than eyeballed.
-///
-/// the project notes 4 requires the dataviz validator to sign off any palette. Both of
-/// these pass all six checks against their own surface:
-///
-///   light  #0069a8 #6a4c93 #b4531f #4f7a28
-///          CVD worst adjacent dE 18.8 deutan, normal-vision worst 21.5
-///   dark   #3d8dc4 #8a6cc0 #cc6a38 #669440
-///          CVD worst adjacent dE 19.7 protan, normal-vision worst 21.7
-///
-/// Residential is the purple rather than the orange because orange is the
-/// app's primary, and 106 buildings in something close to it would read as
-/// 106 selected buildings. Green is spent on the two "other" buildings rather
-/// than on athletics, to keep it away from the olive of the green spaces.
-///
-/// Colour is never the only carrier: every one of these is named in the map's
-/// legend, and buildings carry their abbreviation on the map itself.
-Color _categoryColor(MapFamily family, Brightness brightness) {
-  final light = brightness == Brightness.light;
-  return switch (family) {
-    MapFamily.academic =>
-      light ? const Color(0xFF0069A8) : const Color(0xFF3D8DC4),
-    MapFamily.residential =>
-      light ? const Color(0xFF6A4C93) : const Color(0xFF8A6CC0),
-    MapFamily.athletic =>
-      light ? const Color(0xFFB4531F) : const Color(0xFFCC6A38),
-    _ => light ? const Color(0xFF4F7A28) : const Color(0xFF669440),
-  };
-}
+MapCategory? mapCategory(MapFamily family) => switch (family) {
+  MapFamily.academic => MapCategory.academic,
+  MapFamily.residential => MapCategory.residential,
+  MapFamily.athletic => MapCategory.athletic,
+  MapFamily.dining => MapCategory.dining,
+  MapFamily.otherBuilt => MapCategory.other,
+  _ => null,
+};
 
+List<double> _fillSchedule(MapFamily family) => switch (family) {
+  MapFamily.open => MapSchedule.grass,
+  MapFamily.parking => MapSchedule.parking,
+  MapFamily.otherBuilt => MapSchedule.otherBuilding,
+  _ => MapSchedule.building,
+};
+
+Color _faded(Color color, double opacity) =>
+    color.withValues(alpha: color.a * opacity);
+
+/// Fill and edge for one family at one zoom, from the fixed palette.
+///
+/// A null paint is a layer that is fully faded out. Stroke widths are screen
+/// points; the painter divides them by the zoom.
 ({Paint? fill, Paint? edge}) mapFamilyPaints(
   MapFamily family,
-  ColorScheme scheme,
-) {
+  ColorScheme scheme, {
+  double zoom = MapSchedule.legendZoom,
+}) {
+  final palette = MapPalette.of(scheme.brightness);
+  final opacity = opacityAt(_fillSchedule(family), zoom);
+  if (opacity <= 0) return (fill: null, edge: null);
   switch (family) {
     case MapFamily.open:
       return (
-        fill: Paint()..color = scheme.tertiary.withValues(alpha: 0.32),
+        fill: Paint()..color = _faded(palette.grass, opacity),
         edge: null,
       );
     case MapFamily.parking:
       return (
-        fill: null,
+        fill: Paint()..color = _faded(palette.parking, opacity),
         edge: Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.9
-          ..color = scheme.outline.withValues(alpha: 0.55),
+          ..strokeWidth = 0.75
+          ..color = _faded(palette.parkingStroke, opacity),
       );
     default:
-      final category = _categoryColor(family, scheme.brightness);
+      final category = mapCategory(family)!;
       return (
-        // A restrained tint makes zones readable as areas, rather than asking
-        // the reader to trace dozens of differently coloured outlines.
-        fill: Paint()..color = category.withValues(alpha: 0.16),
+        fill: Paint()..color = _faded(palette.fill(category), opacity),
         edge: Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.3
-          ..color = category,
+          ..strokeWidth = 1.0
+          ..color = _faded(palette.buildingOutline, opacity),
       );
   }
 }
@@ -1592,10 +1594,8 @@ class CampusMapPainter extends CustomPainter {
     final mapRect = projection.mapRect;
     // reaches past the canvas so a pan never exposes the layer behind
     final ground = (Offset.zero & size).inflate(_mapPanMargin);
-    canvas.drawRect(
-      ground,
-      Paint()..color = Color.alphaBlend(scheme.primary.withValues(alpha: 0.035), scheme.surfaceContainerLow),
-    );
+    final palette = MapPalette.of(scheme.brightness);
+    canvas.drawRect(ground, Paint()..color = palette.ground);
 
     // A quiet tiger-stripe field gives the map the same identity as the
     // masthead without competing with pins or pretending to be map data.
@@ -1607,7 +1607,7 @@ class CampusMapPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 9
       ..strokeCap = StrokeCap.round
-      ..color = scheme.primary.withValues(alpha: 0.035);
+      ..color = palette.entrance.withValues(alpha: 0.035);
     for (var y = mapRect.top + 70; y < mapRect.bottom; y += 105) {
       final stripe = Path()
         ..moveTo(mapRect.left - 30, y)
@@ -1627,27 +1627,16 @@ class CampusMapPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1
-        ..color = scheme.primary.withValues(alpha: 0.12),
+        ..color = palette.entrance.withValues(alpha: 0.12),
     );
 
-    // Measured, not picked by eye. Against the map background the surface
-    // steps are all too close to carry a shape on their own, and the light
-    // scheme is the worse of the two:
-    //
-    //                        light   dark
-    //   surfaceContainerHigh  1.22   1.35
-    //   surfaceContainerHighest 1.29  1.58
-    //   outlineVariant edge on fill  1.32 both
-    //
-    // So the edge carries the building rather than the fill, and it uses
-    // `outline` (3.48 light, 3.88 dark) rather than `outlineVariant`. The fill
-    // stays quiet. This is why buildings read as faint wireframes before: both
-    // the fill and the edge were within a third of their background.
     // Drawn from the ground up, so the things you actually walk into sit on
-    // top. The paints are shared with the legend so the two cannot drift.
+    // top. The paints come from the same function as the legend swatches, at
+    // this zoom, so a layer that has faded out is skipped rather than drawn
+    // at zero alpha.
     final familyPaints = {
       for (final family in MapFamily.values)
-        family: mapFamilyPaints(family, scheme),
+        family: mapFamilyPaints(family, scheme, zoom: zoom),
     };
 
     // Collected while the polygons are drawn, so a label knows the shape it
@@ -1664,9 +1653,6 @@ class CampusMapPainter extends CustomPainter {
         // Keep outlines cartographic as the viewer zooms instead of turning
         // them into thick neon borders.
         edge.strokeWidth /= zoom;
-        if (family == MapFamily.parking && zoom < 1.15) {
-          edge.color = edge.color.withValues(alpha: 0.28);
-        }
         canvas.drawPath(path, edge);
       }
     }
@@ -1693,16 +1679,15 @@ class CampusMapPainter extends CustomPainter {
           for (final coordinate in ring) projection.project(coordinate),
         ], true);
       }
-      canvas.drawPath(
-        outline,
-        Paint()..color = scheme.primary.withValues(alpha: 0.3),
-      );
+      // tonal overlay and a solid outline, no glow, blur or shadow
+      canvas.drawPath(outline, Paint()..color = palette.selectedOverlay);
       canvas.drawPath(
         outline,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.6 / zoom
-          ..color = scheme.primary,
+          ..strokeWidth = 2.5 / zoom
+          ..strokeJoin = StrokeJoin.round
+          ..color = palette.selectedOutline,
       );
     }
 
@@ -1790,20 +1775,8 @@ class CampusMapPainter extends CustomPainter {
   ///
   /// It is painted into the canvas rather than laid over it, so it zooms with
   /// the map and keeps telling the truth at every zoom level.
-  /// Draws the walking network.
-  ///
-  /// Measured against the map field rather than eyeballed, and deliberately
-  /// not the same role as the parking edge, which would otherwise be the one
-  /// other thin grey line on the map:
-  ///
-  ///                                    light  dark   vs parking edge
-  ///   footway (onSurfaceVariant @0.55)  2.74  4.00   1.37 / 1.56
-  ///   road    (onSurfaceVariant @0.35)  1.82  2.39   1.10 / 1.07
-  ///
-  /// Footpaths are drawn more clearly than roads, which is the right way round
-  /// on a campus you cross on foot. Roads stay wider and fainter so they read
-  /// as context. A road is also a closed-in shape next to a parking outline,
-  /// so form separates them where contrast alone is thin.
+  /// Draws the walking network from the palette, faded in by the zoom
+  /// schedule: roads from 1x, footpaths from 3x.
   void _paintPaths(Canvas canvas, _MapGeometry geometry, Rect ground) {
     if (paths.isEmpty) return;
     canvas.save();
@@ -1811,38 +1784,23 @@ class CampusMapPainter extends CustomPainter {
     // Roads get a casing and centre stroke, like an actual campus map. At the
     // overview scale the dense footway graph is withheld; it fades into the
     // job only when zooming makes those choices useful.
-    canvas.drawPath(
-      geometry.road,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4.2 / zoom
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..color = scheme.surfaceContainerHighest.withValues(
-          alpha: zoom < 1.15 ? 0.68 : 0.9,
-        ),
-    );
-    canvas.drawPath(
-      geometry.road,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.35 / zoom
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..color = scheme.onSurfaceVariant.withValues(
-          alpha: zoom < 1.15 ? 0.32 : 0.52,
-        ),
-    );
-    if (zoom >= 1.15) {
-      canvas.drawPath(
-        geometry.foot,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.15 / zoom
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round
-          ..color = scheme.primary.withValues(alpha: 0.72),
-      );
+    final palette = MapPalette.of(scheme.brightness);
+    Paint line(double width, Color color, double opacity) => Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width / zoom
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = _faded(color, opacity);
+    final roads = opacityAt(MapSchedule.roads, zoom);
+    if (roads > 0) {
+      // local road: 3.5 pt casing under a 2.0 pt core. The bundled network
+      // carries no road class, so every way gets the local construction.
+      canvas.drawPath(geometry.road, line(3.5, palette.roadCasing, roads));
+      canvas.drawPath(geometry.road, line(2.0, palette.roadCore, roads));
+    }
+    final foot = opacityAt(MapSchedule.footpaths, zoom);
+    if (foot > 0) {
+      canvas.drawPath(geometry.foot, line(1.25, palette.footpath, foot));
     }
     canvas.restore();
   }
@@ -2263,6 +2221,7 @@ class _MapLegend extends StatelessWidget {
             _entry(MapFamily.academic, 'Academic'),
             _entry(MapFamily.residential, 'Residential'),
             _entry(MapFamily.athletic, 'Athletic'),
+            _entry(MapFamily.dining, 'Dining'),
             _entry(MapFamily.otherBuilt, 'Other building'),
             _entry(MapFamily.parking, 'Parking'),
             _entry(MapFamily.open, 'Green space'),
@@ -2305,8 +2264,8 @@ class _MapLegend extends StatelessWidget {
           height: 2,
           thickness: path ? 2 : 4,
           color: path
-              ? scheme.primary.withValues(alpha: 0.8)
-              : scheme.onSurfaceVariant.withValues(alpha: 0.55),
+              ? MapPalette.of(scheme.brightness).footpath
+              : MapPalette.of(scheme.brightness).roadCore,
         ),
       ),
       const SizedBox(width: 6),

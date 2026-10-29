@@ -2,6 +2,7 @@
 library;
 
 import 'dart:math' as math;
+import 'dart:ui' show Brightness;
 
 import 'package:flutter/painting.dart';
 
@@ -68,6 +69,9 @@ class MapPalette {
     MapCategory.dining => dining,
     MapCategory.other => other,
   };
+
+  static MapPalette of(Brightness brightness) =>
+      brightness == Brightness.dark ? dark : light;
 
   static const light = MapPalette(
     ground: Color(0xFFF7F5F2),
@@ -139,6 +143,9 @@ class MapSchedule {
   static const footpaths = [0.0, 0.45, 1.0, 1.0];
   static const entrances = [0.0, 0.0, 1.0, 1.0];
   static const selected = [1.0, 1.0, 1.0, 1.0];
+
+  // the legend swatches show every layer fully on
+  static const legendZoom = 20.0;
 }
 
 double opacityAt(List<double> anchors, double zoom) {

@@ -346,7 +346,11 @@ void main() {
     final open = mapFamilyPaints(MapFamily.open, scheme);
 
     expect(built.fill, isNotNull, reason: 'a building is a solid');
-    expect(parking.fill, isNull, reason: 'a lot is hollow, not a building');
+    expect(
+      parking.fill!.color,
+      isNot(built.fill!.color),
+      reason: 'a lot has its own faint token, not a building tint',
+    );
     expect(open.edge, isNull, reason: 'ground has no walls');
     expect(open.fill!.color, isNot(built.fill!.color));
     expect(parking.edge!.color, isNot(built.edge!.color));
