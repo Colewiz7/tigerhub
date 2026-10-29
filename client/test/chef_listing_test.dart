@@ -183,9 +183,14 @@ void main() {
       await _pump(tester, VisitingChefsCard(result: _ok([chef])));
       expect(find.text('Chef 1'), findsOneWidget);
 
+      // the slot ends first, which rearms for the cutoff
+      RitClock.pin(CampusTime.wall(2026, 10, 14, 14));
+      await tester.pump(const Duration(minutes: 10));
+      expect(find.text('Chef 1'), findsOneWidget);
+
       // the clock reaches the cutoff and the one shot fires
       RitClock.pin(CampusTime.wall(2026, 10, 14, 14, 30));
-      await tester.pump(const Duration(minutes: 39));
+      await tester.pump(const Duration(minutes: 29));
       expect(find.text('Chef 1'), findsOneWidget);
       await tester.pump(const Duration(minutes: 1));
       expect(find.text('Chef 1'), findsNothing);

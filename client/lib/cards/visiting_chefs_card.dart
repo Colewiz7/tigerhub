@@ -80,6 +80,14 @@ class VisitingChefsCard extends StatefulWidget {
     return null;
   }
 
+  /// What a screen reader adds for a chef who is not on right now: "starts at
+  /// 4 PM" or "ended". Null for a chef who is on, or has no time.
+  static String? status(MenuItem chef, ChefPhase phase) => switch (phase) {
+    ChefPhase.upcoming => chef.startsAt == null ? null : 'starts at ${_clock(chef.startsAt!)}',
+    ChefPhase.ended => 'ended',
+    _ => null,
+  };
+
   /// "11 AM" on the hour and "4:30 PM" otherwise. The ":00" is dropped because
   /// at large text it is what pushed the window onto a second line.
   static String _clock(DateTime when) {
@@ -92,7 +100,7 @@ class VisitingChefsCard extends StatefulWidget {
 }
 
 class _VisitingChefsCardState extends State<VisitingChefsCard> {
-  Timer? _timer;
+  final _rearm = ChefRearm();
 
   @override
   void initState() {
@@ -108,24 +116,15 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _rearm.cancel();
     super.dispose();
   }
 
-  // one shot to the next cutoff, rebuilt from the clock when it fires
+  // one shot to the next start, end or cutoff, rebuilt from the clock when it fires
   void _arm() {
-    _timer?.cancel();
-    _timer = null;
     final data = widget.result.value?.data ?? const <MenuItem>[];
-    final next = nextChefCutoff(data);
-    if (next == null) return;
-    var wait = next.difference(CampusTime.nowUtc());
-    // a clock that hasnt moved must not spin
-    if (wait < const Duration(seconds: 1)) wait = const Duration(seconds: 1);
-    _timer = Timer(wait, () {
-      if (!mounted) return;
-      setState(() {});
-      _arm();
+    _rearm.arm(data, () {
+      if (mounted) setState(() {});
     });
   }
 
@@ -222,22 +221,28 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
           // chefs, so "+N more" opens a sheet of all of them. [onShowAll] is
           // accepted for existing callers and unused.
           onShowAll: () => _showAllChefs(context, all),
-          itemBuilder: (context, index) => StatusRow(
-            dense: true,
-            icon: iconForChef(all[index]),
-            title: all[index].name,
-            subtitle: ChefDetails.label(
-              VisitingChefsCard.window(all[index]),
-              all[index].locationName,
-            ),
-            subtitleBuilder: (context, style) => ChefDetails(
-              window: VisitingChefsCard.window(all[index]),
-              location: all[index].locationName,
-              style: style,
-              locationColor: chefLocationColor(all[index], Theme.of(context).colorScheme),
-              wrap: Insets.phone(context),
-            ),
-          ),
+          itemBuilder: (context, index) {
+            final chef = all[index];
+            final phase = chefPhase(chef);
+            return StatusRow(
+              dense: true,
+              icon: iconForChef(chef),
+              title: chef.name,
+              emphasis: phase.inactive ? RowEmphasis.quiet : RowEmphasis.normal,
+              subtitle: ChefDetails.label(
+                VisitingChefsCard.window(chef),
+                chef.locationName,
+                status: VisitingChefsCard.status(chef, phase),
+              ),
+              subtitleBuilder: (context, style) => ChefDetails(
+                window: VisitingChefsCard.window(chef),
+                location: chef.locationName,
+                style: style,
+                locationColor: chefLocationColor(chef, Theme.of(context).colorScheme, muted: phase.inactive),
+                wrap: Insets.phone(context),
+              ),
+            );
+          },
         ),
       },
     );
@@ -256,13 +261,15 @@ class _ChefRow extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final window = VisitingChefsCard.window(chef);
+    final phase = chefPhase(chef);
+    final inactive = phase.inactive;
 
     return Semantics(
       container: true,
       excludeSemantics: true,
       label: [
         chef.name,
-        ChefDetails.label(window, chef.locationName),
+        ChefDetails.label(window, chef.locationName, status: VisitingChefsCard.status(chef, phase)),
       ].where((s) => s.isNotEmpty).join(', '),
       child: Material(
         elevation: 0,
@@ -277,7 +284,7 @@ class _ChefRow extends StatelessWidget {
                 height: StatusRow.badgeSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: scheme.primary.withValues(alpha: 0.32),
+                  color: scheme.primary.withValues(alpha: inactive ? 0.20 : 0.32),
                 ),
                 child: AppIcon(iconForChef(chef), color: scheme.primary),
               ),
@@ -289,7 +296,7 @@ class _ChefRow extends StatelessWidget {
                   children: [
                     Text(
                       chef.name,
-                      style: text.titleMedium,
+                      style: inactive ? text.titleMedium?.copyWith(color: scheme.onSurfaceVariant) : text.titleMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -299,7 +306,7 @@ class _ChefRow extends StatelessWidget {
                         window: window,
                         location: chef.locationName,
                         style: text.bodySmall,
-                        locationColor: chefLocationColor(chef, scheme),
+                        locationColor: chefLocationColor(chef, scheme, muted: inactive),
                       ),
                     ],
                   ],
@@ -338,10 +345,34 @@ Future<void> _showAllChefs(BuildContext context, List<MenuItem> chefs) {
   );
 }
 
-class _ChefsSheet extends StatelessWidget {
+class _ChefsSheet extends StatefulWidget {
   const _ChefsSheet({required this.chefs});
 
   final List<MenuItem> chefs;
+
+  @override
+  State<_ChefsSheet> createState() => _ChefsSheetState();
+}
+
+class _ChefsSheetState extends State<_ChefsSheet> {
+  final _rearm = ChefRearm();
+
+  List<MenuItem> get chefs => widget.chefs;
+
+  @override
+  void initState() {
+    super.initState();
+    // the sheet stays open as slots start and end
+    _rearm.arm(chefs, () {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _rearm.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

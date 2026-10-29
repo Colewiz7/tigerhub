@@ -121,6 +121,7 @@ class _DiningScreenState extends State<DiningScreen> {
   StreamSubscription<Result<Collection<FoodTruck>>>? _trucksSub;
   StreamSubscription<Result<Collection<MenuItem>>>? _chefsSub;
   bool _active = true;
+  final _chefsRearm = ChefRearm();
 
   // keeps what it has when a read comes back empty-handed
   void _readChefs() {
@@ -129,6 +130,10 @@ class _DiningScreenState extends State<DiningScreen> {
       if (!mounted) return;
       if (result.value == null && _chefs.value != null) return;
       setState(() => _chefs = result);
+      // dims and drops chefs as their slots start and end
+      _chefsRearm.arm(result.value?.data ?? const <MenuItem>[], () {
+        if (mounted) setState(() {});
+      });
     });
   }
 
@@ -176,6 +181,7 @@ class _DiningScreenState extends State<DiningScreen> {
     _prefs.removeListener(_onChanged);
     _trucksSub?.cancel();
     _chefsSub?.cancel();
+    _chefsRearm.cancel();
     _search.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -762,26 +768,33 @@ class _VisitingChefsGroup extends StatelessWidget {
         InsetGroup(
           children: [
             for (final chef in chefs)
-              StatusRow(
-                key: ValueKey('chef-${chef.id}'),
-                icon: iconForChef(chef),
-                grouped: true,
-                subtitleMaxLines: null,
-                title: chef.name,
-                subtitle: ChefDetails.label(
-                  VisitingChefsCard.window(chef),
-                  chef.locationName,
-                ),
-                subtitleBuilder: (context, style) => ChefDetails(
-                  window: VisitingChefsCard.window(chef),
-                  location: chef.locationName,
-                  style: style,
-                  locationColor: chefLocationColor(chef, Theme.of(context).colorScheme),
-                ),
-              ),
+              _row(chef),
           ],
         ),
       ],
+    );
+  }
+
+  static Widget _row(MenuItem chef) {
+    final phase = chefPhase(chef);
+    return StatusRow(
+      key: ValueKey('chef-${chef.id}'),
+      icon: iconForChef(chef),
+      grouped: true,
+      subtitleMaxLines: null,
+      title: chef.name,
+      emphasis: phase.inactive ? RowEmphasis.quiet : RowEmphasis.normal,
+      subtitle: ChefDetails.label(
+        VisitingChefsCard.window(chef),
+        chef.locationName,
+        status: VisitingChefsCard.status(chef, phase),
+      ),
+      subtitleBuilder: (context, style) => ChefDetails(
+        window: VisitingChefsCard.window(chef),
+        location: chef.locationName,
+        style: style,
+        locationColor: chefLocationColor(chef, Theme.of(context).colorScheme, muted: phase.inactive),
+      ),
     );
   }
 }
