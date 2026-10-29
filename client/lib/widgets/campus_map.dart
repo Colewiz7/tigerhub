@@ -21,8 +21,14 @@ import 'app_icon.dart';
 import 'campus_event_mapper.dart';
 import 'empty_state.dart';
 import 'freshness.dart';
+import 'map_labels.dart';
+import 'map_pin.dart';
+import 'map_style.dart';
 import 'search_field.dart';
 import 'segmented_picker.dart';
+
+/// Pin counts are text too, so they hold the 11 pt floor.
+const double mapCountSize = 11;
 
 const double _maxMapZoom = 20;
 const double _mapPanMargin = 80;
@@ -264,7 +270,9 @@ class _CampusMapViewState extends State<CampusMapView> {
             child: ClipRRect(
               borderRadius: Shapes.card,
               child: ColoredBox(
-                color: Theme.of(context).colorScheme.surfaceContainerLow,
+                color: MapPalette.of(
+                  Theme.of(context).colorScheme.brightness,
+                ).ground,
                 child: LayoutBuilder(
                   builder: (context, constraints) {
                     _viewportSize = constraints.biggest;
@@ -1382,6 +1390,7 @@ enum MapFamily {
   academic(2, 'Academic'),
   residential(2, 'Residential'),
   athletic(2, 'Athletic'),
+  dining(2, 'Dining'),
   otherBuilt(2, 'Other building');
 
   const MapFamily(this.rank, this.label);
@@ -1452,69 +1461,88 @@ MapFamily mapFamily(CampusMapFeature feature) {
   if (name.contains('residential')) return MapFamily.residential;
   if (name.contains('academic')) return MapFamily.academic;
   if (name.contains('athletic')) return MapFamily.athletic;
+  if (name.contains('restaurant') || name.contains('dining')) {
+    return MapFamily.dining;
+  }
   return MapFamily.otherBuilt;
 }
 
-/// The category colours, validated rather than eyeballed.
-///
-/// the project notes 4 requires the dataviz validator to sign off any palette. Both of
-/// these pass all six checks against their own surface:
-///
-///   light  #0069a8 #6a4c93 #b4531f #4f7a28
-///          CVD worst adjacent dE 18.8 deutan, normal-vision worst 21.5
-///   dark   #3d8dc4 #8a6cc0 #cc6a38 #669440
-///          CVD worst adjacent dE 19.7 protan, normal-vision worst 21.7
-///
-/// Residential is the purple rather than the orange because orange is the
-/// app's primary, and 106 buildings in something close to it would read as
-/// 106 selected buildings. Green is spent on the two "other" buildings rather
-/// than on athletics, to keep it away from the olive of the green spaces.
-///
-/// Colour is never the only carrier: every one of these is named in the map's
-/// legend, and buildings carry their abbreviation on the map itself.
-Color _categoryColor(MapFamily family, Brightness brightness) {
-  final light = brightness == Brightness.light;
-  return switch (family) {
-    MapFamily.academic =>
-      light ? const Color(0xFF0069A8) : const Color(0xFF3D8DC4),
-    MapFamily.residential =>
-      light ? const Color(0xFF6A4C93) : const Color(0xFF8A6CC0),
-    MapFamily.athletic =>
-      light ? const Color(0xFFB4531F) : const Color(0xFFCC6A38),
-    _ => light ? const Color(0xFF4F7A28) : const Color(0xFF669440),
-  };
-}
+/// The monochrome glyph that carries the category when colour cannot: it
+/// shows beside building labels from [mapGlyphMinZoom].
+AppIconKind mapGlyph(MapFamily family) => switch (family) {
+  MapFamily.academic => AppIconKind.school,
+  MapFamily.residential => AppIconKind.housing,
+  MapFamily.athletic => AppIconKind.gym,
+  MapFamily.dining => AppIconKind.dining,
+  _ => AppIconKind.buildings,
+};
 
+MapCategory? mapCategory(MapFamily family) => switch (family) {
+  MapFamily.academic => MapCategory.academic,
+  MapFamily.residential => MapCategory.residential,
+  MapFamily.athletic => MapCategory.athletic,
+  MapFamily.dining => MapCategory.dining,
+  MapFamily.otherBuilt => MapCategory.other,
+  _ => null,
+};
+
+List<double> _fillSchedule(MapFamily family) => switch (family) {
+  MapFamily.open => MapSchedule.grass,
+  MapFamily.parking => MapSchedule.parking,
+  MapFamily.otherBuilt => MapSchedule.otherBuilding,
+  _ => MapSchedule.building,
+};
+
+Color _faded(Color color, double opacity) =>
+    color.withValues(alpha: color.a * opacity);
+
+/// Fill and edge for one family at one zoom, from the fixed palette.
+///
+/// A null paint is a layer that is fully faded out. Stroke widths are screen
+/// points; the painter divides them by the zoom.
 ({Paint? fill, Paint? edge}) mapFamilyPaints(
   MapFamily family,
-  ColorScheme scheme,
-) {
+  ColorScheme scheme, {
+  double zoom = MapSchedule.legendZoom,
+}) {
+  final palette = MapPalette.of(scheme.brightness);
+  final opacity = opacityAt(_fillSchedule(family), zoom);
+  if (opacity <= 0) return (fill: null, edge: null);
   switch (family) {
     case MapFamily.open:
       return (
-        fill: Paint()..color = scheme.tertiary.withValues(alpha: 0.32),
+        fill: Paint()..color = _faded(palette.grass, opacity),
         edge: null,
       );
     case MapFamily.parking:
       return (
-        fill: null,
+        fill: Paint()..color = _faded(palette.parking, opacity),
         edge: Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.9
-          ..color = scheme.outline.withValues(alpha: 0.55),
+          ..strokeWidth = 0.75
+          ..color = _faded(palette.parkingStroke, opacity),
       );
     default:
-      final category = _categoryColor(family, scheme.brightness);
+      final category = mapCategory(family)!;
       return (
-        // A restrained tint makes zones readable as areas, rather than asking
-        // the reader to trace dozens of differently coloured outlines.
-        fill: Paint()..color = category.withValues(alpha: 0.16),
+        fill: Paint()..color = _faded(palette.fill(category), opacity),
         edge: Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.3
-          ..color = category,
+          ..strokeWidth = 1.0
+          ..color = _faded(palette.buildingOutline, opacity),
       );
   }
+}
+
+/// Same length and the same feature objects in the same order. A replaced
+/// feature misses, which costs a rebuild and is never wrong.
+bool _sameFeatures(List<CampusMapFeature>? a, List<CampusMapFeature>? b) {
+  if (identical(a, b)) return true;
+  if (a == null || b == null || a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (!identical(a[i], b[i])) return false;
+  }
+  return true;
 }
 
 class CampusMapPainter extends CustomPainter {
@@ -1592,10 +1620,8 @@ class CampusMapPainter extends CustomPainter {
     final mapRect = projection.mapRect;
     // reaches past the canvas so a pan never exposes the layer behind
     final ground = (Offset.zero & size).inflate(_mapPanMargin);
-    canvas.drawRect(
-      ground,
-      Paint()..color = Color.alphaBlend(scheme.primary.withValues(alpha: 0.035), scheme.surfaceContainerLow),
-    );
+    final palette = MapPalette.of(scheme.brightness);
+    canvas.drawRect(ground, Paint()..color = palette.ground);
 
     // A quiet tiger-stripe field gives the map the same identity as the
     // masthead without competing with pins or pretending to be map data.
@@ -1607,7 +1633,7 @@ class CampusMapPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 9
       ..strokeCap = StrokeCap.round
-      ..color = scheme.primary.withValues(alpha: 0.035);
+      ..color = palette.entrance.withValues(alpha: 0.035);
     for (var y = mapRect.top + 70; y < mapRect.bottom; y += 105) {
       final stripe = Path()
         ..moveTo(mapRect.left - 30, y)
@@ -1627,27 +1653,16 @@ class CampusMapPainter extends CustomPainter {
       Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1
-        ..color = scheme.primary.withValues(alpha: 0.12),
+        ..color = palette.entrance.withValues(alpha: 0.12),
     );
 
-    // Measured, not picked by eye. Against the map background the surface
-    // steps are all too close to carry a shape on their own, and the light
-    // scheme is the worse of the two:
-    //
-    //                        light   dark
-    //   surfaceContainerHigh  1.22   1.35
-    //   surfaceContainerHighest 1.29  1.58
-    //   outlineVariant edge on fill  1.32 both
-    //
-    // So the edge carries the building rather than the fill, and it uses
-    // `outline` (3.48 light, 3.88 dark) rather than `outlineVariant`. The fill
-    // stays quiet. This is why buildings read as faint wireframes before: both
-    // the fill and the edge were within a third of their background.
     // Drawn from the ground up, so the things you actually walk into sit on
-    // top. The paints are shared with the legend so the two cannot drift.
+    // top. The paints come from the same function as the legend swatches, at
+    // this zoom, so a layer that has faded out is skipped rather than drawn
+    // at zero alpha.
     final familyPaints = {
       for (final family in MapFamily.values)
-        family: mapFamilyPaints(family, scheme),
+        family: mapFamilyPaints(family, scheme, zoom: zoom),
     };
 
     // Collected while the polygons are drawn, so a label knows the shape it
@@ -1664,9 +1679,6 @@ class CampusMapPainter extends CustomPainter {
         // Keep outlines cartographic as the viewer zooms instead of turning
         // them into thick neon borders.
         edge.strokeWidth /= zoom;
-        if (family == MapFamily.parking && zoom < 1.15) {
-          edge.color = edge.color.withValues(alpha: 0.28);
-        }
         canvas.drawPath(path, edge);
       }
     }
@@ -1693,23 +1705,21 @@ class CampusMapPainter extends CustomPainter {
           for (final coordinate in ring) projection.project(coordinate),
         ], true);
       }
-      canvas.drawPath(
-        outline,
-        Paint()..color = scheme.primary.withValues(alpha: 0.3),
-      );
+      // tonal overlay and a solid outline, no glow, blur or shadow
+      canvas.drawPath(outline, Paint()..color = palette.selectedOverlay);
       canvas.drawPath(
         outline,
         Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.6 / zoom
-          ..color = scheme.primary,
+          ..strokeWidth = 2.5 / zoom
+          ..strokeJoin = StrokeJoin.round
+          ..color = palette.selectedOutline,
       );
     }
 
-    _paintBuildingLabels(canvas, geometry.labels, scheme);
-    _paintScaleBar(canvas, projection, mapRect, scheme);
-
     final buckets = geometry.pinBucketsAt(zoom);
+    _paintLabels(canvas, geometry, buckets);
+    _paintScaleBar(canvas, projection, mapRect, scheme);
 
     // "All places" is a category chooser, not a heat map. Almost every kind
     // is concentrated in the academic core, so showing all twelve at once
@@ -1728,48 +1738,59 @@ class CampusMapPainter extends CustomPainter {
                 : 1);
       });
       final clustered = bucket.length > 1;
-      final radius = selected
-          ? 18.0 / zoom
-          : geometry.categoryOverview
-          ? 20.0 / zoom
-          : clustered
-          ? 16.0 / zoom
-          : 13.0 / zoom;
       final isEvent = bucket.first.feature.kind.startsWith('_event:');
-      final palette = mapPinPalette(bucket.first.feature.kind, scheme);
-      final foreground = selected || isEvent ? scheme.onPrimary : palette.$2;
-      canvas.drawPath(
-        _scallop(center, radius),
-        Paint()..color = selected || isEvent ? scheme.primary : palette.$1,
-      );
-      if (clustered || isEvent) {
+      final counted = clustered || isEvent;
+      // screen points: 22 single, 30 selected, 30 or 34 with a count
+      final radius = _pinRadius(pinBucket, selected) / zoom;
+      final accent = selected || counted;
+      final fill = accent ? palette.clusterBadge : palette.labelInk;
+      final foreground = accent ? palette.clusterBadgeText : palette.ground;
+      final shape = scallopPath(center, radius);
+      canvas.drawPath(shape, Paint()..color = fill);
+      if (selected) {
+        canvas.drawPath(
+          shape,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2 / zoom
+            ..strokeJoin = StrokeJoin.round
+            ..color = palette.selectedOutline,
+        );
+      }
+      if (counted) {
         final kinds = {for (final item in bucket) item.feature.kind};
         final icon = isEvent
             ? AppIconKind.event
             : kinds.length == 1
             ? mapPlaceIcon(bucket.first.feature.kind)
             : AppIconKind.allPlaces;
-        _paintMapIcon(
-          canvas,
-          icon.on(platform),
-          center - Offset(5.5 / zoom, 0),
-          foreground,
-          11 / zoom,
-        );
-        _paintMapCount(
-          canvas,
-          '$eventCount',
-          center + Offset(7 / zoom, 0),
-          foreground,
-          scale: 1 / zoom,
-        );
+        final count = _countPainter('$eventCount', foreground);
+        // the icon yields to the number when the two do not fit the badge
+        const iconSize = 11.0;
+        const gap = 2.0;
+        final withIcon = count.width + iconSize + gap <= radius * zoom * 2 * 0.84;
+        final total = withIcon ? count.width + iconSize + gap : count.width;
+        final left = -total / 2;
+        if (withIcon) {
+          _paintMapIcon(
+            canvas,
+            icon.on(platform),
+            center + Offset((left + iconSize / 2) / zoom, 0),
+            foreground,
+            iconSize / zoom,
+          );
+        }
+        final countCenter = withIcon
+            ? left + iconSize + gap + count.width / 2
+            : 0.0;
+        _paintCount(canvas, count, center + Offset(countCenter / zoom, 0), zoom);
       } else {
         _paintMapIcon(
           canvas,
           mapPlaceIcon(bucket.single.feature.kind).on(platform),
           center,
           foreground,
-          15 / zoom,
+          (selected ? 15 : 13) / zoom,
         );
       }
     }
@@ -1790,20 +1811,8 @@ class CampusMapPainter extends CustomPainter {
   ///
   /// It is painted into the canvas rather than laid over it, so it zooms with
   /// the map and keeps telling the truth at every zoom level.
-  /// Draws the walking network.
-  ///
-  /// Measured against the map field rather than eyeballed, and deliberately
-  /// not the same role as the parking edge, which would otherwise be the one
-  /// other thin grey line on the map:
-  ///
-  ///                                    light  dark   vs parking edge
-  ///   footway (onSurfaceVariant @0.55)  2.74  4.00   1.37 / 1.56
-  ///   road    (onSurfaceVariant @0.35)  1.82  2.39   1.10 / 1.07
-  ///
-  /// Footpaths are drawn more clearly than roads, which is the right way round
-  /// on a campus you cross on foot. Roads stay wider and fainter so they read
-  /// as context. A road is also a closed-in shape next to a parking outline,
-  /// so form separates them where contrast alone is thin.
+  /// Draws the walking network from the palette, faded in by the zoom
+  /// schedule: roads from 1x, footpaths from 3x.
   void _paintPaths(Canvas canvas, _MapGeometry geometry, Rect ground) {
     if (paths.isEmpty) return;
     canvas.save();
@@ -1811,38 +1820,23 @@ class CampusMapPainter extends CustomPainter {
     // Roads get a casing and centre stroke, like an actual campus map. At the
     // overview scale the dense footway graph is withheld; it fades into the
     // job only when zooming makes those choices useful.
-    canvas.drawPath(
-      geometry.road,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 4.2 / zoom
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..color = scheme.surfaceContainerHighest.withValues(
-          alpha: zoom < 1.15 ? 0.68 : 0.9,
-        ),
-    );
-    canvas.drawPath(
-      geometry.road,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.35 / zoom
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round
-        ..color = scheme.onSurfaceVariant.withValues(
-          alpha: zoom < 1.15 ? 0.32 : 0.52,
-        ),
-    );
-    if (zoom >= 1.15) {
-      canvas.drawPath(
-        geometry.foot,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.15 / zoom
-          ..strokeCap = StrokeCap.round
-          ..strokeJoin = StrokeJoin.round
-          ..color = scheme.primary.withValues(alpha: 0.72),
-      );
+    final palette = MapPalette.of(scheme.brightness);
+    Paint line(double width, Color color, double opacity) => Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width / zoom
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round
+      ..color = _faded(color, opacity);
+    final roads = opacityAt(MapSchedule.roads, zoom);
+    if (roads > 0) {
+      // local road: 3.5 pt casing under a 2.0 pt core. The bundled network
+      // carries no road class, so every way gets the local construction.
+      canvas.drawPath(geometry.road, line(3.5, palette.roadCasing, roads));
+      canvas.drawPath(geometry.road, line(2.0, palette.roadCore, roads));
+    }
+    final foot = opacityAt(MapSchedule.footpaths, zoom);
+    if (foot > 0) {
+      canvas.drawPath(geometry.foot, line(1.25, palette.footpath, foot));
     }
     canvas.restore();
   }
@@ -1852,6 +1846,10 @@ class CampusMapPainter extends CustomPainter {
   /// Only for tests that need a cold build.
   static void resetGeometryCacheForTest() => _geometryCache = null;
 
+  /// How many times a geometry has been built, for tests that count rebuilds.
+  @visibleForTesting
+  static int geometryBuilds = 0;
+
   @visibleForTesting
   Object pinLayoutForTest(Size size) => _geometryFor(
     CampusMapProjection(features, size, boundsFeatures: boundsFeatures),
@@ -1859,13 +1857,21 @@ class CampusMapPainter extends CustomPainter {
 
   _MapGeometry _geometryFor(CampusMapProjection projection) {
     final cached = _geometryCache;
+    // The projection is a pure function of its size and feature lists, so
+    // equal inputs give an equal projection even when the object is new. The
+    // screen builds a fresh list from the same features on every rebuild.
     if (cached != null &&
-        identical(cached.projection, projection) &&
-        identical(cached.features, features) &&
+        cached.projection.size == projection.size &&
+        _sameFeatures(cached.features, features) &&
+        _sameFeatures(
+          cached.projection._boundsFeatures,
+          projection._boundsFeatures,
+        ) &&
         identical(cached.paths, paths) &&
         cached.scheme == scheme) {
       return cached;
     }
+    geometryBuilds++;
     return _geometryCache = _MapGeometry(projection, features, paths, scheme);
   }
 
@@ -1908,7 +1914,7 @@ class CampusMapPainter extends CustomPainter {
         style: TextStyle(
           fontFamily: AppTheme.uiFont,
           color: scheme.onSurfaceVariant,
-          fontSize: 9 / zoom,
+          fontSize: mapLabelMinSize / zoom,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2 / zoom,
         ),
@@ -1931,100 +1937,206 @@ class CampusMapPainter extends CustomPainter {
   /// unchanged: the biggest buildings claim their space first, and anything
   /// that would overlap an already-placed label is still dropped rather than
   /// stacked.
-  void _paintBuildingLabels(
-    Canvas canvas,
-    List<({TextPainter halo, TextPainter painter, Rect bounds, double area})>
-    candidates,
-    ColorScheme scheme,
-  ) {
-    final ordered = [...candidates]..sort((a, b) => b.area.compareTo(a.area));
-    final taken = <Rect>[];
-    final maxLabels = zoom < 1.15
-        ? 14
-        : zoom < 1.8
-        ? 30
-        : 64;
+  static const double _glyphGap = 3;
 
-    for (final candidate in ordered) {
-      final painter = candidate.painter;
-      // Measured once at the base size. Dividing by the zoom gives what it
-      // covers on the canvas, without measuring it again.
-      final width = painter.width / zoom;
-      final height = painter.height / zoom;
-      final bounds = candidate.bounds;
-
-      // Inside if it fits with a little room, or it reads as a label for
-      // whatever is next door. Otherwise directly beneath.
-      final insideFits =
-          width + 6 / zoom <= bounds.width &&
-          height + 4 / zoom <= bounds.height;
-      // At campus overview, label only genuine landmarks. Smaller buildings
-      // become named progressively as zoom creates room for them.
-      if (zoom < 1.15 && !insideFits) continue;
-      final center = insideFits
-          ? bounds.center
-          : Offset(bounds.center.dx, bounds.bottom + height / 2 + 3 / zoom);
-
-      final rect = Rect.fromCenter(
-        center: center,
-        width: width + 4 / zoom,
-        height: height + 2 / zoom,
-      );
-      if (taken.any(rect.overlaps)) continue;
-
-      taken.add(rect);
-      if (taken.length > maxLabels) break;
-      canvas.save();
-      canvas.translate(center.dx, center.dy);
-      // Constant on screen, so zooming in shrinks the label against the
-      // building and lets more of them fit.
-      canvas.scale(1 / zoom);
-      final at = Offset(-painter.width / 2, -painter.height / 2);
-      candidate.halo.paint(canvas, at);
-      painter.paint(canvas, at);
-      canvas.restore();
-    }
+  @visibleForTesting
+  List<PlacedLabel> labelPlanForTest(Size size) {
+    final geometry = _geometryFor(
+      CampusMapProjection(features, size, boundsFeatures: boundsFeatures),
+    );
+    return _labelPlan(geometry, geometry.pinBucketsAt(zoom));
   }
 
-  Path _scallop(Offset center, double radius) {
-    final path = Path();
-    for (var index = 0; index < 14; index++) {
-      final angle = -math.pi / 2 + index * math.pi / 7;
-      final currentRadius = index.isEven ? radius : radius * 0.93;
-      final point =
-          center + Offset(math.cos(angle), math.sin(angle)) * currentRadius;
-      if (index == 0) {
-        path.moveTo(point.dx, point.dy);
-      } else {
-        path.lineTo(point.dx, point.dy);
+  List<PlacedLabel> _labelPlan(_MapGeometry geometry, List<_PinBucket> pins) {
+    const glyphGap = _glyphGap;
+    final candidates = <LabelCandidate>[];
+
+    for (final building in geometry.buildings) {
+      final feature = building.feature;
+      final id = feature.id;
+      final bounds = building.bounds;
+      // planned in screen points: the canvas coordinates times the zoom
+      final screen = Rect.fromLTRB(
+        bounds.left * zoom,
+        bounds.top * zoom,
+        bounds.right * zoom,
+        bounds.bottom * zoom,
+      );
+      final icon = mapGlyph(building.family).on(platform);
+
+      void add(
+        LabelClass cls,
+        String text, {
+        double maxWidth = double.infinity,
+        int maxLines = 1,
+        bool outside = false,
+      }) {
+        final ink = geometry.ink(
+          text,
+          cls,
+          maxWidth: maxWidth,
+          maxLines: maxLines,
+        );
+        if (ink == null) return;
+        final glyph = mapGlyphShown(cls, zoom)
+            ? geometry.ink(String.fromCharCode(icon.codePoint), cls, icon: icon)
+            : null;
+        final size = Size(
+          ink.fill.width + (glyph == null ? 0 : glyph.fill.width + glyphGap),
+          math.max(ink.fill.height, glyph?.fill.height ?? 0),
+        );
+        candidates.add(
+          LabelCandidate(
+            key: id,
+            cls: cls,
+            size: size,
+            positions: buildingPositions(screen, size, outside: outside),
+            // a building shows one name, the best that wins a place
+            group: id,
+            weight: screen.width * screen.height,
+            text: text,
+            glyph: glyph != null,
+            payload: (ink, glyph),
+          ),
+        );
+      }
+
+      final abbreviation = feature.building;
+      final hasAbbreviation = abbreviation != null && abbreviation.isNotEmpty;
+      if (id == selectedId) {
+        add(
+          LabelClass.selected,
+          feature.name.isNotEmpty ? feature.name : abbreviation ?? '',
+          maxWidth: 150,
+          maxLines: 2,
+          outside: true,
+        );
+      }
+      if (zoom >= mapGlyphMinZoom && feature.name.isNotEmpty) {
+        add(
+          LabelClass.fullName,
+          feature.name,
+          maxWidth: 96,
+          maxLines: 2,
+          outside: zoom >= mapFullNameOutsideZoom,
+        );
+      }
+      if (hasAbbreviation) {
+        add(
+          LabelClass.abbreviation,
+          abbreviation,
+          outside: zoom >= mapGlyphMinZoom || geometry.landmarkIds.contains(id),
+        );
       }
     }
-    return path..close();
+
+    final obstacles = <Rect>[];
+    if (!geometry.categoryOverview) {
+      for (final pin in pins) {
+        final selected = pin.items.any((item) => item.feature.id == selectedId);
+        final radius = _pinRadius(pin, selected);
+        final at = pin.center * zoom;
+        obstacles.add(Rect.fromCircle(center: at, radius: radius));
+        if (selected && pin.items.length == 1) {
+          final name = pin.items.single.feature.name;
+          final ink = geometry.ink(
+            name,
+            LabelClass.activePin,
+            maxWidth: 140,
+            maxLines: 2,
+          );
+          if (ink == null) continue;
+          final w = ink.fill.width;
+          final h = ink.fill.height;
+          final gap = radius + 3;
+          candidates.add(
+            LabelCandidate(
+              key: pin.items.single.feature.id,
+              cls: LabelClass.activePin,
+              size: Size(w, h),
+              positions: [
+                Rect.fromLTWH(at.dx + gap, at.dy - h / 2, w, h),
+                Rect.fromLTWH(at.dx - gap - w, at.dy - h / 2, w, h),
+                Rect.fromLTWH(at.dx - w / 2, at.dy - gap - h, w, h),
+                Rect.fromLTWH(at.dx - w / 2, at.dy + gap, w, h),
+              ],
+              text: name,
+              payload: (ink, null),
+            ),
+          );
+        }
+      }
+    }
+
+    return planLabels(candidates, obstacles: obstacles);
   }
 
-  void _paintMapCount(
+  void _paintLabels(
     Canvas canvas,
-    String count,
-    Offset center,
-    Color color, {
-    double scale = 1,
-  }) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: count,
-        style: TextStyle(
-          fontFamily: AppTheme.uiFont,
-          color: color,
-          fontSize: 9 * scale,
-          fontWeight: FontWeight.w800,
-        ),
+    _MapGeometry geometry,
+    List<_PinBucket> pins,
+  ) {
+    const glyphGap = _glyphGap;
+    final placed = _labelPlan(geometry, pins);
+    canvas.save();
+    // Constant on screen, so zooming in shrinks a label against its building
+    // and lets more of them fit.
+    canvas.scale(1 / zoom);
+    for (final label in placed) {
+      final (ink, glyph) = label.candidate.payload! as (_Ink, _Ink?);
+      var x = label.rect.left;
+      if (glyph != null) {
+        final at = Offset(x, label.rect.center.dy - glyph.fill.height / 2);
+        glyph.halo.paint(canvas, at);
+        glyph.fill.paint(canvas, at);
+        x += glyph.fill.width + glyphGap;
+      }
+      final at = Offset(x, label.rect.center.dy - ink.fill.height / 2);
+      ink.halo.paint(canvas, at);
+      ink.fill.paint(canvas, at);
+    }
+    canvas.restore();
+  }
+
+  /// Screen radius of a pin: 22 pt single, 30 selected or counted, 34 from ten.
+  double _pinRadius(_PinBucket pin, bool selected) {
+    final counted =
+        pin.items.length > 1 ||
+        pin.items.first.feature.kind.startsWith('_event:');
+    final total = pin.items.fold<int>(0, (sum, item) {
+      final kind = item.feature.kind;
+      return sum +
+          (kind.startsWith('_event:') ? int.tryParse(kind.substring(7)) ?? 1 : 1);
+    });
+    if (counted && total >= 10) return 17.0;
+    return selected || counted ? 15.0 : 11.0;
+  }
+
+  /// The pin count, measured at its screen size of 11 pt.
+  TextPainter _countPainter(String count, Color color) => TextPainter(
+    text: TextSpan(
+      text: count,
+      style: TextStyle(
+        fontFamily: AppTheme.uiFont,
+        color: color,
+        fontSize: mapCountSize,
+        fontWeight: FontWeight.w700,
       ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    painter.paint(
-      canvas,
-      center - Offset(painter.width / 2, painter.height / 2),
-    );
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
+
+  void _paintCount(
+    Canvas canvas,
+    TextPainter painter,
+    Offset center,
+    double zoom,
+  ) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(1 / zoom);
+    painter.paint(canvas, Offset(-painter.width / 2, -painter.height / 2));
+    canvas.restore();
   }
 
   void _paintMapIcon(
@@ -2088,6 +2200,12 @@ class CampusMapPainter extends CustomPainter {
 /// projection rather than once per frame.
 typedef _Pin = ({CampusMapFeature feature, Offset at});
 typedef _PinBucket = ({List<_Pin> items, Offset center});
+typedef _Building = ({
+  CampusMapFeature feature,
+  MapFamily family,
+  Rect bounds,
+});
+typedef _Ink = ({TextPainter fill, TextPainter halo});
 
 class _MapGeometry {
   _MapGeometry(this.projection, this.features, this.paths, this.scheme) {
@@ -2095,48 +2213,34 @@ class _MapGeometry {
       if (feature.geometryType == 'Point') continue;
       final family = mapFamily(feature);
       final layer = areas.putIfAbsent(family, Path.new);
+      Rect? largest;
       for (final ring in feature.coordinates) {
         if (ring.length < 3) continue;
         final outline = Path()
           ..addPolygon([for (final c in ring) projection.project(c)], true);
         layer.addPath(outline, Offset.zero);
-
-        // Only buildings are labelled. A lot number on every parking apron is
-        // the noise that made the campus hard to read in the first place.
-        if (!family.isBuilt) continue;
-        final abbreviation = feature.building;
-        if (abbreviation == null || abbreviation.isEmpty) continue;
         final bounds = outline.getBounds();
-        // Laid out once, at a base size. The zoom is applied as a transform
-        // when it is drawn, so a zoom frame never measures text again.
-        TextPainter measure(TextStyle style) => TextPainter(
-          text: TextSpan(text: abbreviation, style: style),
-          textDirection: TextDirection.ltr,
-        )..layout();
-        final base = TextStyle(
-          fontFamily: AppTheme.uiFont,
-          fontSize: labelBaseSize,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.2,
-        );
-        labels.add((
-          // Drawn behind the text so a label stays readable where it crosses
-          // a footpath or the edge of its own building.
-          halo: measure(
-            base.copyWith(
-              foreground: Paint()
-                ..style = PaintingStyle.stroke
-                ..strokeWidth = 2.4
-                ..strokeJoin = StrokeJoin.round
-                ..color = scheme.surface,
-            ),
-          ),
-          painter: measure(base.copyWith(color: scheme.onSurfaceVariant)),
-          bounds: bounds,
-          area: bounds.width * bounds.height,
-        ));
+        if (largest == null ||
+            bounds.width * bounds.height > largest.width * largest.height) {
+          largest = bounds;
+        }
+      }
+      // Only buildings are labelled. A lot number on every parking apron is
+      // the noise that made the campus hard to read in the first place.
+      if (largest != null && family.isBuilt) {
+        buildings.add((feature: feature, family: family, bounds: largest));
       }
     }
+    // the few buildings that keep a name at campus scale, by footprint
+    final named = [
+      for (final b in buildings)
+        if ((b.feature.building ?? '').isNotEmpty) b,
+    ]..sort(
+        (a, b) => (b.bounds.width * b.bounds.height).compareTo(
+          a.bounds.width * a.bounds.height,
+        ),
+      );
+    landmarkIds = {for (final b in named.take(6)) b.feature.id};
     foot = _network(paths.foot);
     road = _network(paths.road);
 
@@ -2208,19 +2312,61 @@ class _MapGeometry {
     ];
   }
 
-  /// Labels are measured at this size and scaled when drawn.
-  static const double labelBaseSize = 9;
-
   final CampusMapProjection projection;
   final List<CampusMapFeature> features;
   final CampusPaths paths;
   final ColorScheme scheme;
 
   final Map<MapFamily, Path> areas = {};
-  final List<
-    ({TextPainter halo, TextPainter painter, Rect bounds, double area})
-  >
-  labels = [];
+  final List<_Building> buildings = [];
+  late final Set<int> landmarkIds;
+  final Map<String, _Ink?> _ink = {};
+
+  /// A label's text and its halo, laid out once at its screen size. Null when
+  /// the text will not fit [maxLines] lines in [maxWidth], so a long name is
+  /// dropped rather than clipped.
+  _Ink? ink(
+    String text,
+    LabelClass cls, {
+    double maxWidth = double.infinity,
+    int maxLines = 1,
+    IconData? icon,
+  }) => _ink.putIfAbsent('${cls.name}|$maxWidth|$maxLines|$icon|$text', () {
+    final palette = MapPalette.of(scheme.brightness);
+    TextPainter measure(TextStyle style) => TextPainter(
+      text: TextSpan(text: text, style: style),
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+      maxLines: maxLines,
+    )..layout(maxWidth: maxWidth);
+    final base = icon == null
+        ? TextStyle(
+            fontFamily: AppTheme.uiFont,
+            fontSize: cls.size,
+            fontWeight: cls.weight,
+            height: 1.15,
+          )
+        : TextStyle(
+            fontFamily: icon.fontFamily,
+            package: icon.fontPackage,
+            fontSize: cls.size,
+          );
+    final fill = measure(base.copyWith(color: palette.labelInk));
+    if (fill.didExceedMaxLines) return null;
+    return (
+      fill: fill,
+      // drawn first, so a label survives crossing a footpath or an edge
+      halo: measure(
+        base.copyWith(
+          foreground: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = cls.halo * 2
+            ..strokeJoin = StrokeJoin.round
+            ..color = palette.labelHalo,
+        ),
+      ),
+    );
+  });
   final List<_Pin> pointLocations = [];
   List<Object?>? _pinKeys;
   List<_PinBucket>? _pinBuckets;
@@ -2263,6 +2409,7 @@ class _MapLegend extends StatelessWidget {
             _entry(MapFamily.academic, 'Academic'),
             _entry(MapFamily.residential, 'Residential'),
             _entry(MapFamily.athletic, 'Athletic'),
+            _entry(MapFamily.dining, 'Dining'),
             _entry(MapFamily.otherBuilt, 'Other building'),
             _entry(MapFamily.parking, 'Parking'),
             _entry(MapFamily.open, 'Green space'),
@@ -2286,7 +2433,7 @@ class _MapLegend extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: mapLabelMinSize,
             height: 1.1,
             fontWeight: FontWeight.w600,
             color: scheme.onSurfaceVariant,
@@ -2305,8 +2452,8 @@ class _MapLegend extends StatelessWidget {
           height: 2,
           thickness: path ? 2 : 4,
           color: path
-              ? scheme.primary.withValues(alpha: 0.8)
-              : scheme.onSurfaceVariant.withValues(alpha: 0.55),
+              ? MapPalette.of(scheme.brightness).footpath
+              : MapPalette.of(scheme.brightness).roadCore,
         ),
       ),
       const SizedBox(width: 6),
@@ -2314,7 +2461,7 @@ class _MapLegend extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: mapLabelMinSize,
             height: 1.1,
             fontWeight: FontWeight.w600,
             color: scheme.onSurfaceVariant,

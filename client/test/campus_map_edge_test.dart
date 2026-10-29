@@ -4,6 +4,7 @@ import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/campus_map.dart';
+import 'package:tigerhub/widgets/map_style.dart';
 
 const west = CampusMapFeature(
   id: 1,
@@ -45,7 +46,8 @@ Widget app(Brightness brightness) => MaterialApp(
   ),
 );
 
-Color ground(ColorScheme scheme) => Color.alphaBlend(scheme.primary.withValues(alpha: 0.035), scheme.surfaceContainerLow);
+// the fixed palette ground, not the wallpaper theme
+Color ground(ColorScheme scheme) => MapPalette.of(scheme.brightness).ground;
 
 Finder get painterFinder => find.byWidgetPredicate((widget) => widget is CustomPaint && widget.painter is CampusMapPainter);
 

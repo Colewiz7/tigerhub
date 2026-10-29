@@ -122,7 +122,8 @@ void main() {
       expect(mapFamily(feature('Residential Building')), MapFamily.residential);
       expect(mapFamily(feature('Academic Building')), MapFamily.academic);
       expect(mapFamily(feature('Athletic Building')), MapFamily.athletic);
-      for (final kind in ['Green Building', 'Restaurants', 'Campus structure']) {
+      expect(mapFamily(feature('Restaurants')), MapFamily.dining);
+      for (final kind in ['Green Building', 'Campus structure']) {
         expect(mapFamily(feature(kind)), MapFamily.otherBuilt, reason: kind);
       }
     });
