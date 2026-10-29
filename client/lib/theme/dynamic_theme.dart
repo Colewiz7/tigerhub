@@ -14,19 +14,16 @@ import 'dark_palette.dart';
 enum AppScheme {
   espresso('espresso', 'Espresso', DarkPalette.espresso),
   mocha('mocha', 'Mocha', DarkPalette.mocha),
-  slate('slate', 'Slate', DarkPalette.slate),
-  light('light', 'Light', null);
+  slate('slate', 'Slate', DarkPalette.slate);
 
   const AppScheme(this.id, this.label, this.palette);
 
   final String id;
   final String label;
 
-  /// Null for the light scheme, which is the plain seed scheme.
-  final DarkPalette? palette;
+  final DarkPalette palette;
 
-  Brightness get brightness => palette == null ? Brightness.light : Brightness.dark;
-
+  /// An old stored 'light' falls through to Espresso, as does anything unknown.
   static AppScheme parse(String? id) => values.firstWhere((s) => s.id == id, orElse: () => espresso);
 }
 
@@ -59,12 +56,11 @@ class SchemeController extends ChangeNotifier {
 
   /// The scheme for a choice.
   static ColorScheme forChoice(AppScheme choice) {
-    final seeded = ColorScheme.fromSeed(seedColor: fallbackSeed, brightness: choice.brightness);
-    return choice.palette?.apply(seeded) ?? seeded;
+    return choice.palette.apply(ColorScheme.fromSeed(seedColor: fallbackSeed, brightness: Brightness.dark));
   }
 
-  /// The default scheme in either mode. Dark is Espresso, light is the seed
-  /// scheme as is.
+  /// The default scheme in either mode. Dark is Espresso. Light is the plain
+  /// seed scheme, which no setting selects; widget tests use it for contrast.
   static ColorScheme builtIn(Brightness brightness) =>
-      forChoice(brightness == Brightness.dark ? AppScheme.espresso : AppScheme.light);
+      brightness == Brightness.dark ? forChoice(AppScheme.espresso) : ColorScheme.fromSeed(seedColor: fallbackSeed);
 }

@@ -56,12 +56,12 @@ void main() {
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
   });
 
-  for (final choice in AppScheme.values.where((s) => s.palette != null)) {
+  for (final choice in AppScheme.values) {
     group('${choice.label} palette', () {
       final theme = themeFor(choice);
 
       test('is dark and maps to its roles', () {
-        final p = choice.palette!;
+        final p = choice.palette;
         final s = theme.colorScheme;
         expect(s.brightness, Brightness.dark);
         expect(s.surfaceContainerLowest, p.bg);
@@ -80,7 +80,7 @@ void main() {
 
       test('semantic uses the palette success and busy', () {
         final sem = theme.extension<Semantic>()!;
-        final p = choice.palette!;
+        final p = choice.palette;
         expect(sem.open, p.success);
         expect(sem.busy, p.busy);
         expect(sem.openContainer, p.chip(p.success));
@@ -119,14 +119,14 @@ void main() {
     }
   });
 
-  group('light scheme', () {
-    final light = themeFor(AppScheme.light);
+  group('light seed scheme', () {
+    final light = AppTheme.from(SchemeController.builtIn(Brightness.light));
 
-    test('is the plain seed scheme', () {
+    test('is the plain seed scheme and is not selectable', () {
       final seeded = ColorScheme.fromSeed(seedColor: SchemeController.fallbackSeed, brightness: Brightness.light);
       expect(SchemeController.builtIn(Brightness.light), seeded);
-      expect(SchemeController.forChoice(AppScheme.light), seeded);
       expect(DarkPalette.of(seeded), isNull);
+      expect(AppScheme.values.map((s) => s.id), ['espresso', 'mocha', 'slate']);
     });
 
     test('status colours are unchanged', () {
@@ -139,7 +139,7 @@ void main() {
   });
 
   test('status colours differ between dark and light', () {
-    final d = themeFor(AppScheme.espresso).extension<Semantic>()!, l = themeFor(AppScheme.light).extension<Semantic>()!;
+    final d = themeFor(AppScheme.espresso).extension<Semantic>()!, l = AppTheme.from(SchemeController.builtIn(Brightness.light)).extension<Semantic>()!;
     expect(d.open, isNot(l.open));
     expect(d.busy, isNot(l.busy));
     expect(d.openContainer, isNot(l.openContainer));
@@ -168,6 +168,7 @@ void main() {
 
     test('an unknown stored id falls back to Espresso', () {
       expect(AppScheme.parse('wallpaper'), AppScheme.espresso);
+      expect(AppScheme.parse('light'), AppScheme.espresso);
       expect(AppScheme.parse(null), AppScheme.espresso);
     });
 

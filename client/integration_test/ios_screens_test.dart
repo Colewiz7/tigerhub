@@ -36,10 +36,10 @@ import 'fixtures.g.dart';
 // 12:30 edt on the day the fixtures were captured
 final _now = DateTime.utc(2026, 8, 30, 16, 30);
 
-// workflow runs one appearance per drive, by hand you get both
+// workflow runs one appearance per drive; every scheme is dark now
 const _only = String.fromEnvironment('SCREENS_APPEARANCE');
 final _appearances = [
-  for (final b in [Brightness.light, Brightness.dark])
+  for (final b in [Brightness.dark])
     if (_only.isEmpty || b.name == _only) b,
 ];
 
@@ -269,7 +269,7 @@ void main() {
     await _settle(tester);
 
     for (final appearance in _appearances) {
-      await scheme.select(appearance == Brightness.light ? AppScheme.light : AppScheme.espresso);
+      await scheme.select(AppScheme.espresso);
       await _settle(tester);
       final mode = appearance.name;
 
@@ -341,7 +341,7 @@ void main() {
   // the workflow records the screen between the two log lines
   testWidgets('tab bar scrub', (tester) async {
     await Preferences.instance.markSetupSeen();
-    final scheme = SchemeController(initial: AppScheme.light);
+    final scheme = SchemeController();
     addTearDown(scheme.dispose);
     await tester.pumpWidget(_app(ApiClient(backend: _FixtureBackend()), scheme));
     await _settle(tester);
@@ -372,5 +372,5 @@ void main() {
     await tester.pump(const Duration(milliseconds: 800));
     debugPrint('tab scrub end');
     binding.platformDispatcher.clearPlatformBrightnessTestValue();
-  }, skip: !_appearances.contains(Brightness.light));
+  }, skip: !_appearances.contains(Brightness.dark));
 }
