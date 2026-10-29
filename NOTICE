@@ -1,0 +1,15 @@
+TigerHub third-party data notices
+
+Map data (c) OpenStreetMap contributors, available under the Open Database
+License (ODbL). https://www.openstreetmap.org/copyright
+
+This applies to two bundled files:
+
+  client/assets/map/paths.json          walking paths and roads
+  client/assets/map/osm_features.json   water, parks, pitches, building
+                                        footprints, entrances and street names
+
+Both are extracts of OpenStreetMap, produced by scripts/fetch-osm-paths.py and
+scripts/fetch-osm-features.py. They are kept apart from the campus data that
+comes from RIT and are never merged into it. The credit also appears on the
+map legend and on the About screen.
