@@ -15,6 +15,7 @@ import '../../widgets/app_icon.dart';
 import '../../widgets/section_nav.dart';
 import 'about_section.dart';
 import 'appearance_section.dart';
+import 'campus_section.dart';
 import 'dining_section.dart';
 import 'events_section.dart';
 import 'today_section.dart';
@@ -53,6 +54,13 @@ class SettingsScreen extends StatelessWidget {
             subtitle: 'Dietary filters, allergens to flag',
             icon: AppIconKind.dining,
             builder: (context) => const DiningSection(),
+          ),
+          SectionSpec(
+            id: 'campus',
+            title: 'Campus',
+            subtitle: 'Post offices, hidden rows',
+            icon: AppIconKind.campus,
+            builder: (context) => const CampusSection(),
           ),
           SectionSpec(
             id: 'appearance',
