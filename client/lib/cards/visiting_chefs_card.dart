@@ -165,6 +165,9 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
       // no chefs tab, the header opens the sheet
       onOpen: all.isEmpty ? null : () => _showAllChefs(context, all),
       openLabel: 'shows all chefs',
+      // the list only, not the empty, unavailable or loading messages
+      endsInRow: !result.isPriming && all.isNotEmpty,
+      tightHeader: !result.isPriming && all.isNotEmpty,
       // This feed is already scoped to today, so its count is honest and
       // immediately useful. The individual chef name remains the hero of each
       // row; this is the one card-level number. It stays in the header at
