@@ -22,6 +22,7 @@ import 'campus_event_mapper.dart';
 import 'empty_state.dart';
 import 'freshness.dart';
 import 'search_field.dart';
+import 'segmented_picker.dart';
 
 const double _maxMapZoom = 20;
 const double _mapPanMargin = 80;
@@ -218,23 +219,11 @@ class _CampusMapViewState extends State<CampusMapView> {
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
-              final mode = SegmentedButton<bool>(
-                selectedIcon: Icon(AppIconKind.selected.of(context)),
-                segments: [
-                  ButtonSegment(
-                    value: false,
-                    icon: Icon(AppIconKind.place.of(context)),
-                    label: const Text('Places'),
-                  ),
-                  ButtonSegment(
-                    value: true,
-                    icon: Icon(AppIconKind.event.of(context)),
-                    label: const Text('Events'),
-                  ),
-                ],
-                selected: {_showEvents},
-                onSelectionChanged: (selection) => setState(() {
-                  _showEvents = selection.single;
+              final mode = SegmentedPicker<bool>(
+                value: _showEvents,
+                labels: const {false: 'Places', true: 'Events'},
+                onChanged: (events) => setState(() {
+                  _showEvents = events;
                   _selectedId = null;
                   _transform.value = Matrix4.identity();
                 }),
