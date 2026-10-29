@@ -193,6 +193,61 @@ void main() {
       });
     }
 
+    group('a chef who is not on', () {
+      final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFF76902));
+
+      Color? nameColour(WidgetTester tester, String chef) =>
+          tester.widget<Text>(find.descendant(of: find.byKey(ValueKey('chef-$chef')), matching: find.text(chef == '1' ? 'Chef Marco' : 'Chef Lin'))).style?.color;
+
+      Color? placeColour(WidgetTester tester, String chef) {
+        final place = chef == '1' ? 'Crossroads' : 'Gracie’s';
+        return tester.widget<Text>(find.descendant(of: find.byKey(ValueKey('chef-$chef')), matching: find.text(place))).style?.color;
+      }
+
+      String label(WidgetTester tester, String chef) => tester.getSemantics(find.text(chef == '1' ? 'Chef Marco' : 'Chef Lin')).label;
+
+      testWidgets('is muted before the slot starts, and says when', (tester) async {
+        // 10 AM on campus, the slot is 11 AM to 2 PM
+        RitClock.pin(DateTime.utc(2026, 10, 14, 14));
+        final handle = tester.ensureSemantics();
+        await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
+        expect(nameColour(tester, '1'), scheme.onSurfaceVariant);
+        expect(
+          placeColour(tester, '1'),
+          chefLocationColor(MenuItem(id: 1, name: 'Chef Marco', locationName: 'Crossroads'), scheme, muted: true),
+        );
+        expect(label(tester, '1'), contains('starts at 11 AM'));
+        handle.dispose();
+      });
+
+      testWidgets('is muted after the slot ends while still listed, and says so', (tester) async {
+        // 2:10 PM on campus
+        RitClock.pin(DateTime.utc(2026, 10, 14, 18, 10));
+        final handle = tester.ensureSemantics();
+        await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
+        expect(nameColour(tester, '2'), scheme.onSurfaceVariant);
+        expect(label(tester, '2'), contains('ended'));
+        handle.dispose();
+      });
+
+      testWidgets('is full strength while the slot runs', (tester) async {
+        await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
+        expect(nameColour(tester, '1'), isNot(scheme.onSurfaceVariant));
+        expect(placeColour(tester, '1'), chefLocationColors[23]!.light);
+        expect(label(tester, '1'), isNot(contains('ended')));
+        expect(label(tester, '1'), isNot(contains('starts')));
+      });
+
+      testWidgets('turns full strength when the slot starts, with no data refresh', (tester) async {
+        RitClock.pin(DateTime.utc(2026, 10, 14, 14, 59, 30));
+        await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
+        expect(nameColour(tester, '1'), scheme.onSurfaceVariant);
+        RitClock.pin(DateTime.utc(2026, 10, 14, 15));
+        await tester.pump(const Duration(seconds: 30));
+        expect(nameColour(tester, '1'), isNot(scheme.onSurfaceVariant));
+      });
+    });
+
     testWidgets('lists each chef with time and location above the places', (tester) async {
       await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
 

@@ -40,8 +40,15 @@ final Map<String, int> _idByName = {
 int? chefLocationId(MenuItem chef) =>
     chef.locationId ?? _idByName[locationKey(chef.locationName)];
 
-Color chefLocationColor(MenuItem chef, ColorScheme scheme) {
+/// [muted] is for a chef who is not on right now: the same hue, drawn part
+/// way toward the scheme's muted text colour. It holds 4.5:1 on every card
+/// surface like the full colour does.
+Color chefLocationColor(MenuItem chef, ColorScheme scheme, {bool muted = false}) {
   final entry = chefLocationColors[chefLocationId(chef)];
   if (entry == null) return scheme.onSurfaceVariant;
-  return scheme.brightness == Brightness.dark ? entry.dark : entry.light;
+  final full = scheme.brightness == Brightness.dark ? entry.dark : entry.light;
+  return muted ? Color.lerp(full, scheme.onSurfaceVariant, mutedShare)! : full;
 }
+
+/// How far a muted location colour moves toward the muted text colour.
+const double mutedShare = 0.4;
