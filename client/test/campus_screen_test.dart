@@ -22,6 +22,8 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:flutter/semantics.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/campus_layout.dart';
+import 'package:tigerhub/data/campus_time.dart';
+import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/widgets/context_actions.dart';
 import 'package:tigerhub/data/shuttles.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
@@ -130,7 +132,12 @@ void main() {
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
+    // Post office hours read the campus clock, not pumpCampus's now. Tuesday
+    // 4:15 PM in fall: package pickup is open until 4:30, shipping has closed.
+    RitClock.pin(CampusTime.wall(2026, 9, 15, 16, 15));
   });
+
+  tearDown(RitClock.reset);
 
   Future<void> pumpCampus(
     WidgetTester tester, {
