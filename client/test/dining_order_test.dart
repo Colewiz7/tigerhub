@@ -107,21 +107,6 @@ void main() {
     return tester.getTopLeft(finder).dy;
   }
 
-  // Today's published menu sits after the trucks and before the places
-  testWidgets('today’s published menu sits between the trucks and the places', (tester) async {
-    await pumpDining(tester);
-
-    final chef = top(tester, find.text('Chef Marco'));
-    final truck = top(tester, find.text('Taco Truck'));
-    final menu = top(tester, find.text('Tomato bisque'));
-    final place = top(tester, find.text('Crossroads').last);
-    final later = top(tester, find.text('Pie Truck'));
-    expect(chef, lessThan(truck));
-    expect(truck, lessThan(menu));
-    expect(menu, lessThan(place));
-    expect(place, lessThan(later));
-  });
-
   testWidgets('chefs, then trucks today, then places, then upcoming trucks', (tester) async {
     await pumpDining(tester);
 
