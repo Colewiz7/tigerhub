@@ -91,7 +91,9 @@ def fetch() -> dict:
 
 
 def clean_name(tags):
-    name = (tags.get("name") or "").strip()
+    # Some doors carry a room code after a bar, "East Entrance - Orange Hall |
+    # ORN/013". The code is no use on a label.
+    name = (tags.get("name") or "").split("|")[0].strip()
     if not name or STRIPPED_NAMES.search(name):
         return None
     return name

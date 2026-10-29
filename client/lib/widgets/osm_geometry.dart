@@ -3,7 +3,22 @@
 /// Pure functions on projected points, so they test without a canvas.
 library;
 
+import 'dart:math' as math;
 import 'dart:ui';
+
+import '../models/api_models.dart';
+
+/// Ground distance between two coordinates in metres, flat-earth, which is
+/// exact enough over a campus.
+double metresApart(GeoCoordinate a, GeoCoordinate b) {
+  const metresPerDegree = 111320.0;
+  final dy = (a.latitude - b.latitude) * metresPerDegree;
+  final dx =
+      (a.longitude - b.longitude) *
+      metresPerDegree *
+      math.cos((a.latitude + b.latitude) / 2 * math.pi / 180);
+  return math.sqrt(dx * dx + dy * dy);
+}
 
 /// Signed area of a ring. Positive when the points run clockwise on screen,
 /// where y grows downward.

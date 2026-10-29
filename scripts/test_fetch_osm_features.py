@@ -106,6 +106,14 @@ class ExtractTests(unittest.TestCase):
         self.assertEqual(layers["street"], [])
         self.assertEqual(layers["entrance"], [[round(LON, 6), round(LAT, 6)]])
 
+    def test_room_codes_are_trimmed_from_door_names(self):
+        node = {
+            "type": "node", "id": 9, "lon": LON, "lat": LAT,
+            "tags": {"entrance": "yes", "name": "East Entrance - Orange Hall | ORN/013"},
+        }
+        entrance = features.extract(payload(node))["entrance"]
+        self.assertEqual(entrance[0][2], "East Entrance - Orange Hall")
+
     def test_a_pitch_keeps_no_name(self):
         pitch = way(1, {"leisure": "pitch", "name": "Judson Field"}, square(4))
         layers = features.extract(payload(pitch))

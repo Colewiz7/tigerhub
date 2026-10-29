@@ -5,6 +5,7 @@
 library;
 
 import 'dart:math' as math;
+import 'dart:ui' show PointMode;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -34,6 +35,13 @@ const double mapCountSize = 11;
 
 const double _maxMapZoom = 20;
 const double _mapPanMargin = 80;
+
+/// An OpenStreetMap door this close to an RIT entrance pin is the same door.
+const double _sameDoorMetres = 5;
+
+/// Entrance dot size on screen: a 6 pt dot inside a 1 pt outline.
+const double _entranceDot = 6;
+const double _entranceRing = 1;
 
 class CampusMapView extends StatefulWidget {
   const CampusMapView({super.key, required this.result, this.events});
@@ -1736,6 +1744,7 @@ class CampusMapPainter extends CustomPainter {
     for (final family in MapFamily.values.where((family) => family.isBuilt)) {
       drawFamily(family);
     }
+    _paintEntrances(canvas, geometry);
 
     final selectedBuilding = features
         .where(
@@ -1942,6 +1951,29 @@ class CampusMapPainter extends CustomPainter {
     }
   }
 
+  /// Doors, from 8x: a 6 pt dot with a 1 pt outline, constant on screen. Two
+  /// draw calls however many doors there are.
+  void _paintEntrances(Canvas canvas, _MapGeometry geometry) {
+    final opacity = opacityAt(MapSchedule.entrances, zoom);
+    if (opacity <= 0 || geometry.entrancePoints.isEmpty) return;
+    final palette = MapPalette.of(scheme.brightness);
+    Paint dot(double diameter, Color color) => Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = diameter / zoom
+      ..color = _faded(color, opacity);
+    canvas.drawPoints(
+      PointMode.points,
+      geometry.entrancePoints,
+      dot(_entranceDot + _entranceRing * 2, palette.entranceOutline),
+    );
+    canvas.drawPoints(
+      PointMode.points,
+      geometry.entrancePoints,
+      dot(_entranceDot, palette.entrance),
+    );
+  }
+
   /// The ids of the buildings that can be labelled, for tests that check OSM
   /// footprints never join them.
   @visibleForTesting
@@ -2144,6 +2176,40 @@ class CampusMapPainter extends CustomPainter {
           LabelClass.abbreviation,
           abbreviation,
           outside: zoom >= mapGlyphMinZoom || geometry.landmarkIds.contains(id),
+        );
+      }
+    }
+
+    // Only a named door is labelled, and only at the closest zoom.
+    if (zoom >= mapZoomStops.last) {
+      for (final door in geometry.entrances) {
+        final name = door.name;
+        if (name == null) continue;
+        final ink = geometry.ink(
+          name,
+          LabelClass.entrance,
+          maxWidth: 110,
+          maxLines: 2,
+        );
+        if (ink == null) continue;
+        final w = ink.fill.width;
+        final h = ink.fill.height;
+        final at = door.at * zoom;
+        final gap = _entranceDot / 2 + _entranceRing + 3;
+        candidates.add(
+          LabelCandidate(
+            key: ('door', door.at),
+            cls: LabelClass.entrance,
+            size: Size(w, h),
+            positions: [
+              Rect.fromLTWH(at.dx + gap, at.dy - h / 2, w, h),
+              Rect.fromLTWH(at.dx - gap - w, at.dy - h / 2, w, h),
+              Rect.fromLTWH(at.dx - w / 2, at.dy - gap - h, w, h),
+              Rect.fromLTWH(at.dx - w / 2, at.dy + gap, w, h),
+            ],
+            text: name,
+            payload: (ink, null),
+          ),
         );
       }
     }
@@ -2380,6 +2446,22 @@ class _MapGeometry {
     ]);
     osmPitchEdge = ringsPath(pitches);
     osmBuildings = ringsPath(outsideRings(projected(osm.building), ritBuilt));
+    // A door within a few metres of an RIT accessible entrance pin is the
+    // same door, and the pin already marks it.
+    final ritDoors = [
+      for (final feature in features)
+        if (feature.geometryType == 'Point' &&
+            feature.kind == 'entrance_accessible' &&
+            feature.anchor != null)
+          feature.anchor!,
+    ];
+    for (final door in osm.entrance) {
+      if (ritDoors.any((d) => metresApart(d, door.at) < _sameDoorMetres)) {
+        continue;
+      }
+      entrances.add((at: projection.project(door.at), name: door.name));
+    }
+    entrancePoints = [for (final door in entrances) door.at];
     // the few buildings that keep a name at campus scale, by footprint
     final named = [
       for (final b in buildings)
@@ -2477,6 +2559,11 @@ class _MapGeometry {
 
   /// OpenStreetMap footprints RIT does not draw. Unlabeled and not selectable.
   late final Path osmBuildings;
+
+  /// OpenStreetMap doors RIT has no pin for, projected. Named ones get a label
+  /// at the closest zoom.
+  final List<({Offset at, String? name})> entrances = [];
+  late final List<Offset> entrancePoints;
 
   final Map<MapFamily, Path> areas = {};
   final List<_Building> buildings = [];
