@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/campus_layout.dart';
+import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/cache.dart';
 import 'package:tigerhub/services/preferences.dart';
 
@@ -116,6 +117,47 @@ void main() {
       expect(layout.order, ['a', 'c', 'b', 'd']);
       expect(layout.allOffices, isTrue);
       expect(layout.safetyAsked, isTrue);
+    });
+  });
+
+  group('post offices', () {
+    PostOffice office(String id) => PostOffice(
+      id: id,
+      name: id,
+      side: 'west',
+      building: 'b',
+      street: 's',
+      city: 'c',
+      state: 'NY',
+      zip: '0',
+      hours: const [],
+    );
+    final offices = [office('gv'), office('dsp')];
+    const areas = [
+      HousingArea(id: 'a', name: 'A', postOffice: 'gv'),
+      HousingArea(id: 'b', name: 'B', postOffice: 'dsp'),
+      HousingArea(id: 'inn', name: 'Inn', directDelivery: true),
+    ];
+
+    List<String> ids(List<PostOffice> list) => [for (final o in list) o.id];
+
+    test('my side is the default', () {
+      final mine = myPostOffice(offices, areas, 'b');
+      expect(ids(officesToShow(offices, mine: mine, layout: CampusLayout.empty)), ['dsp']);
+    });
+
+    test('both show when home is unknown, direct delivery or not in the list', () {
+      for (final home in [null, 'inn', 'mars']) {
+        final mine = myPostOffice(offices, areas, home);
+        expect(mine, isNull);
+        expect(ids(officesToShow(offices, mine: mine, layout: CampusLayout.empty)), ['gv', 'dsp']);
+      }
+      expect(myPostOffice([office('gv')], areas, 'b'), isNull);
+    });
+
+    test('the all choice shows both', () {
+      final layout = CampusLayout.empty.withAllOffices(true);
+      expect(ids(officesToShow(offices, mine: 'gv', layout: layout)), ['gv', 'dsp']);
     });
   });
 

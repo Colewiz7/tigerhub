@@ -14,6 +14,7 @@ import 'package:intl/intl.dart';
 import '../widgets/empty_state.dart';
 import '../cards/housing_card.dart';
 import '../models/api_models.dart';
+import '../data/campus_layout.dart';
 import '../data/campus_time.dart';
 import '../services/todays_hours.dart';
 import '../services/api.dart';
@@ -130,7 +131,7 @@ class _CampusScreenState extends State<CampusScreen> {
         SectionSpec(
           id: 'mail',
           title: 'Mail',
-          subtitle: 'Your address, and both post offices',
+          subtitle: 'Your address and post office',
           icon: AppIconKind.mail,
           builder: (context) => _MailSection(
             api: widget.api,
@@ -328,28 +329,79 @@ class _MailSection extends StatelessWidget {
   final Result<Collection<PostOffice>> offices;
 
   @override
-  Widget build(BuildContext context) => ListView(
-    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
-    children: [
-      HousingCard(areas: areas, api: api),
-      const SizedBox(height: 22),
-      _Heading(
-        glyph: AppIconKind.mail,
-        title: 'Post offices',
-        subtitle:
-            'Mail is collected at the counter after an email notice. '
-            'There are no mailboxes.',
-        state: offices.state,
-        fetchedAt: offices.fetchedAt,
+  Widget build(BuildContext context) {
+    final prefs = Preferences.instance;
+    final layout = prefs.campusLayout;
+    final all = offices.value?.data ?? const <PostOffice>[];
+    final mine = myPostOffice(all, areas.value?.data ?? const <HousingArea>[], prefs.homeArea);
+    final shown = officesToShow(all, mine: mine, layout: layout);
+    return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
+      children: [
+        HousingCard(areas: areas, api: api),
+        const SizedBox(height: 22),
+        _Heading(
+          glyph: AppIconKind.mail,
+          title: shown.length == 1 ? 'Post office' : 'Post offices',
+          subtitle:
+              'Mail is collected at the counter after an email notice. '
+              'There are no mailboxes.',
+          state: offices.state,
+          fetchedAt: offices.fetchedAt,
+        ),
+        if (offices.isPriming)
+          const PrimingPlaceholder(label: 'Loading post offices')
+        else ...[
+          for (final office in shown) _PostOfficeBlock(office: office),
+          // only worth offering when there is a choice to make
+          if (mine != null)
+            _OfficeScopeButton(
+              all: layout.allOffices,
+              onTap: () => prefs.setCampusLayout(layout.withAllOffices(!layout.allOffices)),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _OfficeScopeButton extends StatelessWidget {
+  const _OfficeScopeButton({required this.all, required this.onTap});
+
+  final bool all;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final label = all ? 'Show my post office' : 'Show all post offices';
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        button: true,
+        label: label,
+        excludeSemantics: true,
+        onTap: onTap,
+        child: Material(
+          elevation: 0,
+          color: scheme.primaryContainer,
+          shape: Shapes.pill,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                child: Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer)),
+              ),
+            ),
+          ),
+        ),
       ),
-      if (offices.isPriming)
-        const PrimingPlaceholder(label: 'Loading post offices')
-      else
-        for (final office in offices.value?.data ?? const <PostOffice>[])
-          _PostOfficeBlock(office: office),
-    ],
-  );
+    );
+  }
 }
 
 class _FindSection extends StatelessWidget {

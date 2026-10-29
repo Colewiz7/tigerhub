@@ -3,7 +3,21 @@ library;
 
 import 'dart:convert';
 
+import '../models/api_models.dart';
+
 const campusLayoutVersion = 1;
+
+/// The office id [areas] assigns to [homeArea], null while home is unknown.
+String? myPostOffice(List<PostOffice> offices, List<HousingArea> areas, String? homeArea) {
+  final id = postOfficeFor(areas, homeArea);
+  return offices.any((o) => o.id == id) ? id : null;
+}
+
+/// My side by default, both when home is unknown or the reader asked for all.
+List<PostOffice> officesToShow(List<PostOffice> offices, {required String? mine, required CampusLayout layout}) {
+  if (mine == null || layout.allOffices) return offices;
+  return [for (final o in offices) if (o.id == mine) o];
+}
 
 /// The nav rows in their shipped order.
 const campusSectionIds = ['mail', 'find', 'dates', 'safety', 'links', 'rec', 'shed'];

@@ -27,6 +27,7 @@ import 'package:tigerhub/data/static_config.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/campus_screen.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
 import 'package:tigerhub/widgets/section_nav.dart';
@@ -546,6 +547,68 @@ void main() {
     // RIT's mail is zone based, so these two offices are the whole answer.
     expect(find.textContaining('Global Village Post Office'), findsWidgets);
     expect(find.textContaining('6000 Reynolds Drive'), findsWidgets);
+  });
+
+  group('post offices follow where you live', () {
+    const tall = Size(1500, 6000);
+    final west = find.text('Global Village Post Office');
+    final east = find.text('DSP Post Office');
+
+    // the saved home outlives resetForTests, and the housing card reloads it
+    setUp(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.clearHome();
+      await Preferences.instance.resetCampus();
+    });
+    tearDown(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.clearHome();
+      await Preferences.instance.resetCampus();
+    });
+
+    testWidgets('a west side home shows its own office and offers the rest', (tester) async {
+      await Preferences.instance.setHome(area: 'global-village');
+      await pumpCampus(tester, size: tall);
+      expect(west, findsOneWidget);
+      expect(east, findsNothing);
+      expect(find.text('Show all post offices'), findsOneWidget);
+    });
+
+    testWidgets('an east side home shows the other office', (tester) async {
+      await Preferences.instance.setHome(area: 'residence-halls');
+      await pumpCampus(tester, size: tall);
+      expect(east, findsOneWidget);
+      expect(west, findsNothing);
+    });
+
+    testWidgets('Show all post offices lists both and the choice is kept', (tester) async {
+      await Preferences.instance.setHome(area: 'global-village');
+      await pumpCampus(tester, size: tall);
+      await tester.tap(find.text('Show all post offices'));
+      await tester.pumpAndSettle();
+      expect(west, findsOneWidget);
+      expect(east, findsOneWidget);
+      expect(Preferences.instance.campusLayout.allOffices, isTrue);
+      expect(find.text('Show my post office'), findsOneWidget);
+      await tester.tap(find.text('Show my post office'));
+      await tester.pumpAndSettle();
+      expect(east, findsNothing);
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+    });
+
+    testWidgets('with no home both show and there is nothing to narrow', (tester) async {
+      await pumpCampus(tester, size: tall);
+      expect(west, findsOneWidget);
+      expect(east, findsOneWidget);
+      expect(find.text('Show all post offices'), findsNothing);
+    });
+
+    testWidgets('the control is a 48 point target', (tester) async {
+      await Preferences.instance.setHome(area: 'global-village');
+      await pumpCampus(tester, size: tall);
+      final size = tester.getSize(find.ancestor(of: find.text('Show all post offices'), matching: find.byType(InkWell)).first);
+      expect(size.height, greaterThanOrEqualTo(48));
+    });
   });
 
   testWidgets('each post office service says what it is doing now', (
