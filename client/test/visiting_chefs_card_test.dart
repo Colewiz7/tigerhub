@@ -259,19 +259,21 @@ void main() {
           scale: 1,
         );
         Color? colourOf(Finder f) => tester.widget<Text>(f).style?.color;
+        // noon: Crossroads is on, Brick City starts at 4 PM so its colour is muted
+        final scheme = Theme.of(tester.element(find.byType(VisitingChefsCard))).colorScheme;
         final want = {
-          'The Cafe & Market at Crossroads': chefLocationColors[23]!,
-          'Kitchen at Brick City': chefLocationColors[22]!,
+          'The Cafe & Market at Crossroads': chefLocationColor(long[0], scheme),
+          'Kitchen at Brick City': chefLocationColor(long[1], scheme, muted: true),
         };
+        expect(want['Kitchen at Brick City'], isNot(chefLocationColor(long[1], scheme)));
         for (final e in want.entries) {
-          final c = brightness == Brightness.dark ? e.value.dark : e.value.light;
-          expect(colourOf(find.text(e.key)), c, reason: 'card ${e.key}');
+          expect(colourOf(find.text(e.key)), e.value, reason: 'card ${e.key}');
         }
 
         await tester.tap(find.text('Visiting chefs'));
         await tester.pumpAndSettle();
         for (final e in want.entries) {
-          final c = brightness == Brightness.dark ? e.value.dark : e.value.light;
+          final c = e.value;
           final inSheet = find.descendant(of: find.byType(BottomSheet), matching: find.text(e.key));
           expect(colourOf(inSheet), c, reason: 'sheet ${e.key}');
         }
@@ -294,7 +296,9 @@ void main() {
       expect(time, findsOneWidget);
       expect(place, findsOneWidget);
       expect(tester.getTopLeft(place).dy, closeTo(tester.getTopLeft(find.text('4 PM to 7:30 PM')).dy, 1));
-      expect(tester.widget<Text>(place).style?.color, chefLocationColors[22]!.light);
+      // the 4 PM slot has not started at noon, so the colour is the muted one
+      final scheme = Theme.of(tester.element(find.byType(VisitingChefsCard))).colorScheme;
+      expect(tester.widget<Text>(place).style?.color, chefLocationColor(long[1], scheme, muted: true));
     });
 
     testWidgets('the cuisine text is gone from the card and the sheet, the icon stays', (

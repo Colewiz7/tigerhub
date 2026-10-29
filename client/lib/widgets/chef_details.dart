@@ -33,9 +33,10 @@ class ChefDetails extends StatelessWidget {
   final TextStyle? style;
   final bool wrap;
 
-  /// What a screen reader says for the two lines.
-  static String label(String? window, String location) =>
-      [?window, if (location.isNotEmpty) location].join(', ');
+  /// What a screen reader says for the two lines, then [status] ("starts at
+  /// 4 PM", "ended") for a chef who is not on right now.
+  static String label(String? window, String location, {String? status}) =>
+      [?window, if (location.isNotEmpty) location, ?status].join(', ');
 
   @override
   Widget build(BuildContext context) {
