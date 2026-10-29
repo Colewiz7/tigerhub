@@ -2100,6 +2100,8 @@ class CampusMapPainter extends CustomPainter {
   List<PlacedLabel> _labelPlan(_MapGeometry geometry, List<_PinBucket> pins) {
     const glyphGap = _glyphGap;
     final candidates = <LabelCandidate>[];
+    // streets and doors, planned after everything else
+    final osmCandidates = <LabelCandidate>[];
 
     for (final building in geometry.buildings) {
       final feature = building.feature;
@@ -2180,6 +2182,41 @@ class CampusMapPainter extends CustomPainter {
       }
     }
 
+    // One label per street, upright, on its longest straight run. It is
+    // dropped when the run is shorter than the name, and it loses every
+    // collision to a building, a pin or a selected label.
+    if (zoom >= mapStreetMinZoom) {
+      for (final street in geometry.streets) {
+        final ink = geometry.ink(street.name, LabelClass.street);
+        if (ink == null) continue;
+        final w = ink.fill.width;
+        final h = ink.fill.height;
+        final run = street.run;
+        final room = run.length * zoom;
+        if (room < w) continue;
+        Rect around(double fraction) => Rect.fromCenter(
+          center: pointAlong(run.points, fraction) * zoom,
+          width: w,
+          height: h,
+        );
+        osmCandidates.add(
+          LabelCandidate(
+            key: ('street', street.name),
+            cls: LabelClass.street,
+            size: Size(w, h),
+            positions: [
+              around(.5),
+              // slid along the run, while the name still fits on it
+              for (final f in const [.35, .65])
+                if (f * room >= w / 2 && (1 - f) * room >= w / 2) around(f),
+            ],
+            text: street.name,
+            payload: (ink, null),
+          ),
+        );
+      }
+    }
+
     // Only a named door is labelled, and only at the closest zoom.
     if (zoom >= mapZoomStops.last) {
       for (final door in geometry.entrances) {
@@ -2196,7 +2233,7 @@ class CampusMapPainter extends CustomPainter {
         final h = ink.fill.height;
         final at = door.at * zoom;
         final gap = _entranceDot / 2 + _entranceRing + 3;
-        candidates.add(
+        osmCandidates.add(
           LabelCandidate(
             key: ('door', door.at),
             cls: LabelClass.entrance,
@@ -2252,7 +2289,17 @@ class CampusMapPainter extends CustomPainter {
       }
     }
 
-    return planLabels(candidates, obstacles: obstacles);
+    final placed = planLabels(candidates, obstacles: obstacles);
+    if (osmCandidates.isEmpty) return placed;
+    // Planned apart, against what is already down, so a street or a door can
+    // never change which building label wins a tie.
+    return [
+      ...placed,
+      ...planLabels(
+        osmCandidates,
+        obstacles: [...obstacles, for (final p in placed) p.rect],
+      ),
+    ];
   }
 
   void _paintLabels(
@@ -2462,6 +2509,10 @@ class _MapGeometry {
       entrances.add((at: projection.project(door.at), name: door.name));
     }
     entrancePoints = [for (final door in entrances) door.at];
+    for (final street in osm.street) {
+      final run = longestStraightRun(projected(street.lines));
+      if (run != null) streets.add((name: street.name, run: run));
+    }
     // the few buildings that keep a name at campus scale, by footprint
     final named = [
       for (final b in buildings)
@@ -2564,6 +2615,9 @@ class _MapGeometry {
   /// at the closest zoom.
   final List<({Offset at, String? name})> entrances = [];
   late final List<Offset> entrancePoints;
+
+  /// Each named street with its longest straight run, where its label goes.
+  final List<({String name, StraightRun run})> streets = [];
 
   final Map<MapFamily, Path> areas = {};
   final List<_Building> buildings = [];

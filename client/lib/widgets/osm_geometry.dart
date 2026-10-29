@@ -124,6 +124,78 @@ List<List<Offset>> outsideRings(
       ring,
 ];
 
+/// A stretch of a street that stays close to one heading.
+typedef StraightRun = ({
+  List<Offset> points,
+  double length,
+  Offset mid,
+});
+
+/// The point [fraction] of the way along [points] by arc length.
+Offset pointAlong(List<Offset> points, double fraction) {
+  var total = 0.0;
+  for (var i = 1; i < points.length; i++) {
+    total += (points[i] - points[i - 1]).distance;
+  }
+  var left = total * fraction;
+  for (var i = 1; i < points.length; i++) {
+    final step = (points[i] - points[i - 1]).distance;
+    if (left <= step && step > 0) {
+      return Offset.lerp(points[i - 1], points[i], left / step)!;
+    }
+    left -= step;
+  }
+  return points.last;
+}
+
+double _heading(Offset v) => math.atan2(v.dy, v.dx);
+
+double _turn(double a, double b) {
+  var d = (a - b).abs() % (2 * math.pi);
+  if (d > math.pi) d = 2 * math.pi - d;
+  return d;
+}
+
+/// The longest run in [lines] whose every segment stays within [maxTurn]
+/// radians of the run's overall heading, or null when there are none.
+///
+/// A street is split at its bends. The longest straight stretch is the part
+/// of the street a label can sit on without the text leaving the road.
+StraightRun? longestStraightRun(
+  List<List<Offset>> lines, {
+  double maxTurn = 0.35,
+}) {
+  StraightRun? best;
+  for (final line in lines) {
+    var start = 0;
+    while (start < line.length - 1) {
+      var end = start + 1;
+      while (end < line.length - 1) {
+        final chord = _heading(line[end + 1] - line[start]);
+        var straight = true;
+        for (var i = start; i <= end; i++) {
+          if (_turn(_heading(line[i + 1] - line[i]), chord) > maxTurn) {
+            straight = false;
+            break;
+          }
+        }
+        if (!straight) break;
+        end++;
+      }
+      final points = line.sublist(start, end + 1);
+      var length = 0.0;
+      for (var i = 1; i < points.length; i++) {
+        length += (points[i] - points[i - 1]).distance;
+      }
+      if (best == null || length > best.length) {
+        best = (points: points, length: length, mid: pointAlong(points, .5));
+      }
+      start = end;
+    }
+  }
+  return best;
+}
+
 /// One path of open lines.
 Path linesPath(Iterable<List<Offset>> lines) {
   final path = Path();
