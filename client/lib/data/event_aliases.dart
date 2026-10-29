@@ -888,6 +888,20 @@ AliasPin? _byNumber(String upper) {
   return null;
 }
 
+// true when a row, a virtual rule or an off-map rule already ruled on this
+// string, so a null pin is a decision and not a gap
+bool eventAliasDecided({
+  String? location,
+  String? building,
+  bool athletics = false,
+}) {
+  final text = _normalize(location ?? '');
+  if (text.isEmpty) return false;
+  if (athletics || _prefix.hasMatch(text)) return true;
+  if (_isNone(text.toUpperCase())) return true;
+  return _hits(text, _buildingCode(building)).isNotEmpty;
+}
+
 // null means no pin: unknown, ambiguous, virtual or off the map
 AliasPin? matchEventAlias({
   String? location,

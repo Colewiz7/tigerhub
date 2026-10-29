@@ -866,9 +866,9 @@ void main() {
           CampusEvent(
             uid: 'mapped',
             source: 'test',
-            title: 'SHED workshop',
+            title: 'GOL workshop',
             startsAt: today,
-            location: 'SHED 1300',
+            location: 'GOL 1300',
           ),
           CampusEvent(
             uid: 'unmapped',
@@ -885,7 +885,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('1 mapped · 1 without a location'), findsOneWidget);
-    expect(find.text('SHED workshop'), findsOneWidget);
+    expect(find.text('GOL workshop'), findsOneWidget);
     expect(find.text('Mystery event'), findsNothing);
   });
 }
