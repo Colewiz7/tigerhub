@@ -80,6 +80,18 @@ const Map<int, (String, String)> placeKinds = {
 /// request the app was not already making.
 const List<int> placeParents = [3, 11, 47, 35, 19, 27, 23, 15, 7, 39, 31];
 
+/// Outdoor spots that events are held at, by feature id.
+///
+/// RIT draws these as points in the payload's own `features` list but files
+/// them under no sub-category, so the sub-category parser never sees them. An
+/// allowlist rather than every point in that list, which also holds rocks,
+/// chalk zones and fields nobody schedules anything on. Currently only DSP
+/// Field, id 4655.
+///
+/// Each one comes through as the non-searchable `_spot` kind: it is a pin
+/// target for an event and nothing else.
+const Set<int> outdoorSpotIds = {4655};
+
 /// What this source currently asks maps.rit.edu for.
 ///
 /// Both halves matter and both have bitten. A kind registered without its
@@ -91,7 +103,9 @@ const List<int> placeParents = [3, 11, 47, 35, 19, 27, 23, 15, 7, 39, 31];
 String get campusPlacesFingerprint {
   final parents = [...placeParents]..sort();
   final kinds = placeKinds.keys.toList()..sort();
-  return 'parents:${parents.join(",")}|kinds:${kinds.join(",")}';
+  final spots = outdoorSpotIds.toList()..sort();
+  return 'parents:${parents.join(",")}|kinds:${kinds.join(",")}'
+      '|spots:${spots.join(",")}';
 }
 
 String? _trimmed(Object? value) {
@@ -237,6 +251,46 @@ List<Map<String, dynamic>> parseCampusMapFeatures(String raw) {
           'geometry': {'type': type, 'coordinates': coordinates},
         });
       }
+    }
+  }
+
+  // The few outdoor spots that live only in the payload's own feature list.
+  // Anything that does not look right is skipped, which costs that one pin
+  // and never the map.
+  for (final list in findAll(decoded, 'features')) {
+    if (list is! List) continue;
+    for (final item in list) {
+      if (item is! Map<String, dynamic>) continue;
+      final props = item['properties'];
+      final geometry = item['geometry'];
+      if (props is! Map<String, dynamic> || geometry is! Map<String, dynamic>) {
+        continue;
+      }
+      final id = props['id'];
+      final name = props['name'];
+      final coordinates = geometry['coordinates'];
+      if (id is! int || !outdoorSpotIds.contains(id) || name is! String) {
+        continue;
+      }
+      if (geometry['type'] != 'Point' ||
+          coordinates is! List ||
+          coordinates.length < 2 ||
+          coordinates[0] is! num ||
+          coordinates[1] is! num) {
+        continue;
+      }
+      if (!seen.add('_spot:$id')) continue;
+      out.add({
+        'id': id,
+        'kind': '_spot',
+        'kind_name': 'Outdoor spot',
+        'name': name.trim(),
+        'building': null,
+        'floor': null,
+        'room': null,
+        'note': null,
+        'geometry': {'type': 'Point', 'coordinates': coordinates},
+      });
     }
   }
   return out;
