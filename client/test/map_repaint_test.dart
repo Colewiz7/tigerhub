@@ -13,8 +13,9 @@ import 'package:tigerhub/widgets/campus_map.dart';
 import 'package:tigerhub/widgets/map_style.dart';
 
 class Draw {
-  Draw(this.kind, this.paint, this.depth);
+  Draw(this.kind, this.paint, this.depth, [this.path]);
 
+  final Path? path;
   final String kind;
   final Paint paint;
   final int depth;
@@ -42,7 +43,12 @@ class RecordingCanvas implements Canvas {
 
   @override
   void drawPath(Path path, Paint paint) =>
-      draws.add(Draw('path', paint, _depth));
+      draws.add(Draw('path', paint, _depth, path));
+
+  List<Path> get paths => [
+    for (final d in draws)
+      if (d.path != null && !d.stroked) d.path!,
+  ];
 
   @override
   void drawLine(Offset p1, Offset p2, Paint paint) =>

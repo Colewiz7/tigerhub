@@ -21,9 +21,13 @@ import 'app_icon.dart';
 import 'campus_event_mapper.dart';
 import 'empty_state.dart';
 import 'freshness.dart';
+import 'map_pin.dart';
 import 'map_style.dart';
 import 'search_field.dart';
 import 'segmented_picker.dart';
+
+/// Pin counts are text too, so they hold the 11 pt floor.
+const double mapCountSize = 11;
 
 const double _maxMapZoom = 20;
 const double _mapPanMargin = 80;
@@ -1713,48 +1717,65 @@ class CampusMapPainter extends CustomPainter {
                 : 1);
       });
       final clustered = bucket.length > 1;
-      final radius = selected
-          ? 18.0 / zoom
-          : geometry.categoryOverview
-          ? 20.0 / zoom
-          : clustered
-          ? 16.0 / zoom
-          : 13.0 / zoom;
       final isEvent = bucket.first.feature.kind.startsWith('_event:');
-      final palette = mapPinPalette(bucket.first.feature.kind, scheme);
-      final foreground = selected || isEvent ? scheme.onPrimary : palette.$2;
-      canvas.drawPath(
-        _scallop(center, radius),
-        Paint()..color = selected || isEvent ? scheme.primary : palette.$1,
-      );
-      if (clustered || isEvent) {
+      final counted = clustered || isEvent;
+      // screen points: 22 single, 30 selected, 30 or 34 with a count
+      final radius =
+          (selected
+              ? 15.0
+              : counted
+              ? (eventCount >= 10 ? 17.0 : 15.0)
+              : 11.0) /
+          zoom;
+      final accent = selected || counted;
+      final fill = accent ? palette.clusterBadge : palette.labelInk;
+      final foreground = accent ? palette.clusterBadgeText : palette.ground;
+      final shape = scallopPath(center, radius);
+      canvas.drawPath(shape, Paint()..color = fill);
+      if (selected) {
+        canvas.drawPath(
+          shape,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2 / zoom
+            ..strokeJoin = StrokeJoin.round
+            ..color = palette.selectedOutline,
+        );
+      }
+      if (counted) {
         final kinds = {for (final item in bucket) item.feature.kind};
         final icon = isEvent
             ? AppIconKind.event
             : kinds.length == 1
             ? mapPlaceIcon(bucket.first.feature.kind)
             : AppIconKind.allPlaces;
-        _paintMapIcon(
-          canvas,
-          icon.on(platform),
-          center - Offset(5.5 / zoom, 0),
-          foreground,
-          11 / zoom,
-        );
-        _paintMapCount(
-          canvas,
-          '$eventCount',
-          center + Offset(7 / zoom, 0),
-          foreground,
-          scale: 1 / zoom,
-        );
+        final count = _countPainter('$eventCount', foreground);
+        // the icon yields to the number when the two do not fit the badge
+        const iconSize = 11.0;
+        const gap = 2.0;
+        final withIcon = count.width + iconSize + gap <= radius * zoom * 2 * 0.84;
+        final total = withIcon ? count.width + iconSize + gap : count.width;
+        final left = -total / 2;
+        if (withIcon) {
+          _paintMapIcon(
+            canvas,
+            icon.on(platform),
+            center + Offset((left + iconSize / 2) / zoom, 0),
+            foreground,
+            iconSize / zoom,
+          );
+        }
+        final countCenter = withIcon
+            ? left + iconSize + gap + count.width / 2
+            : 0.0;
+        _paintCount(canvas, count, center + Offset(countCenter / zoom, 0), zoom);
       } else {
         _paintMapIcon(
           canvas,
           mapPlaceIcon(bucket.single.feature.kind).on(platform),
           center,
           foreground,
-          15 / zoom,
+          (selected ? 15 : 13) / zoom,
         );
       }
     }
@@ -1944,45 +1965,31 @@ class CampusMapPainter extends CustomPainter {
     }
   }
 
-  Path _scallop(Offset center, double radius) {
-    final path = Path();
-    for (var index = 0; index < 14; index++) {
-      final angle = -math.pi / 2 + index * math.pi / 7;
-      final currentRadius = index.isEven ? radius : radius * 0.93;
-      final point =
-          center + Offset(math.cos(angle), math.sin(angle)) * currentRadius;
-      if (index == 0) {
-        path.moveTo(point.dx, point.dy);
-      } else {
-        path.lineTo(point.dx, point.dy);
-      }
-    }
-    return path..close();
-  }
-
-  void _paintMapCount(
-    Canvas canvas,
-    String count,
-    Offset center,
-    Color color, {
-    double scale = 1,
-  }) {
-    final painter = TextPainter(
-      text: TextSpan(
-        text: count,
-        style: TextStyle(
-          fontFamily: AppTheme.uiFont,
-          color: color,
-          fontSize: 9 * scale,
-          fontWeight: FontWeight.w800,
-        ),
+  /// The pin count, measured at its screen size of 11 pt.
+  TextPainter _countPainter(String count, Color color) => TextPainter(
+    text: TextSpan(
+      text: count,
+      style: TextStyle(
+        fontFamily: AppTheme.uiFont,
+        color: color,
+        fontSize: mapCountSize,
+        fontWeight: FontWeight.w700,
       ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    painter.paint(
-      canvas,
-      center - Offset(painter.width / 2, painter.height / 2),
-    );
+    ),
+    textDirection: TextDirection.ltr,
+  )..layout();
+
+  void _paintCount(
+    Canvas canvas,
+    TextPainter painter,
+    Offset center,
+    double zoom,
+  ) {
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.scale(1 / zoom);
+    painter.paint(canvas, Offset(-painter.width / 2, -painter.height / 2));
+    canvas.restore();
   }
 
   void _paintMapIcon(
