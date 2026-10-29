@@ -27,7 +27,6 @@ import 'package:tigerhub/data/static_config.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/campus_screen.dart';
 import 'package:tigerhub/services/api.dart';
-import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
 import 'package:tigerhub/widgets/section_nav.dart';
@@ -440,7 +439,7 @@ void main() {
             }
           }
 
-          const titles = ['Mail', 'Find on campus', 'Academic dates', 'Shuttles', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace'];
+          const titles = ['Mail', 'Find on campus', 'Academic dates', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace'];
           await walk();
           // open each section as the nav list brings it on screen
           final nav = tester.state<ScrollableState>(vertical());
@@ -482,7 +481,7 @@ void main() {
       await pumpCampus(tester, platform: platform);
       final circles = find.byWidgetPredicate((w) => w is Container && w.decoration is BoxDecoration && (w.decoration! as BoxDecoration).shape == BoxShape.circle);
       var checked = 0;
-      for (final title in const ['Mail', 'Find on campus', 'Academic dates', 'Shuttles', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace']) {
+      for (final title in const ['Mail', 'Find on campus', 'Academic dates', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace']) {
         await tester.tap(find.descendant(of: find.byType(SectionNavRow), matching: find.text(title)));
         await tester.pumpAndSettle();
         for (final circle in circles.evaluate()) {
@@ -527,20 +526,10 @@ void main() {
     expect(copied, '585-475-3333');
   });
 
-  testWidgets('shuttles uses the saved home and today’s schedule', (
-    tester,
-  ) async {
-    await Preferences.instance.setHome(area: 'global-village');
+  testWidgets('shuttles live on the Today card, not in Campus', (tester) async {
     await pumpCampus(tester);
-
-    await tester.tap(find.text('Shuttles'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Today from Global Village'), findsOneWidget);
-    // August 30, 2026 is Sunday, so weekday Campus Connection routes must not
-    // be mixed into the useful answer for today.
-    expect(find.textContaining('13 · Campus & Inn'), findsOneWidget);
-    expect(find.textContaining('3 · Campus Connection'), findsNothing);
+    expect(find.descendant(of: find.byType(SectionNavRow), matching: find.text('Shuttles')), findsNothing);
+    expect(find.text('Today’s routes for where you live'), findsNothing);
   });
 
   testWidgets('the map is no longer buried inside Campus', (tester) async {

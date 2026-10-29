@@ -579,10 +579,7 @@ class _HomeScreenState extends State<HomeScreen> {
           dragHandle: controls,
           onShowAll: () => widget.onGoToTab(4),
         ),
-        ModuleType.shuttles => ShuttlesCard(
-          dragHandle: controls,
-          onShowAll: () => widget.onGoToTab(4),
-        ),
+        ModuleType.shuttles => ShuttlesCard(dragHandle: controls),
         ModuleType.packagePickup => PackagePickupCard(
           areas: widget.areas,
           offices: _offices,

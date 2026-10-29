@@ -15,7 +15,6 @@ import '../widgets/empty_state.dart';
 import '../cards/housing_card.dart';
 import '../models/api_models.dart';
 import '../data/campus_time.dart';
-import '../data/shuttles.dart';
 import '../services/todays_hours.dart';
 import '../services/api.dart';
 import '../services/open_link.dart';
@@ -154,16 +153,6 @@ class _CampusScreenState extends State<CampusScreen> {
           builder: (context) => _AcademicDatesSection(now: widget.now),
         ),
         SectionSpec(
-          id: 'shuttles',
-          title: 'Shuttles',
-          subtitle: 'Today’s routes for where you live',
-          icon: AppIconKind.shuttle,
-          builder: (context) => _ShuttleSection(
-            areas: widget.areas.value?.data ?? const <HousingArea>[],
-            now: widget.now,
-          ),
-        ),
-        SectionSpec(
           id: 'safety',
           title: 'Safety',
           subtitle: 'Emergency, text and other numbers',
@@ -190,84 +179,6 @@ class _CampusScreenState extends State<CampusScreen> {
           subtitle: 'Live equipment availability',
           icon: AppIconKind.makerspace,
           builder: (context) => _ShedSection(shed: _shed, rooms: _rooms),
-        ),
-      ],
-    );
-  }
-}
-
-class _ShuttleSection extends StatelessWidget {
-  const _ShuttleSection({required this.areas, this.now});
-
-  final List<HousingArea> areas;
-  final DateTime? now;
-
-  @override
-  Widget build(BuildContext context) => ValueListenableBuilder(
-    valueListenable: ShuttleSchedule.current,
-    builder: (context, schedule, _) => _build(context, schedule),
-  );
-
-  Widget _build(BuildContext context, ShuttleSchedule? schedule) {
-    final homeId = Preferences.instance.homeArea;
-    final home = areas.where((area) => area.id == homeId).firstOrNull;
-    final clock = now ?? CampusTime.wallNow();
-    final holiday = schedule?.holidayOn(clock);
-    final breakDays = schedule?.breakOn(clock);
-    final routes = schedule?.routesOn(homeId, clock) ?? const <ShuttleRoute>[];
-
-    return ListView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
-      children: [
-        _Heading(
-          title: holiday != null
-              ? '${holiday.name} service'
-              : breakDays != null
-              ? '${breakDays.name} service'
-              : 'Today from ${home?.name ?? 'home'}',
-          subtitle: holiday != null
-              ? 'Reduced service published for ${DateFormat('EEEE, MMMM d').format(clock)}.'
-              : breakDays != null
-              ? 'Break shuttle only. Scheduled windows, not live arrivals.'
-              : 'Scheduled windows, not live arrivals. Arrive at the stop at least five minutes early.',
-          state: DataState.ok,
-        ),
-        if (homeId == null)
-          const EmptyState(
-            kind: EmptyKind.notFound,
-            title: 'Set your housing area',
-            compact: false,
-          )
-        // the table is still loading
-        else if (schedule == null)
-          const SizedBox.shrink()
-        else if (holiday == null && !schedule.covers(homeId))
-          const EmptyState(
-            kind: EmptyKind.notFound,
-            title: 'No routes for this area',
-            compact: false,
-          )
-        else if (routes.isEmpty)
-          const EmptyState(
-            kind: EmptyKind.noEvents,
-            title: 'No routes today',
-            compact: false,
-          )
-        else
-          for (final route in routes)
-            StatusRow(
-              icon: AppIconKind.shuttle,
-              iconSize: StatusRow.fillIconSize,
-              wrapSubtitle: true,
-              title: '${route.number} · ${route.name}',
-              subtitle: route.hours,
-              actions: [MenuAction.copy('${route.number} · ${route.name}\n${route.hours}')],
-            ),
-        const SizedBox(height: 8),
-        Text(
-          'Live vehicle locations and arrival estimates are available in TripShot.',
-          style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
     );

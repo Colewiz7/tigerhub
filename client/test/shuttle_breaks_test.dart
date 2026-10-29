@@ -11,28 +11,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/cards/shuttles_card.dart';
-import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/campus_time.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/data/shuttles.dart';
-import 'package:tigerhub/models/api_models.dart';
-import 'package:tigerhub/screens/campus_screen.dart';
-import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 
 final _schedule = ShuttleSchedule.parse(jsonDecode(File('assets/config/shuttles.json').readAsStringSync()) as Map<String, dynamic>);
-
-class _EmptyBackend implements Backend {
-  @override
-  Future<Map<String, dynamic>> fetch(String path, [Map<String, String>? q]) async {
-    if (path == '/makerspace/hours') return {'items': <dynamic>[]};
-    return {'data': <dynamic>[], 'stale': false, 'last_updated': null};
-  }
-
-  @override
-  void close() {}
-}
 
 void main() {
   List<int> numbers(String? area, DateTime day) => [for (final r in _schedule.routesOn(area, day)) r.number];
@@ -94,7 +79,7 @@ void main() {
     }
   });
 
-  testWidgets('Campus names the break and lists only the break shuttle', (tester) async {
+  testWidgets('the route sheet names the break and lists only the break shuttle', (tester) async {
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
     Preferences.instance.resetForTests();
     RitClock.pin(DateTime.utc(2026, 10, 12, 14));
@@ -110,12 +95,7 @@ void main() {
     await Preferences.instance.setHome(area: 'global-village');
     await tester.pumpWidget(MaterialApp(
       theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902))),
-      home: Scaffold(
-        body: CampusScreen(
-          api: ApiClient(backend: _EmptyBackend()),
-          areas: const Result(value: Collection(data: [HousingArea(id: 'global-village', name: 'Global Village')], stale: false), state: DataState.ok),
-        ),
-      ),
+      home: const Scaffold(body: Align(alignment: Alignment.topLeft, child: SizedBox(width: 174, child: ShuttlesCard()))),
     ));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Shuttles'));
