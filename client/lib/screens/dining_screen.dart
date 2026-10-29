@@ -15,6 +15,7 @@ import '../cards/visiting_chefs_card.dart' show VisitingChefsCard;
 import '../data/campus_time.dart';
 import '../data/chef_family.dart';
 import '../data/chef_listing.dart';
+import '../data/chef_location_color.dart';
 import '../data/dining_layout.dart';
 import '../data/dining_sections.dart';
 import '../data/static_config.dart';
@@ -775,6 +776,7 @@ class _VisitingChefsGroup extends StatelessWidget {
                   window: VisitingChefsCard.window(chef),
                   location: chef.locationName,
                   style: style,
+                  locationColor: chefLocationColor(chef, Theme.of(context).colorScheme),
                 ),
               ),
           ],

@@ -17,8 +17,12 @@ class ChefDetails extends StatelessWidget {
     required this.window,
     required this.location,
     required this.style,
+    this.locationColor,
     this.wrap = true,
   });
+
+  /// The location's own colour. The name is written out either way.
+  final Color? locationColor;
 
   /// "11 AM to 2 PM", or null when RIT gave no time.
   final String? window;
@@ -44,7 +48,12 @@ class ChefDetails extends StatelessWidget {
         if (window != null)
           StatusText(window!, style: style, maxLines: maxLines, overflow: overflow),
         if (location.isNotEmpty)
-          Text(location, style: style, maxLines: maxLines, overflow: overflow),
+          Text(
+            location,
+            style: locationColor == null ? style : style?.copyWith(color: locationColor),
+            maxLines: maxLines,
+            overflow: overflow,
+          ),
       ],
     );
   }

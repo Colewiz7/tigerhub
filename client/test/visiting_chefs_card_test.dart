@@ -23,6 +23,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/chef_family.dart';
+import 'package:tigerhub/data/chef_location_color.dart';
 import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/data/store.dart';
 import 'package:tigerhub/data/upstream.dart';
@@ -204,6 +205,37 @@ void main() {
       value: ChefCollection(data: long, stale: false),
       state: DataState.ok,
     );
+
+    for (final brightness in Brightness.values) {
+      testWidgets('a location is the same colour on the card and in the sheet, ${brightness.name}', (
+        tester,
+      ) async {
+        await _pump(
+          tester,
+          result: result,
+          size: const Size(390, 844),
+          brightness: brightness,
+          scale: 1,
+        );
+        Color? colourOf(Finder f) => tester.widget<Text>(f).style?.color;
+        final want = {
+          'The Cafe & Market at Crossroads': chefLocationColors[23]!,
+          'Kitchen at Brick City': chefLocationColors[22]!,
+        };
+        for (final e in want.entries) {
+          final c = brightness == Brightness.dark ? e.value.dark : e.value.light;
+          expect(colourOf(find.text(e.key)), c, reason: 'card ${e.key}');
+        }
+
+        await tester.tap(find.text('Visiting chefs'));
+        await tester.pumpAndSettle();
+        for (final e in want.entries) {
+          final c = brightness == Brightness.dark ? e.value.dark : e.value.light;
+          final inSheet = find.descendant(of: find.byType(BottomSheet), matching: find.text(e.key));
+          expect(colourOf(inSheet), c, reason: 'sheet ${e.key}');
+        }
+      });
+    }
 
     testWidgets('the cuisine text is gone from the card and the sheet, the icon stays', (
       tester,

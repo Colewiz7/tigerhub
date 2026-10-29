@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import '../data/campus_time.dart';
 import '../data/chef_family.dart';
 import '../data/chef_listing.dart';
+import '../data/chef_location_color.dart';
 import '../data/sources/rit_chefs.dart' show ritDiningPageUrl;
 import '../widgets/empty_state.dart';
 import '../widgets/chef_details.dart';
@@ -236,6 +237,7 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
               window: VisitingChefsCard.window(all[index]),
               location: all[index].locationName,
               style: style,
+              locationColor: chefLocationColor(all[index], Theme.of(context).colorScheme),
               wrap: Insets.phone(context),
             ),
           ),
@@ -300,6 +302,7 @@ class _ChefRow extends StatelessWidget {
                         window: window,
                         location: chef.locationName,
                         style: text.bodySmall,
+                        locationColor: chefLocationColor(chef, scheme),
                       ),
                     ],
                   ],

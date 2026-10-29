@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/chef_location_color.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
@@ -170,6 +171,26 @@ void main() {
           expect(find.text('11 AM to 2 PM'), findsNWidgets(2));
         });
       }
+    }
+
+    for (final brightness in Brightness.values) {
+      testWidgets('colours the location by id, ${brightness.name}', (tester) async {
+        await pumpDining(
+          tester,
+          const [],
+          brightness: brightness,
+          backend: _DiningBackend(const [], chefs: chefs),
+        );
+        Color? colourOf(String chef) {
+          final row = find.byKey(ValueKey('chef-$chef'));
+          final place = chef == '1' ? 'Crossroads' : 'Gracie’s';
+          return tester.widget<Text>(find.descendant(of: row, matching: find.text(place))).style?.color;
+        }
+        final dark = brightness == Brightness.dark;
+        // no ids in this feed, so the names resolve: Crossroads is 23, Gracie's 21
+        expect(colourOf('1'), dark ? chefLocationColors[23]!.dark : chefLocationColors[23]!.light);
+        expect(colourOf('2'), dark ? chefLocationColors[21]!.dark : chefLocationColors[21]!.light);
+      });
     }
 
     testWidgets('lists each chef with time and location above the places', (tester) async {

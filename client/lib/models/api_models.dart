@@ -319,10 +319,14 @@ class MenuItem {
     this.startsAt,
     this.endsAt,
     this.cuisine,
+    this.locationId,
   });
 
   final int id;
   final String locationName;
+
+  /// TigerCenter's id for the location, when the feed carried one.
+  final int? locationId;
   final String name;
   final String? description;
   final String? category;
@@ -335,6 +339,7 @@ class MenuItem {
   factory MenuItem.fromJson(Map<String, dynamic> json) => MenuItem(
     id: json['id'] as int,
     locationName: json['location_name'] as String? ?? '',
+    locationId: json['location_id'] as int?,
     name: json['name'] as String? ?? '',
     description: json['description'] as String?,
     category: json['category'] as String?,
