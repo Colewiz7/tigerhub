@@ -274,13 +274,10 @@ void main() {
             )
             .first,
       );
-      // Visiting Chefs with data: the target is 56, and it is NOT met. The
-      // title, the "2 today" pill and the three 32 wide edit controls do not fit
-      // on one row of a 358 (or 408) wide card, so the title wraps beside the
-      // controls and the header, which keeps the same height in edit mode, is
-      // taller than 32 at 390: 56 (16 + 56 + 8 = 80). The linked header
-      // drops the glyph, so at 440 it now fits in 32. Pinned so a change shows.
-      expect(chefRow.top - chefs.top, size.width < 400 ? 80 : 56);
+      // Visiting Chefs with data: 56. Its header reserves no room for the old
+      // row of edit controls, which at 390 used to wrap the title and make it
+      // 80. Pinned so a change shows.
+      expect(chefRow.top - chefs.top, 56);
 
       report(name, {
         'chefsTopToFirstRow': chefRow.top - chefs.top,

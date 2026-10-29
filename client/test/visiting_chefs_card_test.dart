@@ -183,6 +183,47 @@ void main() {
   setUp(() => RitClock.pin(DateTime.utc(2026, 10, 14, 16)));
   tearDown(RitClock.reset);
 
+  group('card rhythm', () {
+    for (final width in [390.0, 440.0]) {
+      for (final scale in [1.0, 2.0]) {
+        // 16 card padding on the sides and top; the rows hold 4 of their own.
+        // Before, a one line title sat in a header band reserved for the old
+        // row of edit controls, leaving 36 (390, 1x) and 46 (440, 2x) between
+        // the title and the first row, and the last row sat 16 above the
+        // card's edge on top of its own 4.
+        goldenWidgets('the header and the rows sit close at $width, ${scale}x', (
+          tester,
+        ) async {
+          await _pump(
+            tester,
+            result: _states['available']!,
+            size: Size(width, 844),
+            brightness: Brightness.light,
+            scale: scale,
+          );
+          final card = tester.getRect(find.byKey(const ValueKey('card')));
+          final title = tester.getRect(find.text('Visiting chefs'));
+          final pill = tester.getRect(find.text('3 today'));
+          final rows = find.byType(StatusRow);
+          final first = tester.getRect(rows.first);
+          final last = tester.getRect(rows.last);
+
+          final headerBottom = title.bottom > pill.bottom ? title.bottom : pill.bottom;
+          // At 440 and 2x the title wraps beside the pill and edit mode would
+          // grow the card by 86 without the 38 it keeps; 48 is the most the
+          // reorder tests allow, so that one stays.
+          final most = width == 440 && scale == 2 ? 46 : 12;
+          expect(first.top - headerBottom, lessThanOrEqualTo(most),
+              reason: 'header to the first row');
+          expect(card.bottom - last.bottom, 12, reason: 'last row to the card edge');
+          for (final row in [first, last]) {
+            expect(row.height, greaterThanOrEqualTo(48), reason: 'tap target');
+          }
+        });
+      }
+    }
+  });
+
   group('time and location rows', () {
     // The longest real location, with a time that is not on the hour.
     final long = [

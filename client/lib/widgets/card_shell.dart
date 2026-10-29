@@ -24,6 +24,12 @@ const double editControlsHeight = 32 * 2 + 16;
 const double _rowControlsWidth = 32 * 3 + 6 * 2;
 const double _rowControlsHeight = 32;
 
+/// The most edit mode may grow a tight header by.
+const double _editGrowth = 48;
+
+/// The vertical padding inside a dense StatusRow, above and below its text.
+const double _denseRowPadding = 4;
+
 /// Gap between the title column, the hero and the edit controls.
 const double _headerGap = 10;
 
@@ -51,6 +57,8 @@ class CardShell extends StatelessWidget {
     this.glyph,
     this.onOpen,
     this.openLabel,
+    this.endsInRow = false,
+    this.tightHeader = false,
   });
 
   /// Whether the card above [context] is a phone card whose header links to
@@ -71,6 +79,16 @@ class CardShell extends StatelessWidget {
 
   /// Where [onOpen] goes, read after the title: "opens Dining".
   final String? openLabel;
+
+  /// The content ends in a dense row, which already holds 4 of its own padding
+  /// under its text. A linked phone card takes that off its bottom padding so
+  /// the text sits the card's padding from the edge.
+  final bool endsInRow;
+
+  /// Phones: the header band is as tall as its title and hero and no taller
+  /// than edit mode needs to grow it by 48, instead of also reserving room
+  /// for the old one row of edit controls.
+  final bool tightHeader;
 
   /// Section identity. Cards without one show the title alone.
   final AppIconKind? glyph;
@@ -113,6 +131,7 @@ class CardShell extends StatelessWidget {
               hasHero: hero != null,
               editing: dragHandle != null,
               legacy: !Insets.phone(context),
+              tight: tightHeader,
               title: _CardTitle(
                 title: title,
                 glyph: glyph,
@@ -164,6 +183,7 @@ class CardShell extends StatelessWidget {
       hasHero: hero != null,
       editing: editing,
       legacy: false,
+      tight: tightHeader,
       title: Semantics(
         container: true,
         button: !editing,
@@ -206,7 +226,12 @@ class CardShell extends StatelessWidget {
             _FlexibleIfBounded(
               bounded: box.maxHeight.isFinite,
               child: Padding(
-                padding: EdgeInsets.fromLTRB(pad, 0, pad, pad),
+                padding: EdgeInsets.fromLTRB(
+                  pad,
+                  0,
+                  pad,
+                  endsInRow ? pad - _denseRowPadding : pad,
+                ),
                 // rows stay apart from the link and the cards move actions
                 child: Semantics(
                   container: true,
@@ -370,6 +395,7 @@ class _CardHeader extends MultiChildRenderObjectWidget {
     required this.hasHero,
     required this.editing,
     required this.legacy,
+    required this.tight,
     required Widget title,
     required Widget freshness,
     required Widget hero,
@@ -379,6 +405,10 @@ class _CardHeader extends MultiChildRenderObjectWidget {
   final bool hasHero;
   final bool editing;
 
+  /// Phone only: the band reserves just what edit mode needs, see
+  /// [CardShell.tightHeader].
+  final bool tight;
+
   /// 600pt and wider: the header as it was before the phone condense. Edit
   /// mode keeps the normal height by ellipsizing the title to its normal line
   /// count and, as a last resort, scaling the hero down.
@@ -386,14 +416,15 @@ class _CardHeader extends MultiChildRenderObjectWidget {
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      _RenderCardHeader(hasHero: hasHero, editing: editing, legacy: legacy);
+      _RenderCardHeader(hasHero: hasHero, editing: editing, legacy: legacy, tight: tight);
 
   @override
   void updateRenderObject(BuildContext context, _RenderCardHeader renderObject) {
     renderObject
       ..hasHero = hasHero
       ..editing = editing
-      ..legacy = legacy;
+      ..legacy = legacy
+      ..tight = tight;
   }
 }
 
@@ -408,10 +439,20 @@ class _RenderCardHeader extends RenderBox
     required bool hasHero,
     required bool editing,
     required bool legacy,
+    required bool tight,
   }) {
     _hasHero = hasHero;
     _editing = editing;
     _legacy = legacy;
+    _tight = tight;
+  }
+
+  late bool _tight;
+  bool get tight => _tight;
+  set tight(bool value) {
+    if (value == _tight) return;
+    _tight = value;
+    markNeedsLayout();
   }
 
   late bool _legacy;
@@ -587,10 +628,22 @@ class _RenderCardHeader extends RenderBox
       return (aside: aside, sharesHeroRow: sharesHeroRow, asideW: asideW, band: aside ? asideBand : belowBand);
     }
 
-    // normal mode keeps what the old one row asked for, so no card moves
-    final rowBand = math.max(normalBand, plan(_rowControlsWidth, _rowControlsHeight).band);
     final edit = editing ? plan(editControlsWidth, editControlsHeight) : null;
-    final band = edit == null ? rowBand : math.max(rowBand, edit.band);
+    final double base;
+    if (tight) {
+      // Only what edit mode needs to grow by [_editGrowth] at most. Planning
+      // the old row of controls beside the title wrapped it in the room that
+      // row left, and reserved up to 24 dead points under a one line title.
+      final editBand = (edit ?? plan(editControlsWidth, editControlsHeight)).band;
+      base = math.max(
+        math.max(normalBand, _rowControlsHeight),
+        editBand - _editGrowth,
+      );
+    } else {
+      // normal mode keeps what the old one row asked for, so no card moves
+      base = math.max(normalBand, plan(_rowControlsWidth, _rowControlsHeight).band);
+    }
+    final band = edit == null ? base : math.max(base, edit.band);
     size = constraints.constrain(Size(maxW, band));
 
     /// Title and hero as they sit outside edit mode, in the band's top
