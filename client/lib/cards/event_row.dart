@@ -71,7 +71,7 @@ class EventRow extends StatelessWidget {
   /// The dashboard's condensed phone row.
   final bool dense;
 
-  /// Matched a boost keyword. Gets a subtle accent marker.
+  /// Matched a boost keyword. Gets the accent color.
   final bool boosted;
 
   /// Rendered as part of an expanded hidden list.
@@ -85,7 +85,7 @@ class EventRow extends StatelessWidget {
     final key = event.organizerKey;
     final muted = key != null && Preferences.instance.mutedOrganizers.contains(key);
     return [
-      MenuAction.copy(event.title, label: 'Copy title'),
+      MenuAction.copy(event.displayTitle, label: 'Copy title'),
       MenuAction.copy(eventShareText(event, when), label: 'Copy details'),
       if (link != null)
         MenuAction(
@@ -156,7 +156,7 @@ class EventRow extends StatelessWidget {
       icon: forceDimmed
           ? AppIconKind.hidden
           : iconForEventType(event.eventType),
-      title: boosted ? '✦ ${event.title}' : event.title,
+      title: event.displayTitle,
       subtitle: condensed ? denseSubtitle : (place ?? when),
       accent: boosted
           ? Theme.of(context).colorScheme.primary

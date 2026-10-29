@@ -407,6 +407,13 @@ class CampusEvent {
   final String? url;
   final bool allDay;
 
+  /// The title without any leading star or sparkle some feeds prepend.
+  String get displayTitle => title.replaceFirst(_leadingStars, '');
+
+  static final _leadingStars = RegExp(
+    r'^[\s★☆✦-✩✪-✹⭐︎️]+',
+  );
+
   factory CampusEvent.fromJson(Map<String, dynamic> json) => CampusEvent(
     uid: json['uid'] as String,
     source: json['source'] as String? ?? '',

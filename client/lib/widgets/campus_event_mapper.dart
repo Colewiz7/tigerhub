@@ -29,7 +29,7 @@ class MappedEventGroup {
     kind: '_event:${events.length}',
     kindName: 'Events',
     name: events.length == 1
-        ? events.single.title
+        ? events.single.displayTitle
         : '${events.length} events at $building',
     geometryType: 'Point',
     coordinates: [
