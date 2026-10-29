@@ -18,7 +18,7 @@ import '../data/chef_family.dart';
 import '../data/chef_listing.dart';
 import '../data/sources/rit_chefs.dart' show ritDiningPageUrl;
 import '../widgets/empty_state.dart';
-import '../widgets/status_text.dart';
+import '../widgets/chef_details.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../services/open_link.dart';
@@ -209,7 +209,13 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
         ),
         _ => BoundedList(
           itemCount: all.length,
-          itemHeight: StatusRow.heightFor(context, dense: true),
+          // From 600pt a row is a fixed box holding the name and two one line
+          // details, which the base row height leaves one line short.
+          itemHeight:
+              StatusRow.heightFor(context, dense: true) +
+              (Insets.phone(context)
+                  ? 0
+                  : 20 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 2.0)),
           dense: true,
           maxRows: phoneRowCap(context),
           // "+2 more", not "+2 chefs": one left over never reads "+1 chefs".
@@ -222,10 +228,16 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
             dense: true,
             icon: iconForChef(all[index]),
             title: all[index].name,
-            subtitle: [
-              ?VisitingChefsCard.window(all[index]),
+            subtitle: ChefDetails.label(
+              VisitingChefsCard.window(all[index]),
               all[index].locationName,
-            ].where((s) => s.isNotEmpty).join(' · '),
+            ),
+            subtitleBuilder: (context, style) => ChefDetails(
+              window: VisitingChefsCard.window(all[index]),
+              location: all[index].locationName,
+              style: style,
+              wrap: Insets.phone(context),
+            ),
           ),
         ),
       },
@@ -233,8 +245,8 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
   }
 }
 
-/// One chef: a badge, the name, then the time and the location, each allowed
-/// two lines.
+/// One chef: a badge, the name, then the time and the location, wrapping
+/// rather than cut.
 class _ChefRow extends StatelessWidget {
   const _ChefRow({required this.chef, this.showCuisine = false});
 
@@ -288,22 +300,12 @@ class _ChefRow extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (window != null) ...[
+                    if (window != null || chef.locationName.isNotEmpty) ...[
                       const SizedBox(height: 2),
-                      StatusText(
-                        window,
+                      ChefDetails(
+                        window: window,
+                        location: chef.locationName,
                         style: text.bodySmall,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    if (chef.locationName.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        chef.locationName,
-                        style: text.bodySmall,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                     if (cuisine != null) ...[

@@ -13,6 +13,7 @@ library;
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -168,10 +169,90 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
+/// Whether [finder]'s text was cut by a line limit.
+bool _cut(WidgetTester tester, Finder finder) {
+  final paragraph = find.descendant(of: finder, matching: find.byType(RichText));
+  return tester.renderObject<RenderParagraph>(paragraph.first).didExceedMaxLines;
+}
+
 void main() {
   // Fonts for the goldens come from goldenWidgets (golden_harness.dart).
   setUp(() => RitClock.pin(DateTime.utc(2026, 10, 14, 16)));
   tearDown(RitClock.reset);
+
+  group('time and location rows', () {
+    // The longest real location, with a time that is not on the hour.
+    final long = [
+      MenuItem(
+        id: 1,
+        name: 'Tandoor of India',
+        locationName: 'The Cafe & Market at Crossroads',
+        startsAt: DateTime.parse('2026-10-14T11:00:00-04:00'),
+        endsAt: DateTime.parse('2026-10-14T14:30:00-04:00'),
+      ),
+      MenuItem(
+        id: 2,
+        name: 'KO-BQ',
+        locationName: 'Kitchen at Brick City',
+        startsAt: DateTime.parse('2026-10-14T16:00:00-04:00'),
+        endsAt: DateTime.parse('2026-10-14T19:30:00-04:00'),
+      ),
+    ];
+    final result = Result<Collection<MenuItem>>(
+      value: ChefCollection(data: long, stale: false),
+      state: DataState.ok,
+    );
+
+    for (final width in [390.0, 440.0]) {
+      for (final scale in [1.0, 2.0]) {
+        testWidgets('the card shows each time and location whole at $width, ${scale}x', (
+          tester,
+        ) async {
+          await _pump(
+            tester,
+            result: result,
+            size: Size(width, 844),
+            brightness: Brightness.light,
+            scale: scale,
+          );
+          for (final text in [
+            '11 AM to 2:30 PM',
+            'The Cafe & Market at Crossroads',
+            '4 PM to 7:30 PM',
+            'Kitchen at Brick City',
+          ]) {
+            expect(find.text(text), findsOneWidget, reason: text);
+            expect(_cut(tester, find.text(text)), isFalse, reason: text);
+          }
+        });
+
+        testWidgets('the sheet shows each time and location whole at $width, ${scale}x', (
+          tester,
+        ) async {
+          await _pump(
+            tester,
+            result: result,
+            size: Size(width, 844),
+            brightness: Brightness.light,
+            scale: scale,
+          );
+          await tester.tap(find.text('Visiting chefs'));
+          await tester.pumpAndSettle();
+          final sheet = find.byType(BottomSheet);
+          for (final text in [
+            '11 AM to 2:30 PM',
+            'The Cafe & Market at Crossroads',
+            '4 PM to 7:30 PM',
+            'Kitchen at Brick City',
+          ]) {
+            final inSheet = find.descendant(of: sheet, matching: find.text(text));
+            expect(inSheet, findsOneWidget, reason: text);
+            expect(_cut(tester, inSheet), isFalse, reason: text);
+          }
+        });
+      }
+    }
+  });
 
   group('copy', () {
     Future<void> pumpState(WidgetTester tester, String state) => _pump(
@@ -187,12 +268,11 @@ void main() {
     ) async {
       await pumpState(tester, 'available');
       expect(find.text('KO-BQ'), findsOneWidget);
-      // Main's dense row has one subtitle: the time, then the location.
-      expect(
-        find.text('11 AM to 2 PM · The Cafe & Market at Crossroads'),
-        findsOneWidget,
-      );
-      expect(find.text('4 PM to 7 PM · RITZ'), findsOneWidget);
+      // The time and the location are a line each.
+      expect(find.text('11 AM to 2 PM'), findsOneWidget);
+      expect(find.text('The Cafe & Market at Crossroads'), findsOneWidget);
+      expect(find.text('4 PM to 7 PM'), findsOneWidget);
+      expect(find.text('RITZ'), findsOneWidget);
       // No time published, so none is shown and none is invented.
       expect(find.text('Kitchen at Brick City'), findsOneWidget);
       expect(find.text('Menus unavailable'), findsNothing);
@@ -246,12 +326,9 @@ void main() {
           brightness: Brightness.light,
           scale: scale,
         );
-        // The subtitle wraps to two lines on a dense row. The time leads it,
-        // so an ellipsis can only ever take the end of a long location.
-        final subtitle = find.textContaining('11 AM to 2 PM');
-        expect(subtitle, findsOneWidget, reason: 'at $scale');
-        final text = tester.widget<Text>(subtitle).data!;
-        expect(text, startsWith('11 AM to 2 PM'));
+        final time = find.text('11 AM to 2 PM');
+        expect(time, findsOneWidget, reason: 'at $scale');
+        expect(_cut(tester, time), isFalse, reason: 'at $scale');
       }
     });
 

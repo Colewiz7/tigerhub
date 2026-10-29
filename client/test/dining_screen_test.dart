@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -147,7 +148,31 @@ void main() {
       _chef(2, 'Chef Lin', cuisine: 'Sichuan', place: 'Gracie’s'),
     ]);
 
-    testWidgets('lists each chef with cuisine, time and location above the places', (tester) async {
+    for (final width in [390.0, 440.0]) {
+      for (final scale in [1.0, 2.0]) {
+        testWidgets('shows each time and location whole at $width, ${scale}x', (tester) async {
+          final body = _chefsBody([
+            _chef(1, 'Chef Marco', place: 'The Cafe & Market at Crossroads'),
+            _chef(2, 'Chef Lin', place: 'Kitchen at Brick City'),
+          ]);
+          await pumpDining(
+            tester,
+            const [],
+            size: Size(width, 844),
+            scale: scale,
+            backend: _DiningBackend(const [], chefs: body),
+          );
+          for (final text in ['The Cafe & Market at Crossroads', 'Kitchen at Brick City']) {
+            expect(find.text(text), findsOneWidget, reason: text);
+            final paragraph = find.descendant(of: find.text(text), matching: find.byType(RichText));
+            expect(tester.renderObject<RenderParagraph>(paragraph.first).didExceedMaxLines, isFalse);
+          }
+          expect(find.text('11 AM to 2 PM'), findsNWidgets(2));
+        });
+      }
+    }
+
+    testWidgets('lists each chef with time and location above the places', (tester) async {
       await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
 
       expect(find.text('Visiting chefs'), findsWidgets);
@@ -157,11 +182,18 @@ void main() {
         reason: 'plain header, no filled bar',
       );
       expect(find.text('Chef Marco'), findsOneWidget);
-      expect(find.text('Italian · 11 AM to 2 PM\nCrossroads'), findsOneWidget);
-      expect(find.text('Sichuan · 11 AM to 2 PM\nGracie’s'), findsOneWidget);
+      expect(find.text('11 AM to 2 PM'), findsNWidgets(2));
+      // the places list below also names Crossroads, so look inside the row
+      final marco = find.byKey(const ValueKey('chef-1'));
+      final marcoPlace = find.descendant(of: marco, matching: find.text('Crossroads'));
+      expect(marcoPlace, findsOneWidget);
+      expect(find.descendant(of: find.byKey(const ValueKey('chef-2')), matching: find.text('Gracie’s')), findsOneWidget);
+      // the cuisine is a data field the icon uses, never text on the row
+      expect(find.text('Italian'), findsNothing);
+      expect(find.text('Sichuan'), findsNothing);
       expect(
         tester.getTopLeft(find.text('Chef Marco')).dy,
-        lessThan(tester.getTopLeft(find.text('Crossroads')).dy),
+        lessThan(tester.getTopLeft(marcoPlace).dy),
       );
     });
 
@@ -195,7 +227,7 @@ void main() {
       final row = find.byKey(const ValueKey('chef-1'));
       expect(
         tester.getSemantics(find.descendant(of: row, matching: find.byType(Semantics)).first).label,
-        startsWith('Chef Marco, Italian · 11 AM to 2 PM\nCrossroads'),
+        startsWith('Chef Marco, 11 AM to 2 PM, Crossroads'),
       );
       expect(tester.getSize(row).height, greaterThanOrEqualTo(48));
       handle.dispose();

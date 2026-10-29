@@ -24,6 +24,7 @@ import '../models/api_models.dart';
 import '../services/api.dart';
 import '../services/clipboard.dart';
 import '../widgets/app_icon.dart';
+import '../widgets/chef_details.dart';
 import '../widgets/context_actions.dart';
 import '../widgets/dining_actions.dart';
 import '../widgets/dining_group_editor.dart';
@@ -766,13 +767,15 @@ class _VisitingChefsGroup extends StatelessWidget {
                 grouped: true,
                 subtitleMaxLines: null,
                 title: chef.name,
-                subtitle: [
-                  [
-                    if (chef.cuisine?.trim().isNotEmpty ?? false) chef.cuisine!,
-                    ?VisitingChefsCard.window(chef),
-                  ].join(' · '),
+                subtitle: ChefDetails.label(
+                  VisitingChefsCard.window(chef),
                   chef.locationName,
-                ].where((part) => part.isNotEmpty).join('\n'),
+                ),
+                subtitleBuilder: (context, style) => ChefDetails(
+                  window: VisitingChefsCard.window(chef),
+                  location: chef.locationName,
+                  style: style,
+                ),
               ),
           ],
         ),
