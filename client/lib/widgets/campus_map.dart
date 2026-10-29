@@ -1534,6 +1534,17 @@ Color _faded(Color color, double opacity) =>
   }
 }
 
+/// Same length and the same feature objects in the same order. A replaced
+/// feature misses, which costs a rebuild and is never wrong.
+bool _sameFeatures(List<CampusMapFeature>? a, List<CampusMapFeature>? b) {
+  if (identical(a, b)) return true;
+  if (a == null || b == null || a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) {
+    if (!identical(a[i], b[i])) return false;
+  }
+  return true;
+}
+
 class CampusMapPainter extends CustomPainter {
   CampusMapPainter({
     required this.features,
@@ -1835,6 +1846,10 @@ class CampusMapPainter extends CustomPainter {
   /// Only for tests that need a cold build.
   static void resetGeometryCacheForTest() => _geometryCache = null;
 
+  /// How many times a geometry has been built, for tests that count rebuilds.
+  @visibleForTesting
+  static int geometryBuilds = 0;
+
   @visibleForTesting
   Object pinLayoutForTest(Size size) => _geometryFor(
     CampusMapProjection(features, size, boundsFeatures: boundsFeatures),
@@ -1842,13 +1857,21 @@ class CampusMapPainter extends CustomPainter {
 
   _MapGeometry _geometryFor(CampusMapProjection projection) {
     final cached = _geometryCache;
+    // The projection is a pure function of its size and feature lists, so
+    // equal inputs give an equal projection even when the object is new. The
+    // screen builds a fresh list from the same features on every rebuild.
     if (cached != null &&
-        identical(cached.projection, projection) &&
-        identical(cached.features, features) &&
+        cached.projection.size == projection.size &&
+        _sameFeatures(cached.features, features) &&
+        _sameFeatures(
+          cached.projection._boundsFeatures,
+          projection._boundsFeatures,
+        ) &&
         identical(cached.paths, paths) &&
         cached.scheme == scheme) {
       return cached;
     }
+    geometryBuilds++;
     return _geometryCache = _MapGeometry(projection, features, paths, scheme);
   }
 
