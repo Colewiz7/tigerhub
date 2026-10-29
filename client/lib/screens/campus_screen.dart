@@ -14,8 +14,8 @@ import 'package:intl/intl.dart';
 import '../widgets/empty_state.dart';
 import '../cards/housing_card.dart';
 import '../models/api_models.dart';
+import '../data/campus_layout.dart';
 import '../data/campus_time.dart';
-import '../data/shuttles.dart';
 import '../services/todays_hours.dart';
 import '../services/api.dart';
 import '../services/open_link.dart';
@@ -24,7 +24,9 @@ import '../services/academic_dates.dart';
 import '../theme/semantic.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
+import '../widgets/campus_actions.dart';
 import '../widgets/context_actions.dart';
+import '../widgets/hidden_group.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 import '../widgets/places_sheet.dart';
@@ -79,6 +81,8 @@ class _CampusScreenState extends State<CampusScreen> {
   /// visit's results land after the current ones and overwrite them.
   final _subscriptions = Subscriptions();
 
+  bool _editing = false;
+
   @override
   void initState() {
     super.initState();
@@ -125,13 +129,12 @@ class _CampusScreenState extends State<CampusScreen> {
   Widget build(BuildContext context) {
     // Five unrelated things used to stack in one scroll, so anything below the
     // first two disappeared. Same nav idiom as Settings.
-    return SectionScaffold(
-      iconSize: StatusRow.fillIconSize,
-      sections: [
+    final layout = Preferences.instance.campusLayout;
+    final specs = [
         SectionSpec(
           id: 'mail',
           title: 'Mail',
-          subtitle: 'Your address, and both post offices',
+          subtitle: 'Your address and post office',
           icon: AppIconKind.mail,
           builder: (context) => _MailSection(
             api: widget.api,
@@ -152,16 +155,6 @@ class _CampusScreenState extends State<CampusScreen> {
           subtitle: 'Deadlines, breaks and finals',
           icon: AppIconKind.academicDates,
           builder: (context) => _AcademicDatesSection(now: widget.now),
-        ),
-        SectionSpec(
-          id: 'shuttles',
-          title: 'Shuttles',
-          subtitle: 'Today’s routes for where you live',
-          icon: AppIconKind.shuttle,
-          builder: (context) => _ShuttleSection(
-            areas: widget.areas.value?.data ?? const <HousingArea>[],
-            now: widget.now,
-          ),
         ),
         SectionSpec(
           id: 'safety',
@@ -191,85 +184,51 @@ class _CampusScreenState extends State<CampusScreen> {
           icon: AppIconKind.makerspace,
           builder: (context) => _ShedSection(shed: _shed, rooms: _rooms),
         ),
+    ];
+    final byId = {for (final spec in specs) spec.id: spec};
+    return SectionScaffold(
+      iconSize: StatusRow.fillIconSize,
+      sections: [for (final id in layout.visibleSections()) byId[id]!],
+      hidden: [
+        for (final id in layout.sectionOrder())
+          if (layout.hidden.contains(id)) byId[id]!,
       ],
+      rowActions: (spec, hidden) => [
+        hidden
+            ? unhideAction((l) => l.showSection(spec.id))
+            : hideSectionAction(spec.id, spec.title),
+      ],
+      header: _EditBar(editing: _editing, onChanged: (value) => setState(() => _editing = value)),
+      editing: _editing,
+      onMove: (spec, step) => Preferences.instance.setCampusLayout(layout.moveSection(spec.id, step)),
     );
   }
 }
 
-class _ShuttleSection extends StatelessWidget {
-  const _ShuttleSection({required this.areas, this.now});
+/// Edit starts reordering, and Done leaves it.
+class _EditBar extends StatelessWidget {
+  const _EditBar({required this.editing, required this.onChanged});
 
-  final List<HousingArea> areas;
-  final DateTime? now;
+  final bool editing;
+  final ValueChanged<bool> onChanged;
 
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder(
-    valueListenable: ShuttleSchedule.current,
-    builder: (context, schedule, _) => _build(context, schedule),
-  );
-
-  Widget _build(BuildContext context, ShuttleSchedule? schedule) {
-    final homeId = Preferences.instance.homeArea;
-    final home = areas.where((area) => area.id == homeId).firstOrNull;
-    final clock = now ?? CampusTime.wallNow();
-    final holiday = schedule?.holidayOn(clock);
-    final breakDays = schedule?.breakOn(clock);
-    final routes = schedule?.routesOn(homeId, clock) ?? const <ShuttleRoute>[];
-
-    return ListView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
-      children: [
-        _Heading(
-          title: holiday != null
-              ? '${holiday.name} service'
-              : breakDays != null
-              ? '${breakDays.name} service'
-              : 'Today from ${home?.name ?? 'home'}',
-          subtitle: holiday != null
-              ? 'Reduced service published for ${DateFormat('EEEE, MMMM d').format(clock)}.'
-              : breakDays != null
-              ? 'Break shuttle only. Scheduled windows, not live arrivals.'
-              : 'Scheduled windows, not live arrivals. Arrive at the stop at least five minutes early.',
-          state: DataState.ok,
-        ),
-        if (homeId == null)
-          const EmptyState(
-            kind: EmptyKind.notFound,
-            title: 'Set your housing area',
-            compact: false,
-          )
-        // the table is still loading
-        else if (schedule == null)
-          const SizedBox.shrink()
-        else if (holiday == null && !schedule.covers(homeId))
-          const EmptyState(
-            kind: EmptyKind.notFound,
-            title: 'No routes for this area',
-            compact: false,
-          )
-        else if (routes.isEmpty)
-          const EmptyState(
-            kind: EmptyKind.noEvents,
-            title: 'No routes today',
-            compact: false,
-          )
-        else
-          for (final route in routes)
-            StatusRow(
-              icon: AppIconKind.shuttle,
-              iconSize: StatusRow.fillIconSize,
-              wrapSubtitle: true,
-              title: '${route.number} · ${route.name}',
-              subtitle: route.hours,
-              actions: [MenuAction.copy('${route.number} · ${route.name}\n${route.hours}')],
-            ),
-        const SizedBox(height: 8),
-        Text(
-          'Live vehicle locations and arrival estimates are available in TripShot.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ],
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: editing ? Semantics(header: true, child: Text('Edit Campus', style: text.titleLarge)) : const SizedBox.shrink(),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(minimumSize: const Size(64, 48)),
+            onPressed: () => onChanged(!editing),
+            child: Text(editing ? 'Done' : 'Edit'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -417,28 +376,91 @@ class _MailSection extends StatelessWidget {
   final Result<Collection<PostOffice>> offices;
 
   @override
-  Widget build(BuildContext context) => ListView(
-    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
-    children: [
-      HousingCard(areas: areas, api: api),
-      const SizedBox(height: 22),
-      _Heading(
-        glyph: AppIconKind.mail,
-        title: 'Post offices',
-        subtitle:
-            'Mail is collected at the counter after an email notice. '
-            'There are no mailboxes.',
-        state: offices.state,
-        fetchedAt: offices.fetchedAt,
+  Widget build(BuildContext context) {
+    final prefs = Preferences.instance;
+    final layout = prefs.campusLayout;
+    final all = offices.value?.data ?? const <PostOffice>[];
+    final mine = myPostOffice(all, areas.value?.data ?? const <HousingArea>[], prefs.homeArea);
+    final shown = officesToShow(all, mine: mine, layout: layout);
+    return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
+      children: [
+        HousingCard(areas: areas, api: api),
+        const SizedBox(height: 22),
+        _Heading(
+          glyph: AppIconKind.mail,
+          title: shown.length == 1 ? 'Post office' : 'Post offices',
+          subtitle:
+              'Mail is collected at the counter after an email notice. '
+              'There are no mailboxes.',
+          state: offices.state,
+          fetchedAt: offices.fetchedAt,
+        ),
+        if (offices.isPriming)
+          const PrimingPlaceholder(label: 'Loading post offices')
+        else ...[
+          for (final office in shown)
+            _PostOfficeBlock(
+              office: office,
+              actions: [hideAction(name: office.name, hide: (l) => l.hideOffice(office.id), show: (l) => l.showOffice(office.id))],
+            ),
+          // only worth offering when there is a choice to make
+          if (mine != null)
+            _OfficeScopeButton(
+              all: layout.allOffices,
+              onTap: () => prefs.setCampusLayout(layout.withAllOffices(!layout.allOffices)),
+            ),
+          if (hiddenOffices(all, layout).isNotEmpty)
+            HiddenGroup(
+              count: hiddenOffices(all, layout).length,
+              children: [
+                for (final office in hiddenOffices(all, layout))
+                  _PostOfficeBlock(office: office, actions: [unhideAction((l) => l.showOffice(office.id))]),
+              ],
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _OfficeScopeButton extends StatelessWidget {
+  const _OfficeScopeButton({required this.all, required this.onTap});
+
+  final bool all;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final label = all ? 'Show my post office' : 'Show all post offices';
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        button: true,
+        label: label,
+        excludeSemantics: true,
+        onTap: onTap,
+        child: Material(
+          elevation: 0,
+          color: scheme.primaryContainer,
+          shape: Shapes.pill,
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                child: Text(label, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: scheme.onPrimaryContainer)),
+              ),
+            ),
+          ),
+        ),
       ),
-      if (offices.isPriming)
-        const PrimingPlaceholder(label: 'Loading post offices')
-      else
-        for (final office in offices.value?.data ?? const <PostOffice>[])
-          _PostOfficeBlock(office: office),
-    ],
-  );
+    );
+  }
 }
 
 class _FindSection extends StatelessWidget {
@@ -498,26 +520,36 @@ class _RecreationSection extends StatelessWidget {
   final Result<Collection<RecreationFacility>> result;
 
   @override
-  Widget build(BuildContext context) => ListView(
-    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
-    children: [
-      _Heading(
-        title: 'Gym and pool',
-        subtitle:
-            'Today first. A facility can run several sessions in a '
-            'day, so each one is listed separately.',
-        state: result.state,
-        fetchedAt: result.fetchedAt,
-      ),
-      if (result.isPriming)
-        const PrimingPlaceholder(label: 'Loading facility hours')
-      else
-        for (final facility
-            in result.value?.data ?? const <RecreationFacility>[])
-          _RecreationRow(facility: facility),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final layout = Preferences.instance.campusLayout;
+    final all = result.value?.data ?? const <RecreationFacility>[];
+    final hidden = [for (final f in all) if (layout.hiddenFacilities.contains(f.name)) f];
+    return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
+      children: [
+        _Heading(
+          title: 'Gym and pool',
+          subtitle:
+              'Today first. A facility can run several sessions in a '
+              'day, so each one is listed separately.',
+          state: result.state,
+          fetchedAt: result.fetchedAt,
+        ),
+        if (result.isPriming)
+          const PrimingPlaceholder(label: 'Loading facility hours')
+        else ...[
+          for (final facility in all)
+            if (!layout.hiddenFacilities.contains(facility.name)) _RecreationRow(facility: facility),
+          if (hidden.isNotEmpty)
+            HiddenGroup(
+              count: hidden.length,
+              children: [for (final facility in hidden) _RecreationRow(facility: facility, hidden: true)],
+            ),
+        ],
+      ],
+    );
+  }
 }
 
 class _ShedSection extends StatelessWidget {
@@ -690,12 +722,15 @@ class _TodayLine extends StatelessWidget {
               style: text.bodyMedium?.copyWith(color: scheme.onSurface),
             ),
           ),
-          Text(
+          Flexible(
+            child: Text(
             '$label \u00b7 $detail',
+            textAlign: TextAlign.end,
             style: text.bodySmall?.copyWith(
               color: today.isOpen ? accent : scheme.onSurfaceVariant,
               fontWeight: AppTheme.weight(Weights.medium),
               fontVariations: Weights.medium,
+            ),
             ),
           ),
         ],
@@ -715,9 +750,10 @@ String _clockAt(DateTime instant) {
 }
 
 class _PostOfficeBlock extends StatelessWidget {
-  const _PostOfficeBlock({required this.office});
+  const _PostOfficeBlock({required this.office, this.actions = const []});
 
   final PostOffice office;
+  final List<MenuAction> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -739,7 +775,10 @@ class _PostOfficeBlock extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: Container(
+      child: ContextActions(
+        actions: actions,
+        focusable: true,
+        child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerLow,
@@ -813,6 +852,7 @@ class _PostOfficeBlock extends StatelessWidget {
               ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -1168,9 +1208,10 @@ class _ContactChip extends StatelessWidget {
 
 /// One facility, today's sessions inline, the rest of the week on tap.
 class _RecreationRow extends StatelessWidget {
-  const _RecreationRow({required this.facility});
+  const _RecreationRow({required this.facility, this.hidden = false});
 
   final RecreationFacility facility;
+  final bool hidden;
 
   static AppIconKind _icon(String name) {
     final n = name.toLowerCase();
@@ -1211,7 +1252,12 @@ class _RecreationRow extends StatelessWidget {
       subtitle: hours,
       accent: open ? semantic.open : semantic.closed,
       emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
-      actions: [MenuAction.copy('${facility.name}\n$hours')],
+      actions: [
+        MenuAction.copy('${facility.name}\n$hours'),
+        hidden
+            ? unhideAction((l) => l.showFacility(facility.name))
+            : hideAction(name: facility.name, hide: (l) => l.hideFacility(facility.name), show: (l) => l.showFacility(facility.name)),
+      ],
       onTap: facility.days.length < 2
           ? null
           : () => showModalBottomSheet<void>(

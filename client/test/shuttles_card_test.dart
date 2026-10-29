@@ -100,22 +100,25 @@ void main() {
       Preferences.instance.resetForTests();
     });
 
-    testWidgets('the card reads from home and opens Campus', (tester) async {
+    testWidgets('the card reads from home and opens the route list', (tester) async {
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = const Size(390, 844);
       addTearDown(tester.view.reset);
       await Preferences.instance.setHome(area: 'global-village');
-      final taps = <int>[];
       await tester.pumpWidget(MaterialApp(
         theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902))),
-        home: Scaffold(body: Align(alignment: Alignment.topLeft, child: SizedBox(width: 174, child: ShuttlesCard(onShowAll: () => taps.add(4))))),
+        home: const Scaffold(body: Align(alignment: Alignment.topLeft, child: SizedBox(width: 174, child: ShuttlesCard()))),
       ));
       await tester.pump();
       expect(find.byType(CompactCard), findsOneWidget);
       expect(find.text('3 routes'), findsOneWidget);
       expect(find.text('until 11:16 PM'), findsOneWidget);
       await tester.tap(find.text('3 routes'));
-      expect(taps, [4]);
+      await tester.pumpAndSettle();
+      // per-route detail stays one tap from Today
+      expect(find.text('Today from home'), findsOneWidget);
+      expect(find.textContaining('3 · Campus Connection'), findsOneWidget);
+      expect(find.textContaining('TripShot'), findsOneWidget);
     });
   });
 }

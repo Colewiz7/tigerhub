@@ -14,6 +14,7 @@ import '../theme/tokens.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/card_shell.dart';
 import '../widgets/compact_card.dart';
+import '../widgets/shuttle_routes_sheet.dart';
 import '../widgets/status_row.dart';
 
 /// The compact answer for [area] at the campus wall clock [now].
@@ -32,10 +33,9 @@ import '../widgets/status_row.dart';
 }
 
 class ShuttlesCard extends StatelessWidget {
-  const ShuttlesCard({super.key, this.dragHandle, this.onShowAll});
+  const ShuttlesCard({super.key, this.dragHandle});
 
   final Widget? dragHandle;
-  final VoidCallback? onShowAll;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -49,8 +49,8 @@ class ShuttlesCard extends StatelessWidget {
           caption: answer.caption,
           quiet: answer.quiet,
           dragHandle: dragHandle,
-          onOpen: onShowAll,
-          openLabel: 'opens Campus',
+          onOpen: () => showShuttleRoutesSheet(context),
+          openLabel: 'opens routes',
         );
       }
       return CardShell(
@@ -62,7 +62,7 @@ class ShuttlesCard extends StatelessWidget {
           title: answer.value ?? '',
           subtitle: answer.caption,
           emphasis: answer.quiet ? RowEmphasis.dimmed : RowEmphasis.normal,
-          onTap: onShowAll,
+          onTap: () => showShuttleRoutesSheet(context),
         ),
       );
     },

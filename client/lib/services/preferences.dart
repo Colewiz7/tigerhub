@@ -9,6 +9,7 @@ library;
 
 import 'package:flutter/foundation.dart';
 
+import '../data/campus_layout.dart';
 import '../data/dining_layout.dart';
 import 'cache.dart';
 
@@ -49,6 +50,7 @@ class Preferences extends ChangeNotifier {
   static const _pinnedKey = 'pinned_dining';
   static const _hiddenKey = 'hidden_dining';
   static const _layoutKey = 'dining_layout';
+  static const _campusKey = 'campus_layout';
   static const _dietKey = 'diet_filters';
   static const _avoidKey = 'avoid_allergens';
 
@@ -64,6 +66,7 @@ class Preferences extends ChangeNotifier {
   Set<String> _pinned = {};
   Set<String> _hidden = {};
   DiningLayout _layout = DiningLayout.empty;
+  CampusLayout _campus = CampusLayout.empty;
   Set<String> _diet = {};
   Set<String> _avoid = {};
   List<String> _hide = defaultHideKeywords;
@@ -87,6 +90,9 @@ class Preferences extends ChangeNotifier {
 
   /// The user's group edits, as diffs from the shipped groups.
   DiningLayout get diningLayout => _layout;
+
+  /// The user's Campus edits, as diffs from the shipped sections.
+  CampusLayout get campusLayout => _campus;
 
   /// Dietary tags to keep, for example Vegan. Empty means no filter.
   Set<String> get dietFilters => _diet;
@@ -115,6 +121,8 @@ class Preferences extends ChangeNotifier {
     _hidden = (await cache.readOrder(_hiddenKey)).toSet();
     final layout = await cache.readOrder(_layoutKey);
     _layout = DiningLayout.parse(layout.isEmpty ? null : layout.first);
+    final campus = await cache.readOrder(_campusKey);
+    _campus = CampusLayout.parse(campus.isEmpty ? null : campus.first);
     _diet = (await cache.readOrder(_dietKey)).toSet();
     _avoid = (await cache.readOrder(_avoidKey)).toSet();
 
@@ -272,6 +280,15 @@ class Preferences extends ChangeNotifier {
 
   Future<void> resetDiningGroups() => setDiningLayout(DiningLayout.empty);
 
+  Future<void> setCampusLayout(CampusLayout layout) async {
+    _campus = layout;
+    notifyListeners();
+    final encoded = layout.encode();
+    await ResponseCache.instance.writeOrder(_campusKey, encoded == null ? const [] : [encoded]);
+  }
+
+  Future<void> resetCampus() => setCampusLayout(CampusLayout.empty);
+
   Future<void> clearMutes() async {
     _muted = {};
     notifyListeners();
@@ -327,6 +344,7 @@ class Preferences extends ChangeNotifier {
     _pinned = {};
     _hidden = {};
     _layout = DiningLayout.empty;
+    _campus = CampusLayout.empty;
     _diet = {};
     _avoid = {};
     _hide = defaultHideKeywords;

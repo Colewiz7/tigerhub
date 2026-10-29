@@ -49,6 +49,19 @@ void main() {
     }
   }
 
+  // the pushed Campus page: post office mode and the layout buttons
+  for (final brightness in Brightness.values) {
+    for (final scale in const [1.0, 2.0]) {
+      final name = 'settings_campus_ios_390x844_${brightness.name}_${scale.toInt()}x.png';
+      goldenWidgets(name, (tester) async {
+        await pumpSettings(tester, const Size(390, 844), brightness, scale, platform: TargetPlatform.iOS);
+        await tester.tap(find.text('Campus'));
+        await tester.pumpAndSettle();
+        await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name'));
+      });
+    }
+  }
+
   for (final size in const [Size(390, 844), Size(440, 956)]) {
     for (final brightness in Brightness.values) {
       for (final scale in const [1.0, 2.0]) {

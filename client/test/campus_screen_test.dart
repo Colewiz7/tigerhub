@@ -19,7 +19,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:flutter/semantics.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/campus_layout.dart';
+import 'package:tigerhub/data/campus_time.dart';
+import 'package:tigerhub/data/rit_clock.dart';
+import 'package:tigerhub/widgets/context_actions.dart';
 import 'package:tigerhub/data/shuttles.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
 import 'package:tigerhub/data/sources/recreation.dart';
@@ -127,7 +132,12 @@ void main() {
   setUp(() {
     SharedPreferencesAsyncPlatform.instance =
         InMemorySharedPreferencesAsync.empty();
+    // Post office hours read the campus clock, not pumpCampus's now. Tuesday
+    // 4:15 PM in fall: package pickup is open until 4:30, shipping has closed.
+    RitClock.pin(CampusTime.wall(2026, 9, 15, 16, 15));
   });
+
+  tearDown(RitClock.reset);
 
   Future<void> pumpCampus(
     WidgetTester tester, {
@@ -440,7 +450,7 @@ void main() {
             }
           }
 
-          const titles = ['Mail', 'Find on campus', 'Academic dates', 'Shuttles', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace'];
+          const titles = ['Mail', 'Find on campus', 'Academic dates', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace'];
           await walk();
           // open each section as the nav list brings it on screen
           final nav = tester.state<ScrollableState>(vertical());
@@ -482,7 +492,7 @@ void main() {
       await pumpCampus(tester, platform: platform);
       final circles = find.byWidgetPredicate((w) => w is Container && w.decoration is BoxDecoration && (w.decoration! as BoxDecoration).shape == BoxShape.circle);
       var checked = 0;
-      for (final title in const ['Mail', 'Find on campus', 'Academic dates', 'Shuttles', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace']) {
+      for (final title in const ['Mail', 'Find on campus', 'Academic dates', 'Safety', 'Quick links', 'Gym and pool', 'SHED makerspace']) {
         await tester.tap(find.descendant(of: find.byType(SectionNavRow), matching: find.text(title)));
         await tester.pumpAndSettle();
         for (final circle in circles.evaluate()) {
@@ -498,6 +508,48 @@ void main() {
       }
       expect(checked, greaterThan(20));
     });
+  }
+
+  // the configured states: edit mode, Hidden (n) open, and the post office on my side
+  for (final brightness in Brightness.values) {
+    for (final textScale in const [1.0, 2.0]) {
+      final suffix = '${brightness.name}_${textScale.toInt()}x.png';
+
+      goldenWidgets('campus_edit_ios_390x844_$suffix', (tester) async {
+        await pumpCampus(tester, size: const Size(390, 844), brightness: brightness, textScale: textScale, platform: TargetPlatform.iOS);
+        await tester.tap(find.text('Edit'));
+        await tester.pumpAndSettle();
+        await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/campus_edit_ios_390x844_$suffix'));
+      });
+
+      goldenWidgets('campus_hidden_ios_390x844_$suffix', (tester) async {
+        await Preferences.instance.setCampusLayout(CampusLayout.empty.hideSection('links').hideSection('shed'));
+        addTearDown(() => Preferences.instance.setCampusLayout(CampusLayout.empty));
+        await pumpCampus(tester, size: const Size(390, 844), brightness: brightness, textScale: textScale, platform: TargetPlatform.iOS);
+        // at 2x the Hidden header and its rows are below the fold
+        if (textScale > 1) await tester.scrollUntilVisible(find.text('Hidden (2)'), 200);
+        await tester.tap(find.text('Hidden (2)'));
+        await tester.pumpAndSettle();
+        if (textScale > 1) await tester.scrollUntilVisible(find.text('SHED makerspace'), 200);
+        await tester.pumpAndSettle();
+        await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/campus_hidden_ios_390x844_$suffix'));
+      });
+
+      goldenWidgets('campus_mail_mine_ios_390x844_$suffix', (tester) async {
+        await Preferences.instance.setHome(area: 'global-village');
+        addTearDown(() async {
+          await Preferences.instance.clearHome();
+          await Preferences.instance.setCampusLayout(CampusLayout.empty);
+        });
+        await pumpCampus(tester, size: const Size(390, 844), brightness: brightness, textScale: textScale, platform: TargetPlatform.iOS);
+        await tester.tap(find.text('Mail'));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(find.text('Show all post offices'), 200);
+        await tester.pumpAndSettle();
+        expect(find.text('DSP Post Office'), findsNothing);
+        await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/campus_mail_mine_ios_390x844_$suffix'));
+      });
+    }
   }
 
   testWidgets('with no dialer the number is copied instead', (tester) async {
@@ -527,20 +579,10 @@ void main() {
     expect(copied, '585-475-3333');
   });
 
-  testWidgets('shuttles uses the saved home and today’s schedule', (
-    tester,
-  ) async {
-    await Preferences.instance.setHome(area: 'global-village');
+  testWidgets('shuttles live on the Today card, not in Campus', (tester) async {
     await pumpCampus(tester);
-
-    await tester.tap(find.text('Shuttles'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Today from Global Village'), findsOneWidget);
-    // August 30, 2026 is Sunday, so weekday Campus Connection routes must not
-    // be mixed into the useful answer for today.
-    expect(find.textContaining('13 · Campus & Inn'), findsOneWidget);
-    expect(find.textContaining('3 · Campus Connection'), findsNothing);
+    expect(find.descendant(of: find.byType(SectionNavRow), matching: find.text('Shuttles')), findsNothing);
+    expect(find.text('Today’s routes for where you live'), findsNothing);
   });
 
   testWidgets('the map is no longer buried inside Campus', (tester) async {
@@ -557,6 +599,379 @@ void main() {
     // RIT's mail is zone based, so these two offices are the whole answer.
     expect(find.textContaining('Global Village Post Office'), findsWidgets);
     expect(find.textContaining('6000 Reynolds Drive'), findsWidgets);
+  });
+
+  group('hiding rows', () {
+    const tall = Size(1500, 6000);
+
+    setUp(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.clearHome();
+      await Preferences.instance.resetCampus();
+    });
+    tearDown(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.clearHome();
+      await Preferences.instance.resetCampus();
+    });
+
+    Future<void> menu(WidgetTester tester, Finder target, String item) async {
+      await tester.longPress(target);
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(PopupMenuItem<int>), matching: find.text(item)));
+      await tester.pumpAndSettle();
+    }
+
+    final nav = find.byType(SectionNavRow);
+    Finder navRow(String title) => find.descendant(of: nav, matching: find.text(title));
+
+    testWidgets('a nav row hides, says so and Undo brings it back', (tester) async {
+      await pumpCampus(tester);
+      await menu(tester, navRow('Quick links'), 'Hide');
+      expect(navRow('Quick links'), findsNothing);
+      expect(find.text('Hidden (1)'), findsOneWidget);
+      expect(find.text('Hid Quick links'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.hidden, {'links'});
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(navRow('Quick links'), findsOneWidget);
+      expect(find.textContaining('Hidden ('), findsNothing);
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+    });
+
+    testWidgets('Hidden (n) is collapsed, opens to the row and Unhide returns it', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.hideSection('links').hideSection('shed'));
+      await pumpCampus(tester);
+      expect(find.text('Hidden (2)'), findsOneWidget);
+      expect(navRow('Quick links'), findsNothing);
+
+      await tester.tap(find.text('Hidden (2)'));
+      await tester.pumpAndSettle();
+      expect(navRow('Quick links'), findsOneWidget);
+      expect(navRow('SHED makerspace'), findsOneWidget);
+
+      await menu(tester, navRow('Quick links'), 'Unhide');
+      expect(find.text('Hidden (1)'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.hidden, {'shed'});
+      // back in its shipped place, above Gym and pool
+      expect(tester.getTopLeft(navRow('Quick links')).dy, lessThan(tester.getTopLeft(navRow('Gym and pool')).dy));
+    });
+
+    testWidgets('the Hidden header is a 48 point target', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.hideSection('links'));
+      await pumpCampus(tester);
+      expect(tester.getSize(find.ancestor(of: find.text('Hidden (1)'), matching: find.byType(InkWell)).first).height, greaterThanOrEqualTo(48));
+    });
+
+    testWidgets('a hidden row is still reachable and its page opens', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.hideSection('links'));
+      await pumpCampus(tester);
+      await tester.tap(find.text('Hidden (1)'));
+      await tester.pumpAndSettle();
+      await tester.tap(navRow('Quick links'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tiger Spend'), findsOneWidget);
+    });
+
+    testWidgets('every row can go, leaving only Hidden', (tester) async {
+      var layout = CampusLayout.empty;
+      for (final id in campusSectionIds) {
+        layout = layout.hideSection(id);
+      }
+      await Preferences.instance.setCampusLayout(layout);
+      await pumpCampus(tester);
+      expect(nav, findsNothing);
+      expect(find.text('Hidden (7)'), findsOneWidget);
+    });
+
+    testWidgets('Safety asks once before it hides', (tester) async {
+      await pumpCampus(tester);
+      await menu(tester, navRow('Safety'), 'Hide');
+      expect(find.text('Hide Safety?'), findsOneWidget);
+
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Cancel')));
+      await tester.pumpAndSettle();
+      expect(navRow('Safety'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+
+      await menu(tester, navRow('Safety'), 'Hide');
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Hide')));
+      await tester.pumpAndSettle();
+      expect(navRow('Safety'), findsNothing);
+      expect(Preferences.instance.campusLayout.safetyAsked, isTrue);
+      expect(find.text('Hid Safety'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      await menu(tester, navRow('Safety'), 'Hide');
+      expect(find.text('Hide Safety?'), findsNothing);
+      expect(navRow('Safety'), findsNothing);
+    });
+
+    testWidgets('a post office hides into its own Hidden group', (tester) async {
+      await Preferences.instance.setHome(area: 'global-village');
+      await pumpCampus(tester, size: tall);
+      await menu(tester, find.text('Global Village Post Office'), 'Hide');
+      expect(find.text('Global Village Post Office'), findsNothing);
+      expect(find.text('Hidden (1)'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.hiddenOffices, {'global-village'});
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(find.text('Global Village Post Office'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.hiddenOffices, isEmpty);
+    });
+
+    testWidgets('a hidden post office opens and unhides', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.hideOffice('dsp'));
+      await pumpCampus(tester, size: tall);
+      expect(find.text('DSP Post Office'), findsNothing);
+      await tester.tap(find.text('Hidden (1)'));
+      await tester.pumpAndSettle();
+      expect(find.text('DSP Post Office'), findsOneWidget);
+      await menu(tester, find.text('DSP Post Office'), 'Unhide');
+      expect(find.text('DSP Post Office'), findsOneWidget);
+      expect(find.textContaining('Hidden ('), findsNothing);
+    });
+
+    testWidgets('one gym or pool facility hides on its own', (tester) async {
+      await pumpCampus(tester, size: tall);
+      await tester.tap(find.text('Gym and pool'));
+      await tester.pumpAndSettle();
+      final pool = find.text('Judson/Hale Aquatics Center');
+      expect(pool, findsOneWidget);
+      await menu(tester, pool, 'Hide');
+      expect(pool, findsNothing);
+      expect(find.text('Hidden (1)'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.hiddenFacilities, {'Judson/Hale Aquatics Center'});
+      // the other facilities stay
+      expect(find.textContaining('Tennis'), findsWidgets);
+
+      await tester.tap(find.text('Hidden (1)'));
+      await tester.pumpAndSettle();
+      await menu(tester, pool, 'Unhide');
+      expect(pool, findsOneWidget);
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+    });
+
+    testWidgets('Hide is offered to assistive tech on a nav row', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpCampus(tester);
+      final row = find.ancestor(of: navRow('Quick links'), matching: find.byType(ContextActions)).first;
+      final ids = tester.getSemantics(row).getSemanticsData().customSemanticsActionIds!;
+      expect([for (final id in ids) CustomSemanticsAction.getAction(id)!.label], ['Hide']);
+      handle.dispose();
+    });
+  });
+
+  group('editing the order', () {
+    setUp(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.resetCampus();
+    });
+    tearDown(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.resetCampus();
+    });
+
+    final nav = find.byType(SectionNavRow);
+    Finder navRow(String title) => find.descendant(of: nav, matching: find.text(title));
+    double top(WidgetTester tester, String title) => tester.getTopLeft(navRow(title)).dy;
+    Finder rowOf(String title) => find.ancestor(of: navRow(title), matching: find.byType(SectionNavRow)).first;
+    Finder inRow(String title, String tooltip) => find.descendant(of: rowOf(title), matching: find.byTooltip(tooltip));
+
+    Future<void> edit(WidgetTester tester) async {
+      await tester.tap(find.text('Edit'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Edit shows Move up and Move down on every row, and Done leaves', (tester) async {
+      await pumpCampus(tester);
+      expect(find.byTooltip('Move up'), findsNothing);
+      await edit(tester);
+      expect(find.byTooltip('Move up'), findsNWidgets(7));
+      expect(find.byTooltip('Move down'), findsNWidgets(7));
+      expect(find.text('Edit Campus'), findsOneWidget);
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Move up'), findsNothing);
+      expect(find.text('Edit'), findsOneWidget);
+    });
+
+    testWidgets('Move down swaps a row with the next and the order is kept', (tester) async {
+      await pumpCampus(tester);
+      await edit(tester);
+      expect(top(tester, 'Mail'), lessThan(top(tester, 'Find on campus')));
+      await tester.tap(inRow('Mail', 'Move down'));
+      await tester.pumpAndSettle();
+      expect(top(tester, 'Find on campus'), lessThan(top(tester, 'Mail')));
+      expect(Preferences.instance.campusLayout.order.take(2), ['find', 'mail']);
+
+      await tester.tap(inRow('Mail', 'Move up'));
+      await tester.pumpAndSettle();
+      expect(top(tester, 'Mail'), lessThan(top(tester, 'Find on campus')));
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+    });
+
+    testWidgets('the first row cannot move up and the last cannot move down', (tester) async {
+      await pumpCampus(tester);
+      await edit(tester);
+      IconButton button(Finder f) => tester.widget<IconButton>(find.ancestor(of: f, matching: find.byType(IconButton)).first);
+      expect(button(inRow('Mail', 'Move up')).onPressed, isNull);
+      expect(button(inRow('Mail', 'Move down')).onPressed, isNotNull);
+      expect(button(inRow('SHED makerspace', 'Move down')).onPressed, isNull);
+      expect(button(inRow('SHED makerspace', 'Move up')).onPressed, isNotNull);
+    });
+
+    testWidgets('rows open nothing while editing', (tester) async {
+      await pumpCampus(tester);
+      await edit(tester);
+      await tester.tap(navRow('Quick links'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tiger Spend'), findsNothing);
+      expect(nav, findsNWidgets(7));
+    });
+
+    testWidgets('the buttons are 48 point targets', (tester) async {
+      await pumpCampus(tester);
+      await edit(tester);
+      for (final tooltip in const ['Move up', 'Move down', 'Hide']) {
+        final size = tester.getSize(find.byTooltip(tooltip).first);
+        expect(size.width, greaterThanOrEqualTo(48), reason: tooltip);
+        expect(size.height, greaterThanOrEqualTo(48), reason: tooltip);
+      }
+      expect(tester.getSize(find.widgetWithText(TextButton, 'Done')).height, greaterThanOrEqualTo(48));
+    });
+
+    testWidgets('a row offers Move up, Move down and Hide to assistive tech', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpCampus(tester);
+      await edit(tester);
+      List<String> labels(String title) => [
+        for (final id in find.semantics.byLabel(RegExp('^$title, ')).evaluate().single.getSemanticsData().customSemanticsActionIds ?? const <int>[])
+          CustomSemanticsAction.getAction(id)!.label!,
+      ];
+      expect(labels('Find on campus'), unorderedEquals(['Move up', 'Move down', 'Hide']));
+      // the ends only offer the move that exists
+      expect(labels('Mail'), unorderedEquals(['Move down', 'Hide']));
+      expect(labels('SHED makerspace'), unorderedEquals(['Move up', 'Hide']));
+      handle.dispose();
+    });
+
+    testWidgets('the Move down semantics action moves the row', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpCampus(tester);
+      await edit(tester);
+      final row = find.semantics.byLabel(RegExp('^Mail, '));
+      final id = row.evaluate().single.getSemanticsData().customSemanticsActionIds!.firstWhere((id) => CustomSemanticsAction.getAction(id)!.label == 'Move down');
+      tester.semantics.performAction(row, SemanticsAction.customAction, args: id);
+      await tester.pumpAndSettle();
+      expect(Preferences.instance.campusLayout.order.take(2), ['find', 'mail']);
+      handle.dispose();
+    });
+
+    testWidgets('Hide works from edit mode', (tester) async {
+      await pumpCampus(tester);
+      await edit(tester);
+      await tester.tap(inRow('Quick links', 'Hide'));
+      await tester.pumpAndSettle();
+      expect(navRow('Quick links'), findsNothing);
+      expect(find.text('Hidden (1)'), findsOneWidget);
+      await tester.tap(find.text('Hidden (1)'));
+      await tester.pumpAndSettle();
+      await tester.tap(inRow('Quick links', 'Unhide'));
+      await tester.pumpAndSettle();
+      expect(navRow('Quick links'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+    });
+
+    testWidgets('moving skips a hidden row so the move is seen', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.hideSection('find'));
+      await pumpCampus(tester);
+      await edit(tester);
+      await tester.tap(inRow('Academic dates', 'Move up'));
+      await tester.pumpAndSettle();
+      expect(top(tester, 'Academic dates'), lessThan(top(tester, 'Mail')));
+    });
+
+    testWidgets('the order survives a reload and applies outside edit mode', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.moveSection('shed', -1).moveSection('shed', -1));
+      await pumpCampus(tester);
+      expect(top(tester, 'SHED makerspace'), lessThan(top(tester, 'Quick links')));
+      expect(top(tester, 'Quick links'), lessThan(top(tester, 'Gym and pool')));
+    });
+
+    for (final textScale in [1.0, 2.0]) {
+      testWidgets('edit mode fits a phone at ${textScale}x text', (tester) async {
+        await pumpCampus(tester, size: const Size(390, 844), textScale: textScale);
+        await edit(tester);
+        expect(find.byTooltip('Move up'), findsWidgets);
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
+
+  group('post offices follow where you live', () {
+    const tall = Size(1500, 6000);
+    final west = find.text('Global Village Post Office');
+    final east = find.text('DSP Post Office');
+
+    // the saved home outlives resetForTests, and the housing card reloads it
+    setUp(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.clearHome();
+      await Preferences.instance.resetCampus();
+    });
+    tearDown(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.clearHome();
+      await Preferences.instance.resetCampus();
+    });
+
+    testWidgets('a west side home shows its own office and offers the rest', (tester) async {
+      await Preferences.instance.setHome(area: 'global-village');
+      await pumpCampus(tester, size: tall);
+      expect(west, findsOneWidget);
+      expect(east, findsNothing);
+      expect(find.text('Show all post offices'), findsOneWidget);
+    });
+
+    testWidgets('an east side home shows the other office', (tester) async {
+      await Preferences.instance.setHome(area: 'residence-halls');
+      await pumpCampus(tester, size: tall);
+      expect(east, findsOneWidget);
+      expect(west, findsNothing);
+    });
+
+    testWidgets('Show all post offices lists both and the choice is kept', (tester) async {
+      await Preferences.instance.setHome(area: 'global-village');
+      await pumpCampus(tester, size: tall);
+      await tester.tap(find.text('Show all post offices'));
+      await tester.pumpAndSettle();
+      expect(west, findsOneWidget);
+      expect(east, findsOneWidget);
+      expect(Preferences.instance.campusLayout.allOffices, isTrue);
+      expect(find.text('Show my post office'), findsOneWidget);
+      await tester.tap(find.text('Show my post office'));
+      await tester.pumpAndSettle();
+      expect(east, findsNothing);
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+    });
+
+    testWidgets('with no home both show and there is nothing to narrow', (tester) async {
+      await pumpCampus(tester, size: tall);
+      expect(west, findsOneWidget);
+      expect(east, findsOneWidget);
+      expect(find.text('Show all post offices'), findsNothing);
+    });
+
+    testWidgets('the control is a 48 point target', (tester) async {
+      await Preferences.instance.setHome(area: 'global-village');
+      await pumpCampus(tester, size: tall);
+      final size = tester.getSize(find.ancestor(of: find.text('Show all post offices'), matching: find.byType(InkWell)).first);
+      expect(size.height, greaterThanOrEqualTo(48));
+    });
   });
 
   testWidgets('each post office service says what it is doing now', (
