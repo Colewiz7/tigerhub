@@ -15,6 +15,8 @@ import 'package:flutter/material.dart';
 import '../motion/reduce_motion.dart';
 import '../theme/tokens.dart';
 import 'app_icon.dart';
+import 'context_actions.dart';
+import 'hidden_group.dart';
 import 'status_row.dart';
 import 'tab_bar.dart';
 
@@ -39,12 +41,20 @@ class SectionScaffold extends StatefulWidget {
   const SectionScaffold({
     super.key,
     required this.sections,
+    this.hidden = const [],
+    this.rowActions,
     this.navWidth = 330,
     this.twoPaneFrom = 900,
     this.iconSize = 18,
   });
 
   final List<SectionSpec> sections;
+
+  /// Rows the reader hid. They sit under a collapsed Hidden (n) header.
+  final List<SectionSpec> hidden;
+
+  /// Context menu for a row. Null leaves the rows without one.
+  final List<MenuAction> Function(SectionSpec spec, bool hidden)? rowActions;
   final double navWidth;
   final double twoPaneFrom;
 
@@ -60,7 +70,7 @@ class _SectionScaffoldState extends State<SectionScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.sections.isEmpty) return const SizedBox.shrink();
+    if (widget.sections.isEmpty && widget.hidden.isEmpty) return const SizedBox.shrink();
     // Measured from the space actually handed to this widget, not from the
     // window. It sits inside a tab under a masthead, so the window size is the
     // wrong number, and MediaQuery also reports logical pixels scaled by the
@@ -76,6 +86,8 @@ class _SectionScaffoldState extends State<SectionScaffold> {
     if (!wide) {
       return _NavList(
         sections: widget.sections,
+        hidden: widget.hidden,
+        rowActions: widget.rowActions,
         selected: null,
         iconSize: widget.iconSize,
         onSelect: (section) => Navigator.of(context).push(
@@ -89,10 +101,13 @@ class _SectionScaffoldState extends State<SectionScaffold> {
       );
     }
 
-    final section = widget.sections.firstWhere(
-      (s) => s.id == _selected,
-      orElse: () => widget.sections.first,
-    );
+    final all = [...widget.sections, ...widget.hidden];
+    final section = all.firstWhere((s) => s.id == _selected, orElse: () => all.first);
+    // a hidden row only gets a pane while it is the one open
+    final panes = [
+      ...widget.sections,
+      if (widget.hidden.any((s) => s.id == section.id)) section,
+    ];
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -101,6 +116,8 @@ class _SectionScaffoldState extends State<SectionScaffold> {
           width: widget.navWidth,
           child: _NavList(
             sections: widget.sections,
+            hidden: widget.hidden,
+            rowActions: widget.rowActions,
             selected: section.id,
             iconSize: widget.iconSize,
             onSelect: (s) => setState(() => _selected = s.id),
@@ -110,7 +127,7 @@ class _SectionScaffoldState extends State<SectionScaffold> {
           child: Padding(
             padding: const EdgeInsets.only(right: 16),
             child: _SectionPaneStack(
-              sections: widget.sections,
+              sections: panes,
               selectedId: section.id,
             ),
           ),
@@ -155,27 +172,42 @@ class _SectionPaneStack extends StatelessWidget {
 class _NavList extends StatelessWidget {
   const _NavList({
     required this.sections,
+    required this.hidden,
+    required this.rowActions,
     required this.selected,
     required this.onSelect,
     required this.iconSize,
   });
 
   final List<SectionSpec> sections;
+  final List<SectionSpec> hidden;
+  final List<MenuAction> Function(SectionSpec spec, bool hidden)? rowActions;
   final String? selected;
   final ValueChanged<SectionSpec> onSelect;
   final double iconSize;
+
+  Widget _row(SectionSpec section, {required bool isHidden}) {
+    final row = SectionNavRow(
+      key: ValueKey('${isHidden ? 'hidden' : 'nav'}-${section.id}'),
+      spec: section,
+      active: section.id == selected,
+      iconSize: iconSize,
+      onTap: () => onSelect(section),
+    );
+    final actions = rowActions?.call(section, isHidden) ?? const <MenuAction>[];
+    return actions.isEmpty ? row : ContextActions(actions: actions, child: row);
+  }
 
   @override
   Widget build(BuildContext context) => ListView(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(16, 6, 16, 24)),
     children: [
-      for (final section in sections)
-        SectionNavRow(
-          spec: section,
-          active: section.id == selected,
-          iconSize: iconSize,
-          onTap: () => onSelect(section),
+      for (final section in sections) _row(section, isHidden: false),
+      if (hidden.isNotEmpty)
+        HiddenGroup(
+          count: hidden.length,
+          children: [for (final section in hidden) _row(section, isHidden: true)],
         ),
     ],
   );

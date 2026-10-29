@@ -15,9 +15,14 @@ String? myPostOffice(List<PostOffice> offices, List<HousingArea> areas, String? 
 
 /// My side by default, both when home is unknown or the reader asked for all.
 List<PostOffice> officesToShow(List<PostOffice> offices, {required String? mine, required CampusLayout layout}) {
-  if (mine == null || layout.allOffices) return offices;
-  return [for (final o in offices) if (o.id == mine) o];
+  final scoped = mine == null || layout.allOffices ? offices : [for (final o in offices) if (o.id == mine) o];
+  return [for (final o in scoped) if (!layout.hiddenOffices.contains(o.id)) o];
 }
+
+/// The offices the reader hid, whichever side they are on.
+List<PostOffice> hiddenOffices(List<PostOffice> offices, CampusLayout layout) => [
+  for (final o in offices) if (layout.hiddenOffices.contains(o.id)) o,
+];
 
 /// The nav rows in their shipped order.
 const campusSectionIds = ['mail', 'find', 'dates', 'safety', 'links', 'rec', 'shed'];

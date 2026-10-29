@@ -24,7 +24,9 @@ import '../services/academic_dates.dart';
 import '../theme/semantic.dart';
 import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
+import '../widgets/campus_actions.dart';
 import '../widgets/context_actions.dart';
+import '../widgets/hidden_group.dart';
 import '../widgets/freshness.dart';
 import '../widgets/status_row.dart';
 import '../widgets/places_sheet.dart';
@@ -125,9 +127,8 @@ class _CampusScreenState extends State<CampusScreen> {
   Widget build(BuildContext context) {
     // Five unrelated things used to stack in one scroll, so anything below the
     // first two disappeared. Same nav idiom as Settings.
-    return SectionScaffold(
-      iconSize: StatusRow.fillIconSize,
-      sections: [
+    final layout = Preferences.instance.campusLayout;
+    final specs = [
         SectionSpec(
           id: 'mail',
           title: 'Mail',
@@ -181,6 +182,19 @@ class _CampusScreenState extends State<CampusScreen> {
           icon: AppIconKind.makerspace,
           builder: (context) => _ShedSection(shed: _shed, rooms: _rooms),
         ),
+    ];
+    final byId = {for (final spec in specs) spec.id: spec};
+    return SectionScaffold(
+      iconSize: StatusRow.fillIconSize,
+      sections: [for (final id in layout.visibleSections()) byId[id]!],
+      hidden: [
+        for (final id in layout.sectionOrder())
+          if (layout.hidden.contains(id)) byId[id]!,
+      ],
+      rowActions: (spec, hidden) => [
+        hidden
+            ? unhideAction((l) => l.showSection(spec.id))
+            : hideSectionAction(spec.id, spec.title),
       ],
     );
   }
@@ -353,12 +367,24 @@ class _MailSection extends StatelessWidget {
         if (offices.isPriming)
           const PrimingPlaceholder(label: 'Loading post offices')
         else ...[
-          for (final office in shown) _PostOfficeBlock(office: office),
+          for (final office in shown)
+            _PostOfficeBlock(
+              office: office,
+              actions: [hideAction(name: office.name, hide: (l) => l.hideOffice(office.id), show: (l) => l.showOffice(office.id))],
+            ),
           // only worth offering when there is a choice to make
           if (mine != null)
             _OfficeScopeButton(
               all: layout.allOffices,
               onTap: () => prefs.setCampusLayout(layout.withAllOffices(!layout.allOffices)),
+            ),
+          if (hiddenOffices(all, layout).isNotEmpty)
+            HiddenGroup(
+              count: hiddenOffices(all, layout).length,
+              children: [
+                for (final office in hiddenOffices(all, layout))
+                  _PostOfficeBlock(office: office, actions: [unhideAction((l) => l.showOffice(office.id))]),
+              ],
             ),
         ],
       ],
@@ -461,26 +487,36 @@ class _RecreationSection extends StatelessWidget {
   final Result<Collection<RecreationFacility>> result;
 
   @override
-  Widget build(BuildContext context) => ListView(
-    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-    padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
-    children: [
-      _Heading(
-        title: 'Gym and pool',
-        subtitle:
-            'Today first. A facility can run several sessions in a '
-            'day, so each one is listed separately.',
-        state: result.state,
-        fetchedAt: result.fetchedAt,
-      ),
-      if (result.isPriming)
-        const PrimingPlaceholder(label: 'Loading facility hours')
-      else
-        for (final facility
-            in result.value?.data ?? const <RecreationFacility>[])
-          _RecreationRow(facility: facility),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final layout = Preferences.instance.campusLayout;
+    final all = result.value?.data ?? const <RecreationFacility>[];
+    final hidden = [for (final f in all) if (layout.hiddenFacilities.contains(f.name)) f];
+    return ListView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
+      children: [
+        _Heading(
+          title: 'Gym and pool',
+          subtitle:
+              'Today first. A facility can run several sessions in a '
+              'day, so each one is listed separately.',
+          state: result.state,
+          fetchedAt: result.fetchedAt,
+        ),
+        if (result.isPriming)
+          const PrimingPlaceholder(label: 'Loading facility hours')
+        else ...[
+          for (final facility in all)
+            if (!layout.hiddenFacilities.contains(facility.name)) _RecreationRow(facility: facility),
+          if (hidden.isNotEmpty)
+            HiddenGroup(
+              count: hidden.length,
+              children: [for (final facility in hidden) _RecreationRow(facility: facility, hidden: true)],
+            ),
+        ],
+      ],
+    );
+  }
 }
 
 class _ShedSection extends StatelessWidget {
@@ -653,12 +689,15 @@ class _TodayLine extends StatelessWidget {
               style: text.bodyMedium?.copyWith(color: scheme.onSurface),
             ),
           ),
-          Text(
+          Flexible(
+            child: Text(
             '$label \u00b7 $detail',
+            textAlign: TextAlign.end,
             style: text.bodySmall?.copyWith(
               color: today.isOpen ? accent : scheme.onSurfaceVariant,
               fontWeight: AppTheme.weight(Weights.medium),
               fontVariations: Weights.medium,
+            ),
             ),
           ),
         ],
@@ -678,9 +717,10 @@ String _clockAt(DateTime instant) {
 }
 
 class _PostOfficeBlock extends StatelessWidget {
-  const _PostOfficeBlock({required this.office});
+  const _PostOfficeBlock({required this.office, this.actions = const []});
 
   final PostOffice office;
+  final List<MenuAction> actions;
 
   @override
   Widget build(BuildContext context) {
@@ -702,7 +742,10 @@ class _PostOfficeBlock extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: Container(
+      child: ContextActions(
+        actions: actions,
+        focusable: true,
+        child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: scheme.surfaceContainerLow,
@@ -776,6 +819,7 @@ class _PostOfficeBlock extends StatelessWidget {
               ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -1131,9 +1175,10 @@ class _ContactChip extends StatelessWidget {
 
 /// One facility, today's sessions inline, the rest of the week on tap.
 class _RecreationRow extends StatelessWidget {
-  const _RecreationRow({required this.facility});
+  const _RecreationRow({required this.facility, this.hidden = false});
 
   final RecreationFacility facility;
+  final bool hidden;
 
   static AppIconKind _icon(String name) {
     final n = name.toLowerCase();
@@ -1174,7 +1219,12 @@ class _RecreationRow extends StatelessWidget {
       subtitle: hours,
       accent: open ? semantic.open : semantic.closed,
       emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
-      actions: [MenuAction.copy('${facility.name}\n$hours')],
+      actions: [
+        MenuAction.copy('${facility.name}\n$hours'),
+        hidden
+            ? unhideAction((l) => l.showFacility(facility.name))
+            : hideAction(name: facility.name, hide: (l) => l.hideFacility(facility.name), show: (l) => l.showFacility(facility.name)),
+      ],
       onTap: facility.days.length < 2
           ? null
           : () => showModalBottomSheet<void>(

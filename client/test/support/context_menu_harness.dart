@@ -57,6 +57,12 @@ class OpensMoveSheet extends MenuEffect {
   const OpensMoveSheet();
 }
 
+// a Campus row leaves the list, speaks and offers Undo
+class HidesCampusRow extends MenuEffect {
+  const HidesCampusRow(this.name);
+  final String name;
+}
+
 class MenuSurface {
   const MenuSurface({
     required this.name,
@@ -274,6 +280,11 @@ void expectEffect(WidgetTester tester, MenuProbe probe, MenuEffect effect, Strin
     case OpensMoveSheet():
       expect(find.text('Move to group'), findsWidgets, reason: '$label sheet');
       expect(find.text('Dorm side'), findsOneWidget, reason: '$label lists the groups');
+    case HidesCampusRow(:final name):
+      expect(Preferences.instance.campusLayout.hasHidden, isTrue, reason: '$label hide');
+      expect(find.text('Hid $name'), findsOneWidget, reason: '$label snackbar');
+      expect(find.text('Undo'), findsOneWidget, reason: '$label undo');
+      expect(probe.announcements, ['Hid $name'], reason: '$label announcement');
   }
 }
 
@@ -282,6 +293,7 @@ Future<void> resetAfterEffect(WidgetTester tester, MenuProbe probe, MenuEffect e
   if (effect case Unmutes(:final key)) await Preferences.instance.setMuted(key, true);
   if (effect case SetsPinned(:final id)) await Preferences.instance.togglePinned(id);
   if (effect case SetsHidden(:final id)) await Preferences.instance.toggleHidden(id);
+  if (effect is HidesCampusRow) await Preferences.instance.resetCampus();
   if (effect is OpensMoveSheet) {
     await tester.tapAt(const Offset(2, 2));
     await tester.pumpAndSettle();

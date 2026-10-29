@@ -26,6 +26,7 @@ import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/widgets/event_details_sheet.dart';
 import 'package:tigerhub/widgets/freshness.dart';
+import 'package:tigerhub/widgets/shuttle_routes_sheet.dart';
 
 import 'context_menu_harness.dart';
 
@@ -52,6 +53,8 @@ class _FixtureBackend implements Backend {
       case '/recreation/hours':
         return _envelope(recreationFacilities({'rows': _recRows()}));
     }
+    // the housing card asks for the mailing address once a home is set, and an empty envelope is not one
+    if (path.startsWith('/housing/')) throw UnimplementedError(path);
     return _envelope(const []);
   }
 
@@ -227,9 +230,8 @@ final menuSurfaces = <MenuSurface>[
   ),
   MenuSurface(
     name: 'bus route row',
-    files: const ['lib/screens/campus_screen.dart'],
-    build: _campus,
-    prepare: _section('Shuttles'),
+    files: const ['lib/widgets/shuttle_routes_sheet.dart'],
+    build: () => const SingleChildScrollView(child: ShuttleRoutesSheet()),
     target: () => find.textContaining('13 · Campus & Inn'),
     labels: const ['Copy text'],
     effects: const {'Copy text': Copies('13 · Campus & Inn Shuttle\n7:47 AM–12:33 AM')},
@@ -267,8 +269,28 @@ final menuSurfaces = <MenuSurface>[
     build: _campus,
     prepare: _section('Gym and pool'),
     target: () => find.text('Judson/Hale Aquatics Center'),
-    labels: const ['Copy text'],
-    effects: const {'Copy text': Copies('Judson/Hale Aquatics Center\n2:30 PM to 4:30 PM,  7:00 PM to 10:00 PM')},
+    labels: const ['Copy text', 'Hide'],
+    effects: const {
+      'Copy text': Copies('Judson/Hale Aquatics Center\n2:30 PM to 4:30 PM,  7:00 PM to 10:00 PM'),
+      'Hide': HidesCampusRow('Judson/Hale Aquatics Center'),
+    },
+  ),
+  MenuSurface(
+    name: 'campus nav row',
+    files: const ['lib/widgets/campus_actions.dart'],
+    build: _campus,
+    target: () => find.text('Quick links'),
+    labels: const ['Hide'],
+    effects: const {'Hide': HidesCampusRow('Quick links')},
+  ),
+  MenuSurface(
+    name: 'post office block',
+    files: const ['lib/screens/campus_screen.dart'],
+    build: _campus,
+    prepare: _section('Mail'),
+    target: () => find.text('Global Village Post Office'),
+    labels: const ['Hide'],
+    effects: const {'Hide': HidesCampusRow('Global Village Post Office')},
   ),
   MenuSurface(
     name: 'facility card row',

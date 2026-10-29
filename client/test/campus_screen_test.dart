@@ -19,7 +19,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:flutter/semantics.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/campus_layout.dart';
+import 'package:tigerhub/widgets/context_actions.dart';
 import 'package:tigerhub/data/shuttles.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
 import 'package:tigerhub/data/sources/recreation.dart';
@@ -547,6 +550,170 @@ void main() {
     // RIT's mail is zone based, so these two offices are the whole answer.
     expect(find.textContaining('Global Village Post Office'), findsWidgets);
     expect(find.textContaining('6000 Reynolds Drive'), findsWidgets);
+  });
+
+  group('hiding rows', () {
+    const tall = Size(1500, 6000);
+
+    setUp(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.clearHome();
+      await Preferences.instance.resetCampus();
+    });
+    tearDown(() async {
+      Preferences.instance.resetForTests();
+      await Preferences.instance.clearHome();
+      await Preferences.instance.resetCampus();
+    });
+
+    Future<void> menu(WidgetTester tester, Finder target, String item) async {
+      await tester.longPress(target);
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(PopupMenuItem<int>), matching: find.text(item)));
+      await tester.pumpAndSettle();
+    }
+
+    final nav = find.byType(SectionNavRow);
+    Finder navRow(String title) => find.descendant(of: nav, matching: find.text(title));
+
+    testWidgets('a nav row hides, says so and Undo brings it back', (tester) async {
+      await pumpCampus(tester);
+      await menu(tester, navRow('Quick links'), 'Hide');
+      expect(navRow('Quick links'), findsNothing);
+      expect(find.text('Hidden (1)'), findsOneWidget);
+      expect(find.text('Hid Quick links'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.hidden, {'links'});
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(navRow('Quick links'), findsOneWidget);
+      expect(find.textContaining('Hidden ('), findsNothing);
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+    });
+
+    testWidgets('Hidden (n) is collapsed, opens to the row and Unhide returns it', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.hideSection('links').hideSection('shed'));
+      await pumpCampus(tester);
+      expect(find.text('Hidden (2)'), findsOneWidget);
+      expect(navRow('Quick links'), findsNothing);
+
+      await tester.tap(find.text('Hidden (2)'));
+      await tester.pumpAndSettle();
+      expect(navRow('Quick links'), findsOneWidget);
+      expect(navRow('SHED makerspace'), findsOneWidget);
+
+      await menu(tester, navRow('Quick links'), 'Unhide');
+      expect(find.text('Hidden (1)'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.hidden, {'shed'});
+      // back in its shipped place, above Gym and pool
+      expect(tester.getTopLeft(navRow('Quick links')).dy, lessThan(tester.getTopLeft(navRow('Gym and pool')).dy));
+    });
+
+    testWidgets('the Hidden header is a 48 point target', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.hideSection('links'));
+      await pumpCampus(tester);
+      expect(tester.getSize(find.ancestor(of: find.text('Hidden (1)'), matching: find.byType(InkWell)).first).height, greaterThanOrEqualTo(48));
+    });
+
+    testWidgets('a hidden row is still reachable and its page opens', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.hideSection('links'));
+      await pumpCampus(tester);
+      await tester.tap(find.text('Hidden (1)'));
+      await tester.pumpAndSettle();
+      await tester.tap(navRow('Quick links'));
+      await tester.pumpAndSettle();
+      expect(find.text('Tiger Spend'), findsOneWidget);
+    });
+
+    testWidgets('every row can go, leaving only Hidden', (tester) async {
+      var layout = CampusLayout.empty;
+      for (final id in campusSectionIds) {
+        layout = layout.hideSection(id);
+      }
+      await Preferences.instance.setCampusLayout(layout);
+      await pumpCampus(tester);
+      expect(nav, findsNothing);
+      expect(find.text('Hidden (7)'), findsOneWidget);
+    });
+
+    testWidgets('Safety asks once before it hides', (tester) async {
+      await pumpCampus(tester);
+      await menu(tester, navRow('Safety'), 'Hide');
+      expect(find.text('Hide Safety?'), findsOneWidget);
+
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Cancel')));
+      await tester.pumpAndSettle();
+      expect(navRow('Safety'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+
+      await menu(tester, navRow('Safety'), 'Hide');
+      await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Hide')));
+      await tester.pumpAndSettle();
+      expect(navRow('Safety'), findsNothing);
+      expect(Preferences.instance.campusLayout.safetyAsked, isTrue);
+      expect(find.text('Hid Safety'), findsOneWidget);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      await menu(tester, navRow('Safety'), 'Hide');
+      expect(find.text('Hide Safety?'), findsNothing);
+      expect(navRow('Safety'), findsNothing);
+    });
+
+    testWidgets('a post office hides into its own Hidden group', (tester) async {
+      await Preferences.instance.setHome(area: 'global-village');
+      await pumpCampus(tester, size: tall);
+      await menu(tester, find.text('Global Village Post Office'), 'Hide');
+      expect(find.text('Global Village Post Office'), findsNothing);
+      expect(find.text('Hidden (1)'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.hiddenOffices, {'global-village'});
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(find.text('Global Village Post Office'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.hiddenOffices, isEmpty);
+    });
+
+    testWidgets('a hidden post office opens and unhides', (tester) async {
+      await Preferences.instance.setCampusLayout(CampusLayout.empty.hideOffice('dsp'));
+      await pumpCampus(tester, size: tall);
+      expect(find.text('DSP Post Office'), findsNothing);
+      await tester.tap(find.text('Hidden (1)'));
+      await tester.pumpAndSettle();
+      expect(find.text('DSP Post Office'), findsOneWidget);
+      await menu(tester, find.text('DSP Post Office'), 'Unhide');
+      expect(find.text('DSP Post Office'), findsOneWidget);
+      expect(find.textContaining('Hidden ('), findsNothing);
+    });
+
+    testWidgets('one gym or pool facility hides on its own', (tester) async {
+      await pumpCampus(tester, size: tall);
+      await tester.tap(find.text('Gym and pool'));
+      await tester.pumpAndSettle();
+      final pool = find.text('Judson/Hale Aquatics Center');
+      expect(pool, findsOneWidget);
+      await menu(tester, pool, 'Hide');
+      expect(pool, findsNothing);
+      expect(find.text('Hidden (1)'), findsOneWidget);
+      expect(Preferences.instance.campusLayout.hiddenFacilities, {'Judson/Hale Aquatics Center'});
+      // the other facilities stay
+      expect(find.textContaining('Tennis'), findsWidgets);
+
+      await tester.tap(find.text('Hidden (1)'));
+      await tester.pumpAndSettle();
+      await menu(tester, pool, 'Unhide');
+      expect(pool, findsOneWidget);
+      expect(Preferences.instance.campusLayout.isEmpty, isTrue);
+    });
+
+    testWidgets('Hide is offered to assistive tech on a nav row', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpCampus(tester);
+      final row = find.ancestor(of: navRow('Quick links'), matching: find.byType(ContextActions)).first;
+      final ids = tester.getSemantics(row).getSemanticsData().customSemanticsActionIds!;
+      expect([for (final id in ids) CustomSemanticsAction.getAction(id)!.label], ['Hide']);
+      handle.dispose();
+    });
   });
 
   group('post offices follow where you live', () {
