@@ -4,7 +4,8 @@
 ///
 /// Light, dark and grayscale at 1x, 3x, 8x and 20x on the real campus fixture,
 /// plus close-ups of the pin, the event count and a selected building in each
-/// of the five categories.
+/// of the five categories, and of the OpenStreetMap layers: water, a pitch, a
+/// street name set on its path, and a named entrance.
 library;
 
 import 'dart:io';
@@ -14,6 +15,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/data/campus_paths.dart';
+import 'package:tigerhub/data/osm_features.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/widgets/campus_map.dart';
@@ -64,6 +66,9 @@ void main() {
     Directory(dir!).createSync(recursive: true);
     CampusPaths.resetForTest();
     final paths = await tester.runAsync(() => CampusPaths.load());
+    OsmFeatures.resetForTest();
+    final osm = (await tester.runAsync(() => OsmFeatures.load()))!;
+    expect(osm.isEmpty, isFalse);
     final features = [
       for (final n in ['3', '11', '35'])
         ...parseCampusMapFeatures(
@@ -95,9 +100,55 @@ void main() {
         scheme: schemeOf(brightness),
         zoom: zoom,
         paths: paths!,
+        osm: osm,
       ).paint(canvas, view);
       canvas.restore();
     }
+
+    // The same, centred on any coordinate rather than on Golisano.
+    void campusAt(
+      Canvas canvas,
+      Brightness brightness,
+      double zoom,
+      GeoCoordinate at,
+    ) {
+      final centre = CampusMapProjection(features, view).project(at);
+      canvas
+        ..save()
+        ..clipRect(Offset.zero & view)
+        ..translate(
+          view.width / 2 - centre.dx * zoom,
+          view.height / 2 - centre.dy * zoom,
+        )
+        ..scale(zoom);
+      CampusMapPainter(
+        features: features,
+        selectedId: null,
+        scheme: schemeOf(brightness),
+        zoom: zoom,
+        paths: paths!,
+        osm: osm,
+      ).paint(canvas, view);
+      canvas.restore();
+    }
+
+    GeoCoordinate middle(List<GeoCoordinate> ring) => GeoCoordinate(
+      ring.fold<double>(0, (s, c) => s + c.longitude) / ring.length,
+      ring.fold<double>(0, (s, c) => s + c.latitude) / ring.length,
+    );
+    final lake = middle(osm.water.first);
+    final pitch = osm.pitch.firstWhere(
+      (ring) => (middle(ring).longitude + 77.66665).abs() < 0.0005,
+    );
+    // the middle of a street's longest way, where its name is set
+    GeoCoordinate onStreet(String name) {
+      final street = osm.street.firstWhere((s) => s.name == name);
+      final way = street.lines.reduce((a, b) => a.length >= b.length ? a : b);
+      return way[way.length ~/ 2];
+    }
+    final door = osm.entrance.firstWhere(
+      (e) => e.name == 'Accessible Entrance - Golisano Hall',
+    );
 
     await tester.runAsync(() async {
       for (final brightness in Brightness.values) {
@@ -134,6 +185,28 @@ void main() {
           (c) => campus(c, Brightness.dark, zoom),
           gray: true,
         );
+      }
+
+      // the OpenStreetMap layers, each in light, dark and gray
+      for (final tone in ['light', 'dark', 'gray']) {
+        final brightness = tone == 'dark' ? Brightness.dark : Brightness.light;
+        final gray = tone == 'gray';
+        for (final shot in <(String, double, GeoCoordinate)>[
+          ('water_3x', 3, lake),
+          ('pitch_20x', 20, middle(pitch)),
+          ('street_on_path_8x', 8, onStreet('Hans J. Christensen Way')),
+          ('street_on_path_20x', 20, onStreet('Greenleaf Court')),
+          ('entrance_name_20x', 20, door.at),
+        ]) {
+          await _write(
+            dir,
+            'closeup_osm_${shot.$1}_$tone',
+            view,
+            2,
+            (c) => campusAt(c, brightness, shot.$2, shot.$3),
+            gray: gray,
+          );
+        }
       }
 
       // seven-lobe pin, cluster and event counts, large

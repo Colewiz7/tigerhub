@@ -5,12 +5,14 @@
 library;
 
 import 'dart:math' as math;
+import 'dart:ui' show PointMode;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
 import '../data/campus_paths.dart';
+import '../data/osm_features.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../services/frame_monitor.dart';
@@ -24,6 +26,7 @@ import 'freshness.dart';
 import 'map_labels.dart';
 import 'map_pin.dart';
 import 'map_style.dart';
+import 'osm_geometry.dart';
 import 'search_field.dart';
 import 'segmented_picker.dart';
 
@@ -32,6 +35,13 @@ const double mapCountSize = 11;
 
 const double _maxMapZoom = 20;
 const double _mapPanMargin = 80;
+
+/// An OpenStreetMap door this close to an RIT entrance pin is the same door.
+const double _sameDoorMetres = 5;
+
+/// Entrance dot size on screen: a 6 pt dot inside a 1 pt outline.
+const double _entranceDot = 6;
+const double _entranceRing = 1;
 
 class CampusMapView extends StatefulWidget {
   const CampusMapView({super.key, required this.result, this.events});
@@ -55,11 +65,17 @@ class _CampusMapViewState extends State<CampusMapView> {
   /// again with it, rather than holding the whole screen back for 114 KB.
   CampusPaths _paths = const CampusPaths.empty();
 
+  /// The same for the water, parks and other OpenStreetMap layers.
+  OsmFeatures _osm = const OsmFeatures.empty();
+
   @override
   void initState() {
     super.initState();
     CampusPaths.load().then((paths) {
       if (mounted) setState(() => _paths = paths);
+    });
+    OsmFeatures.load().then((osm) {
+      if (mounted) setState(() => _osm = osm);
     });
   }
 
@@ -351,6 +367,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                                               platform: Theme.of(context).platform,
                                               zoom: matrix.getMaxScaleOnAxis(),
                                               paths: _paths,
+                                              osm: _osm,
                                               onSelect: (feature) => setState(
                                                 () => _selectedId = feature.id,
                                               ),
@@ -1534,6 +1551,35 @@ Color _faded(Color color, double opacity) =>
   }
 }
 
+/// Fill and 0.75 pt edge for OpenStreetMap water at one zoom. Shared by the
+/// map and the legend swatch, like [mapFamilyPaints].
+({Paint? fill, Paint? edge}) mapWaterPaints(
+  ColorScheme scheme, {
+  double zoom = MapSchedule.legendZoom,
+}) {
+  final palette = MapPalette.of(scheme.brightness);
+  final opacity = opacityAt(MapSchedule.water, zoom);
+  if (opacity <= 0) return (fill: null, edge: null);
+  return (
+    fill: Paint()..color = _faded(palette.water, opacity),
+    edge: Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.75
+      ..color = _faded(palette.waterOutline, opacity),
+  );
+}
+
+/// The edge of a sports pitch: the parking stroke, on the green schedule, so
+/// a pitch reads as green space with a rule round it.
+Paint? mapPitchEdge(ColorScheme scheme, {double zoom = 1}) {
+  final opacity = opacityAt(MapSchedule.grass, zoom);
+  if (opacity <= 0) return null;
+  return Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 0.75
+    ..color = _faded(MapPalette.of(scheme.brightness).parkingStroke, opacity);
+}
+
 /// Same length and the same feature objects in the same order. A replaced
 /// feature misses, which costs a rebuild and is never wrong.
 bool _sameFeatures(List<CampusMapFeature>? a, List<CampusMapFeature>? b) {
@@ -1555,6 +1601,7 @@ class CampusMapPainter extends CustomPainter {
     this.onSelect,
     this.zoom = 1,
     this.paths = const CampusPaths.empty(),
+    this.osm = const OsmFeatures.empty(),
   });
 
   final List<CampusMapFeature> features;
@@ -1577,6 +1624,10 @@ class CampusMapPainter extends CustomPainter {
   /// The bundled OpenStreetMap walking network. Empty until the asset loads,
   /// and empty forever if it fails, which costs the paths and nothing else.
   final CampusPaths paths;
+
+  /// The bundled OpenStreetMap water, parks and pitches. Drawn under RIT's own
+  /// shapes. Empty until the asset loads, and empty forever if it fails.
+  final OsmFeatures osm;
 
   @override
   SemanticsBuilderCallback get semanticsBuilder => _buildSemantics;
@@ -1684,12 +1735,16 @@ class CampusMapPainter extends CustomPainter {
     }
 
     // Ground first, then the paths crossing it, then what you walk into.
+    // OpenStreetMap water and green sit under RIT's own shapes.
+    _paintOsmGround(canvas, geometry, familyPaints[MapFamily.open]!.fill);
     drawFamily(MapFamily.open);
     drawFamily(MapFamily.parking);
     _paintPaths(canvas, geometry, ground);
+    _paintOsmBuildings(canvas, geometry);
     for (final family in MapFamily.values.where((family) => family.isBuilt)) {
       drawFamily(family);
     }
+    _paintEntrances(canvas, geometry);
 
     final selectedBuilding = features
         .where(
@@ -1841,6 +1896,94 @@ class CampusMapPainter extends CustomPainter {
     canvas.restore();
   }
 
+  /// Water, then green space and pitches, from the bundled OpenStreetMap
+  /// extract. Green reuses the grass fill, so the "Green space" legend row
+  /// covers it, and a pitch adds the parking edge. No new colours.
+  void _paintOsmGround(Canvas canvas, _MapGeometry geometry, Paint? grass) {
+    final water = mapWaterPaints(scheme, zoom: zoom);
+    final fill = water.fill;
+    final edge = water.edge;
+    if (fill != null && osm.water.isNotEmpty) {
+      canvas.drawPath(geometry.osmWater, fill);
+    }
+    if (edge != null) {
+      if (osm.water.isNotEmpty) {
+        final outline = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = edge.strokeWidth / zoom
+          ..color = edge.color;
+        canvas.drawPath(geometry.osmWater, outline);
+      }
+      if (osm.waterway.isNotEmpty) {
+        canvas.drawPath(
+          geometry.osmWaterway,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.5 / zoom
+            ..strokeCap = StrokeCap.round
+            ..strokeJoin = StrokeJoin.round
+            ..color = edge.color,
+        );
+      }
+    }
+    if (grass != null && (osm.park.isNotEmpty || osm.pitch.isNotEmpty)) {
+      canvas.drawPath(geometry.osmGreen, grass);
+    }
+    final pitchEdge = mapPitchEdge(scheme, zoom: zoom);
+    if (pitchEdge != null && osm.pitch.isNotEmpty) {
+      pitchEdge.strokeWidth /= zoom;
+      canvas.drawPath(geometry.osmPitchEdge, pitchEdge);
+    }
+  }
+
+  /// Footprints only OpenStreetMap has, in the other-building family. They
+  /// carry no name, no label and no tap target: RIT has nothing to say about
+  /// them, so neither does the map.
+  void _paintOsmBuildings(Canvas canvas, _MapGeometry geometry) {
+    if (osm.building.isEmpty) return;
+    final paints = mapFamilyPaints(MapFamily.otherBuilt, scheme, zoom: zoom);
+    final fill = paints.fill;
+    final edge = paints.edge;
+    if (fill != null) canvas.drawPath(geometry.osmBuildings, fill);
+    if (edge != null) {
+      edge.strokeWidth /= zoom;
+      canvas.drawPath(geometry.osmBuildings, edge);
+    }
+  }
+
+  /// Doors, from 8x: a 6 pt dot with a 1 pt outline, constant on screen. Two
+  /// draw calls however many doors there are.
+  void _paintEntrances(Canvas canvas, _MapGeometry geometry) {
+    final opacity = opacityAt(MapSchedule.entrances, zoom);
+    if (opacity <= 0 || geometry.entrancePoints.isEmpty) return;
+    final palette = MapPalette.of(scheme.brightness);
+    Paint dot(double diameter, Color color) => Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = diameter / zoom
+      ..color = _faded(color, opacity);
+    canvas.drawPoints(
+      PointMode.points,
+      geometry.entrancePoints,
+      dot(_entranceDot + _entranceRing * 2, palette.entranceOutline),
+    );
+    canvas.drawPoints(
+      PointMode.points,
+      geometry.entrancePoints,
+      dot(_entranceDot, palette.entrance),
+    );
+  }
+
+  /// The ids of the buildings that can be labelled, for tests that check OSM
+  /// footprints never join them.
+  @visibleForTesting
+  List<int> labelledBuildingIdsForTest(Size size) => [
+    for (final b in _geometryFor(
+      CampusMapProjection(features, size, boundsFeatures: boundsFeatures),
+    ).buildings)
+      b.feature.id,
+  ];
+
   static _MapGeometry? _geometryCache;
 
   /// Only for tests that need a cold build.
@@ -1868,11 +2011,18 @@ class CampusMapPainter extends CustomPainter {
           projection._boundsFeatures,
         ) &&
         identical(cached.paths, paths) &&
+        identical(cached.osm, osm) &&
         cached.scheme == scheme) {
       return cached;
     }
     geometryBuilds++;
-    return _geometryCache = _MapGeometry(projection, features, paths, scheme);
+    return _geometryCache = _MapGeometry(
+      projection,
+      features,
+      paths,
+      scheme,
+      osm,
+    );
   }
 
   void _paintScaleBar(
@@ -1947,9 +2097,51 @@ class CampusMapPainter extends CustomPainter {
     return _labelPlan(geometry, geometry.pinBucketsAt(zoom));
   }
 
+  /// A street name set glyph by glyph along [curve], or null when the street
+  /// has no gentle run, or the name is longer than it.
+  LabelCandidate? _pathLabel(
+    _MapGeometry geometry,
+    String name,
+    StraightRun? curve,
+  ) {
+    if (curve == null) return null;
+    final inks = <_Ink>[];
+    for (final char in name.characters) {
+      final ink = geometry.ink(char, LabelClass.street);
+      if (ink == null) return null;
+      inks.add(ink);
+    }
+    final glyphs = layoutAlongRun(
+      [for (final p in curve.points) p * zoom],
+      [for (final ink in inks) ink.fill.width],
+    );
+    if (glyphs == null) return null;
+    // the box round every glyph, for the collision planner
+    Rect? box;
+    for (final glyph in glyphs) {
+      final ink = inks[glyph.index].fill;
+      final rect = Rect.fromCenter(
+        center: glyph.at,
+        width: math.max(ink.width, ink.height),
+        height: math.max(ink.width, ink.height),
+      );
+      box = box == null ? rect : box.expandToInclude(rect);
+    }
+    return LabelCandidate(
+      key: ('street', name),
+      cls: LabelClass.street,
+      size: box!.size,
+      positions: [box],
+      text: name,
+      payload: PathLabel(glyphs, inks),
+    );
+  }
+
   List<PlacedLabel> _labelPlan(_MapGeometry geometry, List<_PinBucket> pins) {
     const glyphGap = _glyphGap;
     final candidates = <LabelCandidate>[];
+    // streets and doors, planned after everything else
+    final osmCandidates = <LabelCandidate>[];
 
     for (final building in geometry.buildings) {
       final feature = building.feature;
@@ -2030,6 +2222,82 @@ class CampusMapPainter extends CustomPainter {
       }
     }
 
+    // One label per street, upright, on its longest straight run. It is
+    // dropped when the run is shorter than the name, and it loses every
+    // collision to a building, a pin or a selected label.
+    if (zoom >= mapStreetMinZoom) {
+      for (final street in geometry.streets) {
+        final ink = geometry.ink(street.name, LabelClass.street);
+        if (ink == null) continue;
+        final w = ink.fill.width;
+        final h = ink.fill.height;
+        // Set along the street where it bends gently. Anything harder, or too
+        // short for the name, falls back to the upright label below.
+        final onPath = _pathLabel(geometry, street.name, street.curve);
+        if (onPath != null) {
+          osmCandidates.add(onPath);
+          continue;
+        }
+        final run = street.run;
+        final room = run.length * zoom;
+        if (room < w) continue;
+        Rect around(double fraction) => Rect.fromCenter(
+          center: pointAlong(run.points, fraction) * zoom,
+          width: w,
+          height: h,
+        );
+        osmCandidates.add(
+          LabelCandidate(
+            key: ('street', street.name),
+            cls: LabelClass.street,
+            size: Size(w, h),
+            positions: [
+              around(.5),
+              // slid along the run, while the name still fits on it
+              for (final f in const [.35, .65])
+                if (f * room >= w / 2 && (1 - f) * room >= w / 2) around(f),
+            ],
+            text: street.name,
+            payload: (ink, null),
+          ),
+        );
+      }
+    }
+
+    // Only a named door is labelled, and only at the closest zoom.
+    if (zoom >= mapZoomStops.last) {
+      for (final door in geometry.entrances) {
+        final name = door.name;
+        if (name == null) continue;
+        final ink = geometry.ink(
+          name,
+          LabelClass.entrance,
+          maxWidth: 130,
+          maxLines: 3,
+        );
+        if (ink == null) continue;
+        final w = ink.fill.width;
+        final h = ink.fill.height;
+        final at = door.at * zoom;
+        final gap = _entranceDot / 2 + _entranceRing + 3;
+        osmCandidates.add(
+          LabelCandidate(
+            key: ('door', door.at),
+            cls: LabelClass.entrance,
+            size: Size(w, h),
+            positions: [
+              Rect.fromLTWH(at.dx + gap, at.dy - h / 2, w, h),
+              Rect.fromLTWH(at.dx - gap - w, at.dy - h / 2, w, h),
+              Rect.fromLTWH(at.dx - w / 2, at.dy - gap - h, w, h),
+              Rect.fromLTWH(at.dx - w / 2, at.dy + gap, w, h),
+            ],
+            text: name,
+            payload: (ink, null),
+          ),
+        );
+      }
+    }
+
     final obstacles = <Rect>[];
     if (!geometry.categoryOverview) {
       for (final pin in pins) {
@@ -2068,7 +2336,17 @@ class CampusMapPainter extends CustomPainter {
       }
     }
 
-    return planLabels(candidates, obstacles: obstacles);
+    final placed = planLabels(candidates, obstacles: obstacles);
+    if (osmCandidates.isEmpty) return placed;
+    // Planned apart, against what is already down, so a street or a door can
+    // never change which building label wins a tie.
+    return [
+      ...placed,
+      ...planLabels(
+        osmCandidates,
+        obstacles: [...obstacles, for (final p in placed) p.rect],
+      ),
+    ];
   }
 
   void _paintLabels(
@@ -2083,7 +2361,22 @@ class CampusMapPainter extends CustomPainter {
     // and lets more of them fit.
     canvas.scale(1 / zoom);
     for (final label in placed) {
-      final (ink, glyph) = label.candidate.payload! as (_Ink, _Ink?);
+      final payload = label.candidate.payload;
+      if (payload is PathLabel) {
+        // each glyph is turned to the street at its own place along it
+        for (final glyph in payload.glyphs) {
+          final ink = payload.inks[glyph.index];
+          canvas.save();
+          canvas.translate(glyph.at.dx, glyph.at.dy);
+          canvas.rotate(glyph.angle);
+          final at = Offset(-ink.fill.width / 2, -ink.fill.height / 2);
+          ink.halo.paint(canvas, at);
+          ink.fill.paint(canvas, at);
+          canvas.restore();
+        }
+        continue;
+      }
+      final (ink, glyph) = payload! as (_Ink, _Ink?);
       var x = label.rect.left;
       if (glyph != null) {
         final at = Offset(x, label.rect.center.dy - glyph.fill.height / 2);
@@ -2172,7 +2465,8 @@ class CampusMapPainter extends CustomPainter {
       oldDelegate.scheme != scheme ||
       oldDelegate.platform != platform ||
       oldDelegate.zoom != zoom ||
-      oldDelegate.paths != paths;
+      oldDelegate.paths != paths ||
+      oldDelegate.osm != osm;
 
   @override
   bool shouldRebuildSemantics(CampusMapPainter oldDelegate) =>
@@ -2208,7 +2502,21 @@ typedef _Building = ({
 typedef _Ink = ({TextPainter fill, TextPainter halo});
 
 class _MapGeometry {
-  _MapGeometry(this.projection, this.features, this.paths, this.scheme) {
+  _MapGeometry(
+    this.projection,
+    this.features,
+    this.paths,
+    this.scheme, [
+    this.osm = const OsmFeatures.empty(),
+  ]) {
+    List<List<Offset>> projected(List<List<GeoCoordinate>> rings) => [
+      for (final ring in rings) [for (final c in ring) projection.project(c)],
+    ];
+    osmWater = ringsPath(projected(osm.water));
+    osmWaterway = linesPath(projected(osm.waterway));
+    // RIT's own outlines, kept so OpenStreetMap can be checked against them
+    final ritBuilt = <List<Offset>>[];
+    final ritOpen = <List<Offset>>[];
     for (final feature in features) {
       if (feature.geometryType == 'Point') continue;
       final family = mapFamily(feature);
@@ -2216,8 +2524,10 @@ class _MapGeometry {
       Rect? largest;
       for (final ring in feature.coordinates) {
         if (ring.length < 3) continue;
-        final outline = Path()
-          ..addPolygon([for (final c in ring) projection.project(c)], true);
+        final points = [for (final c in ring) projection.project(c)];
+        if (family.isBuilt) ritBuilt.add(points);
+        if (family == MapFamily.open) ritOpen.add(points);
+        final outline = Path()..addPolygon(points, true);
         layer.addPath(outline, Offset.zero);
         final bounds = outline.getBounds();
         if (largest == null ||
@@ -2230,6 +2540,29 @@ class _MapGeometry {
       if (largest != null && family.isBuilt) {
         buildings.add((feature: feature, family: family, bounds: largest));
       }
+    }
+    // RIT stays authoritative. An OpenStreetMap park whose centre is already
+    // inside one of RIT's green shapes is dropped, a pitch there keeps only
+    // its edge, and a footprint is kept only where RIT has none.
+    bool inRitOpen(List<Offset> ring) =>
+        ritOpen.any((open) => pointInRing(ringCentre(ring), open));
+    final pitches = projected(osm.pitch);
+    osmGreen = ringsPath([
+      for (final ring in projected(osm.park))
+        if (!inRitOpen(ring)) ring,
+      for (final ring in pitches)
+        if (!inRitOpen(ring)) ring,
+    ]);
+    osmPitchEdge = ringsPath(pitches);
+    osmBuildings = ringsPath(outsideRings(projected(osm.building), ritBuilt));
+    for (final street in osm.street) {
+      final run = longestStraightRun(projected(street.lines));
+      if (run == null) continue;
+      streets.add((
+        name: street.name,
+        run: run,
+        curve: longestGentleRun(projected(street.lines)),
+      ));
     }
     // the few buildings that keep a name at campus scale, by footprint
     final named = [
@@ -2251,6 +2584,24 @@ class _MapGeometry {
     categoryOverview =
         pointKinds.length > 1 &&
         pointKinds.every((kind) => !kind.startsWith('_event:'));
+    // A door within a few metres of an RIT accessible entrance pin is the
+    // same door, and the pin already marks it. In the overview no pin is drawn,
+    // so the door stays.
+    final ritDoors = [
+      if (!categoryOverview)
+        for (final feature in features)
+          if (feature.geometryType == 'Point' &&
+              feature.kind == 'entrance_accessible' &&
+              feature.anchor != null)
+            feature.anchor!,
+    ];
+    for (final door in osm.entrance) {
+      if (ritDoors.any((d) => metresApart(d, door.at) < _sameDoorMetres)) {
+        continue;
+      }
+      entrances.add((at: projection.project(door.at), name: door.name));
+    }
+    entrancePoints = [for (final door in entrances) door.at];
     for (final feature in features) {
       if (feature.geometryType != 'Point') continue;
       final anchor = feature.anchor;
@@ -2316,6 +2667,27 @@ class _MapGeometry {
   final List<CampusMapFeature> features;
   final CampusPaths paths;
   final ColorScheme scheme;
+  final OsmFeatures osm;
+
+  /// One path per OpenStreetMap layer, every ring wound the same way so
+  /// overlaps fill once. Green and pitches share a path so they never blend
+  /// twice.
+  late final Path osmWater;
+  late final Path osmWaterway;
+  late final Path osmGreen;
+  late final Path osmPitchEdge;
+
+  /// OpenStreetMap footprints RIT does not draw. Unlabeled and not selectable.
+  late final Path osmBuildings;
+
+  /// OpenStreetMap doors RIT has no pin for, projected. Named ones get a label
+  /// at the closest zoom.
+  final List<({Offset at, String? name})> entrances = [];
+  late final List<Offset> entrancePoints;
+
+  /// Each named street with its longest straight run, where its label goes.
+  final List<({String name, StraightRun run, StraightRun? curve})> streets =
+      [];
 
   final Map<MapFamily, Path> areas = {};
   final List<_Building> buildings = [];
@@ -2403,7 +2775,12 @@ class _MapLegend extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         child: Wrap(
           spacing: 14,
-          runSpacing: 7,
+          // The rows are already tall at large text, and a legend that runs
+          // off the map hides its own credit.
+          runSpacing: MediaQuery.textScalerOf(context).scale(mapLabelMinSize) >
+                  mapLabelMinSize * 1.5
+              ? 2
+              : 7,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             _entry(MapFamily.academic, 'Academic'),
@@ -2413,15 +2790,26 @@ class _MapLegend extends StatelessWidget {
             _entry(MapFamily.otherBuilt, 'Other building'),
             _entry(MapFamily.parking, 'Parking'),
             _entry(MapFamily.open, 'Green space'),
+            _entry(null, 'Water'),
             _lineEntry('Road', path: false),
             _lineEntry('Walk path', path: true),
+            Text(
+              '(c) OpenStreetMap contributors, ODbL',
+              style: TextStyle(
+                fontSize: mapLabelMinSize,
+                height: 1.1,
+                fontWeight: FontWeight.w600,
+                color: scheme.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _entry(MapFamily family, String label) => Row(
+  /// A null family is the water swatch.
+  Widget _entry(MapFamily? family, String label) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
       CustomPaint(
@@ -2475,12 +2863,16 @@ class _MapLegend extends StatelessWidget {
 class _LegendSwatch extends CustomPainter {
   const _LegendSwatch({required this.family, required this.scheme});
 
-  final MapFamily family;
+  /// Null paints the water swatch.
+  final MapFamily? family;
   final ColorScheme scheme;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paints = mapFamilyPaints(family, scheme);
+    final family = this.family;
+    final paints = family == null
+        ? mapWaterPaints(scheme)
+        : mapFamilyPaints(family, scheme);
     final rect = Rect.fromLTWH(0.5, 0.5, size.width - 1, size.height - 1);
     final fill = paints.fill;
     final edge = paints.edge;

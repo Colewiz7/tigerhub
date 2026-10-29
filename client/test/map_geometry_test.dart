@@ -49,7 +49,9 @@ void main() {
   test('parking lots come through as geometry, not pins', () {
     // The lots are listed under several permit sub-categories, so the raw
     // payload repeats them; these are the distinct outlines.
-    final features = parse([11]);
+    // The one allowlisted outdoor spot rides along in every payload, as the
+    // non-searchable _spot kind. It is not a parking pin.
+    final features = parse([11]).where((f) => f['kind'] != '_spot').toList();
     expect(features.where(isArea).length, features.length,
         reason: 'parking should contribute geometry only, never pins');
     expect(features.where(isArea).length, greaterThan(15));
@@ -82,7 +84,10 @@ void main() {
     // These categories are fetched for geometry. Their points belong to kinds
     // that are not student facing, and letting them in would put printer and
     // office pins all over the map.
-    final points = parse([3, 11]).where((f) => !isArea(f)).length;
+    // The allowlisted outdoor spot is the single exception, and it is _spot.
+    final points = parse([3, 11])
+        .where((f) => !isArea(f) && f['kind'] != '_spot')
+        .length;
     expect(points, 0);
   });
 }

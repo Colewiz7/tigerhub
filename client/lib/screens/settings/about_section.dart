@@ -42,7 +42,8 @@ const _sources = <({String name, String detail, AppIconKind icon})>[
   // and must not be dropped to tidy the list up.
   (
     name: 'OpenStreetMap',
-    detail: 'Campus walking paths. Map data (c) OpenStreetMap contributors, ODbL',
+    detail:
+        'Paths, water, parks and buildings. Map data (c) OpenStreetMap contributors, ODbL',
     icon: AppIconKind.walk,
   ),
 ];

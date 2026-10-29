@@ -108,6 +108,9 @@ spec.loader.exec_module(copy_style)
 selftest = subprocess.run([sys.executable, "-I", str(ROOT / "scripts/test_ci_checks.py")], capture_output=True, text=True)
 if selftest.returncode != 0:
     problems.append("copy style self-test failed (scripts/test_ci_checks.py):\n" + selftest.stderr)
+osm_test = subprocess.run([sys.executable, "-I", str(ROOT / "scripts/test_fetch_osm_features.py")], capture_output=True, text=True)
+if osm_test.returncode != 0:
+    problems.append("OSM extractor self-test failed (scripts/test_fetch_osm_features.py):\n" + osm_test.stderr)
 for f in files:
     if not (f.startswith("client/lib/") and f.endswith(".dart")):
         continue
