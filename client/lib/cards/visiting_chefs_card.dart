@@ -16,9 +16,10 @@ import 'package:intl/intl.dart';
 import '../data/campus_time.dart';
 import '../data/chef_family.dart';
 import '../data/chef_listing.dart';
+import '../data/chef_location_color.dart';
 import '../data/sources/rit_chefs.dart' show ritDiningPageUrl;
 import '../widgets/empty_state.dart';
-import '../widgets/status_text.dart';
+import '../widgets/chef_details.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../services/open_link.dart';
@@ -222,10 +223,17 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
             dense: true,
             icon: iconForChef(all[index]),
             title: all[index].name,
-            subtitle: [
-              ?VisitingChefsCard.window(all[index]),
+            subtitle: ChefDetails.label(
+              VisitingChefsCard.window(all[index]),
               all[index].locationName,
-            ].where((s) => s.isNotEmpty).join(' · '),
+            ),
+            subtitleBuilder: (context, style) => ChefDetails(
+              window: VisitingChefsCard.window(all[index]),
+              location: all[index].locationName,
+              style: style,
+              locationColor: chefLocationColor(all[index], Theme.of(context).colorScheme),
+              wrap: Insets.phone(context),
+            ),
           ),
         ),
       },
@@ -233,32 +241,26 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
   }
 }
 
-/// One chef: a badge, the name, then the time and the location, each allowed
-/// two lines.
+/// One chef: a badge, the name, then the time and the location, wrapping
+/// rather than cut.
 class _ChefRow extends StatelessWidget {
-  const _ChefRow({required this.chef, this.showCuisine = false});
+  const _ChefRow({required this.chef});
 
   final MenuItem chef;
-
-  /// The card has no room for the cuisine. The sheet that lists every chef does.
-  final bool showCuisine;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
     final window = VisitingChefsCard.window(chef);
-    final cuisine = showCuisine ? chef.cuisine : null;
 
     return Semantics(
       container: true,
       excludeSemantics: true,
       label: [
         chef.name,
-        ?window,
-        if (chef.locationName.isNotEmpty) chef.locationName,
-        ?cuisine,
-      ].join(', '),
+        ChefDetails.label(window, chef.locationName),
+      ].where((s) => s.isNotEmpty).join(', '),
       child: Material(
         elevation: 0,
         color: scheme.surfaceContainerHigh,
@@ -288,31 +290,13 @@ class _ChefRow extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (window != null) ...[
+                    if (window != null || chef.locationName.isNotEmpty) ...[
                       const SizedBox(height: 2),
-                      StatusText(
-                        window,
+                      ChefDetails(
+                        window: window,
+                        location: chef.locationName,
                         style: text.bodySmall,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    if (chef.locationName.isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        chef.locationName,
-                        style: text.bodySmall,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                    if (cuisine != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        cuisine,
-                        style: text.bodySmall,
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
+                        locationColor: chefLocationColor(chef, scheme),
                       ),
                     ],
                   ],
@@ -406,7 +390,7 @@ class _ChefsSheet extends StatelessWidget {
               itemCount: chefs.length,
               separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, index) =>
-                  _ChefRow(chef: chefs[index], showCuisine: true),
+                  _ChefRow(chef: chefs[index]),
             ),
           ),
         ],

@@ -38,7 +38,13 @@ class StatusRow extends StatelessWidget {
     this.iconSize = 18,
     this.wrapSubtitle = false,
     this.grouped = false,
+    this.subtitleBuilder,
   });
+
+  /// Draws the subtitle itself, given the style the row would use. [subtitle]
+  /// is then only what a screen reader says, and the built widget is kept out
+  /// of semantics so it is not read twice.
+  final Widget Function(BuildContext context, TextStyle? style)? subtitleBuilder;
 
   // a row in an inset group: no fill or gap of its own, the group draws both
   final bool grouped;
@@ -216,6 +222,10 @@ class StatusRow extends StatelessWidget {
                             ),
                             subtitle: subtitle == null
                                 ? null
+                                : subtitleBuilder != null
+                                ? ExcludeSemantics(
+                                    child: subtitleBuilder!(context, subtitleStyle),
+                                  )
                                 : StatusText(
                                     subtitle!,
                                     style: subtitleStyle,
@@ -246,18 +256,23 @@ class StatusRow extends StatelessWidget {
                               ),
                               if (subtitle != null) ...[
                                 const SizedBox(height: 2),
-                                StatusText(
-                                  subtitle!,
-                                  style: subtitleStyle,
-                                  // one line, two at large text when the row
-                                  // wraps, all of it when null
-                                  maxLines: subtitleMaxLines == null
-                                      ? null
-                                      : (wrapSubtitle && largeText ? 2 : 1),
-                                  overflow: subtitleMaxLines == null
-                                      ? TextOverflow.clip
-                                      : TextOverflow.ellipsis,
-                                ),
+                                if (subtitleBuilder != null)
+                                  ExcludeSemantics(
+                                    child: subtitleBuilder!(context, subtitleStyle),
+                                  )
+                                else
+                                  StatusText(
+                                    subtitle!,
+                                    style: subtitleStyle,
+                                    // one line, two at large text when the row
+                                    // wraps, all of it when null
+                                    maxLines: subtitleMaxLines == null
+                                        ? null
+                                        : (wrapSubtitle && largeText ? 2 : 1),
+                                    overflow: subtitleMaxLines == null
+                                        ? TextOverflow.clip
+                                        : TextOverflow.ellipsis,
+                                  ),
                               ],
                             ],
                           ),

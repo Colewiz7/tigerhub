@@ -68,7 +68,7 @@ Future<void> showEventDetailsSheet(BuildContext context, CampusEvent event) =>
     );
 
 String eventShareText(CampusEvent event, String when) => [
-  event.title,
+  event.displayTitle,
   when,
   if (event.location?.isNotEmpty == true) event.location!,
   if (event.url?.isNotEmpty == true) event.url!,
@@ -125,7 +125,7 @@ class _EventDetailsSheet extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(event.title, style: text.headlineSmall),
+            Text(event.displayTitle, style: text.headlineSmall),
             if (event.organizer?.isNotEmpty == true) ...[
               const SizedBox(height: 5),
               Text(event.organizer!, style: text.titleMedium),
