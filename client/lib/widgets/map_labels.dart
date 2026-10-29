@@ -16,6 +16,9 @@ const double mapGlyphMinZoom = 3;
 /// Full names may sit just outside a small building from this zoom upward.
 const double mapFullNameOutsideZoom = 8;
 
+/// Street names show from this zoom upward.
+const double mapStreetMinZoom = 8;
+
 /// Space kept between any two accepted labels.
 const double mapLabelPadding = 3;
 

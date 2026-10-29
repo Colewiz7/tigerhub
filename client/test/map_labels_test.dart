@@ -1,10 +1,12 @@
 /// Label priorities, the 11 pt floor, collisions and the category glyphs.
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/data/osm_features.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/widgets/campus_map.dart';
@@ -237,7 +239,7 @@ void main() {
       expect(plan.where((p) => p.candidate.glyph), isEmpty);
     });
 
-    test('there are no street or entrance labels yet: the data has no names', () {
+    test('RIT data alone gives no street or entrance labels: it has no names', () {
       for (final z in const [1.0, 8.0, 20.0]) {
         expect(
           planAt(z).where(
@@ -247,6 +249,35 @@ void main() {
           ),
           isEmpty,
         );
+      }
+    });
+
+    test('the OSM extract names doors at 20x and nothing below', () {
+      final osm = OsmFeatures.parse(
+        jsonDecode(File('assets/map/osm_features.json').readAsStringSync())
+            as Map<String, dynamic>,
+      );
+      List<PlacedLabel> doors(double zoom) {
+        CampusMapPainter.resetGeometryCacheForTest();
+        return CampusMapPainter(
+          features: features,
+          selectedId: null,
+          scheme: schemeOf(Brightness.light),
+          zoom: zoom,
+          osm: osm,
+        ).labelPlanForTest(size).where(
+          (p) => p.candidate.cls == LabelClass.entrance,
+        ).toList();
+      }
+
+      for (final z in const [1.0, 3.0, 8.0, 19.0]) {
+        expect(doors(z), isEmpty, reason: 'zoom $z');
+      }
+      final labels = doors(20);
+      expect(labels, isNotEmpty);
+      for (final label in labels) {
+        expect(label.candidate.cls.size, greaterThanOrEqualTo(mapLabelMinSize));
+        expect(label.candidate.text, isNot(contains('|')));
       }
     });
   });

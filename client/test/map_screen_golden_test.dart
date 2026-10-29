@@ -6,6 +6,7 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/campus_paths.dart';
+import 'package:tigerhub/data/osm_features.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/map_screen.dart';
@@ -41,6 +42,11 @@ Future<void> _loadPaths(WidgetTester tester) async {
   CampusPaths.resetForTest();
   final paths = await tester.runAsync(() => CampusPaths.load());
   expect(paths?.isEmpty, isFalse);
+  // The OpenStreetMap layers load the same way, or the first golden in the
+  // file would be taken before the asset decodes.
+  OsmFeatures.resetForTest();
+  final osm = await tester.runAsync(() => OsmFeatures.load());
+  expect(osm?.isEmpty, isFalse);
 }
 
 void _expectPaintedPaths(WidgetTester tester) {
@@ -49,7 +55,9 @@ void _expectPaintedPaths(WidgetTester tester) {
       (widget) => widget is CustomPaint && widget.painter is CampusMapPainter,
     ),
   );
-  expect((paint.painter! as CampusMapPainter).paths.isEmpty, isFalse);
+  final painter = paint.painter! as CampusMapPainter;
+  expect(painter.paths.isEmpty, isFalse);
+  expect(painter.osm.isEmpty, isFalse);
 }
 
 void main() {

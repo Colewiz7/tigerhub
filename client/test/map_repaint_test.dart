@@ -4,6 +4,8 @@
 /// paints it issues: colour, alpha and stroke width at each zoom.
 library;
 
+import 'dart:ui' show PointMode;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/data/campus_paths.dart';
@@ -13,9 +15,10 @@ import 'package:tigerhub/widgets/campus_map.dart';
 import 'package:tigerhub/widgets/map_style.dart';
 
 class Draw {
-  Draw(this.kind, this.paint, this.depth, [this.path]);
+  Draw(this.kind, this.paint, this.depth, [this.path, this.points]);
 
   final Path? path;
+  final List<Offset>? points;
   final String kind;
   final Paint paint;
   final int depth;
@@ -49,6 +52,10 @@ class RecordingCanvas implements Canvas {
     for (final d in draws)
       if (d.path != null && !d.stroked) d.path!,
   ];
+
+  @override
+  void drawPoints(PointMode mode, List<Offset> points, Paint paint) =>
+      draws.add(Draw('points', paint, _depth, null, points));
 
   @override
   void drawLine(Offset p1, Offset p2, Paint paint) =>
