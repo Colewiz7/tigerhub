@@ -13,19 +13,40 @@ import 'package:flutter/services.dart';
 import '../cards/dining_card.dart';
 import '../cards/visiting_chefs_card.dart' show VisitingChefsCard;
 import '../data/campus_time.dart';
+import '../data/chef_family.dart';
 import '../data/chef_listing.dart';
+import '../data/dining_layout.dart';
+import '../data/dining_sections.dart';
+import '../data/static_config.dart';
 import '../data/local_backend.dart' show staleGraceMultiplier;
 import '../data/sources/food_trucks.dart' show foodTrucksCadence;
 import '../models/api_models.dart';
 import '../services/api.dart';
+import '../services/clipboard.dart';
 import '../widgets/app_icon.dart';
+import '../widgets/context_actions.dart';
+import '../widgets/dining_actions.dart';
+import '../widgets/dining_group_editor.dart';
+import '../widgets/inset_group.dart';
+import '../widgets/segmented_picker.dart';
+import '../services/open_link.dart';
 import '../widgets/jump_list.dart';
-import '../widgets/link_button.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/freshness.dart';
 import '../widgets/search_field.dart';
 import '../services/preferences.dart';
+import '../theme/tokens.dart';
 import '../widgets/status_row.dart';
+
+enum DiningView {
+  openNow('Open now'),
+  favorites('Favorites'),
+  all('All');
+
+  const DiningView(this.label);
+
+  final String label;
+}
 
 class DiningScreen extends StatefulWidget {
   const DiningScreen({super.key, required this.result, required this.api});
@@ -41,8 +62,9 @@ class _DiningScreenState extends State<DiningScreen> {
   final _prefs = Preferences.instance;
   final _search = TextEditingController();
   final _searchFocus = FocusNode();
-  bool _openOnly = false;
-  bool _pinnedOnly = false;
+  DiningView? _view;
+  AppIconKind? _type;
+  bool _editing = false;
   Result<Collection<MenuItem>> _features = const Result(
     value: null,
     state: DataState.priming,
@@ -165,6 +187,93 @@ class _DiningScreenState extends State<DiningScreen> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _setLayout(DiningLayout layout) => _prefs.setDiningLayout(layout);
+
+  Future<void> _renameGroup(ResolvedGroup group, List<GroupDef> defaults) async {
+    final name = await promptGroupName(context, title: 'Rename group', initial: group.name);
+    if (name == null) return;
+    final defaultName = defaults.where((g) => g.id == group.id).map((g) => g.name).firstOrNull ?? '';
+    await _setLayout(_prefs.diningLayout.rename(group.id, name, defaultName: defaultName));
+  }
+
+  Future<void> _newGroup() async {
+    final name = await promptGroupName(context, title: 'New group');
+    if (name == null) return;
+    await _setLayout(_prefs.diningLayout.addCustom(name));
+  }
+
+  void _deleteGroup(ResolvedGroup group) {
+    final before = _prefs.diningLayout;
+    showFeedback(
+      context,
+      'Deleted ${group.name}',
+      action: SnackBarAction(label: 'Undo', onPressed: () => _setLayout(before)),
+    );
+    _setLayout(before.removeCustom(group.id));
+  }
+
+  // Pinned is not a group, so it has no header controls
+  List<JumpGroup> _editGroups(DiningSections sections, List<GroupDef> defaults) {
+    final order = _prefs.diningLayout.groupOrder(defaults);
+    return [
+      if (sections.pinned.isNotEmpty)
+        JumpGroup(
+          label: 'Pinned',
+          icon: AppIconKind.pinned,
+          count: 0,
+          builder: (context) => _PlaceSection(title: 'Pinned', places: sections.pinned, api: widget.api, editing: true),
+        ),
+      for (final section in sections.groups)
+        JumpGroup(
+          label: section.group.name,
+          icon: AppIconKind.dining,
+          count: 0,
+          builder: (context) {
+            final group = section.group;
+            final at = order.indexOf(group.id);
+            final movable = group.id != otherGroupId;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                EditGroupHeader(
+                  name: group.name,
+                  onRename: () => _renameGroup(group, defaults),
+                  onUp: movable && at > 0 ? () => _setLayout(_prefs.diningLayout.moveGroup(group.id, -1, defaults)) : null,
+                  onDown: movable && at < order.length - 2 ? () => _setLayout(_prefs.diningLayout.moveGroup(group.id, 1, defaults)) : null,
+                  onDelete: group.isDefault ? null : () => _deleteGroup(group),
+                ),
+                InsetGroup(
+                  children: [
+                    for (final location in section.places)
+                      DiningRow(
+                        key: ValueKey('place-${location.id}'),
+                        location: location,
+                        api: widget.api,
+                        grouped: true,
+                        onMove: () => showMoveToGroupSheet(context, location),
+                      ),
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
+      JumpGroup(
+        label: 'New group',
+        icon: AppIconKind.add,
+        count: 0,
+        builder: (context) => Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: TextButton.icon(
+            onPressed: _newGroup,
+            icon: AppIcon(AppIconKind.add, size: 18, color: Theme.of(context).colorScheme.primary),
+            label: const Text('New group'),
+          ),
+        ),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.result.isPriming) {
@@ -172,17 +281,34 @@ class _DiningScreenState extends State<DiningScreen> {
     }
 
     final query = _search.text.trim().toLowerCase();
-    final locations = (widget.result.value?.data ?? const <DiningLocation>[])
-        .where((location) {
-          if (_openOnly && !location.isOpen) return false;
-          if (_pinnedOnly && !_prefs.isPinned(location.id)) return false;
-          if (query.isEmpty) return true;
-          return location.name.toLowerCase().contains(query) ||
-              location.categoryName.toLowerCase().contains(query) ||
-              (location.summary?.toLowerCase().contains(query) ?? false);
-        })
-        .toList();
-    final groups = groupByCategory(locations, pinned: _prefs.pinnedDining);
+    final everything = widget.result.value?.data ?? const <DiningLocation>[];
+    // Open now unless nothing is open, so the tab never opens on an empty list
+    final anyOpen = everything.any((l) => l.isOpen && !_prefs.isHidden(l.id));
+    final view = _view ?? (anyOpen ? DiningView.openNow : DiningView.all);
+    final types = _typesIn(everything);
+    final type = types.contains(_type) ? _type : null;
+    final locations = everything.where((location) {
+      if (view == DiningView.openNow && !location.isOpen) return false;
+      if (view == DiningView.favorites && !_prefs.isPinned(location.id)) return false;
+      if (type != null && iconForVenue(location.name) != type) return false;
+      if (query.isEmpty) return true;
+      return location.name.toLowerCase().contains(query) ||
+          location.categoryName.toLowerCase().contains(query) ||
+          (location.summary?.toLowerCase().contains(query) ?? false);
+    }).toList();
+    final config = StaticConfig.loadedOrNull;
+    final defaults = config?.diningGroups ?? const <GroupDef>[];
+    final sections = buildDiningSections(
+      locations: _editing ? everything : locations,
+      layout: _prefs.diningLayout,
+      defaults: defaults,
+      defaultGroupOf: config?.diningGroupFor ?? (_) => otherGroupId,
+      pinned: _prefs.pinnedDining.toList(),
+      hidden: _prefs.hiddenDining,
+      // only All lists hidden places
+      showHidden: !_editing && view == DiningView.all,
+      keepEmpty: _editing,
+    );
     final allMenuItems = [...(_features.value?.data ?? const <MenuItem>[])]
       ..sort((a, b) {
         final byLocation = a.locationName.compareTo(b.locationName);
@@ -238,25 +364,25 @@ class _DiningScreenState extends State<DiningScreen> {
         autofocus: true,
         child: Column(
           children: [
-            _DiningFilters(
+            _DiningToolbar(
               controller: _search,
               focusNode: _searchFocus,
-              openOnly: _openOnly,
-              pinnedOnly: _pinnedOnly,
-              pinnedCount: _prefs.pinnedDining.length,
-              resultCount: locations.length,
+              editing: _editing,
+              view: view,
+              types: types,
+              type: type,
               onQueryChanged: (_) => setState(() {}),
-              onOpenChanged: (value) => setState(() => _openOnly = value),
-              onPinnedChanged: (value) => setState(() => _pinnedOnly = value),
-              onClear: () => setState(() {
-                _search.clear();
-                _openOnly = false;
-                _pinnedOnly = false;
-              }),
+              onViewChanged: (value) => setState(() => _view = value),
+              onTypeChanged: (value) => setState(() => _type = value),
+              onEditChanged: (value) => setState(() => _editing = value),
             ),
             Expanded(
-              child: JumpList(
-                groups: [
+              // long-press means nothing while editing, the rows carry buttons
+              child: ContextActionsScope(
+                enabled: !_editing,
+                child: JumpList(
+                  groups: _editing ? _editGroups(sections, defaults) : [
+
                   if (chefs.isNotEmpty)
                     JumpGroup(
                       label: 'Visiting chefs',
@@ -282,36 +408,31 @@ class _DiningScreenState extends State<DiningScreen> {
                       onRetry: _readFeatures,
                     ),
                   ),
-                  if (groups.isEmpty)
+                  if (sections.visibleCount == 0 && sections.hidden.isEmpty)
                     JumpGroup(
                       label: 'No matches',
                       icon: AppIconKind.notFound,
                       count: 0,
-                      builder: (context) => const EmptyState(
-                        kind: EmptyKind.notFound,
-                        title: 'No matching locations',
+                      builder: (context) => EmptyState(
+                        kind: query.isEmpty && type == null ? (view == DiningView.favorites ? EmptyKind.notFound : EmptyKind.allClosed) : EmptyKind.notFound,
+                        title: query.isEmpty && type == null ? (view == DiningView.favorites ? 'No favorites' : 'All closed') : 'No matching locations',
                         compact: false,
                       ),
-                    )
-                  else
-                    for (final group in groups)
-                      JumpGroup(
-                        label: group.key,
-                        icon: iconForCategory(group.value.first.category),
-                        count: group.value.where((l) => l.isOpen).length,
-                        builder: (context) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            GroupHeader(
-                              icon: iconForCategory(group.value.first.category),
-                              title: group.key,
-                              count: group.value.where((l) => l.isOpen).length,
-                            ),
-                            for (final location in group.value)
-                              DiningRow(location: location, api: widget.api),
-                          ],
-                        ),
-                      ),
+                    ),
+                  if (sections.pinned.isNotEmpty)
+                    JumpGroup(
+                      label: 'Pinned',
+                      icon: AppIconKind.pinned,
+                      count: sections.pinned.where((l) => l.isOpen).length,
+                      builder: (context) => _PlaceSection(title: 'Pinned', places: sections.pinned, api: widget.api),
+                    ),
+                  for (final section in sections.groups)
+                    JumpGroup(
+                      label: section.group.name,
+                      icon: AppIconKind.dining,
+                      count: section.places.where((l) => l.isOpen).length,
+                      builder: (context) => _PlaceSection(title: section.group.name, places: section.places, api: widget.api),
+                    ),
                   if (laterTrucks.isNotEmpty)
                     JumpGroup(
                       label: 'Upcoming food trucks',
@@ -319,7 +440,15 @@ class _DiningScreenState extends State<DiningScreen> {
                       count: laterTrucks.length,
                       builder: (context) => _FoodTrucksGroup(title: 'Upcoming food trucks', trucks: laterTrucks),
                     ),
+                  if (sections.hidden.isNotEmpty)
+                    JumpGroup(
+                      label: 'Hidden',
+                      icon: AppIconKind.hidden,
+                      count: 0,
+                      builder: (context) => _HiddenSection(places: sections.hidden, api: widget.api),
+                    ),
                 ],
+                ),
               ),
             ),
           ],
@@ -329,100 +458,255 @@ class _DiningScreenState extends State<DiningScreen> {
   }
 }
 
+class _PlaceSection extends StatelessWidget {
+  const _PlaceSection({required this.title, required this.places, required this.api, this.editing = false});
+
+  final bool editing;
+  final String title;
+  final List<DiningLocation> places;
+  final ApiClient api;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionTitle(title),
+        InsetGroup(
+          children: [
+            for (final location in places)
+              DiningRow(
+                key: ValueKey('place-${location.id}'),
+                location: location,
+                api: api,
+                grouped: true,
+                onMove: editing ? () => showMoveToGroupSheet(context, location) : null,
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// collapsed until opened, so hidden places stay out of the way
+class _HiddenSection extends StatefulWidget {
+  const _HiddenSection({required this.places, required this.api});
+
+  final List<DiningLocation> places;
+  final ApiClient api;
+
+  @override
+  State<_HiddenSection> createState() => _HiddenSectionState();
+}
+
+class _HiddenSectionState extends State<_HiddenSection> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _open,
+          label: 'Hidden (${widget.places.length})',
+          excludeSemantics: true,
+          child: InkWell(
+            onTap: () => setState(() => _open = !_open),
+            borderRadius: Shapes.inner,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Hidden (${widget.places.length})',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                    ),
+                    RotatedBox(
+                      quarterTurns: _open ? 2 : 0,
+                      child: AppIcon(AppIconKind.expand, size: 22, color: scheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (_open)
+          InsetGroup(
+            children: [
+              for (final location in widget.places) DiningRow(key: ValueKey('hidden-${location.id}'), location: location, api: widget.api, grouped: true),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
 const orderOnlineLabel = 'Order online';
 const checkBalanceLabel = 'Check balance';
 final orderOnlineUrl = Uri.parse('https://ondemand.rit.edu/');
 final checkBalanceUrl = Uri.parse('https://tigerspend.rit.edu/');
 
-class _DiningFilters extends StatelessWidget {
-  const _DiningFilters({
+// the venue types in the data, in a fixed order
+List<AppIconKind> _typesIn(List<DiningLocation> places) {
+  const order = [
+    AppIconKind.diningHall,
+    AppIconKind.cafe,
+    AppIconKind.grocery,
+    AppIconKind.bakery,
+    AppIconKind.iceCream,
+    AppIconKind.smoothie,
+    AppIconKind.deli,
+    AppIconKind.restaurant,
+    AppIconKind.soup,
+    AppIconKind.patio,
+    AppIconKind.diningOffice,
+    AppIconKind.dining,
+  ];
+  final present = {for (final l in places) iconForVenue(l.name)};
+  return [
+    for (final kind in order)
+      if (present.contains(kind)) kind,
+  ];
+}
+
+enum _MenuItem { order, balance, edit }
+
+class _DiningToolbar extends StatelessWidget {
+  const _DiningToolbar({
     required this.controller,
     required this.focusNode,
-    required this.openOnly,
-    required this.pinnedOnly,
-    required this.pinnedCount,
-    required this.resultCount,
+    required this.editing,
+    required this.view,
+    required this.types,
+    required this.type,
     required this.onQueryChanged,
-    required this.onOpenChanged,
-    required this.onPinnedChanged,
-    required this.onClear,
+    required this.onViewChanged,
+    required this.onTypeChanged,
+    required this.onEditChanged,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
-  final bool openOnly;
-  final bool pinnedOnly;
-  final int pinnedCount;
-  final int resultCount;
+  final bool editing;
+  final DiningView view;
+  final List<AppIconKind> types;
+  final AppIconKind? type;
   final ValueChanged<String> onQueryChanged;
-  final ValueChanged<bool> onOpenChanged;
-  final ValueChanged<bool> onPinnedChanged;
-  final VoidCallback onClear;
+  final ValueChanged<DiningView> onViewChanged;
+  final ValueChanged<AppIconKind?> onTypeChanged;
+  final ValueChanged<bool> onEditChanged;
+
+  void _picked(BuildContext context, _MenuItem item) {
+    switch (item) {
+      case _MenuItem.order:
+        openOrCopy(context, orderOnlineUrl, label: orderOnlineLabel);
+      case _MenuItem.balance:
+        openOrCopy(context, checkBalanceUrl, label: checkBalanceLabel);
+      case _MenuItem.edit:
+        onEditChanged(true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = controller.text.isNotEmpty || openOnly || pinnedOnly;
+    final scheme = Theme.of(context).colorScheme;
+    if (editing) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 6, 12, 6),
+        child: Row(
+          children: [
+            Expanded(child: Semantics(header: true, child: Text('Edit groups', style: Theme.of(context).textTheme.titleLarge))),
+            TextButton(onPressed: () => onEditChanged(false), child: const Text('Done')),
+          ],
+        ),
+      );
+    }
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 6, 8, 4),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SearchField(
-            controller: controller,
-            focusNode: focusNode,
-            hintText: 'Search dining or today’s menu',
-            onChanged: onQueryChanged,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
+          Row(
             children: [
-              LinkButton(label: orderOnlineLabel, url: orderOnlineUrl),
-              LinkButton(label: checkBalanceLabel, url: checkBalanceUrl),
+              Expanded(
+                child: SearchField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  hintText: 'Search dining or today’s menu',
+                  onChanged: onQueryChanged,
+                ),
+              ),
+              PopupMenuButton<_MenuItem>(
+                tooltip: 'More',
+                style: IconButton.styleFrom(minimumSize: const Size(48, 48)),
+                icon: AppIcon(AppIconKind.more, size: 22, color: scheme.onSurface),
+                color: scheme.surfaceContainerHighest,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: Shapes.inner),
+                onSelected: (item) => _picked(context, item),
+                itemBuilder: (context) => [
+                  _item(context, _MenuItem.order, orderOnlineLabel, AppIconKind.link),
+                  _item(context, _MenuItem.balance, checkBalanceLabel, AppIconKind.card),
+                  _item(context, _MenuItem.edit, 'Edit groups', AppIconKind.edit),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          // chips and count sit on the list's left edge
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                FilterChip(
-                  label: const Text('Open'),
-                  avatar: Icon(AppIconKind.time.of(context), size: 17),
-                  selected: openOnly,
-                  onSelected: onOpenChanged,
-                ),
-                FilterChip(
-                  label: Text(
-                    'Pinned${pinnedCount == 0 ? '' : ' ($pinnedCount)'}',
-                  ),
-                  avatar: Icon(AppIconKind.pinned.of(context), size: 17),
-                  selected: pinnedOnly,
-                  onSelected: pinnedCount == 0 ? null : onPinnedChanged,
-                ),
-                if (filtered) ...[
-                  TextButton(onPressed: onClear, child: const Text('Clear all')),
+          Padding(
+            padding: const EdgeInsets.only(right: 8, top: 8),
+            child: SegmentedPicker<DiningView>(
+              value: view,
+              labels: {for (final v in DiningView.values) v: v.label},
+              onChanged: onViewChanged,
+            ),
+          ),
+          if (types.length > 1)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                children: [
+                  for (final kind in types)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        label: Text(venueTypeLabel(kind)),
+                        avatar: AppIcon(kind, size: 17, color: scheme.onSurfaceVariant),
+                        showCheckmark: false,
+                        selected: type == kind,
+                        onSelected: (on) => onTypeChanged(on ? kind : null),
+                      ),
+                    ),
                 ],
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Align(
-            alignment: AlignmentDirectional.centerStart,
-            child: Text(
-              '$resultCount ${resultCount == 1 ? 'place' : 'places'}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
         ],
       ),
     );
   }
+
+  PopupMenuItem<_MenuItem> _item(BuildContext context, _MenuItem value, String label, AppIconKind icon) => PopupMenuItem(
+    value: value,
+    height: 48,
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppIcon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        const SizedBox(width: 12),
+        Flexible(child: Text(label, style: Theme.of(context).textTheme.bodyMedium)),
+      ],
+    ),
+  );
 }
 
 class _FoodTrucksGroup extends StatelessWidget {
@@ -462,24 +746,25 @@ class _FoodTrucksGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GroupHeader(
-          icon: AppIconKind.truck,
-          title: title,
-          count: trucks.length,
+        SectionTitle(title),
+        InsetGroup(
+          children: [
+            for (final truck in trucks)
+              StatusRow(
+                key: ValueKey('truck-${truck.date}-${truck.name}'),
+                icon: AppIconKind.truck,
+                dense: true,
+                grouped: true,
+                subtitleMaxLines: null,
+                title: truck.name,
+                subtitle: [
+                  _day(truck.date, today),
+                  if (truck.timeText?.trim().isNotEmpty ?? false) truck.timeText!,
+                  if (truck.location?.trim().isNotEmpty ?? false) truck.location!,
+                ].where((part) => part.isNotEmpty).join(' · '),
+              ),
+          ],
         ),
-        for (final truck in trucks)
-          StatusRow(
-            key: ValueKey('truck-${truck.date}-${truck.name}'),
-            icon: AppIconKind.truck,
-            dense: true,
-            subtitleMaxLines: null,
-            title: truck.name,
-            subtitle: [
-              _day(truck.date, today),
-              if (truck.timeText?.trim().isNotEmpty ?? false) truck.timeText!,
-              if (truck.location?.trim().isNotEmpty ?? false) truck.location!,
-            ].where((part) => part.isNotEmpty).join(' · '),
-          ),
       ],
     );
   }
@@ -495,31 +780,26 @@ class _VisitingChefsGroup extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // plain text, not the filled bar the other groups use
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
-          child: Semantics(
-            header: true,
-            child: Text(
-              'Visiting chefs',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
+        const SectionTitle('Visiting chefs'),
+        InsetGroup(
+          children: [
+            for (final chef in chefs)
+              StatusRow(
+                key: ValueKey('chef-${chef.id}'),
+                icon: iconForChef(chef),
+                grouped: true,
+                subtitleMaxLines: null,
+                title: chef.name,
+                subtitle: [
+                  [
+                    if (chef.cuisine?.trim().isNotEmpty ?? false) chef.cuisine!,
+                    ?VisitingChefsCard.window(chef),
+                  ].join(' · '),
+                  chef.locationName,
+                ].where((part) => part.isNotEmpty).join('\n'),
+              ),
+          ],
         ),
-        for (final chef in chefs)
-          StatusRow(
-            key: ValueKey('chef-${chef.id}'),
-            icon: AppIconKind.visitingChef,
-            subtitleMaxLines: null,
-            title: chef.name,
-            subtitle: [
-              [
-                if (chef.cuisine?.trim().isNotEmpty ?? false) chef.cuisine!,
-                ?VisitingChefsCard.window(chef),
-              ].join(' · '),
-              chef.locationName,
-            ].where((part) => part.isNotEmpty).join('\n'),
-          ),
       ],
     );
   }
@@ -554,20 +834,21 @@ class _TodayMenuGroup extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GroupHeader(
-            icon: AppIconKind.cutlery,
-            title: 'Today’s published menu',
-            count: items.length,
+          const SectionTitle('Today’s published menu'),
+          InsetGroup(
+            children: [
+              for (final item in items)
+                StatusRow(
+                  icon: _menuIcon(item.category),
+                  grouped: true,
+                  title: item.name,
+                  subtitle: [
+                    if (item.category?.trim().isNotEmpty ?? false) item.category!,
+                    item.locationName,
+                  ].join(' · '),
+                ),
+            ],
           ),
-          for (final item in items)
-            StatusRow(
-              icon: _menuIcon(item.category),
-              title: item.name,
-              subtitle: [
-                if (item.category?.trim().isNotEmpty ?? false) item.category!,
-                item.locationName,
-              ].join(' · '),
-            ),
         ],
       );
     }

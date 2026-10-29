@@ -75,14 +75,14 @@ void main() {
     expect(find.text('Eat now'), findsNothing);
   });
 
-  testWidgets('late at night a closed pin fills a spare row, dimmed', (tester) async {
+  testWidgets('late at night a closed pin fills a spare row, quiet', (tester) async {
     await Preferences.instance.togglePinned(3);
     await pump(tester, [place(1, 'Open late'), place(2, 'Closed plain', open: false), place(3, 'Closed pin', open: false)]);
     expect(find.text('Open late'), findsOneWidget);
     expect(find.text('Closed pin'), findsOneWidget);
     expect(find.text('Closed plain'), findsNothing);
     final rows = tester.widgetList<StatusRow>(find.byType(StatusRow)).toList();
-    expect(rows.last.emphasis, RowEmphasis.dimmed);
+    expect(rows.last.emphasis, RowEmphasis.quiet);
     expect(tester.getTopLeft(find.text('Open late')).dy, lessThan(tester.getTopLeft(find.text('Closed pin')).dy));
   });
 

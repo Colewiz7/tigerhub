@@ -1005,10 +1005,10 @@ void _visualStructure() {
       expect(find.text('Open'), findsNothing);
     });
 
-    testWidgets('a closed row is dimmed relative to an open one', (
+    testWidgets('a closed row recedes by colour and keeps full contrast', (
       tester,
     ) async {
-      Future<double> opacityFor(bool isOpen) async {
+      Future<(double, Color?)> look(bool isOpen) async {
         await tester.pumpWidget(
           MaterialApp(
             theme: AppTheme.from(_fallbackScheme()),
@@ -1019,11 +1019,14 @@ void _visualStructure() {
             ),
           ),
         );
-        final op = tester.widgetList<Opacity>(find.byType(Opacity)).first;
-        return op.opacity;
+        final lowest = tester.widgetList<Opacity>(find.byType(Opacity)).map((o) => o.opacity).fold(1.0, (a, b) => a < b ? a : b);
+        return (lowest, tester.widget<Text>(find.text('X')).style?.color);
       }
 
-      expect(await opacityFor(false), lessThan(await opacityFor(true)));
+      final open = await look(true);
+      final closed = await look(false);
+      expect(closed.$1, 1.0);
+      expect(closed.$2, isNot(open.$2));
     });
 
     test('venue type picks the icon', () {

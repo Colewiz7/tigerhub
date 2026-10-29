@@ -6,6 +6,7 @@
 /// feed, which is exactly why they are hand maintained:
 ///
 ///   dining_categories  TigerCenter exposes no usable category at all
+///   dining_groups      the Dining tab's areas, generated from the building table
 ///   post_offices       RIT publishes hours per service, as prose, on a page
 ///   housing_areas      zone based mail, no per hall addresses exist
 ///   shed_hours         the make.rit.edu hours feed is broken (7.5)
@@ -25,6 +26,7 @@ class StaticConfig {
 
   static const List<String> _names = [
     'dining_categories',
+    'dining_groups',
     'post_offices',
     'housing_areas',
     'shed_hours',
@@ -59,6 +61,9 @@ class StaticConfig {
   static StaticConfig get instance =>
       _instance ?? (throw StateError('StaticConfig.load() has not run'));
 
+  // for screens that still draw before the config is loaded, as in tests
+  static StaticConfig? get loadedOrNull => _instance;
+
   Map<String, dynamic> file(String name) =>
       _files[name] ?? (throw StateError('config asset $name not loaded'));
 
@@ -88,6 +93,24 @@ class StaticConfig {
       _category(id)?['name'] as String? ?? 'Everything else';
 
   int categoryOrder(String id) => _category(id)?['order'] as int? ?? 999;
+
+  // --- dining groups ---
+
+  // tests that override the files by hand may leave this one out
+  Map<String, dynamic>? get _groups => _files['dining_groups'];
+
+  List<({String id, String name})> get diningGroups => [
+        for (final g in (_groups?['groups'] as List<dynamic>? ?? const []))
+          (id: (g as Map<String, dynamic>)['id'] as String, name: g['name'] as String),
+      ];
+
+  // a place the table doesnt know lands in other
+  String diningGroupFor(int locationId) {
+    for (final p in (_groups?['places'] as List<dynamic>? ?? const [])) {
+      if ((p as Map<String, dynamic>)['id'] == locationId) return p['group'] as String;
+    }
+    return 'other';
+  }
 
   // --- FD MealPlanner ---
 

@@ -11,6 +11,7 @@ import 'package:shared_preferences_platform_interface/in_memory_shared_preferenc
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/cards/academic_dates_card.dart';
 import 'package:tigerhub/cards/dashboard_campus_cards.dart';
+import 'package:tigerhub/cards/dining_card.dart';
 import 'package:tigerhub/cards/event_row.dart';
 import 'package:tigerhub/data/backend.dart';
 import 'package:tigerhub/data/campus_time.dart';
@@ -65,13 +66,14 @@ final _day = DateTime(2026, 8, 30);
 
 Future<void> prepareMenuEnvironment() async {
   final files = <String, Map<String, dynamic>>{};
-  for (final name in ['dining_categories', 'post_offices', 'housing_areas', 'shed_hours', 'fd_locations']) {
+  for (final name in ['dining_categories', 'dining_groups', 'post_offices', 'housing_areas', 'shed_hours', 'fd_locations']) {
     files[name] = jsonDecode(File('assets/config/$name.json').readAsStringSync()) as Map<String, dynamic>;
   }
   StaticConfig.overrideForTesting(files);
   ShuttleSchedule.overrideForTesting(ShuttleSchedule.parse(jsonDecode(File('assets/config/shuttles.json').readAsStringSync()) as Map<String, dynamic>));
   SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
   RitClock.pin(CampusTime.wall(2026, 8, 30, 12));
+  Preferences.instance.resetForTests();
   await Preferences.instance.setHome(area: 'global-village');
   await Preferences.instance.setMuted('student-life', false);
 }
@@ -121,7 +123,52 @@ AcademicMilestone get _firstDate => upcomingAcademicMilestones(now: _day).first;
 
 String _dateText(AcademicMilestone m, String pattern) => '${m.title}\n${m.dateText(DateFormat(pattern))}\n${m.detail}';
 
+Widget _diningRow() => Padding(
+  padding: const EdgeInsets.all(8),
+  child: Align(
+    alignment: Alignment.topCenter,
+    child: DiningRow(location: const DiningLocation(id: 21, name: "Gracie's", isOpen: true), api: ApiClient(backend: _FixtureBackend(StaticConfig.instance))),
+  ),
+);
+
 final menuSurfaces = <MenuSurface>[
+  MenuSurface(
+    name: 'dining row',
+    files: const ['lib/widgets/dining_actions.dart'],
+    build: _diningRow,
+    target: () => find.text("Gracie's"),
+    labels: const ['Pin', 'Hide', 'Move to group'],
+    effects: const {
+      'Pin': SetsPinned(21, true),
+      'Hide': SetsHidden(21, true, name: "Gracie's"),
+      'Move to group': OpensMoveSheet(),
+    },
+  ),
+  MenuSurface(
+    name: 'pinned dining row',
+    files: const ['lib/widgets/dining_actions.dart'],
+    build: _diningRow,
+    arrange: () => Preferences.instance.togglePinned(21),
+    target: () => find.text("Gracie's"),
+    labels: const ['Unpin', 'Hide', 'Move to group'],
+    effects: const {
+      'Unpin': SetsPinned(21, false),
+      'Hide': SetsHidden(21, true, name: "Gracie's"),
+      'Move to group': OpensMoveSheet(),
+    },
+  ),
+  MenuSurface(
+    name: 'hidden dining row',
+    files: const ['lib/widgets/dining_actions.dart'],
+    build: _diningRow,
+    arrange: () => Preferences.instance.toggleHidden(21),
+    target: () => find.text("Gracie's"),
+    labels: const ['Unhide', 'Move to group'],
+    effects: const {
+      'Unhide': SetsHidden(21, false),
+      'Move to group': OpensMoveSheet(),
+    },
+  ),
   MenuSurface(
     name: 'event row',
     files: const ['lib/cards/event_row.dart'],

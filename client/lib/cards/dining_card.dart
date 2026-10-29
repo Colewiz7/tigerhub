@@ -17,6 +17,7 @@ import '../widgets/card_shell.dart';
 import '../widgets/app_icon.dart';
 import '../widgets/freshness.dart';
 import '../services/preferences.dart';
+import '../widgets/dining_actions.dart';
 import '../widgets/dining_detail_sheet.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
@@ -94,7 +95,36 @@ AppIconKind iconForCategory(String category) => switch (category) {
   _ => AppIconKind.dining,
 };
 
-/// Venue type drives the icon, so a row is identifiable before it is read.
+// one icon per TigerCenter id, the type filter still reads iconForVenue
+// 41 and 501 are not here, they keep their venue type icon
+const placeIcons = {
+  21: AppIconKind.diningHall,
+  22: AppIconKind.grill,
+  23: AppIconKind.dining,
+  24: AppIconKind.deli,
+  25: AppIconKind.patio,
+  26: AppIconKind.courtside,
+  27: AppIconKind.storefront,
+  28: AppIconKind.grocery,
+  29: AppIconKind.basket,
+  30: AppIconKind.bakery,
+  31: AppIconKind.coffee,
+  32: AppIconKind.iceCream,
+  34: AppIconKind.keyboard,
+  35: AppIconKind.coffeeMaker,
+  36: AppIconKind.soup,
+  37: AppIconKind.cafe,
+  38: AppIconKind.bedtime,
+  39: AppIconKind.smoothie,
+  61: AppIconKind.menu,
+  441: AppIconKind.takeout,
+  461: AppIconKind.florist,
+  481: AppIconKind.memory,
+};
+
+AppIconKind iconForPlace(int id, String name) => placeIcons[id] ?? iconForVenue(name);
+
+/// Venue type drives the type filter, so a row is identifiable before it is read.
 AppIconKind iconForVenue(String name) {
   final n = name.toLowerCase().replaceAll('’', "'");
   for (final (needles, kind) in _venueIcons) {
@@ -104,6 +134,23 @@ AppIconKind iconForVenue(String name) {
 }
 
 // first match wins, crossroads and artesano say cafe too
+// the type filter's words, one per venue icon
+String venueTypeLabel(AppIconKind kind) => switch (kind) {
+  AppIconKind.diningHall => 'Dining hall',
+  AppIconKind.cafe => 'Coffee',
+  AppIconKind.grocery => 'Market',
+  AppIconKind.bakery => 'Bakery',
+  AppIconKind.iceCream => 'Ice cream',
+  AppIconKind.smoothie => 'Smoothies',
+  AppIconKind.deli => 'Deli',
+  AppIconKind.restaurant => 'Restaurant',
+  AppIconKind.soup => 'Soup',
+  AppIconKind.patio => 'Patio',
+  AppIconKind.truck => 'Food truck',
+  AppIconKind.diningOffice => 'Office',
+  _ => 'Other',
+};
+
 const _venueIcons = [
   (['gracie', 'commons', 'brick city', 'ritz', 'crossroads'], AppIconKind.diningHall),
   (['artesano', 'bakery'], AppIconKind.bakery),
@@ -136,8 +183,17 @@ class DiningCard extends StatelessWidget {
   final bool compact;
 
   @override
-  Widget build(BuildContext context) {
-    final all = result.value?.data ?? const <DiningLocation>[];
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Preferences.instance,
+    builder: (context, _) => _build(context),
+  );
+
+  Widget _build(BuildContext context) {
+    final hiddenIds = Preferences.instance.hiddenDining;
+    final all = [
+      for (final l in result.value?.data ?? const <DiningLocation>[])
+        if (!hiddenIds.contains('${l.id}')) l,
+    ];
     final locations = category == null
         ? all
         : [
@@ -165,9 +221,9 @@ class DiningCard extends StatelessWidget {
           : CardHero(value: '$openNow', label: 'Open'),
       child: switch ((result.isPriming, locations.isEmpty)) {
         (true, _) => const PrimingPlaceholder(label: 'Loading dining hours'),
-        (_, true) => const EmptyState(
-          kind: EmptyKind.sourceDown,
-          title: 'Dining unavailable',
+        (_, true) => EmptyState(
+          kind: all.isEmpty && (result.value?.data.isNotEmpty ?? false) ? EmptyKind.notFound : EmptyKind.sourceDown,
+          title: all.isEmpty && (result.value?.data.isNotEmpty ?? false) ? 'No places' : 'Dining unavailable',
         ),
         _ => _List(
           locations: locations,
@@ -225,9 +281,17 @@ class DiningRow extends StatelessWidget {
     required this.location,
     this.api,
     this.dense = false,
+    this.onMove,
+    this.grouped = false,
   });
 
+  // drawn inside an inset group
+  final bool grouped;
+
   final DiningLocation location;
+
+  /// Edit mode: a Move button replaces the long-press menu.
+  final VoidCallback? onMove;
 
   /// The dashboard's condensed phone row.
   final bool dense;
@@ -268,21 +332,37 @@ class DiningRow extends StatelessWidget {
     }
 
     final client = api;
+    final moving = onMove;
     return StatusRow(
+      grouped: grouped,
       dense: dense,
-      icon: Preferences.instance.isPinned(location.id)
-          ? AppIconKind.pinned
-          : iconForVenue(location.name),
+      icon: iconForPlace(location.id, location.name),
       title: location.name,
-      subtitle: when,
+      subtitle: Preferences.instance.isPinned(location.id) ? 'Pinned · $when' : when,
       accent: accent,
-      emphasis: open ? RowEmphasis.normal : RowEmphasis.dimmed,
+      emphasis: open ? RowEmphasis.normal : RowEmphasis.quiet,
       onTap: client == null
           ? null
           : () => DiningDetailPage.open(context, location, client),
-      trailing: trailing,
+      trailing: moving == null ? trailing : _MoveButton(onPressed: moving),
+      // the Today card previews, so only the tab carries the menu
+      actions: client == null ? const [] : diningActions(location),
     );
   }
+}
+
+class _MoveButton extends StatelessWidget {
+  const _MoveButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => IconButton(
+    tooltip: moveToGroupLabel,
+    constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+    onPressed: onPressed,
+    icon: AppIcon(AppIconKind.allPlaces, size: 20, color: Theme.of(context).colorScheme.primary),
+  );
 }
 
 class _StatusPill extends StatelessWidget {

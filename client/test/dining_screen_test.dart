@@ -14,6 +14,8 @@ import 'package:tigerhub/services/cache.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/widgets/app_icon.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
+import 'package:tigerhub/widgets/inset_group.dart';
+import 'package:tigerhub/widgets/segmented_picker.dart';
 import 'package:tigerhub/widgets/status_row.dart';
 
 import 'golden_harness.dart';
@@ -94,6 +96,7 @@ void main() {
     _DiningBackend? backend,
     Brightness brightness = Brightness.light,
     double scale = 1,
+    List<DiningLocation>? places,
   }) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
@@ -117,7 +120,7 @@ void main() {
             api: ApiClient(backend: backend ?? _DiningBackend(features)),
             result: Result(
               value: Collection(
-                data: const [
+                data: places ?? const [
                   DiningLocation(
                     id: 23,
                     name: 'Crossroads',
@@ -347,19 +350,45 @@ void main() {
     expect(find.text('Tomato bisque'), findsOneWidget);
   });
 
-  testWidgets(
-    'open filter removes closed locations and reports the result count',
-    (tester) async {
-      await pumpDining(tester, const []);
+  testWidgets('the default view is Open now, All adds the closed places, Favorites is empty', (tester) async {
+    await pumpDining(tester, const []);
 
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+    expect(tester.widget<SegmentedPicker<DiningView>>(find.byType(SegmentedPicker<DiningView>)).value, DiningView.openNow);
+    expect(find.text('Crossroads'), findsOneWidget);
+    expect(find.text('Midnight Oil'), findsNothing);
 
-      expect(find.text('1 place'), findsOneWidget);
-      expect(find.text('Crossroads'), findsOneWidget);
-      expect(find.text('Midnight Oil'), findsNothing);
-    },
-  );
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+    expect(find.text('Midnight Oil'), findsOneWidget);
+
+    await tester.tap(find.text('Favorites'));
+    await tester.pumpAndSettle();
+    expect(find.text('No favorites'), findsOneWidget);
+    expect(find.text('Crossroads'), findsNothing);
+  });
+
+  testWidgets('with nothing open the default view is All', (tester) async {
+    await pumpDining(tester, const [], places: [const DiningLocation(id: 24, name: 'Midnight Oil', isOpen: false)]);
+    expect(tester.widget<SegmentedPicker<DiningView>>(find.byType(SegmentedPicker<DiningView>)).value, DiningView.all);
+    expect(find.text('Midnight Oil'), findsOneWidget);
+  });
+
+  testWidgets('the type filter narrows to one venue type and clears', (tester) async {
+    await pumpDining(tester, const []);
+    await tester.tap(find.text('All'));
+    await tester.pumpAndSettle();
+    expect(find.text('Dining hall'), findsOneWidget);
+    expect(find.text('Coffee'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilterChip, 'Coffee'));
+    await tester.pumpAndSettle();
+    expect(find.text('Midnight Oil'), findsOneWidget);
+    expect(find.text('Crossroads'), findsNothing);
+
+    await tester.tap(find.widgetWithText(FilterChip, 'Coffee'));
+    await tester.pumpAndSettle();
+    expect(find.text('Crossroads'), findsOneWidget);
+  });
 
   testWidgets('one search filters locations and the published menu', (
     tester,
@@ -384,26 +413,38 @@ void main() {
     expect(find.text('No matching locations'), findsOneWidget);
   });
 
-  for (final size in const [Size(390, 844), Size(440, 956)]) {
-    testWidgets('chips start on the content edge and the count has its own line at ${size.width.toInt()}', (tester) async {
-      await pumpDining(tester, const [], size: size);
+  for (final scale in const [1.0, 2.0]) {
+    for (final size in const [Size(390, 844), Size(440, 956)]) {
+      testWidgets('the first place shows within one screen at ${size.width.toInt()} wide, text ${scale}x', (tester) async {
+        await pumpDining(tester, const [], size: size, scale: scale);
 
-      final edge = tester.getRect(find.byType(StatusRow).first).left;
-      final open = tester.getRect(find.widgetWithText(FilterChip, 'Open'));
-      final pinned = tester.getRect(find.widgetWithText(FilterChip, 'Pinned'));
-      final count = tester.getRect(find.text('2 places'));
-      expect(open.left, edge);
-      expect(count.left, edge);
-      expect(count.top, greaterThanOrEqualTo(pinned.bottom));
-    });
+        final first = tester.getRect(find.byType(StatusRow).first);
+        expect(first.bottom, lessThan(size.height));
+        // control and list share the content edge
+        expect(tester.getRect(find.byType(SegmentedPicker<DiningView>)).left, first.left);
+        expect(find.text('Order online'), findsNothing);
+      });
+    }
   }
 
-  testWidgets('filters wrap cleanly on a phone-width screen', (tester) async {
+  testWidgets('sections have plain titles and rows sit in inset groups', (tester) async {
+    await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: _chefsBody([_chef(1, 'Chef Marco', place: 'Crossroads')])));
+
+    expect(find.byType(GroupHeader), findsNothing);
+    expect(find.byType(InsetGroup), findsWidgets);
+    final group = tester.getRect(find.byType(InsetGroup).last);
+    final row = tester.getRect(find.byType(StatusRow).last);
+    expect(row.left, group.left);
+    expect(row.right, group.right);
+  });
+
+  testWidgets('the toolbar fits a 360 wide phone', (tester) async {
     await pumpDining(tester, const [], size: const Size(360, 700));
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Open'), findsOneWidget);
-    expect(find.text('2 places'), findsOneWidget);
+    for (final view in DiningView.values) {
+      expect(find.text(view.label), findsOneWidget);
+    }
   });
 
   testWidgets('control F focuses and selects the dining search', (

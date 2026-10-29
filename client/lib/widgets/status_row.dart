@@ -16,8 +16,9 @@ import 'app_icon.dart';
 import 'card_shell.dart';
 import 'context_actions.dart';
 
-/// How prominent a row is. Dimmed rows recede without disappearing.
-enum RowEmphasis { normal, dimmed }
+/// How prominent a row is. Dimmed rows recede without disappearing. Quiet
+/// rows recede by colour only, so their text keeps full contrast.
+enum RowEmphasis { normal, dimmed, quiet }
 
 class StatusRow extends StatelessWidget {
   const StatusRow({
@@ -35,7 +36,11 @@ class StatusRow extends StatelessWidget {
     this.actions = const [],
     this.iconSize = 18,
     this.wrapSubtitle = false,
+    this.grouped = false,
   });
+
+  // a row in an inset group: no fill or gap of its own, the group draws both
+  final bool grouped;
 
   /// Glyph size in the badge circle.
   final double iconSize;
@@ -121,21 +126,23 @@ class StatusRow extends StatelessWidget {
   Widget _row(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final dimmed = emphasis == RowEmphasis.dimmed;
+    final quiet = emphasis == RowEmphasis.quiet;
+    final dimmed = emphasis == RowEmphasis.dimmed || quiet;
     final tint = accent ?? scheme.primary;
     final dense = _isDense(context);
     // in a phone card the row is no surface of its own
-    final flat = dense && CardShell.flatRowsOf(context);
+    final flat = grouped || (dense && CardShell.flatRowsOf(context));
     final largeText = MediaQuery.textScalerOf(context).scale(1) > 1;
     final rowGap = flat ? 0.0 : (dense ? denseGap : gap);
+    final inset = grouped ? 12.0 : 0.0;
     final badge = dense ? denseBadgeSize : badgeSize;
-    final titleStyle = dense
+    final titleStyle = (dense
         ? text.titleMedium?.copyWith(
             fontSize: 17,
             height: 1.3,
             letterSpacing: 0,
           )
-        : text.titleMedium;
+        : text.titleMedium)?.copyWith(color: quiet ? scheme.onSurfaceVariant : null);
     final subtitleStyle = dense
         ? text.bodySmall?.copyWith(fontSize: 14, height: 1.3, letterSpacing: 0)
         : text.bodySmall;
@@ -146,7 +153,7 @@ class StatusRow extends StatelessWidget {
 
     // A dimmed row keeps its shape but loses contrast, so open and closed are
     // separable at a glance without reading either.
-    final opacity = dimmed ? 0.55 : 1.0;
+    final opacity = emphasis == RowEmphasis.dimmed ? 0.55 : 1.0;
 
     return Padding(
       padding: EdgeInsets.only(bottom: rowGap),
@@ -158,7 +165,7 @@ class StatusRow extends StatelessWidget {
         child: Material(
           elevation: 0,
           color: flat ? Colors.transparent : scheme.surfaceContainerHigh,
-          borderRadius: Shapes.inner,
+          borderRadius: grouped ? BorderRadius.zero : Shapes.inner,
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onTap,
@@ -172,7 +179,7 @@ class StatusRow extends StatelessWidget {
                 // the typography its actual measured height.
                 padding: EdgeInsets.symmetric(
                   // flat rows line up with the card title
-                  horizontal: flat ? 0 : (dense ? 10 : 12),
+                  horizontal: grouped ? inset : (flat ? 0 : (dense ? 10 : 12)),
                   vertical: dense ? 4 : 8,
                 ),
                 child: Row(
