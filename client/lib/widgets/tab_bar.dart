@@ -85,8 +85,11 @@ class AppTabBar extends StatelessWidget {
 
   static bool glass(BuildContext context) => Theme.of(context).platform == TargetPlatform.iOS;
 
-  // above the home indicator, or a side inset off the edge without one
-  static double capsuleBottom(BuildContext context) => math.max(MediaQuery.paddingOf(context).bottom, sideInset);
+  /// How far the capsule dips into the bottom safe area, still clear of the home indicator.
+  static const double bottomDip = 8;
+
+  // dips into the safe area, or a side inset off the edge without one
+  static double capsuleBottom(BuildContext context) => math.max(MediaQuery.paddingOf(context).bottom - bottomDip, sideInset);
 
   /// Height from the bottom of the screen to the top of the bar.
   static double overlap(BuildContext context) =>
