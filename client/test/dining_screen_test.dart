@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,8 +10,6 @@ import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/cache.dart';
 import 'package:tigerhub/theme/app_theme.dart';
-import 'package:tigerhub/widgets/app_icon.dart';
-import 'package:tigerhub/widgets/empty_state.dart';
 import 'package:tigerhub/widgets/inset_group.dart';
 import 'package:tigerhub/widgets/segmented_picker.dart';
 import 'package:tigerhub/widgets/status_row.dart';
@@ -23,24 +19,18 @@ import 'golden_harness.dart';
 class _DiningBackend implements Backend {
   _DiningBackend(
     this.features, {
-    this.availability,
-    this.failures = 0,
     this.chefs,
-    this.onMenu,
+    this.dishes = const [],
   });
 
-  // runs when a place's menu is fetched, the way opening its detail caches it
-  final void Function()? onMenu;
-
+  // answered on /dining/specials, which the tab no longer reads
   final List<Map<String, dynamic>> features;
-  final String? availability;
 
   // the chefs route answer, or a failed read when null
   final Map<String, dynamic>? chefs;
 
-  // specials fetches that throw before one succeeds
-  int failures;
-  int specialsFetches = 0;
+  // the dishes on place 23's menu
+  final List<Map<String, dynamic>> dishes;
 
   @override
   Future<Map<String, dynamic>> fetch(
@@ -48,17 +38,11 @@ class _DiningBackend implements Backend {
     Map<String, String>? query,
   ]) async {
     if (path == '/dining/specials') {
-      specialsFetches++;
-      if (failures > 0) {
-        failures--;
-        throw const SocketException('offline');
-      }
-      return {'data': features, 'stale': false, 'last_updated': null, if (availability != null) 'availability': availability};
+      return {'data': features, 'stale': false, 'last_updated': null};
     }
     if (path == '/dining/visiting-chefs' && chefs != null) return chefs!;
     if (path == '/dining/23/menu') {
-      onMenu?.call();
-      return {'service_date': '2026-10-14', 'location_id': 23, 'dishes': <dynamic>[], 'stale': false, 'last_updated': null};
+      return {'service_date': '2026-10-14', 'location_id': 23, 'dishes': dishes, 'stale': false, 'last_updated': null};
     }
     throw UnimplementedError(path);
   }
@@ -163,7 +147,7 @@ void main() {
       _chef(2, 'Chef Lin', cuisine: 'Sichuan', place: 'Gracie’s'),
     ]);
 
-    testWidgets('lists each chef with cuisine, time and location above the menu', (tester) async {
+    testWidgets('lists each chef with cuisine, time and location above the places', (tester) async {
       await pumpDining(tester, const [], backend: _DiningBackend(const [], chefs: chefs));
 
       expect(find.text('Visiting chefs'), findsWidgets);
@@ -177,7 +161,7 @@ void main() {
       expect(find.text('Sichuan · 11 AM to 2 PM\nGracie’s'), findsOneWidget);
       expect(
         tester.getTopLeft(find.text('Chef Marco')).dy,
-        lessThan(tester.getTopLeft(find.text('No menus loaded yet. Open a place to load its menu.')).dy),
+        lessThan(tester.getTopLeft(find.text('Crossroads')).dy),
       );
     });
 
@@ -247,139 +231,27 @@ void main() {
 
   });
 
-  testWidgets('published dining features appear with category and location', (
-    tester,
-  ) async {
-    await pumpDining(tester, [
-      {
-        'id': 42,
-        'name': 'Tomato bisque',
-        'category': 'Soup',
-        'location_name': 'Crossroads',
-      },
+  // dish menus live only on a location's detail page
+  testWidgets('the Dining tab lists no menu, even with published dishes', (tester) async {
+    await pumpDining(tester, const [
+      {'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'},
     ]);
 
-    expect(find.text('Tomato bisque'), findsOneWidget);
-    expect(find.text('Soup · Crossroads'), findsOneWidget);
-  });
-
-  testWidgets('Today’s menu fills in once a place’s menu is fetched', (tester) async {
-    final features = <Map<String, dynamic>>[];
-    final backend = _DiningBackend(features, onMenu: () => features.add({'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'}));
-    await pumpDining(tester, features, backend: backend);
+    expect(find.text('Today’s published menu'), findsNothing);
     expect(find.text('Tomato bisque'), findsNothing);
-
-    final api = tester.widget<DiningScreen>(find.byType(DiningScreen)).api;
-    await api.menu(23).drain<void>();
-    await tester.pumpAndSettle();
-
-    expect(find.text('Tomato bisque'), findsOneWidget);
-  });
-
-  testWidgets('the quiet menu line says menus, not chefs', (tester) async {
-    await pumpDining(tester, const []);
-
-    expect(find.text('No menus loaded yet. Open a place to load its menu.'), findsOneWidget);
-    expect(find.textContaining(RegExp('chef', caseSensitive: false)), findsNothing);
-  });
-
-  testWidgets('a quiet menu day explains itself without hiding locations', (
-    tester,
-  ) async {
-    await pumpDining(tester, const []);
-
-    expect(find.text('No menus loaded yet. Open a place to load its menu.'), findsOneWidget);
+    expect(find.text('Soup · Crossroads'), findsNothing);
     expect(find.text('Crossroads'), findsOneWidget);
   });
 
-  // 10 pm: TigerCenter loads with every menu empty
-  testWidgets('loaded but empty is quiet text, no warning and no header', (
-    tester,
-  ) async {
-    await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
-
-    expect(find.text('No menus loaded yet. Open a place to load its menu.'), findsOneWidget);
-    expect(find.byType(EmptyState), findsNothing);
-    expect(find.byIcon(AppIconKind.sourceDown.of(tester.element(find.byType(DiningScreen)))), findsNothing);
-    expect(find.text('Today’s published menu'), findsNothing);
-    expect(find.text('Retry'), findsNothing);
-  });
-
-  testWidgets('a source that never loaded says so and offers Retry', (
-    tester,
-  ) async {
-    await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'unavailable'));
-
-    expect(find.text('Couldn’t load menus'), findsOneWidget);
-    expect(find.text('Retry'), findsOneWidget);
-    expect(find.text('Today’s published menu'), findsNothing);
-  });
-
-  // the cache said empty, then the refresh failed: that is a failure, not a quiet day
-  testWidgets('a cached empty menu with a failed refresh offers Retry, which works', (
-    tester,
-  ) async {
-    await ResponseCache.instance.write('/dining/specials', {'data': <dynamic>[], 'stale': false, 'last_updated': null, 'availability': 'empty'});
-    final backend = _DiningBackend(const [
-      {'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'},
-    ], failures: 1);
+  testWidgets('a location’s detail page still shows its menu', (tester) async {
+    final backend = _DiningBackend(const [], dishes: const [
+      {'name': 'Tomato bisque', 'category': 'Soup'},
+    ]);
     await pumpDining(tester, const [], backend: backend);
 
-    expect(find.text('Couldn’t load menus'), findsOneWidget);
-    expect(find.text('No menus loaded yet. Open a place to load its menu.'), findsNothing);
-
-    await tester.tap(find.text('Retry'));
+    await tester.tap(find.text('Crossroads'));
     await tester.pumpAndSettle();
 
-    expect(backend.specialsFetches, 2);
-    expect(find.text('Couldn’t load menus'), findsNothing);
-    expect(find.text('Tomato bisque'), findsOneWidget);
-  });
-
-  testWidgets('a cached empty menu with a good refresh is the quiet line', (
-    tester,
-  ) async {
-    await ResponseCache.instance.write('/dining/specials', {'data': <dynamic>[], 'stale': false, 'last_updated': null, 'availability': 'empty'});
-    await pumpDining(tester, const [], backend: _DiningBackend(const [], availability: 'empty'));
-
-    expect(find.text('No menus loaded yet. Open a place to load its menu.'), findsOneWidget);
-    expect(find.text('Retry'), findsNothing);
-  });
-
-  // menus in hand stay up when a refresh fails, no failure line over them
-  testWidgets('cached menus stay when the refresh fails', (tester) async {
-    await ResponseCache.instance.write('/dining/specials', {
-      'data': [
-        {'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'},
-      ],
-      'stale': false,
-      'last_updated': null,
-    });
-    await pumpDining(tester, const [], backend: _DiningBackend(const [], failures: 1));
-
-    expect(find.text('Tomato bisque'), findsOneWidget);
-    expect(find.text('Today’s published menu'), findsOneWidget);
-    expect(find.text('Couldn’t load menus'), findsNothing);
-  });
-
-  testWidgets('a failed fetch offers Retry, which fetches again', (
-    tester,
-  ) async {
-    final backend = _DiningBackend(const [
-      {'id': 42, 'name': 'Tomato bisque', 'category': 'Soup', 'location_name': 'Crossroads'},
-    ], failures: 1);
-    await pumpDining(tester, const [], backend: backend);
-
-    expect(find.text('Couldn’t load menus'), findsOneWidget);
-    expect(find.text('Today’s published menu'), findsNothing);
-    expect(backend.specialsFetches, 1);
-
-    await tester.tap(find.text('Retry'));
-    await tester.pumpAndSettle();
-
-    expect(backend.specialsFetches, 2);
-    expect(find.text('Couldn’t load menus'), findsNothing);
-    expect(find.text('Today’s published menu'), findsOneWidget);
     expect(find.text('Tomato bisque'), findsOneWidget);
   });
 
@@ -423,9 +295,7 @@ void main() {
     expect(find.text('Crossroads'), findsOneWidget);
   });
 
-  testWidgets('one search filters locations and the published menu', (
-    tester,
-  ) async {
+  testWidgets('search filters locations, not dishes', (tester) async {
     await pumpDining(tester, [
       {
         'id': 42,
@@ -436,12 +306,12 @@ void main() {
     ]);
 
     await tester.enterText(
-      find.widgetWithText(TextField, 'Search dining or today’s menu'),
+      find.widgetWithText(TextField, 'Search dining'),
       'tomato',
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Tomato bisque'), findsOneWidget);
+    expect(find.text('Tomato bisque'), findsNothing);
     expect(find.text('Crossroads'), findsNothing);
     expect(find.text('No matching locations'), findsOneWidget);
   });
@@ -485,7 +355,7 @@ void main() {
   ) async {
     await pumpDining(tester, const []);
     await tester.enterText(find.byType(TextField), 'coffee');
-    await tester.tap(find.text('No menus loaded yet. Open a place to load its menu.'));
+    await tester.tapAt(const Offset(900, 800));
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.keyF);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
