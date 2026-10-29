@@ -1999,7 +1999,11 @@ class CampusMapPainter extends CustomPainter {
         );
       }
       if (hasAbbreviation) {
-        add(LabelClass.abbreviation, abbreviation, outside: zoom >= mapGlyphMinZoom);
+        add(
+          LabelClass.abbreviation,
+          abbreviation,
+          outside: zoom >= mapGlyphMinZoom || geometry.landmarkIds.contains(id),
+        );
       }
     }
 
@@ -2207,6 +2211,16 @@ class _MapGeometry {
         buildings.add((feature: feature, family: family, bounds: largest));
       }
     }
+    // the few buildings that keep a name at campus scale, by footprint
+    final named = [
+      for (final b in buildings)
+        if ((b.feature.building ?? '').isNotEmpty) b,
+    ]..sort(
+        (a, b) => (b.bounds.width * b.bounds.height).compareTo(
+          a.bounds.width * a.bounds.height,
+        ),
+      );
+    landmarkIds = {for (final b in named.take(6)) b.feature.id};
     foot = _network(paths.foot);
     road = _network(paths.road);
 
@@ -2285,6 +2299,7 @@ class _MapGeometry {
 
   final Map<MapFamily, Path> areas = {};
   final List<_Building> buildings = [];
+  late final Set<int> landmarkIds;
   final Map<String, _Ink?> _ink = {};
 
   /// A label's text and its halo, laid out once at its screen size. Null when

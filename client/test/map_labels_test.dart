@@ -10,6 +10,7 @@ import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/widgets/campus_map.dart';
 import 'package:tigerhub/widgets/map_labels.dart';
 
+import 'golden_harness.dart';
 import 'map_repaint_test.dart' show polygon, schemeOf;
 
 LabelCandidate cand(
@@ -224,6 +225,16 @@ void main() {
           expect(p.candidate.cls.size, greaterThanOrEqualTo(11));
         }
       }
+    });
+
+    testWidgets('1x names a few landmarks, with no glyphs', (tester) async {
+      await loadGoldenFonts();
+      CampusMapPainter.resetGeometryCacheForTest();
+      final plan = planAt(1);
+      CampusMapPainter.resetGeometryCacheForTest();
+      expect(plan, isNotEmpty);
+      expect(plan.length, lessThanOrEqualTo(6));
+      expect(plan.where((p) => p.candidate.glyph), isEmpty);
     });
 
     test('there are no street or entrance labels yet: the data has no names', () {
