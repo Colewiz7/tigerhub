@@ -6,8 +6,25 @@ import 'dart:async';
 import '../models/api_models.dart';
 import 'campus_time.dart';
 import 'dining_display_names.dart';
+import 'dining_hidden.dart' show GroupPlace;
+import 'sources/rit_chefs.dart' show locationKey;
 
 const Duration chefGrace = Duration(minutes: 30);
+
+// Chefs at places a hidden group hides. The id decides when the feed gave
+// one, else the name does, through the same aliases the feed merge uses. A
+// place nobody can place stays listed.
+List<MenuItem> withoutHiddenChefs(Iterable<MenuItem> chefs, Iterable<GroupPlace> hiddenPlaces) => [
+  for (final chef in chefs)
+    if (!atHiddenPlace(chef.locationName, hiddenPlaces, id: chef.locationId)) chef,
+];
+
+bool atHiddenPlace(String locationName, Iterable<GroupPlace> hiddenPlaces, {int? id}) {
+  if (hiddenPlaces.isEmpty) return false;
+  if (id != null) return hiddenPlaces.any((p) => p.id == id);
+  final key = locationKey(locationName);
+  return hiddenPlaces.any((p) => locationKey(p.name) == key);
+}
 
 // null when no end is known
 DateTime? _cutoff(MenuItem chef) {

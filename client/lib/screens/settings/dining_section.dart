@@ -3,12 +3,17 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../data/dining_display_names.dart';
+import '../../data/dining_layout.dart';
+import '../../data/static_config.dart';
 import '../../services/clipboard.dart';
 import '../../services/preferences.dart';
 import '../../theme/semantic.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/menu_section.dart';
 import '../../widgets/app_icon.dart';
+import '../../widgets/inset_group.dart';
+import '../../widgets/status_row.dart';
 import '../../widgets/tab_bar.dart';
 
 class DiningSection extends StatefulWidget {
@@ -35,6 +40,45 @@ class _DiningSectionState extends State<DiningSection> {
 
   void _onChanged() {
     if (mounted) setState(() {});
+  }
+
+  // every group but Other, in the user's order
+  List<ResolvedGroup> _hideable() {
+    final config = StaticConfig.loadedOrNull;
+    return [
+      for (final g in _prefs.diningLayout.resolve(
+        defaults: config?.diningGroups ?? const [],
+        defaultGroupOf: config?.diningGroupFor ?? (_) => otherGroupId,
+        placeIds: const [],
+      ))
+        if (g.id != otherGroupId) g,
+    ];
+  }
+
+  // the named places a group's switch hides, when it lists them
+  String? _covers(String groupId) {
+    final config = StaticConfig.loadedOrNull;
+    final ids = config?.diningGroupHideIds[groupId];
+    if (config == null || ids == null) return null;
+    final names = {for (final p in config.diningGroupPlaces) p.id: diningDisplayName(p.id, p.name)};
+    return [for (final id in ids) names[id] ?? '$id'].join(', ');
+  }
+
+  void _hideGroup(ResolvedGroup group, bool hide) {
+    if (hide) {
+      final pinned = _prefs.pinnedDining;
+      final hidden = _prefs.hiddenDining;
+      final groups = _prefs.hiddenDiningGroups;
+      showFeedback(
+        context,
+        'Hid ${group.name}',
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => _prefs.restoreDining(pinned: pinned, hidden: hidden, hiddenGroups: groups),
+        ),
+      );
+    }
+    _prefs.setGroupHidden(group.id, hide);
   }
 
   @override
@@ -66,9 +110,10 @@ class _DiningSectionState extends State<DiningSection> {
             ),
             _Action(
               label: 'Unhide all',
-              enabled: _prefs.hiddenDining.isNotEmpty,
+              enabled: _prefs.hiddenDining.isNotEmpty || _prefs.hiddenDiningGroups.isNotEmpty,
               onTap: () {
                 final hiddenBefore = _prefs.hiddenDining;
+                final groupsBefore = _prefs.hiddenDiningGroups;
                 final pinnedBefore = _prefs.pinnedDining;
                 showFeedback(
                   context,
@@ -79,12 +124,38 @@ class _DiningSectionState extends State<DiningSection> {
                     onPressed: () => _prefs.restoreDining(
                       pinned: {..._prefs.pinnedDining, ...pinnedBefore}.difference(hiddenBefore),
                       hidden: hiddenBefore,
+                      hiddenGroups: groupsBefore,
                     ),
                   ),
                 );
                 _prefs.unhideAllDining();
               },
             ),
+          ],
+        ),
+        const SizedBox(height: 26),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text('Hide groups', style: text.titleLarge?.copyWith(fontSize: 21)),
+        ),
+        InsetGroup(
+          children: [
+            for (final group in _hideable())
+              StatusRow(
+                grouped: true,
+                icon: AppIconKind.dining,
+                title: 'Hide ${group.name}',
+                subtitle: _covers(group.id),
+                subtitleMaxLines: null,
+                onTap: () => _hideGroup(group, !_prefs.isGroupHidden(group.id)),
+                trailing: Semantics(
+                  label: 'Hide ${group.name}',
+                  child: Switch(
+                    value: _prefs.isGroupHidden(group.id),
+                    onChanged: (hide) => _hideGroup(group, hide),
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: 26),

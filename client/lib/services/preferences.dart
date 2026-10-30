@@ -10,8 +10,12 @@ library;
 import 'package:flutter/foundation.dart';
 
 import '../data/campus_layout.dart';
+import '../data/dining_hidden.dart';
 import '../data/dining_layout.dart';
+import '../data/static_config.dart';
 import 'cache.dart';
+
+export '../data/dining_hidden.dart' show GroupPlace;
 
 /// Keyword defaults, all editable.
 const List<String> defaultHideKeywords = [
@@ -49,6 +53,7 @@ class Preferences extends ChangeNotifier {
   static const _keywordsEnabledKey = 'keyword_rules_enabled';
   static const _pinnedKey = 'pinned_dining';
   static const _hiddenKey = 'hidden_dining';
+  static const _hiddenGroupsKey = 'hidden_dining_groups';
   static const _layoutKey = 'dining_layout';
   static const _campusKey = 'campus_layout';
   static const _dietKey = 'diet_filters';
@@ -65,6 +70,7 @@ class Preferences extends ChangeNotifier {
   Set<String> _muted = {};
   Set<String> _pinned = {};
   Set<String> _hidden = {};
+  Set<String> _hiddenGroups = {};
   DiningLayout _layout = DiningLayout.empty;
   CampusLayout _campus = CampusLayout.empty;
   Set<String> _diet = {};
@@ -87,6 +93,42 @@ class Preferences extends ChangeNotifier {
 
   /// Dining location ids hidden from the Dining tab and the Today card.
   Set<String> get hiddenDining => _hidden;
+
+  /// Dining group ids hidden as a whole. Other is never in here.
+  Set<String> get hiddenDiningGroups => _hiddenGroups;
+
+  /// Hidden by hand or through a hidden group, for these places.
+  Set<String> effectiveHidden(Iterable<int> placeIds) {
+    final config = StaticConfig.loadedOrNull;
+    return effectiveHiddenIds(
+      hidden: _hidden,
+      hiddenGroups: _hiddenGroups,
+      layout: _layout,
+      defaults: config?.diningGroups ?? const [],
+      defaultGroupOf: config?.diningGroupFor ?? (_) => otherGroupId,
+      hideIds: config?.diningGroupHideIds ?? const {},
+      placeIds: placeIds,
+    );
+  }
+
+  /// Every place in the group table that a hidden group hides.
+  List<GroupPlace> get groupHiddenPlaces {
+    final config = StaticConfig.loadedOrNull;
+    if (config == null || _hiddenGroups.isEmpty) return const [];
+    final places = config.diningGroupPlaces;
+    final hidden = groupHiddenIds(
+      hiddenGroups: _hiddenGroups,
+      layout: _layout,
+      defaults: config.diningGroups,
+      defaultGroupOf: config.diningGroupFor,
+      hideIds: config.diningGroupHideIds,
+      placeIds: [for (final p in places) p.id],
+    );
+    return [
+      for (final p in places)
+        if (hidden.contains('${p.id}')) p,
+    ];
+  }
 
   /// The user's group edits, as diffs from the shipped groups.
   DiningLayout get diningLayout => _layout;
@@ -119,6 +161,7 @@ class Preferences extends ChangeNotifier {
     _muted = (await cache.readOrder(_mutedKey)).toSet();
     _pinned = (await cache.readOrder(_pinnedKey)).toSet();
     _hidden = (await cache.readOrder(_hiddenKey)).toSet();
+    _hiddenGroups = (await cache.readOrder(_hiddenGroupsKey)).toSet()..remove(otherGroupId);
     final layout = await cache.readOrder(_layoutKey);
     _layout = DiningLayout.parse(layout.isEmpty ? null : layout.first);
     final campus = await cache.readOrder(_campusKey);
@@ -185,15 +228,13 @@ class Preferences extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Forget where you live, and ask again next launch.
+  /// Forget where you live. Setup stays answered, so nothing asks again.
   Future<void> clearHome() async {
     final cache = ResponseCache.instance;
     _homeArea = null;
     _homeUnit = '';
-    _setupSeen = false;
     await cache.writeOrder(_homeAreaKey, const []);
     await cache.writeOrder(_homeUnitKey, const []);
-    await cache.writeOrder(_setupSeenKey, const []);
     notifyListeners();
   }
 
@@ -256,26 +297,48 @@ class Preferences extends ChangeNotifier {
     if (unpinned) await ResponseCache.instance.writeOrder(_pinnedKey, _pinned.toList());
   }
 
-  // undo for hide and unhide all: both sets, since hiding drops the pin
-  Future<void> restoreDining({required Set<String> pinned, required Set<String> hidden}) async {
+  bool isGroupHidden(String groupId) => _hiddenGroups.contains(groupId);
+
+  Future<void> setGroupHidden(String groupId, bool hide) async {
+    if (groupId == otherGroupId || _hiddenGroups.contains(groupId) == hide) return;
+    _hiddenGroups = hide ? {..._hiddenGroups, groupId} : ({..._hiddenGroups}..remove(groupId));
+    notifyListeners();
+    await ResponseCache.instance.writeOrder(_hiddenGroupsKey, _hiddenGroups.toList());
+  }
+
+  // undo for hide and unhide all: every set, since hiding drops the pin
+  Future<void> restoreDining({
+    required Set<String> pinned,
+    required Set<String> hidden,
+    Set<String>? hiddenGroups,
+  }) async {
     _pinned = {...pinned};
     _hidden = {...hidden};
+    if (hiddenGroups != null) _hiddenGroups = {...hiddenGroups}..remove(otherGroupId);
     notifyListeners();
     await ResponseCache.instance.writeOrder(_pinnedKey, _pinned.toList());
     await ResponseCache.instance.writeOrder(_hiddenKey, _hidden.toList());
+    if (hiddenGroups != null) await ResponseCache.instance.writeOrder(_hiddenGroupsKey, _hiddenGroups.toList());
   }
 
   Future<void> unhideAllDining() async {
     _hidden = {};
+    _hiddenGroups = {};
     notifyListeners();
     await ResponseCache.instance.writeOrder(_hiddenKey, const []);
+    await ResponseCache.instance.writeOrder(_hiddenGroupsKey, const []);
   }
 
   Future<void> setDiningLayout(DiningLayout layout) async {
     _layout = layout;
+    // a deleted custom group takes its hide with it
+    final stale = _hiddenGroups.where((id) => id.startsWith('custom-') && !layout.custom.containsKey(id));
+    final pruned = stale.isNotEmpty;
+    if (pruned) _hiddenGroups = {..._hiddenGroups}..removeAll(stale.toList());
     notifyListeners();
     final encoded = layout.encode();
     await ResponseCache.instance.writeOrder(_layoutKey, encoded == null ? const [] : [encoded]);
+    if (pruned) await ResponseCache.instance.writeOrder(_hiddenGroupsKey, _hiddenGroups.toList());
   }
 
   Future<void> resetDiningGroups() => setDiningLayout(DiningLayout.empty);
@@ -343,6 +406,7 @@ class Preferences extends ChangeNotifier {
     _muted = {};
     _pinned = {};
     _hidden = {};
+    _hiddenGroups = {};
     _layout = DiningLayout.empty;
     _campus = CampusLayout.empty;
     _diet = {};

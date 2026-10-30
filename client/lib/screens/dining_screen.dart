@@ -87,7 +87,7 @@ class _DiningScreenState extends State<DiningScreen> {
     }
     final today = CampusTime.wallDate();
     return [
-      for (final chef in listedChefs(chefs.data))
+      for (final chef in listedChefs(withoutHiddenChefs(chefs.data, _prefs.groupHiddenPlaces)))
         if (chef.name.isNotEmpty &&
             (chef.startsAt == null ||
                 DateUtils.isSameDay(CampusTime.fieldsOf(chef.startsAt!), today)) &&
@@ -105,7 +105,7 @@ class _DiningScreenState extends State<DiningScreen> {
     if (chefs == null || chefs.availability != Availability.available) return false;
     final today = CampusTime.wallDate();
     return chefsAllEnded([
-      for (final chef in chefs.data)
+      for (final chef in withoutHiddenChefs(chefs.data, _prefs.groupHiddenPlaces))
         if (chef.name.isNotEmpty && (chef.startsAt == null || DateUtils.isSameDay(CampusTime.fieldsOf(chef.startsAt!), today))) chef,
     ]);
   }
@@ -288,7 +288,8 @@ class _DiningScreenState extends State<DiningScreen> {
     final query = _search.text.trim().toLowerCase();
     final everything = widget.result.value?.data ?? const <DiningLocation>[];
     // Open now unless nothing is open, so the tab never opens on an empty list
-    final anyOpen = everything.any((l) => l.isOpen && !_prefs.isHidden(l.id));
+    final effectiveHidden = _prefs.effectiveHidden([for (final l in everything) l.id]);
+    final anyOpen = everything.any((l) => l.isOpen && !effectiveHidden.contains('${l.id}'));
     final view = _view ?? (anyOpen ? DiningView.openNow : DiningView.all);
     final types = _typesIn(everything);
     final type = types.contains(_type) ? _type : null;
@@ -310,13 +311,16 @@ class _DiningScreenState extends State<DiningScreen> {
       defaultGroupOf: config?.diningGroupFor ?? (_) => otherGroupId,
       pinned: _prefs.pinnedDining.toList(),
       hidden: _prefs.hiddenDining,
+      hiddenGroups: _prefs.hiddenDiningGroups,
+      hideIds: config?.diningGroupHideIds ?? const {},
       // only All lists hidden places
       showHidden: !_editing && view == DiningView.all,
       keepEmpty: _editing,
     );
     final chefs = _todayChefs(query);
     final endedChefs = query.isEmpty && _chefsEnded;
-    final nextChef = _chefs.value is ChefCollection ? (_chefs.value as ChefCollection).next : null;
+    final upcomingChef = _chefs.value is ChefCollection ? (_chefs.value as ChefCollection).next : null;
+    final nextChef = upcomingChef != null && !atHiddenPlace(upcomingChef.locationName, _prefs.groupHiddenPlaces) ? upcomingChef : null;
 
     // cached trucks show at once
     final trucks = [
@@ -394,7 +398,7 @@ class _DiningScreenState extends State<DiningScreen> {
                       count: todayTrucks.length,
                       builder: (context) => _FoodTrucksGroup(title: 'Food trucks', trucks: todayTrucks),
                     ),
-                  if (sections.visibleCount == 0 && sections.hidden.isEmpty)
+                  if (sections.visibleCount == 0 && sections.hiddenCount == 0)
                     JumpGroup(
                       label: 'No matches',
                       icon: AppIconKind.notFound,
@@ -426,12 +430,12 @@ class _DiningScreenState extends State<DiningScreen> {
                       count: laterTrucks.length,
                       builder: (context) => _FoodTrucksGroup(title: 'Upcoming food trucks', trucks: laterTrucks),
                     ),
-                  if (sections.hidden.isNotEmpty)
+                  if (sections.hiddenCount > 0)
                     JumpGroup(
                       label: 'Hidden',
                       icon: AppIconKind.hidden,
                       count: 0,
-                      builder: (context) => _HiddenSection(places: sections.hidden, api: widget.api),
+                      builder: (context) => _HiddenSection(places: sections.hidden, groups: sections.hiddenGroups, api: widget.api),
                     ),
                 ],
                 ),
@@ -477,10 +481,13 @@ class _PlaceSection extends StatelessWidget {
 
 // collapsed until opened, so hidden places stay out of the way
 class _HiddenSection extends StatefulWidget {
-  const _HiddenSection({required this.places, required this.api});
+  const _HiddenSection({required this.places, required this.groups, required this.api});
 
   final List<DiningLocation> places;
+  final List<GroupSection> groups;
   final ApiClient api;
+
+  int get count => places.length + groups.fold(0, (sum, g) => sum + g.places.length);
 
   @override
   State<_HiddenSection> createState() => _HiddenSectionState();
@@ -498,7 +505,7 @@ class _HiddenSectionState extends State<_HiddenSection> {
         Semantics(
           button: true,
           expanded: _open,
-          label: 'Hidden (${widget.places.length})',
+          label: 'Hidden (${widget.count})',
           excludeSemantics: true,
           child: InkWell(
             onTap: () => setState(() => _open = !_open),
@@ -511,7 +518,7 @@ class _HiddenSectionState extends State<_HiddenSection> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Hidden (${widget.places.length})',
+                        'Hidden (${widget.count})',
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(color: scheme.onSurfaceVariant),
                       ),
                     ),
@@ -525,12 +532,30 @@ class _HiddenSectionState extends State<_HiddenSection> {
             ),
           ),
         ),
-        if (_open)
+        if (_open && widget.places.isNotEmpty)
           InsetGroup(
             children: [
               for (final location in widget.places) DiningRow(key: ValueKey('hidden-${location.id}'), location: location, api: widget.api, grouped: true),
             ],
           ),
+        if (_open)
+          for (final section in widget.groups) ...[
+            Row(
+              children: [
+                Expanded(child: SectionTitle(section.group.name)),
+                TextButton(
+                  onPressed: () => Preferences.instance.setGroupHidden(section.group.id, false),
+                  style: TextButton.styleFrom(minimumSize: const Size(48, 48)),
+                  child: Text('Show ${section.group.name}'),
+                ),
+              ],
+            ),
+            InsetGroup(
+              children: [
+                for (final location in section.places) DiningRow(key: ValueKey('hidden-${location.id}'), location: location, api: widget.api, grouped: true),
+              ],
+            ),
+          ],
       ],
     );
   }

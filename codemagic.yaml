@@ -181,16 +181,16 @@ workflows:
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
           echo "SIM_UDID=$UDID" >> "$CM_ENV"
-      # one run per appearance keeps each drive's screenshot payload small
-      - name: Screenshots, device screenshots and a tab bar scrub video, light
+      # every scheme is dark, so one run covers shots, device shots and the scrub
+      - name: Screenshots, device screenshots and a tab bar scrub video, dark
         script: |
           set -euo pipefail
           cd client
-          xcrun simctl ui "$SIM_UDID" appearance light
+          xcrun simctl ui "$SIM_UDID" appearance dark
           mkdir -p build/ios_screens
           trap 'pkill -INT -f "simctl io $SIM_UDID recordVideo" || true' EXIT
           # records between the tests log lines, not the minutes of build
-          flutter drive --driver=test_driver/integration_test.dart --target=integration_test/ios_screens_test.dart -d "$SIM_UDID" --dart-define=SCREENS_APPEARANCE=light --dart-define=DEVICE_SHOTS=true 2>&1 | while IFS= read -r line || [ -n "$line" ]; do
+          flutter drive --driver=test_driver/integration_test.dart --target=integration_test/ios_screens_test.dart -d "$SIM_UDID" --dart-define=SCREENS_APPEARANCE=dark --dart-define=DEVICE_SHOTS=true 2>&1 | while IFS= read -r line || [ -n "$line" ]; do
             echo "$line"
             case "$line" in
               # the real screen, with the status bar and home indicator
@@ -213,17 +213,14 @@ workflows:
           sleep 3
           xcrun simctl io "$SIM_UDID" screenshot client/build/home_indicator_check.png
           xcrun simctl terminate "$SIM_UDID" com.apple.Preferences
-      - name: Screenshots, dark
-        script: |
-          cd client
-          xcrun simctl ui "$SIM_UDID" appearance dark
-          flutter drive --driver=test_driver/integration_test.dart --target=integration_test/ios_screens_test.dart -d "$SIM_UDID" --dart-define=SCREENS_APPEARANCE=dark
-      - name: All 30 screenshots and 5 device screenshots exist and none is blank
+      - name: All 23 screenshots and 5 device screenshots exist and none is blank
         script: |
           set -euo pipefail
           cd client/build/ios_screens
           ls -l
-          test "$(ls -1 *.png | grep -vc '_device\.png$')" -eq 30
+          # 15 tabs, detail and settings, then 7 setup steps and the what's new sheet
+          test "$(ls -1 *.png | grep -vc '_device\.png$')" -eq 23
+          test "$(ls -1 setup_*_dark.png | wc -l | tr -d ' ')" -eq 8
           test "$(ls -1 *_device.png | wc -l | tr -d ' ')" -eq 5
           # a blank 1320x2868 png compresses to a few kb
           for f in *.png; do

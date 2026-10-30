@@ -25,13 +25,27 @@ class SettingsScreen extends StatelessWidget {
     super.key,
     required this.scheme,
     required this.events,
+    this.onPersonalize,
   });
 
   final SchemeController scheme;
   final Result<Collection<CampusEvent>> events;
 
+  /// Opens setup again, filled in. No row without it.
+  final VoidCallback? onPersonalize;
+
   @override
   Widget build(BuildContext context) => SectionScaffold(
+        actions: [
+          if (onPersonalize != null)
+            SectionAction(
+              id: 'personalize',
+              title: 'Personalize TigerHub',
+              subtitle: 'Look, spots, events and Today',
+              icon: AppIconKind.tune,
+              onTap: onPersonalize!,
+            ),
+        ],
         sections: [
           SectionSpec(
             id: 'today',

@@ -38,10 +38,28 @@ class SectionSpec {
   final WidgetBuilder builder;
 }
 
+/// A row that does something when tapped instead of opening a section.
+class SectionAction {
+  const SectionAction({
+    required this.id,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String id;
+  final String title;
+  final String subtitle;
+  final AppIconKind icon;
+  final VoidCallback onTap;
+}
+
 class SectionScaffold extends StatefulWidget {
   const SectionScaffold({
     super.key,
     required this.sections,
+    this.actions = const [],
     this.hidden = const [],
     this.rowActions,
     this.header,
@@ -53,6 +71,9 @@ class SectionScaffold extends StatefulWidget {
   });
 
   final List<SectionSpec> sections;
+
+  /// Action rows above the sections, for things that open a flow.
+  final List<SectionAction> actions;
 
   /// Rows the reader hid. They sit under a collapsed Hidden (n) header.
   final List<SectionSpec> hidden;
@@ -116,6 +137,7 @@ class _SectionScaffoldState extends State<SectionScaffold> {
     if (!wide) {
       return _NavList(
         sections: widget.sections,
+        actions: widget.actions,
         hidden: widget.hidden,
         rowActions: widget.rowActions,
         header: widget.header,
@@ -156,6 +178,7 @@ class _SectionScaffoldState extends State<SectionScaffold> {
           width: widget.navWidth,
           child: _NavList(
             sections: widget.sections,
+            actions: widget.actions,
             hidden: widget.hidden,
             rowActions: widget.rowActions,
             header: widget.header,
@@ -215,6 +238,7 @@ class _SectionPaneStack extends StatelessWidget {
 class _NavList extends StatelessWidget {
   const _NavList({
     required this.sections,
+    required this.actions,
     required this.hidden,
     required this.rowActions,
     required this.header,
@@ -226,6 +250,7 @@ class _NavList extends StatelessWidget {
   });
 
   final List<SectionSpec> sections;
+  final List<SectionAction> actions;
   final List<SectionSpec> hidden;
   final List<MenuAction> Function(SectionSpec spec, bool hidden)? rowActions;
   final Widget? header;
@@ -284,6 +309,21 @@ class _NavList extends StatelessWidget {
     padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(16, 6, 16, 24)),
     children: [
       ?header,
+      for (final action in actions)
+        SectionNavRow(
+          key: ValueKey('action-${action.id}'),
+          spec: SectionSpec(
+            id: action.id,
+            title: action.title,
+            subtitle: action.subtitle,
+            icon: action.icon,
+            builder: (_) => const SizedBox.shrink(),
+          ),
+          active: false,
+          iconSize: iconSize,
+          onTap: editing ? null : action.onTap,
+          trailing: ExcludeSemantics(child: AppIcon(AppIconKind.chevron, size: 22, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        ),
       for (final section in sections) _row(context, section, isHidden: false),
       if (hidden.isNotEmpty)
         HiddenGroup(

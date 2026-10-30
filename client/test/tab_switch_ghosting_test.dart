@@ -115,6 +115,8 @@ void main() {
     final scheme = SchemeController();
     await scheme.load();
     addTearDown(scheme.dispose);
+    // settings left by earlier tests would raise the one-time sheet over the tabs
+    await Preferences.instance.markSetupSeen();
 
     final backend = _DataBackend();
     await tester.pumpWidget(MaterialApp(
