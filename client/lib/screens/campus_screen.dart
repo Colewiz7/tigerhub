@@ -391,9 +391,7 @@ class _MailSection extends StatelessWidget {
         _Heading(
           glyph: AppIconKind.mail,
           title: shown.length == 1 ? 'Post office' : 'Post offices',
-          subtitle:
-              'Mail is collected at the counter after an email notice. '
-              'There are no mailboxes.',
+          subtitle: 'You get an email notice first. There are no mailboxes.',
           state: offices.state,
           fetchedAt: offices.fetchedAt,
         ),
@@ -664,79 +662,25 @@ String _time(String hhmm) {
   return '$display:$minute $suffix';
 }
 
+const _counterNote = 'Mail is collected at the counter';
+
 String _serviceLabel(String service) => switch (service) {
   'package_pickup' => 'Package pickup',
   'shipping_window' => 'Shipping window',
   _ => 'Hours',
 };
 
-/// One line per service: what it is doing right now.
-///
-/// The full week stays underneath. This exists because reading a per service,
-/// per weekday, per season table to work out whether to walk over is the wrong
-/// amount of effort for the question.
-class _TodayLine extends StatelessWidget {
-  const _TodayLine({required this.today});
-
-  final TodaysHours today;
-
-  @override
-  Widget build(BuildContext context) {
-    if (today.state == ServiceState.unknown) return const SizedBox.shrink();
-
-    final scheme = Theme.of(context).colorScheme;
-    final text = Theme.of(context).textTheme;
-    final semantic = Semantic.of(context);
-
-    // Status is always stated in words. Colour never carries it alone.
-    final (label, detail) = switch (today.state) {
-      ServiceState.open => ('Open', 'until ${_clockAt(today.closesAt!)}'),
-      // Between spans is not the same as finished, and saying "closed" alone
-      // would send someone away minutes before it reopens.
-      ServiceState.closedUntilLater => (
-        'Closed',
-        'opens ${_clockAt(today.opensAt!)}',
-      ),
-      ServiceState.closedForDay => (
-        'Closed',
-        today.spans.isEmpty ? 'not open today' : 'for the day',
-      ),
-      ServiceState.unknown => ('', ''),
-    };
-
-    final accent = today.isOpen ? semantic.open : scheme.onSurfaceVariant;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: accent),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              _serviceLabel(today.service),
-              style: text.bodyMedium?.copyWith(color: scheme.onSurface),
-            ),
-          ),
-          Flexible(
-            child: Text(
-            '$label \u00b7 $detail',
-            textAlign: TextAlign.end,
-            style: text.bodySmall?.copyWith(
-              color: today.isOpen ? accent : scheme.onSurfaceVariant,
-              fontWeight: AppTheme.weight(Weights.medium),
-              fontVariations: Weights.medium,
-            ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+// status in words, colour never carries it alone
+String? _statusLineOf(TodaysHours today) {
+  final (label, detail) = switch (today.state) {
+    ServiceState.open => ('Open', 'until ${_clockAt(today.closesAt!)}'),
+    // between spans isnt finished, say when it reopens
+    ServiceState.closedUntilLater => ('Closed', 'opens ${_clockAt(today.opensAt!)}'),
+    ServiceState.closedForDay => ('Closed', today.spans.isEmpty ? 'not open today' : 'for the day'),
+    ServiceState.unknown => ('', ''),
+  };
+  if (today.state == ServiceState.unknown) return null;
+  return '$label \u00b7 $detail';
 }
 
 /// An instant as `4:30 PM`. Distinct from `_time`, which formats the config's
@@ -815,24 +759,10 @@ class _PostOfficeBlock extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-
-            // The answer to "can I go now", before the week's table. The table
-            // is for planning; this is for standing outside deciding.
-            for (final service in servicesIn(rules))
-              _TodayLine(
-                today: todaysHours(
-                  service: service,
-                  rules: rules,
-                  now: CampusTime.nowUtc(),
-                ),
-              ),
-
-            const SizedBox(height: 16),
             _ServiceModules(services: services, season: season),
-            if (office.locationNote != null) ...[
-              Text(office.locationNote!, style: text.bodySmall),
-              const SizedBox(height: 12),
-            ],
+            if (office.locationNote != null) Text(office.locationNote!, style: text.bodySmall),
+            Text(_counterNote, style: text.bodySmall),
+            const SizedBox(height: 12),
             if (office.email != null || office.phone != null)
               Wrap(
                 spacing: 8,
@@ -987,6 +917,9 @@ class _ServiceHours extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final grouped = groupRulesByDay(rules);
+    final today = todaysHours(service: service, rules: rules, now: CampusTime.nowUtc());
+    final status = _statusLineOf(today);
+    final over = today.state == ServiceState.closedForDay;
 
     // One group per service, read as: service, season, days, then spans.
     return Semantics(
@@ -1014,6 +947,17 @@ class _ServiceHours extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _ServiceHeading(service: service, season: season),
+                      if (status != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          status,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: today.isOpen ? Semantic.of(context).open : scheme.onSurfaceVariant,
+                            fontWeight: AppTheme.weight(Weights.medium),
+                            fontVariations: Weights.medium,
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 14),
                       for (var i = 0; i < grouped.length; i++) ...[
                         if (i > 0) ...[
@@ -1027,7 +971,7 @@ class _ServiceHours extends StatelessWidget {
                           ),
                           const SizedBox(height: 14),
                         ],
-                        _DaySpans(label: grouped[i].$1, rules: grouped[i].$2),
+                        _DaySpans(label: grouped[i].$1, rules: grouped[i].$2, over: over),
                       ],
                     ],
                   ),
@@ -1083,10 +1027,13 @@ class _ServiceHeading extends StatelessWidget {
 
 /// One day caption, and every span that day holds.
 class _DaySpans extends StatelessWidget {
-  const _DaySpans({required this.label, required this.rules});
+  const _DaySpans({required this.label, required this.rules, this.over = false});
 
   final String label;
   final List<HoursRule> rules;
+
+  // closed for the rest of today
+  final bool over;
 
   @override
   Widget build(BuildContext context) {
@@ -1114,7 +1061,7 @@ class _DaySpans extends StatelessWidget {
               height: 1.15,
               fontWeight: AppTheme.weight(Weights.medium),
               fontVariations: Weights.medium,
-              color: scheme.onSurface,
+              color: over ? scheme.onSurfaceVariant : scheme.onSurface,
             ),
           ),
         ],
