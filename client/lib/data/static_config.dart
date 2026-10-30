@@ -104,6 +104,19 @@ class StaticConfig {
           (id: (g as Map<String, dynamic>)['id'] as String, name: g['name'] as String),
       ];
 
+  // the places a hidden group covers, only for groups that list them
+  Map<String, Set<int>> get diningGroupHideIds => {
+        for (final g in (_groups?['groups'] as List<dynamic>? ?? const []))
+          if ((g as Map<String, dynamic>)['hide_ids'] != null)
+            g['id'] as String: {for (final id in g['hide_ids'] as List<dynamic>) id as int},
+      };
+
+  // every place in the table, for matching a chef by name
+  List<({int id, String name})> get diningGroupPlaces => [
+        for (final p in (_groups?['places'] as List<dynamic>? ?? const []))
+          (id: (p as Map<String, dynamic>)['id'] as int, name: p['name'] as String),
+      ];
+
   // a place the table doesnt know lands in other
   String diningGroupFor(int locationId) {
     for (final p in (_groups?['places'] as List<dynamic>? ?? const [])) {
