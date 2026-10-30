@@ -373,6 +373,7 @@ class _DiningScreenState extends State<DiningScreen> {
               child: ContextActionsScope(
                 enabled: !_editing,
                 child: JumpList(
+                  groupGap: 10,
                   groups: _editing ? _editGroups(sections, defaults) : [
 
                   if (chefs.isEmpty && endedChefs)

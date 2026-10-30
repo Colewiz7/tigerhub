@@ -13,7 +13,7 @@ class SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+    padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
     child: Semantics(
       header: true,
       child: Text(title, style: Theme.of(context).textTheme.titleMedium),
@@ -34,23 +34,21 @@ class InsetGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final hairline = 1 / MediaQuery.devicePixelRatioOf(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(color: scheme.surfaceContainerHigh, borderRadius: Shapes.inner),
-        child: Column(
-          children: [
-            for (var i = 0; i < children.length; i++) ...[
-              if (i > 0)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(start: separatorInset),
-                  child: SizedBox(height: hairline, width: double.infinity, child: ColoredBox(color: scheme.outlineVariant)),
-                ),
-              children[i],
-            ],
+    // the gap after the card is the list's, not the card's
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(color: scheme.surfaceContainerHigh, borderRadius: Shapes.inner),
+      child: Column(
+        children: [
+          for (var i = 0; i < children.length; i++) ...[
+            if (i > 0)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(start: separatorInset),
+                child: SizedBox(height: hairline, width: double.infinity, child: ColoredBox(color: scheme.outlineVariant)),
+              ),
+            children[i],
           ],
-        ),
+        ],
       ),
     );
   }

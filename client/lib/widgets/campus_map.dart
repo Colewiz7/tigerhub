@@ -108,6 +108,11 @@ class _CampusMapViewState extends State<CampusMapView> {
     final target = (current * factor).clamp(1.0, _maxMapZoom);
     final applied = target / current;
     if (applied == 1) return;
+    // back at 1x is the whole campus again, same as the fit button
+    if (target <= 1.0) {
+      _transform.value = Matrix4.identity();
+      return;
+    }
     final focus = _viewportSize.isEmpty
         ? Offset.zero
         : _viewportSize.center(Offset.zero);
@@ -883,13 +888,7 @@ class _MapToolbar extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton.filledTonal(
-          tooltip: 'Search campus places (Ctrl+F)',
-          onPressed: onSearch,
-          icon: Icon(AppIconKind.search.of(context)),
-        ),
-        const SizedBox(width: 8),
-        // the filter gives way first, the round buttons keep their 48
+        // the filter gives way first, the search button keeps its 48
         if (kinds.isNotEmpty)
           Flexible(
             child: PopupMenuButton<String>(
@@ -940,6 +939,12 @@ class _MapToolbar extends StatelessWidget {
               ),
             ),
           ),
+        const SizedBox(width: 8),
+        IconButton.filledTonal(
+          tooltip: 'Search campus places (Ctrl+F)',
+          onPressed: onSearch,
+          icon: Icon(AppIconKind.search.of(context)),
+        ),
         const SizedBox(width: 8),
         IconButton.filledTonal(
           tooltip: 'Fit campus',
