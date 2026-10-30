@@ -13,10 +13,13 @@ import '../theme/tokens.dart';
 import 'app_icon.dart';
 import 'focus_ring.dart';
 
-/// True when they chose Personalize. Closing any other way is Not now.
-Future<bool> showWhatsNewSheet(BuildContext context) async {
+/// How the sheet ended. Only a button is an answer, a swipe, a tap outside or
+/// the back button is not, so the sheet comes back next launch.
+enum WhatsNewResult { personalize, notNow, dismissed }
+
+Future<WhatsNewResult> showWhatsNewSheet(BuildContext context) async {
   final scheme = Theme.of(context).colorScheme;
-  final chose = await showModalBottomSheet<bool>(
+  final chose = await showModalBottomSheet<WhatsNewResult>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -26,7 +29,7 @@ Future<bool> showWhatsNewSheet(BuildContext context) async {
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(Shapes.phoneCardRadius))),
     builder: (_) => const _WhatsNew(),
   );
-  return chose ?? false;
+  return chose ?? WhatsNewResult.dismissed;
 }
 
 class _WhatsNew extends StatelessWidget {
@@ -87,7 +90,7 @@ class _WhatsNew extends StatelessWidget {
                   builder: (onFocusChange) => SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: () => Navigator.of(context).pop(true),
+                      onPressed: () => Navigator.of(context).pop(WhatsNewResult.personalize),
                       onFocusChange: onFocusChange,
                       style: FilledButton.styleFrom(
                         minimumSize: const Size.fromHeight(setupButtonHeight),
@@ -97,7 +100,7 @@ class _WhatsNew extends StatelessWidget {
                     ),
                   ),
                 ),
-                SetupTextAction(label: 'Not now', onTap: () => Navigator.of(context).pop(false)),
+                SetupTextAction(label: 'Not now', onTap: () => Navigator.of(context).pop(WhatsNewResult.notNow)),
               ],
             ),
           ),

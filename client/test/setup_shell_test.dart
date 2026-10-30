@@ -114,13 +114,28 @@ void main() {
       expect(find.byType(TodayHeader), findsOneWidget);
     });
 
-    testWidgets('closing the sheet any other way counts as Not now', (tester) async {
+    testWidgets('a dismissal is not an answer and the sheet comes back', (tester) async {
       await seed();
       await pumpShell(tester);
       await tester.tapAt(const Offset(195, 40));
       await tester.pumpAndSettle();
       expect(find.text("What's new in TigerHub"), findsNothing);
-      expect(Preferences.instance.setupSeen, isTrue);
+      expect(Preferences.instance.setupSeen, isFalse);
+
+      // the next launch builds the shell again
+      await tester.pumpWidget(const SizedBox());
+      Preferences.instance.resetForTests();
+      await pumpShell(tester);
+      expect(find.text("What's new in TigerHub"), findsOneWidget);
+    });
+
+    testWidgets('the back button dismisses without answering', (tester) async {
+      await seed();
+      await pumpShell(tester);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text("What's new in TigerHub"), findsNothing);
+      expect(Preferences.instance.setupSeen, isFalse);
     });
 
     testWidgets('Personalize opens the re-run, filled in, with Cancel and Save', (tester) async {

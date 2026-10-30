@@ -156,9 +156,11 @@ class _AppShellState extends State<AppShell>
   Future<void> _offerWhatsNew() async {
     if (!mounted || _offered || Preferences.instance.setupSeen) return;
     _offered = true;
-    final personalize = await showWhatsNewSheet(context);
+    final result = await showWhatsNewSheet(context);
+    // a dismissal is not an answer, so it asks again next launch
+    if (result == WhatsNewResult.dismissed) return;
     await Preferences.instance.markSetupSeen();
-    if (personalize && mounted) await _openPersonalize();
+    if (result == WhatsNewResult.personalize && mounted) await _openPersonalize();
   }
 
   /// Setup again, from what is stored, ending in Save or Cancel.
