@@ -250,7 +250,8 @@ void main() {
       expect(find.text('Dorm side'), findsOneWidget);
       expect(find.text("Gracie's"), findsOneWidget);
       await reveal(tester, find.text('Global Village'));
-      expect(find.text('The Cafe & Market at Crossroads'), findsOneWidget);
+      expect(find.text('Crossroads'), findsOneWidget);
+      expect(find.text('The Cafe & Market at Crossroads'), findsNothing);
       await reveal(tester, find.text('Other'));
       expect(find.text('Bytes'), findsOneWidget);
     });
@@ -325,8 +326,8 @@ void main() {
         expect(button.height, greaterThanOrEqualTo(50));
         expect(button.left, 20);
         expect(button.right, size.width - 20);
-        // the long name is reachable and whole at large text
-        await reveal(tester, find.text('The Cafe & Market at Crossroads'));
+        // the short name is reachable and whole at large text
+        await reveal(tester, find.text('Crossroads'));
         expect(tester.takeException(), isNull);
         expect(tester.getRect(find.byType(FilledButton)), button);
       });
