@@ -5,6 +5,7 @@ import 'dart:async';
 
 import '../models/api_models.dart';
 import 'campus_time.dart';
+import 'dining_display_names.dart';
 
 const Duration chefGrace = Duration(minutes: 30);
 
@@ -60,7 +61,7 @@ String nextChefLine(UpcomingChef next, DateTime today) {
     1 => 'Tomorrow',
     _ => '${_weekdays[next.date.weekday - 1]}, ${_months[next.date.month - 1]} ${next.date.day}',
   };
-  return 'Next: ${[day, next.name, next.locationName].where((part) => part.isNotEmpty).join(' · ')}';
+  return 'Next: ${[day, next.name, diningDisplayName(null, next.locationName)].where((part) => part.isNotEmpty).join(' · ')}';
 }
 
 /// Where a listed chef is in their slot.

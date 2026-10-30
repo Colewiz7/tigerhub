@@ -262,7 +262,7 @@ void main() {
         // noon: Crossroads is on, Brick City starts at 4 PM so its colour is muted
         final scheme = Theme.of(tester.element(find.byType(VisitingChefsCard))).colorScheme;
         final want = {
-          'The Cafe & Market at Crossroads': chefLocationColor(long[0], scheme),
+          'Crossroads': chefLocationColor(long[0], scheme),
           'Kitchen at Brick City': chefLocationColor(long[1], scheme, muted: true),
         };
         expect(want['Kitchen at Brick City'], isNot(chefLocationColor(long[1], scheme)));
@@ -346,7 +346,7 @@ void main() {
           );
           for (final text in [
             '11 AM to 2:30 PM',
-            'The Cafe & Market at Crossroads',
+            'Crossroads',
             '4 PM to 7:30 PM',
             'Kitchen at Brick City',
           ]) {
@@ -370,7 +370,7 @@ void main() {
           final sheet = find.byType(BottomSheet);
           for (final text in [
             '11 AM to 2:30 PM',
-            'The Cafe & Market at Crossroads',
+            'Crossroads',
             '4 PM to 7:30 PM',
             'Kitchen at Brick City',
           ]) {
@@ -399,7 +399,7 @@ void main() {
       expect(find.text('KO-BQ'), findsOneWidget);
       // The time and the location are a line each.
       expect(find.text('11 AM to 2 PM'), findsOneWidget);
-      expect(find.text('The Cafe & Market at Crossroads'), findsOneWidget);
+      expect(find.text('Crossroads'), findsOneWidget);
       expect(find.text('4 PM to 7 PM'), findsOneWidget);
       expect(find.text('RITZ'), findsOneWidget);
       // No time published, so none is shown and none is invented.
