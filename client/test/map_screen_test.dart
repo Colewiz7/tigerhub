@@ -69,7 +69,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byTooltip('Fit campus'), findsNothing);
+    expect(find.byTooltip('Fit campus'), findsOneWidget);
     expect(find.byTooltip('Search campus places (Ctrl+F)'), findsOneWidget);
     expect(find.byTooltip('Filter map places'), findsOneWidget);
     expect(find.byType(CustomPaint), findsWidgets);

@@ -321,26 +321,31 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Water fountains'), findsWidgets);
     expect(find.text('Defibrillators'), findsOneWidget);
-    expect(find.byTooltip('Fit campus'), findsNothing);
+    expect(find.byTooltip('Fit campus'), findsOneWidget);
     expect(find.byType(CustomPaint), findsWidgets);
   });
 
-  testWidgets('the search button sits right of the filter, fit is gone', (
-    tester,
-  ) async {
+  testWidgets('the toolbar reads filter, search, fit', (tester) async {
     await tester.pumpWidget(app());
     final filter = tester.getRect(find.byTooltip('Filter map places'));
     final search = find.byTooltip('Search campus places (Ctrl+F)');
+    final fit = find.byTooltip('Fit campus');
 
     expect(search, findsOneWidget);
-    expect(find.byTooltip('Fit campus'), findsNothing);
+    expect(fit, findsOneWidget);
     expect(tester.getRect(search).left, greaterThanOrEqualTo(filter.right));
     expect(
-      tester.getSize(
-        find.ancestor(of: search, matching: find.byType(IconButton)),
-      ),
-      const Size(48, 48),
+      tester.getRect(fit).left,
+      greaterThanOrEqualTo(tester.getRect(search).right),
     );
+    for (final button in [search, fit]) {
+      expect(
+        tester.getSize(
+          find.ancestor(of: button, matching: find.byType(IconButton)),
+        ),
+        const Size(48, 48),
+      );
+    }
 
     await tester.tap(search);
     await tester.pumpAndSettle();
@@ -349,6 +354,23 @@ void main() {
       tester.widget<TextField>(find.byType(TextField)).autofocus,
       isFalse,
     );
+  });
+
+  testWidgets('fit campus resets a zoomed and panned view', (tester) async {
+    await tester.pumpWidget(app());
+    final controller = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!;
+
+    await tester.tap(find.byTooltip('Zoom in'));
+    await tester.tap(find.byTooltip('Zoom in'));
+    await tester.pump();
+    controller.value = controller.value.clone()..translateByDouble(-30, -20, 0, 1);
+    expect(controller.value, isNot(Matrix4.identity()));
+    await tester.tap(find.byTooltip('Fit campus'));
+    await tester.pump();
+
+    expect(controller.value, Matrix4.identity());
   });
 
   testWidgets('zooming back out to 1x frames the whole campus again', (
@@ -393,11 +415,18 @@ void main() {
             matching: find.byType(IconButton),
           ),
         );
+        final fit = tester.getRect(
+          find.ancestor(
+            of: find.byTooltip('Fit campus'),
+            matching: find.byType(IconButton),
+          ),
+        );
         expect(tester.takeException(), isNull);
         expect(search.left, greaterThanOrEqualTo(filter.right));
-        expect(search.right, lessThanOrEqualTo(width));
+        expect(fit.left, greaterThanOrEqualTo(search.right));
+        expect(fit.right, lessThanOrEqualTo(width));
         expect(search.shortestSide, greaterThanOrEqualTo(48));
-      });
+        expect(fit.shortestSide, greaterThanOrEqualTo(48));      });
     }
   }
 

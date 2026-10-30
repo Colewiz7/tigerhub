@@ -108,7 +108,7 @@ class _CampusMapViewState extends State<CampusMapView> {
     final target = (current * factor).clamp(1.0, _maxMapZoom);
     final applied = target / current;
     if (applied == 1) return;
-    // back at 1x is the whole campus again, this replaced the fit button
+    // back at 1x is the whole campus again, same as the fit button
     if (target <= 1.0) {
       _transform.value = Matrix4.identity();
       return;
@@ -263,6 +263,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                   _selectedId = null;
                   _transform.value = Matrix4.identity();
                 }),
+                onFit: () => _transform.value = Matrix4.identity(),
                 onSearch: () => _searchPlaces(all, backdrop),
               );
 
@@ -864,12 +865,14 @@ class _MapToolbar extends StatelessWidget {
     required this.kinds,
     required this.selectedKind,
     required this.onKindChanged,
+    required this.onFit,
     required this.onSearch,
   });
 
   final Map<String, String> kinds;
   final String? selectedKind;
   final ValueChanged<String?> onKindChanged;
+  final VoidCallback onFit;
   final VoidCallback onSearch;
 
   @override
@@ -941,6 +944,12 @@ class _MapToolbar extends StatelessWidget {
           tooltip: 'Search campus places (Ctrl+F)',
           onPressed: onSearch,
           icon: Icon(AppIconKind.search.of(context)),
+        ),
+        const SizedBox(width: 8),
+        IconButton.filledTonal(
+          tooltip: 'Fit campus',
+          onPressed: onFit,
+          icon: Icon(AppIconKind.recenter.of(context)),
         ),
       ],
     );
