@@ -17,6 +17,18 @@ class DarkPalette {
     required this.text,
     required this.muted,
     required this.accent,
+    required this.onAccent,
+    required this.accentContainer,
+    required this.onAccentContainer,
+    required this.secondary,
+    required this.onSecondary,
+    required this.pill,
+    required this.onPill,
+    required this.tertiary,
+    required this.tertiaryContainer,
+    required this.onTertiaryContainer,
+    required this.outline,
+    required this.outlineVariant,
     required this.success,
     required this.busy,
     this.closedTone = 59,
@@ -25,6 +37,24 @@ class DarkPalette {
   final String id;
   final String name;
   final Color bg, surface, elevated, text, muted, accent;
+
+  /// Text and icons on a filled accent.
+  final Color onAccent;
+
+  /// Selected pickers and chips: a tint of the accent hue and its ink.
+  final Color accentContainer, onAccentContainer;
+
+  /// The second voice: toggles, secondary buttons.
+  final Color secondary, onSecondary;
+
+  /// The glass tab bar's selected pill and the label on it.
+  final Color pill, onPill;
+
+  /// The third voice, a neighbour of the accent hue.
+  final Color tertiary, tertiaryContainer, onTertiaryContainer;
+
+  /// Field borders and hairlines.
+  final Color outline, outlineVariant;
 
   /// Chip foregrounds, lifted until they hold 4.5:1 on their own tint.
   final Color success, busy;
@@ -42,6 +72,18 @@ class DarkPalette {
     text: Color(0xFFF2E6DE),
     muted: Color(0xFFC6B3A8),
     accent: Color(0xFFF3B08F),
+    onAccent: Color(0xFF140A08),
+    accentContainer: Color(0xFF703717),
+    onAccentContainer: Color(0xFFFFDBCC),
+    secondary: Color(0xFFE6BEAC),
+    onSecondary: Color(0xFF432A1E),
+    pill: Color(0xFF5C4033),
+    onPill: Color(0xFFFFDBCC),
+    tertiary: Color(0xFFD0C890),
+    tertiaryContainer: Color(0xFF4D481C),
+    onTertiaryContainer: Color(0xFFEDE4A9),
+    outline: Color(0xFFA08D85),
+    outlineVariant: Color(0xFF52443D),
     success: Color(0xFF81AF7D),
     busy: Color(0xFFC7942F),
   );
@@ -49,12 +91,24 @@ class DarkPalette {
   static const mocha = DarkPalette(
     id: 'mocha',
     name: 'Mocha',
-    bg: Color(0xFF171311),
-    surface: Color(0xFF2D2622),
-    elevated: Color(0xFF3C342F),
-    text: Color(0xFFF5EFEA),
-    muted: Color(0xFFBFB2A8),
-    accent: Color(0xFFD9B8A0),
+    bg: Color(0xFF151512),
+    surface: Color(0xFF252622),
+    elevated: Color(0xFF33342F),
+    text: Color(0xFFF1EFE8),
+    muted: Color(0xFFBCBAAE),
+    accent: Color(0xFFA9C6BC),
+    onAccent: Color(0xFF10201B),
+    accentContainer: Color(0xFF33504A),
+    onAccentContainer: Color(0xFFD2EDE4),
+    secondary: Color(0xFFB7C4A8),
+    onSecondary: Color(0xFF1F2A18),
+    pill: Color(0xFF3F4B3C),
+    onPill: Color(0xFFDCE8CF),
+    tertiary: Color(0xFFD0BFA4),
+    tertiaryContainer: Color(0xFF4F4430),
+    onTertiaryContainer: Color(0xFFF0E1C6),
+    outline: Color(0xFF8E9086),
+    outlineVariant: Color(0xFF4A4C44),
     success: Color(0xFF9CB193),
     busy: Color(0xFFC3AB7D),
     closedTone: 63,
@@ -63,12 +117,24 @@ class DarkPalette {
   static const slate = DarkPalette(
     id: 'slate',
     name: 'Slate',
-    bg: Color(0xFF151312),
-    surface: Color(0xFF23201E),
-    elevated: Color(0xFF312D2A),
-    text: Color(0xFFF7F2EC),
-    muted: Color(0xFFBEB4AB),
-    accent: Color(0xFFE2C2A2),
+    bg: Color(0xFF121417),
+    surface: Color(0xFF1F2227),
+    elevated: Color(0xFF2B2F35),
+    text: Color(0xFFEEF1F5),
+    muted: Color(0xFFB8BFCA),
+    accent: Color(0xFF8AB4F8),
+    onAccent: Color(0xFF0A1A33),
+    accentContainer: Color(0xFF1F3C6E),
+    onAccentContainer: Color(0xFFD6E4FF),
+    secondary: Color(0xFFA8C0E8),
+    onSecondary: Color(0xFF12233F),
+    pill: Color(0xFF2E4468),
+    onPill: Color(0xFFD6E4FF),
+    tertiary: Color(0xFFC3B9F2),
+    tertiaryContainer: Color(0xFF3F376B),
+    onTertiaryContainer: Color(0xFFE6E0FF),
+    outline: Color(0xFF8A919C),
+    outlineVariant: Color(0xFF444A54),
     success: Color(0xFF91A58C),
     busy: Color(0xFFBDA379),
   );
@@ -91,7 +157,20 @@ class DarkPalette {
     onSurface: text,
     onSurfaceVariant: muted,
     primary: accent,
-    onPrimary: bg,
+    onPrimary: onAccent,
+    primaryContainer: accentContainer,
+    onPrimaryContainer: onAccentContainer,
+    secondary: secondary,
+    onSecondary: onSecondary,
+    secondaryContainer: pill,
+    onSecondaryContainer: onPill,
+    tertiary: tertiary,
+    tertiaryContainer: tertiaryContainer,
+    onTertiaryContainer: onTertiaryContainer,
+    outline: outline,
+    outlineVariant: outlineVariant,
+    surfaceTint: accent,
+    inversePrimary: accentContainer,
   );
 
   /// The palette a scheme was built from, or null for any other scheme.

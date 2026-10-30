@@ -44,6 +44,14 @@ List<Pair> darkPairs(ThemeData theme) {
     ('Time highlight', s.onSurface, Color.alphaBlend(s.primary.withValues(alpha: 0.12), surface)),
     ('Selected tab label on pill', s.primary, s.secondaryContainer),
     ('Unselected tab label on glass', s.onSurfaceVariant, glass),
+    ('Pill ink on pill', s.onSecondaryContainer, s.secondaryContainer),
+    ('Selected chip label', s.primary, Color.alphaBlend(s.primary.withValues(alpha: 0.22), surface)),
+    ('Selected picker label', s.onPrimaryContainer, s.primaryContainer),
+    ('Secondary on Surface', s.secondary, surface),
+    ('On-secondary on Secondary fill', s.onSecondary, s.secondary),
+    ('Tertiary ink on container', s.onTertiaryContainer, s.tertiaryContainer),
+    ('Open chip on Bg', sem.open, bg),
+    ('Busy chip on Bg', sem.busy, bg),
   ];
 }
 
@@ -102,6 +110,38 @@ void main() {
       });
     });
   }
+
+  test('the three schemes recolor primary, pill, picker and tab bar', () {
+    final s = AppScheme.values.map(SchemeController.forChoice).toList();
+    final sets = <String, List<Color>>{
+      'primary': [for (final x in s) x.primary],
+      'secondaryContainer': [for (final x in s) x.secondaryContainer],
+      'primaryContainer': [for (final x in s) x.primaryContainer],
+      'secondary': [for (final x in s) x.secondary],
+      'tertiary': [for (final x in s) x.tertiary],
+      'outline': [for (final x in s) x.outline],
+      'outlineVariant': [for (final x in s) x.outlineVariant],
+      'tab bar glass': [for (final x in s) x.surfaceContainer],
+    };
+    sets.forEach((role, colors) {
+      expect(colors.toSet().length, 3, reason: '$role must differ in every scheme: ${colors.map(hex)}');
+    });
+  });
+
+  test('slate is blue, not orange', () {
+    final s = SchemeController.forChoice(AppScheme.slate);
+    for (final c in [s.primary, s.secondaryContainer, s.primaryContainer, s.secondary]) {
+      final hsl = HSLColor.fromColor(c);
+      expect(hsl.hue, inInclusiveRange(200, 240), reason: hex(c));
+    }
+  });
+
+  test('outlines hold 3:1 on cards in every scheme', () {
+    for (final choice in AppScheme.values) {
+      final s = SchemeController.forChoice(choice);
+      expect(ratio(s.outline, s.surfaceContainerLow), greaterThanOrEqualTo(3), reason: choice.id);
+    }
+  });
 
   test('the espresso palette is the recommended one', () {
     const p = DarkPalette.espresso;

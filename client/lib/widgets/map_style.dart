@@ -35,6 +35,17 @@ class MapPalette {
     required this.labelHalo,
     required this.clusterBadge,
     required this.clusterBadgeText,
+    required this.pinPlace,
+    required this.onPinPlace,
+    required this.pinUtility,
+    required this.onPinUtility,
+    required this.pinSafety,
+    required this.onPinSafety,
+    required this.chrome,
+    required this.chromeInk,
+    required this.chromeMuted,
+    required this.chromeAccent,
+    required this.chromeEdge,
   });
 
   final Color ground;
@@ -61,6 +72,14 @@ class MapPalette {
   final Color labelHalo;
   final Color clusterBadge;
   final Color clusterBadgeText;
+
+  // pins: a place, a utility (water, transit), a safety point
+  final Color pinPlace, onPinPlace;
+  final Color pinUtility, onPinUtility;
+  final Color pinSafety, onPinSafety;
+
+  // controls and legend drawn over the map
+  final Color chrome, chromeInk, chromeMuted, chromeAccent, chromeEdge;
 
   Color fill(MapCategory category) => switch (category) {
     MapCategory.academic => academic,
@@ -99,6 +118,17 @@ class MapPalette {
     labelHalo: Color(0xFFF7F5F2),
     clusterBadge: Color(0xFFC75300),
     clusterBadgeText: Color(0xFFFFFFFF),
+    pinPlace: Color(0xFFFFDBCC),
+    onPinPlace: Color(0xFF703717),
+    pinUtility: Color(0xFFFFDBCC),
+    onPinUtility: Color(0xFF5C4033),
+    pinSafety: Color(0xFFEDE4A9),
+    onPinSafety: Color(0xFF4D481C),
+    chrome: Color(0xFFFFF8F6),
+    chromeInk: Color(0xFF221A16),
+    chromeMuted: Color(0xFF52443D),
+    chromeAccent: Color(0xFF8D4E2C),
+    chromeEdge: Color(0xFFD7C2B9),
   );
 
   static const dark = MapPalette(
@@ -126,6 +156,17 @@ class MapPalette {
     labelHalo: Color(0xFF151412),
     clusterBadge: Color(0xFFFF9A4C),
     clusterBadgeText: Color(0xFF151412),
+    pinPlace: Color(0xFF703717),
+    onPinPlace: Color(0xFFFFDBCC),
+    pinUtility: Color(0xFF5C4033),
+    onPinUtility: Color(0xFFFFDBCC),
+    pinSafety: Color(0xFF4D481C),
+    onPinSafety: Color(0xFFEDE4A9),
+    chrome: Color(0xFF1A120E),
+    chromeInk: Color(0xFFF0DFD8),
+    chromeMuted: Color(0xFFD7C2B9),
+    chromeAccent: Color(0xFFFFB693),
+    chromeEdge: Color(0xFF52443D),
   );
 }
 
