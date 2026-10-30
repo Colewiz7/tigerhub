@@ -40,13 +40,34 @@ class LookStep extends StatelessWidget {
   }
 }
 
-class _Previews extends StatelessWidget {
+class _Previews extends StatefulWidget {
   const _Previews({required this.picked, required this.onPick});
 
   final AppScheme picked;
   final ValueChanged<AppScheme> onPick;
 
+  @override
+  State<_Previews> createState() => _PreviewsState();
+}
+
+class _PreviewsState extends State<_Previews> {
   static const double _gap = 12;
+
+  // opens with the chosen look in view, one before it showing
+  late final _scroll = ScrollController(
+    initialScrollOffset: (AppScheme.values.indexOf(widget.picked) - 1).clamp(0, AppScheme.values.length) * (_scrollWidth + _gap),
+  );
+
+  static const double _scrollWidth = 132;
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  AppScheme get picked => widget.picked;
+  ValueChanged<AppScheme> get onPick => widget.onPick;
 
   @override
   Widget build(BuildContext context) {
@@ -57,7 +78,7 @@ class _Previews extends StatelessWidget {
       builder: (context, constraints) {
         // three fit across a phone, more scroll sideways
         final fits = schemes.length <= 3 && !large;
-        final width = fits ? (constraints.maxWidth - _gap * (schemes.length - 1)) / schemes.length : (large ? 176.0 : 112.0);
+        final width = fits ? (constraints.maxWidth - _gap * (schemes.length - 1)) / schemes.length : (large ? 176.0 : _scrollWidth);
         final row = Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -73,7 +94,7 @@ class _Previews extends StatelessWidget {
             ],
           ],
         );
-        return fits ? row : SingleChildScrollView(scrollDirection: Axis.horizontal, child: row);
+        return fits ? row : SingleChildScrollView(controller: _scroll, scrollDirection: Axis.horizontal, child: row);
       },
     );
   }

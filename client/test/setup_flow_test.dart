@@ -28,6 +28,14 @@ Future<void> advance(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+// the previews scroll sideways, so the one to tap is brought into view first
+Future<void> tapLook(WidgetTester tester, AppScheme scheme) async {
+  await tester.ensureVisible(find.text(scheme.label));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(scheme.label));
+  await tester.pumpAndSettle();
+}
+
 // the Today picture repeats the card names, so rows are found inside the list
 Finder inList(String label) => find.descendant(of: find.byType(SetupGroup), matching: find.text(label));
 
@@ -102,7 +110,7 @@ void main() {
     testWidgets('says Set up later until something is chosen, then Continue', (tester) async {
       await open(tester);
       expect(find.text('Set up later'), findsOneWidget);
-      await tester.tap(find.text(AppScheme.slate.label));
+      await tapLook(tester, AppScheme.slate);
       await tester.pumpAndSettle();
       expect(find.text('Continue'), findsOneWidget);
       expect(find.text('Set up later'), findsNothing);
@@ -111,7 +119,7 @@ void main() {
     testWidgets('a pick recolours the setup live', (tester) async {
       final harness = await open(tester);
       final before = Theme.of(tester.element(find.text('Pick a look'))).colorScheme.surface;
-      await tester.tap(find.text(AppScheme.slate.label));
+      await tapLook(tester, AppScheme.slate);
       await tester.pumpAndSettle();
       expect(harness.scheme.choice, AppScheme.slate);
       final after = Theme.of(tester.element(find.text('Pick a look'))).colorScheme.surface;
@@ -148,7 +156,7 @@ void main() {
       // below: semantics
       final handle = tester.ensureSemantics();
       await open(tester);
-      await tester.tap(find.text(AppScheme.mocha.label));
+      await tapLook(tester, AppScheme.mocha);
       await tester.pumpAndSettle();
       final data = tester.getSemantics(find.bySemanticsLabel(AppScheme.mocha.label)).getSemanticsData();
       expect(data.flagsCollection.isChecked, CheckedState.isTrue);
@@ -463,7 +471,7 @@ void main() {
 
     testWidgets('anything answered on the way earns the summary', (tester) async {
       final harness = await openAt(tester, 1);
-      await tester.tap(find.text(AppScheme.slate.label));
+      await tapLook(tester, AppScheme.slate);
       await tester.pumpAndSettle();
       for (var i = 0; i < 4; i++) {
         await advance(tester);
@@ -517,7 +525,7 @@ void main() {
 
     testWidgets('a full run lands every answer and says so on the last screen', (tester) async {
       final harness = await openAt(tester, 1);
-      await tester.tap(find.text(AppScheme.mocha.label));
+      await tapLook(tester, AppScheme.mocha);
       await tester.pumpAndSettle();
       await advance(tester);
       await tester.tap(find.text('Global Village'));
@@ -558,7 +566,7 @@ void main() {
 
     testWidgets('only Get started gives the light impact, picks give a selection click', (tester) async {
       await openAt(tester, 1);
-      await tester.tap(find.text(AppScheme.mocha.label));
+      await tapLook(tester, AppScheme.mocha);
       await tester.pumpAndSettle();
       expect(haptics, ['HapticFeedbackType.selectionClick']);
       haptics.clear();
@@ -570,7 +578,7 @@ void main() {
 
     testWidgets('Get started taps the light impact once', (tester) async {
       await openAt(tester, 1);
-      await tester.tap(find.text(AppScheme.mocha.label));
+      await tapLook(tester, AppScheme.mocha);
       await tester.pumpAndSettle();
       for (var i = 0; i < 5; i++) {
         await advance(tester);
@@ -672,7 +680,7 @@ void main() {
 
     testWidgets('Cancel puts the scheme back and stores nothing', (tester) async {
       final harness = await openRerun(tester);
-      await tester.tap(find.text(AppScheme.slate.label));
+      await tapLook(tester, AppScheme.slate);
       await tester.pumpAndSettle();
       expect(harness.scheme.choice, AppScheme.slate);
       await advance(tester);
@@ -690,7 +698,7 @@ void main() {
 
     testWidgets('the system back button cancels too', (tester) async {
       final harness = await openRerun(tester);
-      await tester.tap(find.text(AppScheme.slate.label));
+      await tapLook(tester, AppScheme.slate);
       await tester.pumpAndSettle();
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
