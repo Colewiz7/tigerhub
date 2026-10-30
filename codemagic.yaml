@@ -213,12 +213,14 @@ workflows:
           sleep 3
           xcrun simctl io "$SIM_UDID" screenshot client/build/home_indicator_check.png
           xcrun simctl terminate "$SIM_UDID" com.apple.Preferences
-      - name: All 15 screenshots and 5 device screenshots exist and none is blank
+      - name: All 23 screenshots and 5 device screenshots exist and none is blank
         script: |
           set -euo pipefail
           cd client/build/ios_screens
           ls -l
-          test "$(ls -1 *.png | grep -vc '_device\.png$')" -eq 15
+          # 15 tabs, detail and settings, then 7 setup steps and the what's new sheet
+          test "$(ls -1 *.png | grep -vc '_device\.png$')" -eq 23
+          test "$(ls -1 setup_*_dark.png | wc -l | tr -d ' ')" -eq 8
           test "$(ls -1 *_device.png | wc -l | tr -d ' ')" -eq 5
           # a blank 1320x2868 png compresses to a few kb
           for f in *.png; do

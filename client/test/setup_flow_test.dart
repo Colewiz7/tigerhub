@@ -14,7 +14,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/setup/setup_kit.dart' show SetupGroup;
 import 'package:tigerhub/services/dashboard.dart';
 import 'package:tigerhub/services/preferences.dart';
