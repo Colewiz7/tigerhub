@@ -86,7 +86,7 @@ class _DiningScreenState extends State<DiningScreen> {
     }
     final today = CampusTime.wallDate();
     return [
-      for (final chef in listedChefs(chefs.data))
+      for (final chef in listedChefs(withoutHiddenChefs(chefs.data, _prefs.groupHiddenPlaces)))
         if (chef.name.isNotEmpty &&
             (chef.startsAt == null ||
                 DateUtils.isSameDay(CampusTime.fieldsOf(chef.startsAt!), today)) &&
@@ -104,7 +104,7 @@ class _DiningScreenState extends State<DiningScreen> {
     if (chefs == null || chefs.availability != Availability.available) return false;
     final today = CampusTime.wallDate();
     return chefsAllEnded([
-      for (final chef in chefs.data)
+      for (final chef in withoutHiddenChefs(chefs.data, _prefs.groupHiddenPlaces))
         if (chef.name.isNotEmpty && (chef.startsAt == null || DateUtils.isSameDay(CampusTime.fieldsOf(chef.startsAt!), today))) chef,
     ]);
   }
@@ -318,7 +318,8 @@ class _DiningScreenState extends State<DiningScreen> {
     );
     final chefs = _todayChefs(query);
     final endedChefs = query.isEmpty && _chefsEnded;
-    final nextChef = _chefs.value is ChefCollection ? (_chefs.value as ChefCollection).next : null;
+    final upcomingChef = _chefs.value is ChefCollection ? (_chefs.value as ChefCollection).next : null;
+    final nextChef = upcomingChef != null && !atHiddenPlace(upcomingChef.locationName, _prefs.groupHiddenPlaces) ? upcomingChef : null;
 
     // cached trucks show at once
     final trucks = [

@@ -10,6 +10,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:tigerhub/data/dining_hidden.dart';
 import 'package:tigerhub/data/dining_layout.dart';
 import 'package:tigerhub/data/static_config.dart';
+import 'package:tigerhub/services/cache.dart';
 import 'package:tigerhub/services/preferences.dart';
 
 void main() {
@@ -25,9 +26,9 @@ void main() {
 
   setUp(() async {
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
+    await ResponseCache.instance.prune(olderThan: const Duration(days: -1));
     StaticConfig.overrideForTesting({'dining_groups': file});
     Preferences.instance.resetForTests();
-    await Preferences.instance.load();
   });
 
   Set<String> effective({
