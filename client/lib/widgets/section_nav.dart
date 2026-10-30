@@ -81,6 +81,23 @@ class SectionScaffold extends StatefulWidget {
 class _SectionScaffoldState extends State<SectionScaffold> {
   String? _selected;
 
+  // bumped when the parent hands new sections
+  final _revision = ValueNotifier<int>(0);
+
+  @override
+  void didUpdateWidget(SectionScaffold oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // route sits outside this build, so nudge it after the frame
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revision.value++);
+  }
+
+  SectionSpec _latest(SectionSpec tapped) {
+    for (final s in [...widget.sections, ...widget.hidden]) {
+      if (s.id == tapped.id) return s;
+    }
+    return tapped;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.sections.isEmpty && widget.hidden.isEmpty) return const SizedBox.shrink();
@@ -108,9 +125,16 @@ class _SectionScaffoldState extends State<SectionScaffold> {
         iconSize: widget.iconSize,
         onSelect: (section) => Navigator.of(context).push(
           MaterialPageRoute<void>(
-            builder: (context) => Scaffold(
-              appBar: AppBar(title: Text(section.title)),
-              body: section.builder(context),
+            // re-resolved so data landing after the tap still shows
+            builder: (context) => ValueListenableBuilder<int>(
+              valueListenable: _revision,
+              builder: (context, _, _) {
+                final live = _latest(section);
+                return Scaffold(
+                  appBar: AppBar(title: Text(live.title)),
+                  body: live.builder(context),
+                );
+              },
             ),
           ),
         ),
