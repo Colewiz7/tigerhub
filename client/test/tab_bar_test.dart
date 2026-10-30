@@ -868,8 +868,6 @@ void main() {
     await _pumpShell(tester, backend: _MapBackend());
     await tester.tap(tabLabel('Map'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('Fit campus'));
-    await tester.pumpAndSettle();
 
     final viewer = find.byType(InteractiveViewer);
     final gesture = await tester.startGesture(tester.getCenter(viewer));
