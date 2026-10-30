@@ -13,6 +13,9 @@ import '../../widgets/focus_ring.dart';
 import '../../widgets/search_field.dart';
 import 'setup_kit.dart';
 
+// the preset's own glyph for Free and fun is confetti, which setup does not use
+AppIconKind _glyph(FilterProfile profile) => profile.id == 'free_and_fun' ? AppIconKind.boost : profile.icon;
+
 // one line each, the preset's own description is two sentences
 const Map<String, String> _lines = {
   'free_and_fun': 'Free food, games and music first',
@@ -126,7 +129,7 @@ class _ProfileCard extends StatelessWidget {
                             color: selected ? scheme.primary : scheme.primary.withValues(alpha: 0.3),
                           ),
                           child: Center(
-                            child: AppIcon(profile.icon, size: 22, color: selected ? scheme.onPrimary : scheme.primary),
+                            child: AppIcon(_glyph(profile), size: 22, color: selected ? scheme.onPrimary : scheme.primary),
                           ),
                         ),
                       ),

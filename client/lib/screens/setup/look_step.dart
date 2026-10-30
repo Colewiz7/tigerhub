@@ -47,16 +47,17 @@ class _Previews extends StatelessWidget {
   final ValueChanged<AppScheme> onPick;
 
   static const double _gap = 12;
-  static const double _scrollWidth = 112;
 
   @override
   Widget build(BuildContext context) {
     final schemes = AppScheme.values;
+    // large text needs room for the labels, so the previews widen and scroll
+    final large = MediaQuery.textScalerOf(context).scale(1) > 1.3;
     return LayoutBuilder(
       builder: (context, constraints) {
         // three fit across a phone, more scroll sideways
-        final fits = schemes.length <= 3;
-        final width = fits ? (constraints.maxWidth - _gap * (schemes.length - 1)) / schemes.length : _scrollWidth;
+        final fits = schemes.length <= 3 && !large;
+        final width = fits ? (constraints.maxWidth - _gap * (schemes.length - 1)) / schemes.length : (large ? 176.0 : 112.0);
         final row = Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -133,7 +134,13 @@ class _Preview extends StatelessWidget {
                   children: [
                     _Radio(selected: selected),
                     const SizedBox(width: 8),
-                    Flexible(child: Text(scheme.label, style: text.bodyMedium, textAlign: TextAlign.center)),
+                    // one line, shrunk a little before it would ever break a word
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(scheme.label, style: text.bodyMedium, maxLines: 1, softWrap: false),
+                      ),
+                    ),
                   ],
                 ),
               ),

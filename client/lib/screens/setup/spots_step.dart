@@ -193,7 +193,10 @@ class _Tile extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-            child: Column(
+            // the full width, so the circle sits centred in its column
+            child: SizedBox(
+              width: double.infinity,
+              child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox.square(
@@ -245,6 +248,7 @@ class _Tile extends StatelessWidget {
                   style: text.bodySmall?.copyWith(fontSize: 13, height: 1.2, color: scheme.onSurface),
                 ),
               ],
+              ),
             ),
           ),
         ),

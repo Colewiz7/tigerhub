@@ -135,7 +135,8 @@ class SetupFlowController extends ChangeNotifier {
     child: ListenableBuilder(
       listenable: scheme,
       builder: (context, _) => AnimatedTheme(
-        data: AppTheme.from(scheme.scheme),
+        // the platform stays the host's, so iOS keeps its glyphs
+        data: AppTheme.from(scheme.scheme).copyWith(platform: Theme.of(context).platform),
         duration: reduceMotion(context) ? Duration.zero : const Duration(milliseconds: 240),
         child: child,
       ),

@@ -36,15 +36,20 @@ class _WhatsNew extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
+    // the words scroll at large text, the two buttons stay put
     return SafeArea(
       top: false,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-        child: Column(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SetupBadge(glyph: AppIconKind.celebration),
+            const SetupBadge(glyph: AppIconKind.tune),
             const SizedBox(height: 16),
             Semantics(
               header: true,
@@ -67,25 +72,35 @@ class _WhatsNew extends StatelessWidget {
             const _Line(glyph: AppIconKind.appearance, title: 'Pick a look', line: 'Choose a colour scheme.'),
             const _Line(glyph: AppIconKind.dining, title: 'Hide Dorm side', line: 'Keep a dining group off Dining and Today.'),
             const _Line(glyph: AppIconKind.todayTab, title: 'Your Today', line: 'Choose the cards and clubs you follow.'),
-            const SizedBox(height: 8),
-            FocusRing(
-              radius: setupButtonHeight / 2,
-              builder: (onFocusChange) => SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  onFocusChange: onFocusChange,
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(setupButtonHeight),
-                    shape: const StadiumBorder(),
-                  ),
-                  child: const Text('Personalize'),
-                ),
+          ],
               ),
             ),
-            Center(child: SetupTextAction(label: 'Not now', onTap: () => Navigator.of(context).pop(false))),
-          ],
-        ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                FocusRing(
+                  radius: setupButtonHeight / 2,
+                  builder: (onFocusChange) => SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      onFocusChange: onFocusChange,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(setupButtonHeight),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: const Text('Personalize'),
+                    ),
+                  ),
+                ),
+                SetupTextAction(label: 'Not now', onTap: () => Navigator.of(context).pop(false)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
