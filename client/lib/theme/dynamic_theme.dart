@@ -14,7 +14,9 @@ import 'dark_palette.dart';
 enum AppScheme {
   espresso('espresso', 'Espresso', DarkPalette.espresso),
   mocha('mocha', 'Mocha', DarkPalette.mocha),
-  slate('slate', 'Slate', DarkPalette.slate);
+  slate('slate', 'Slate', DarkPalette.slate),
+  midnightBlue('midnight_blue', 'Midnight blue', DarkPalette.midnightBlue),
+  midnightOrange('midnight_orange', 'Midnight orange', DarkPalette.midnightOrange);
 
   const AppScheme(this.id, this.label, this.palette);
 

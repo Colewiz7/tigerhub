@@ -1059,6 +1059,82 @@ void main() {
           'two rules rather than one lunch closure',
     );
   });
+
+  group('post office cards', () {
+    ColorScheme schemeOf(WidgetTester tester) => Theme.of(tester.element(find.byType(CampusScreen))).colorScheme;
+
+    Color? colorOf(WidgetTester tester, String data) => tester.widgetList<Text>(find.text(data)).first.style?.color;
+
+    double contrast(Color a, Color b) {
+      final hi = a.computeLuminance() > b.computeLuminance() ? a : b;
+      final lo = identical(hi, a) ? b : a;
+      return (hi.computeLuminance() + 0.05) / (lo.computeLuminance() + 0.05);
+    }
+
+    testWidgets('no summary block above the cards', (tester) async {
+      await pumpCampus(tester);
+      // one name per module, two offices
+      expect(find.text('Package pickup'), findsNWidgets(2));
+      expect(find.text('Shipping window'), findsNWidgets(2));
+      // the state moved onto the module
+      expect(find.text('Open · until 4:30 PM'), findsNWidgets(2));
+      expect(find.text('Closed · for the day'), findsNWidgets(2));
+    });
+
+    testWidgets('counter note sits under the location line', (tester) async {
+      await pumpCampus(tester);
+      final notes = find.text('Mail is collected at the counter');
+      expect(notes, findsNWidgets(2));
+      final locations = find.textContaining('Located ');
+      expect(locations, findsNWidgets(2));
+      for (var i = 0; i < 2; i++) {
+        final note = tester.getTopLeft(notes.at(i));
+        final place = tester.getTopLeft(locations.at(i));
+        expect(note.dy, greaterThan(place.dy));
+        expect(note.dx, place.dx);
+      }
+      expect(find.textContaining('collected at the counter after'), findsNothing);
+    });
+
+    testWidgets('muted text keeps 4.5 to 1 on the module', (tester) async {
+      for (final brightness in Brightness.values) {
+        final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFFF76902), brightness: brightness);
+        expect(contrast(scheme.onSurfaceVariant, scheme.surfaceContainerHigh), greaterThanOrEqualTo(4.5), reason: brightness.name);
+      }
+    });
+
+    // pickup runs to 4:30 PM, shipping to 4:00 PM, saturday has pickup only
+    final cases = <(String, DateTime, bool, bool)>[
+      ('tue 10:00 am', CampusTime.wall(2026, 9, 15, 10), false, false),
+      ('tue 4:29 pm', CampusTime.wall(2026, 9, 15, 16, 29), false, true),
+      ('tue 4:31 pm', CampusTime.wall(2026, 9, 15, 16, 31), true, true),
+      ('sat 4:01 pm', CampusTime.wall(2026, 9, 19, 16, 1), true, true),
+      ('sat 10:00 am', CampusTime.wall(2026, 9, 19, 10), false, true),
+      ('sun 10:00 am', CampusTime.wall(2026, 9, 20, 10), true, true),
+    ];
+    for (final (name, instant, pickupGrey, shippingGrey) in cases) {
+      testWidgets('hours colour at $name', (tester) async {
+        RitClock.pin(instant);
+        await pumpCampus(tester);
+        final scheme = schemeOf(tester);
+        expect(colorOf(tester, '9:00 AM to 4:30 PM'), pickupGrey ? scheme.onSurfaceVariant : scheme.onSurface);
+        expect(colorOf(tester, '9:00 AM to 1:00 PM'), shippingGrey ? scheme.onSurfaceVariant : scheme.onSurface);
+      });
+    }
+
+    for (final width in [390.0, 440.0]) {
+      for (final scale in [1.0, 2.0]) {
+        testWidgets('fits at $width wide, ${scale}x text, closed', (tester) async {
+          RitClock.pin(CampusTime.wall(2026, 9, 15, 16, 31));
+          await pumpCampus(tester, size: Size(width, 2400), textScale: scale);
+          await tester.tap(find.text('Mail'));
+          await tester.pumpAndSettle();
+          expect(tester.takeException(), isNull);
+          expect(find.text('Mail is collected at the counter'), findsWidgets);
+        });
+      }
+    }
+  });
 }
 
 class _FakeLauncher extends MethodChannelUrlLauncher
