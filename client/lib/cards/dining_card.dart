@@ -189,9 +189,10 @@ class DiningCard extends StatelessWidget {
   );
 
   Widget _build(BuildContext context) {
-    final hiddenIds = Preferences.instance.hiddenDining;
+    final places = result.value?.data ?? const <DiningLocation>[];
+    final hiddenIds = Preferences.instance.effectiveHidden([for (final l in places) l.id]);
     final all = [
-      for (final l in result.value?.data ?? const <DiningLocation>[])
+      for (final l in places)
         if (!hiddenIds.contains('${l.id}')) l,
     ];
     final locations = category == null
