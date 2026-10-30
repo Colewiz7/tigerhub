@@ -7,6 +7,8 @@
 /// large text nothing is cut off and the way on is always in the same place.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -89,10 +91,22 @@ class SetupFlowController extends ChangeNotifier {
 
   /// The feeds can land after setup opens, so the steps follow them.
   void setData({required List<HousingArea> areas, required List<DiningLocation> dining, required List<CampusEvent> events}) {
+    if (identical(this.areas, areas) && identical(this.dining, dining) && identical(this.events, events)) return;
     this.areas = areas;
     this.dining = dining;
     this.events = events;
-    notifyListeners();
+    // called while the tree is building, so the steps hear about it after
+    scheduleMicrotask(() {
+      if (!_disposed) notifyListeners();
+    });
+  }
+
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
   final Preferences prefs;
 

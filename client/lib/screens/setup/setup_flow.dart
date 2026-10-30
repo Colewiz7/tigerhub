@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import '../../models/api_models.dart';
 import '../../services/dashboard.dart';
 import '../../theme/dynamic_theme.dart';
+import 'look_step.dart';
 import 'setup_kit.dart';
 import 'welcome_step.dart';
 
@@ -23,6 +24,7 @@ export 'setup_kit.dart' show SetupStep;
 
 Widget buildSetupStep(SetupStep step) => switch (step) {
   SetupStep.welcome => const WelcomeStep(),
+  SetupStep.look => const LookStep(),
   _ => const SizedBox.shrink(),
 };
 

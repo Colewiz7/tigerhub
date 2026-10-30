@@ -107,6 +107,9 @@ Future<SetupHarness> pumpSetup(
   addTearDown(tester.view.reset);
   final harness = SetupHarness(SchemeController(initial: initial));
   addTearDown(harness.scheme.dispose);
+  // one list each, as the shell holds them, so a rebuild is not new data
+  final places = dining ?? setupDining();
+  final happenings = events ?? setupEvents();
   await tester.pumpWidget(
     ListenableBuilder(
       listenable: harness.scheme,
@@ -120,8 +123,8 @@ Future<SetupHarness> pumpSetup(
         home: SetupFlow(
           scheme: harness.scheme,
           areas: areas,
-          dining: dining ?? setupDining(),
-          events: events ?? setupEvents(),
+          dining: places,
+          events: happenings,
           dashboard: dashboard,
           rerun: rerun,
           onDone: () => harness.done++,
