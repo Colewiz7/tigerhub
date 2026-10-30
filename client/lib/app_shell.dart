@@ -14,7 +14,7 @@ import 'package:flutter/services.dart';
 import 'data/shuttles.dart';
 import 'home_screen.dart';
 import 'screens/map_screen.dart';
-import 'screens/setup_screen.dart';
+import 'screens/setup/setup_flow.dart';
 import 'models/api_models.dart';
 import 'screens/campus_screen.dart';
 import 'screens/dining_screen.dart';
@@ -22,6 +22,7 @@ import 'screens/events_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'services/cache.dart';
 import 'services/frame_monitor.dart';
+import 'services/setup_draft.dart' show hasExistingData;
 import 'services/subscriptions.dart';
 import 'services/preferences.dart';
 import 'services/api.dart';
@@ -128,7 +129,19 @@ class _AppShellState extends State<AppShell>
     super.dispose();
   }
 
+  // someone who already has settings gets the sheet, not the full flow
+  bool? _existing;
+  bool _detecting = false;
+
   void _onPreferences() {
+    final prefs = Preferences.instance;
+    if (prefs.loaded && !prefs.setupSeen && _existing == null && !_detecting) {
+      _detecting = true;
+      hasExistingData().then((found) {
+        if (!mounted) return;
+        setState(() => _existing = found);
+      });
+    }
     if (mounted) setState(() {});
   }
 
@@ -202,6 +215,7 @@ class _AppShellState extends State<AppShell>
   bool get _needsSetup =>
       Preferences.instance.loaded &&
       !Preferences.instance.setupSeen &&
+      _existing == false &&
       (_areas.value?.data.isNotEmpty ?? false);
 
   @override
@@ -210,8 +224,11 @@ class _AppShellState extends State<AppShell>
     const tabs = _tabs;
 
     if (_needsSetup) {
-      return SetupScreen(
+      return SetupFlow(
+        scheme: widget.scheme,
         areas: _areas.value!.data,
+        dining: _dining.value?.data ?? const [],
+        events: _events.value?.data ?? const [],
         onDone: () => setState(() {}),
       );
     }
