@@ -38,9 +38,24 @@ class SchemeController extends ChangeNotifier {
   static const Color fallbackSeed = Color(0xFFF76902);
 
   AppScheme _choice;
+  AppScheme? _preview;
+  bool _disposed = false;
 
-  AppScheme get choice => _choice;
-  ColorScheme get scheme => forChoice(_choice);
+  /// What the app shows now: a preview if one is up, else the stored choice.
+  AppScheme get choice => _preview ?? _choice;
+
+  /// The choice that survives a restart.
+  AppScheme get storedChoice => _choice;
+
+  bool get disposed => _disposed;
+
+  ColorScheme get scheme => forChoice(choice);
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   /// Restore the stored choice. Espresso when nothing has been stored.
   Future<void> load() async {
@@ -49,8 +64,27 @@ class SchemeController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Show a scheme without saving it, for setup to try looks on.
+  void preview(AppScheme next) {
+    if (choice == next) return;
+    _preview = next;
+    notifyListeners();
+  }
+
+  /// Drop a preview and go back to the stored choice.
+  void clearPreview() {
+    if (_preview == null) return;
+    _preview = null;
+    notifyListeners();
+  }
+
   Future<void> select(AppScheme next) async {
-    if (_choice == next) return;
+    final shown = choice;
+    _preview = null;
+    if (_choice == next) {
+      if (shown != next) notifyListeners();
+      return;
+    }
     _choice = next;
     notifyListeners();
     await ResponseCache.instance.writeOrder(_schemeKey, [next.id]);

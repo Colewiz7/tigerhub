@@ -102,12 +102,20 @@ class SetupFlowController extends ChangeNotifier {
   }
 
   bool _disposed = false;
+  bool _applied = false;
 
   @override
   void dispose() {
     _disposed = true;
+    // left without applying, so an unsaved look does not outlive the flow
+    if (!_applied) {
+      scheduleMicrotask(() {
+        if (!scheme.disposed) scheme.clearPreview();
+      });
+    }
     super.dispose();
   }
+
   final Preferences prefs;
 
   /// Setup is answered and the app can show.
@@ -124,10 +132,10 @@ class SetupFlowController extends ChangeNotifier {
   /// The route the flow starts on, which finishing pops back to.
   Route<dynamic>? base;
 
-  /// The scheme previews live, so it is chosen through here.
+  /// The scheme previews live and is only saved when the flow is applied.
   void chooseScheme(AppScheme value) {
     draft.setScheme(value);
-    scheme.select(value);
+    scheme.preview(value);
   }
 
   Widget wrap(Widget child) => SetupScope(
@@ -163,13 +171,15 @@ class SetupFlowController extends ChangeNotifier {
 
   Future<void> finish(BuildContext context) async {
     final navigator = Navigator.of(context);
+    _applied = true;
     await applyDraft(draft, prefs: prefs, scheme: scheme);
     navigator.popUntil((route) => route == base || route.isFirst);
     onDone();
   }
 
-  /// Welcome's Use defaults: answered, nothing changed.
+  /// Welcome's Use defaults: answered, nothing changed, a tried look dropped.
   Future<void> useDefaults() async {
+    scheme.clearPreview();
     await prefs.markSetupSeen();
     onDone();
   }
@@ -177,7 +187,7 @@ class SetupFlowController extends ChangeNotifier {
   /// A re-run backs out and the scheme goes back to what it was.
   Future<void> cancel(BuildContext context) async {
     final navigator = Navigator.of(context);
-    await scheme.select(initialScheme);
+    scheme.clearPreview();
     navigator.popUntil((route) => route == base || route.isFirst);
     onCancel?.call();
   }

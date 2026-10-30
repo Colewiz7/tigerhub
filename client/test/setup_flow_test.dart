@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/screens/setup/setup_kit.dart' show SetupGroup;
+import 'package:tigerhub/services/cache.dart';
 import 'package:tigerhub/services/dashboard.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
@@ -743,6 +744,67 @@ void main() {
       expect(find.text("You're all set"), findsOneWidget);
       expect(find.text('Save'), findsWidgets);
       expect(find.text('Get started'), findsNothing);
+    });
+  });
+
+  group('a tried look is only a preview', () {
+    Future<List<String>> stored() => ResponseCache.instance.readOrder('color_scheme');
+
+    Color surface(WidgetTester tester) => Theme.of(tester.element(find.byType(Scaffold).first)).colorScheme.surface;
+
+    testWidgets('back to Welcome and Use defaults leaves the stored look and the theme alone', (tester) async {
+      final harness = await openAt(tester, 1);
+      final original = surface(tester);
+      await tapLook(tester, AppScheme.mocha);
+      expect(surface(tester), isNot(original));
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Use defaults'));
+      await tester.pumpAndSettle();
+      expect(await stored(), isEmpty);
+      expect(harness.scheme.choice, AppScheme.espresso);
+      expect(surface(tester), original);
+      expect(harness.done, 1);
+    });
+
+    testWidgets('the pick is saved when the flow is applied', (tester) async {
+      final harness = await openAt(tester, 1);
+      await tapLook(tester, AppScheme.mocha);
+      expect(await stored(), isEmpty);
+      for (var i = 0; i < 6; i++) {
+        await advance(tester);
+      }
+      expect(harness.done, 1);
+      expect(await stored(), [AppScheme.mocha.id]);
+      expect(harness.scheme.choice, AppScheme.mocha);
+    });
+
+    testWidgets('a re-run Cancel restores the look and saves nothing', (tester) async {
+      final harness = await pumpSetup(tester, rerun: true);
+      await tapLook(tester, AppScheme.slate);
+      expect(harness.scheme.choice, AppScheme.slate);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(harness.scheme.choice, AppScheme.espresso);
+      expect(await stored(), isEmpty);
+    });
+
+    testWidgets('leaving the flow without applying saves nothing and the theme returns', (tester) async {
+      final harness = await openAt(tester, 1);
+      await tapLook(tester, AppScheme.mocha);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pumpAndSettle();
+      expect(await stored(), isEmpty);
+      expect(harness.scheme.choice, AppScheme.espresso);
+      expect(harness.scheme.storedChoice, AppScheme.espresso);
+    });
+
+    testWidgets('the whole setup recolours as a look is tried', (tester) async {
+      await openAt(tester, 1);
+      final before = surface(tester);
+      await tapLook(tester, AppScheme.slate);
+      expect(surface(tester), SchemeController.forChoice(AppScheme.slate).surface);
+      expect(surface(tester), isNot(before));
     });
   });
 }
