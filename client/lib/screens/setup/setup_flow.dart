@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import '../../models/api_models.dart';
 import '../../services/dashboard.dart';
 import '../../theme/dynamic_theme.dart';
+import 'done_step.dart';
 import 'events_step.dart';
 import 'home_step.dart';
 import 'look_step.dart';
@@ -33,7 +34,7 @@ Widget buildSetupStep(SetupStep step) => switch (step) {
   SetupStep.spots => const SpotsStep(),
   SetupStep.events => const EventsStep(),
   SetupStep.today => const TodayStep(),
-  _ => const SizedBox.shrink(),
+  SetupStep.done => const DoneStep(),
 };
 
 class SetupFlow extends StatefulWidget {

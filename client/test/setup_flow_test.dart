@@ -12,7 +12,11 @@ import 'dart:ui' show CheckedState;
 import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tigerhub/models/api_models.dart';
+import 'package:tigerhub/screens/setup/setup_kit.dart' show SetupGroup;
+import 'package:tigerhub/services/dashboard.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/app_icon.dart';
@@ -24,6 +28,9 @@ Future<void> advance(WidgetTester tester) async {
   await tester.tap(find.byType(FilledButton));
   await tester.pumpAndSettle();
 }
+
+// the Today picture repeats the card names, so rows are found inside the list
+Finder inList(String label) => find.descendant(of: find.byType(SetupGroup), matching: find.text(label));
 
 // lists build lazily, so what is below the fold needs a scroll first
 Future<void> reveal(WidgetTester tester, Finder target) async {
@@ -395,5 +402,233 @@ void main() {
       await reveal(tester, find.text('Follow a club'));
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('your Today', () {
+    bool isOn(WidgetTester tester, String label) {
+      final row = find.ancestor(of: inList(label), matching: find.byType(Row)).first;
+      return tester.widget<Switch>(find.descendant(of: row, matching: find.byType(Switch))).value;
+    }
+
+    testWidgets('lists the library with a preview, and leaves Facility hours out', (tester) async {
+      await openAt(tester, 5);
+      expect(find.text('Your Today'), findsOneWidget);
+      expect(find.byKey(const ValueKey('today-preview')), findsOneWidget);
+      await reveal(tester, inList('Mailing address'));
+      for (final label in ['Eat now', 'Up next', 'Calendar', 'Visiting chefs', 'Academic dates', 'Campus map', 'Shuttles', 'Package pickup']) {
+        expect(inList(label), findsOneWidget);
+      }
+      expect(find.text('Facility hours'), findsNothing);
+    });
+
+    testWidgets('starts from the default cards', (tester) async {
+      await openAt(tester, 5);
+      expect(isOn(tester, 'Eat now'), isTrue);
+      expect(isOn(tester, 'Up next'), isTrue);
+      expect(isOn(tester, 'Calendar'), isFalse);
+      expect(isOn(tester, 'Shuttles'), isFalse);
+    });
+
+    testWidgets('a home turns Shuttles and Package pickup on, a followed club adds a row', (tester) async {
+      await openAt(tester, 2);
+      await tester.tap(find.text('Global Village'));
+      await tester.pumpAndSettle();
+      await advance(tester);
+      await advance(tester);
+      await tester.tap(find.text('Follow a club'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Chess Club'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      await advance(tester);
+      await reveal(tester, inList('Package pickup'));
+      expect(isOn(tester, 'Shuttles'), isTrue);
+      expect(isOn(tester, 'Package pickup'), isTrue);
+      await reveal(tester, inList('Chess Club'));
+      expect(isOn(tester, 'Chess Club'), isTrue);
+    });
+
+    testWidgets('a switch changes the preview', (tester) async {
+      await openAt(tester, 5);
+      final preview = find.byKey(const ValueKey('today-preview'));
+      expect(find.descendant(of: preview, matching: find.text('Calendar')), findsNothing);
+      await reveal(tester, inList('Calendar'));
+      await tester.tap(find.byType(Switch).at(2));
+      await tester.pumpAndSettle();
+      expect(isOn(tester, 'Calendar'), isTrue);
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: preview, matching: find.text('Calendar')), findsOneWidget);
+    });
+
+    testWidgets('anything answered on the way earns the summary', (tester) async {
+      final harness = await openAt(tester, 1);
+      await tester.tap(find.text(AppScheme.slate.label));
+      await tester.pumpAndSettle();
+      for (var i = 0; i < 4; i++) {
+        await advance(tester);
+      }
+      expect(find.text('Your Today'), findsWidgets);
+      expect(find.text('Continue'), findsOneWidget);
+      await advance(tester);
+      expect(find.text("You're all set"), findsOneWidget);
+      expect(harness.done, 0);
+    });
+
+    testWidgets('Set up later here ends the flow with nothing changed', (tester) async {
+      final harness = await openAt(tester, 5);
+      expect(find.text('Set up later'), findsOneWidget);
+      await advance(tester);
+      expect(harness.done, 1);
+      expect(Preferences.instance.setupSeen, isTrue);
+      expect(Preferences.instance.homeArea, isNull);
+    });
+
+    testWidgets('fits a phone at twice the text', (tester) async {
+      await openAt(tester, 5, scale: 2);
+      expect(tester.takeException(), isNull);
+      expect(tester.getRect(find.byType(FilledButton)).bottom, lessThanOrEqualTo(844));
+      await reveal(tester, inList('Mailing address'));
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('done and the whole flow', () {
+    final haptics = <String>[];
+
+    setUp(() {
+      haptics.clear();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+        if (call.method == 'HapticFeedback.vibrate') haptics.add(call.arguments as String);
+        return null;
+      });
+    });
+
+    tearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+
+    testWidgets('an untouched run is all defaults', (tester) async {
+      final harness = await openAt(tester, 1);
+      for (var i = 0; i < 5; i++) {
+        await advance(tester);
+      }
+      // the last input step ends the flow when nothing was chosen
+      expect(harness.done, 1);
+    });
+
+    testWidgets('a full run lands every answer and says so on the last screen', (tester) async {
+      final harness = await openAt(tester, 1);
+      await tester.tap(find.text(AppScheme.mocha.label));
+      await tester.pumpAndSettle();
+      await advance(tester);
+      await tester.tap(find.text('Global Village'));
+      await tester.pumpAndSettle();
+      await advance(tester);
+      await tester.tap(find.text("Gracie's"));
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      await advance(tester);
+      await tester.tap(find.text('Everything'));
+      await tester.pumpAndSettle();
+      await advance(tester);
+      await reveal(tester, inList('Calendar'));
+      await tester.tap(find.byType(Switch).at(2));
+      await tester.pumpAndSettle();
+      await advance(tester);
+
+      expect(find.text("You're all set"), findsOneWidget);
+      expect(find.text('Change any of this in Settings.'), findsOneWidget);
+      expect(find.text('Mocha'), findsOneWidget);
+      expect(find.text('Global Village'), findsOneWidget);
+      expect(find.text('1 place, Dorm side hidden'), findsOneWidget);
+      expect(find.text('Everything'), findsOneWidget);
+      expect(find.text('Get started'), findsOneWidget);
+      expect(harness.done, 0);
+      expect(Preferences.instance.setupSeen, isFalse);
+
+      await advance(tester);
+      expect(harness.done, 1);
+      final prefs = Preferences.instance;
+      expect(prefs.homeArea, 'global-village');
+      expect(prefs.pinnedDining, {'21'});
+      expect(prefs.hiddenDiningGroups, {'dorm_side'});
+      expect(prefs.keywordRulesEnabled, isFalse);
+      expect(prefs.setupSeen, isTrue);
+      expect(harness.scheme.choice, AppScheme.mocha);
+    });
+
+    testWidgets('only Get started gives the light impact, picks give a selection click', (tester) async {
+      await openAt(tester, 1);
+      await tester.tap(find.text(AppScheme.mocha.label));
+      await tester.pumpAndSettle();
+      expect(haptics, ['HapticFeedbackType.selectionClick']);
+      haptics.clear();
+      for (var i = 0; i < 5; i++) {
+        await advance(tester);
+      }
+      expect(haptics, isEmpty);
+    });
+
+    testWidgets('Get started taps the light impact once', (tester) async {
+      await openAt(tester, 1);
+      await tester.tap(find.text(AppScheme.mocha.label));
+      await tester.pumpAndSettle();
+      for (var i = 0; i < 5; i++) {
+        await advance(tester);
+      }
+      haptics.clear();
+      await advance(tester);
+      expect(haptics, ['HapticFeedbackType.lightImpact']);
+    });
+
+    testWidgets('skipping Events keeps today\'s keyword defaults', (tester) async {
+      await openAt(tester, 2);
+      await tester.tap(find.text('Global Village'));
+      await tester.pumpAndSettle();
+      await advance(tester);
+      await tester.tap(find.text("Gracie's"));
+      await tester.pumpAndSettle();
+      await advance(tester);
+      // events untouched
+      await advance(tester);
+      await advance(tester);
+      await advance(tester);
+      expect(Preferences.instance.hideKeywords, defaultHideKeywords);
+      expect(Preferences.instance.boostKeywords, defaultBoostKeywords);
+      expect(Preferences.instance.keywordRulesEnabled, isTrue);
+    });
+
+    testWidgets('a home and spots show Shuttles and Package pickup on Today after Save', (tester) async {
+      await openAt(tester, 2);
+      await tester.tap(find.text('Global Village'));
+      await tester.pumpAndSettle();
+      for (var i = 0; i < 3; i++) {
+        await advance(tester);
+      }
+      await advance(tester);
+      await advance(tester);
+      final cards = await DashboardStore.load();
+      expect(cards.where((c) => !c.hidden).map((c) => c.type), containsAll([ModuleType.shuttles, ModuleType.packagePickup]));
+    });
+
+    for (final (size, scale) in [(const Size(390, 844), 1.0), (const Size(390, 844), 2.0), (const Size(440, 956), 1.0), (const Size(440, 956), 2.0)]) {
+      testWidgets('every step fits ${size.width.toInt()}x${size.height.toInt()} at ${scale}x text', (tester) async {
+        await openAt(tester, 0, size: size, scale: scale);
+        for (var i = 0; i < 6; i++) {
+          expect(tester.takeException(), isNull, reason: 'step $i');
+          final button = tester.getRect(find.byType(FilledButton));
+          expect(button.bottom, lessThanOrEqualTo(size.height), reason: 'step $i button on screen');
+          expect(button.height, greaterThanOrEqualTo(50));
+          if (i == 4) {
+            await reveal(tester, find.text('Low key'));
+            await tester.tap(find.text('Low key'));
+            await tester.pumpAndSettle();
+          }
+          await advance(tester);
+        }
+        expect(find.text("You're all set"), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 }

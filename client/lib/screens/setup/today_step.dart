@@ -25,7 +25,8 @@ class TodayStep extends StatelessWidget {
           for (final card in plan.cards)
             if (!card.hidden) (type: card.type, size: card.size),
         ];
-        final chosen = flow.rerun || flow.draft.hasToday;
+        // the summary follows if anything was answered on the way
+        final chosen = flow.rerun || flow.draft.hasAnything;
         return SetupPage(
           badge: const SetupBadge(glyph: AppIconKind.todayTab),
           title: 'Your Today',

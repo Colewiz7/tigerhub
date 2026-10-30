@@ -152,6 +152,9 @@ class SetupDraft extends ChangeNotifier {
   bool get hasSpots => (_spots?.isNotEmpty ?? false) || _hideDormSide == true;
   bool get hasEvents => _profile != null || (_clubs?.isNotEmpty ?? false);
   bool get hasToday => _cards.isNotEmpty;
+
+  /// Anything answered at all, on any step.
+  bool get hasAnything => _scheme != null || hasHome || hasSpots || hasEvents || hasToday;
 }
 
 /// The Your Today rows and the dashboard they produce.
