@@ -473,14 +473,14 @@ class _NorthIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final map = MapPalette.of(Theme.of(context).brightness);
     return Semantics(
       label: 'Map is oriented north up',
       child: ExcludeSemantics(
         child: Tooltip(
           message: 'North up',
           child: Material(
-            color: scheme.surface.withValues(alpha: 0.92),
+            color: map.chrome.withValues(alpha: 0.92),
             shape: const CircleBorder(),
             child: SizedBox.square(
               dimension: size,
@@ -490,7 +490,7 @@ class _NorthIndicator extends StatelessWidget {
                   Icon(
                     AppIconKind.navigation.of(context),
                     size: 25,
-                    color: scheme.primary,
+                    color: map.chromeAccent,
                   ),
                   Positioned(
                     bottom: 3,
@@ -498,7 +498,7 @@ class _NorthIndicator extends StatelessWidget {
                       'N',
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w900,
-                        color: scheme.onSurface,
+                        color: map.chromeInk,
                       ),
                     ),
                   ),
@@ -525,7 +525,12 @@ class _MapZoomControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final map = MapPalette.of(Theme.of(context).brightness);
+    final ink = Theme.of(context).textTheme.bodyMedium?.copyWith(color: map.chromeInk);
+    final inkButton = IconButton.styleFrom(
+      foregroundColor: map.chromeMuted,
+      disabledForegroundColor: map.chromeInk.withValues(alpha: 0.38),
+    );
     // the hint takes its own row when both dont fit
     return Wrap(
       alignment: WrapAlignment.end,
@@ -535,7 +540,7 @@ class _MapZoomControls extends StatelessWidget {
       children: [
         if (zoom < 1.15)
           Material(
-            color: scheme.surface.withValues(alpha: 0.92),
+            color: map.chrome.withValues(alpha: 0.92),
             // a pill on one line, rounded when the text wraps
             borderRadius: Shapes.inner,
             child: Padding(
@@ -543,15 +548,15 @@ class _MapZoomControls extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(AppIconKind.route.of(context), size: 16, color: scheme.primary),
+                  Icon(AppIconKind.route.of(context), size: 16, color: map.chromeAccent),
                   const SizedBox(width: 7),
-                  const Flexible(child: Text('Zoom in for walking paths')),
+                  Flexible(child: Text('Zoom in for walking paths', style: ink)),
                 ],
               ),
             ),
           ),
         Material(
-          color: scheme.surface.withValues(alpha: 0.92),
+          color: map.chrome.withValues(alpha: 0.92),
           borderRadius: Shapes.inner,
           clipBehavior: Clip.antiAlias,
           child: Row(
@@ -560,6 +565,7 @@ class _MapZoomControls extends StatelessWidget {
               IconButton(
                 tooltip: 'Zoom out',
                 onPressed: zoom > 1.01 ? onZoomOut : null,
+                style: inkButton,
                 icon: Icon(AppIconKind.minus.of(context)),
               ),
               SizedBox(
@@ -570,13 +576,14 @@ class _MapZoomControls extends StatelessWidget {
                   child: Text(
                     '${zoom.toStringAsFixed(1).replaceFirst('.0', '')}×',
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelMedium,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(color: map.chromeInk),
                   ),
                 ),
               ),
               IconButton(
                 tooltip: 'Zoom in',
                 onPressed: zoom < _maxMapZoom - 0.01 ? onZoomIn : null,
+                style: inkButton,
                 icon: Icon(AppIconKind.add.of(context)),
               ),
             ],
@@ -825,7 +832,7 @@ class _MapSearchPageState extends State<_MapSearchPage> {
         final isBuilding = feature.kind == '_campus';
         final palette = mapPinPalette(
           feature.kind,
-          Theme.of(context).colorScheme,
+          Theme.of(context).brightness,
         );
         return ListTile(
           leading: CircleAvatar(
@@ -1006,7 +1013,7 @@ class _KindStrip extends StatelessWidget {
       itemBuilder: (context, index) {
         final entry = entries[index];
         final scheme = Theme.of(context).colorScheme;
-        final palette = mapPinPalette(entry.key, scheme);
+        final palette = mapPinPalette(entry.key, scheme.brightness);
         return SizedBox(
           width: 236,
           child: Material(
@@ -1211,7 +1218,7 @@ class _PlaceCategoryMark extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final map = MapPalette.of(Theme.of(context).brightness);
     return Semantics(
       label: feature.kindName,
       child: ExcludeSemantics(
@@ -1219,11 +1226,11 @@ class _PlaceCategoryMark extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: scheme.primaryContainer,
+            color: map.pinPlace,
             shape: BoxShape.circle,
           ),
           alignment: Alignment.center,
-          child: AppIcon(mapPlaceIcon(feature.kind), size: iconSize, color: scheme.onPrimaryContainer),
+          child: AppIcon(mapPlaceIcon(feature.kind), size: iconSize, color: map.onPinPlace),
         ),
       ),
     );
@@ -1454,17 +1461,14 @@ AppIconKind mapPlaceIcon(String kind) => switch (kind) {
   _ => AppIconKind.place,
 };
 
-(Color, Color) mapPinPalette(String kind, ColorScheme scheme) => switch (kind) {
-  'water' ||
-  'ev_charge' ||
-  'bus_stop' ||
-  'bike_rack' => (scheme.secondaryContainer, scheme.onSecondaryContainer),
-  'aed' || 'blue_light' || 'restroom_accessible' || 'entrance_accessible' => (
-    scheme.tertiaryContainer,
-    scheme.onTertiaryContainer,
-  ),
-  _ => (scheme.primaryContainer, scheme.onPrimaryContainer),
-};
+(Color, Color) mapPinPalette(String kind, Brightness brightness) {
+  final map = MapPalette.of(brightness);
+  return switch (kind) {
+    'water' || 'ev_charge' || 'bus_stop' || 'bike_rack' => (map.pinUtility, map.onPinUtility),
+    'aed' || 'blue_light' || 'restroom_accessible' || 'entrance_accessible' => (map.pinSafety, map.onPinSafety),
+    _ => (map.pinPlace, map.onPinPlace),
+  };
+}
 
 /// Classifies an outline by the sub-category name maps.rit.edu gave it.
 MapFamily mapFamily(CampusMapFeature feature) {
@@ -2047,7 +2051,7 @@ class CampusMapPainter extends CustomPainter {
     final y = mapRect.bottom - 13 / zoom;
     final x = mapRect.left + 13 / zoom;
     final paint = Paint()
-      ..color = scheme.onSurfaceVariant.withValues(alpha: 0.75)
+      ..color = MapPalette.of(scheme.brightness).chromeMuted.withValues(alpha: 0.75)
       ..strokeWidth = 1.4 / zoom
       ..strokeCap = StrokeCap.round;
     canvas.drawLine(Offset(x, y), Offset(x + length, y), paint);
@@ -2063,7 +2067,7 @@ class CampusMapPainter extends CustomPainter {
         text: metres >= 1000 ? '${metres ~/ 1000} km' : '$metres m',
         style: TextStyle(
           fontFamily: AppTheme.uiFont,
-          color: scheme.onSurfaceVariant,
+          color: MapPalette.of(scheme.brightness).chromeMuted,
           fontSize: mapLabelMinSize / zoom,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.2 / zoom,
@@ -2762,14 +2766,16 @@ class _MapLegend extends StatelessWidget {
 
   final ColorScheme scheme;
 
+  MapPalette get map => MapPalette.of(scheme.brightness);
+
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: scheme.surface.withValues(alpha: 0.9),
+        color: map.chrome.withValues(alpha: 0.9),
         // a pill on one row, rounded when it wraps
         borderRadius: Shapes.inner,
-        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(color: map.chromeEdge.withValues(alpha: 0.5)),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -2799,7 +2805,7 @@ class _MapLegend extends StatelessWidget {
                 fontSize: mapLabelMinSize,
                 height: 1.1,
                 fontWeight: FontWeight.w600,
-                color: scheme.onSurfaceVariant,
+                color: map.chromeMuted,
               ),
             ),
           ],
@@ -2824,7 +2830,7 @@ class _MapLegend extends StatelessWidget {
             fontSize: mapLabelMinSize,
             height: 1.1,
             fontWeight: FontWeight.w600,
-            color: scheme.onSurfaceVariant,
+            color: map.chromeMuted,
           ),
         ),
       ),
@@ -2852,7 +2858,7 @@ class _MapLegend extends StatelessWidget {
             fontSize: mapLabelMinSize,
             height: 1.1,
             fontWeight: FontWeight.w600,
-            color: scheme.onSurfaceVariant,
+            color: map.chromeMuted,
           ),
         ),
       ),
