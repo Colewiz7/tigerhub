@@ -53,7 +53,7 @@ const remote = CampusMapFeature(
   ],
 );
 
-Widget app({bool priming = false, List<CampusEvent> events = const []}) =>
+Widget app({bool priming = false, List<CampusEvent> events = const [], double width = 800}) =>
     MaterialApp(
       theme: AppTheme.from(
         ColorScheme.fromSeed(
@@ -63,7 +63,7 @@ Widget app({bool priming = false, List<CampusEvent> events = const []}) =>
       ),
       home: Scaffold(
         body: SizedBox(
-          width: 800,
+          width: width,
           height: 600,
           child: CampusMapView(
             result: Result(
@@ -300,7 +300,7 @@ void main() {
     );
   });
 
-  testWidgets('map exposes filters, fit control, and list equivalent', (
+  testWidgets('map exposes filters, search, and list equivalent', (
     tester,
   ) async {
     await tester.pumpWidget(app());
@@ -321,9 +321,85 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Water fountains'), findsWidgets);
     expect(find.text('Defibrillators'), findsOneWidget);
-    expect(find.byTooltip('Fit campus'), findsOneWidget);
+    expect(find.byTooltip('Fit campus'), findsNothing);
     expect(find.byType(CustomPaint), findsWidgets);
   });
+
+  testWidgets('the search button sits right of the filter, fit is gone', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    final filter = tester.getRect(find.byTooltip('Filter map places'));
+    final search = find.byTooltip('Search campus places (Ctrl+F)');
+
+    expect(search, findsOneWidget);
+    expect(find.byTooltip('Fit campus'), findsNothing);
+    expect(tester.getRect(search).left, greaterThanOrEqualTo(filter.right));
+    expect(
+      tester.getSize(
+        find.ancestor(of: search, matching: find.byType(IconButton)),
+      ),
+      const Size(48, 48),
+    );
+
+    await tester.tap(search);
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).autofocus,
+      isFalse,
+    );
+  });
+
+  testWidgets('zooming back out to 1x frames the whole campus again', (
+    tester,
+  ) async {
+    await tester.pumpWidget(app());
+    final controller = tester
+        .widget<InteractiveViewer>(find.byType(InteractiveViewer))
+        .transformationController!;
+
+    await tester.tap(find.byTooltip('Zoom in'));
+    await tester.pump();
+    controller.value = controller.value.clone()..translateByDouble(-30, -20, 0, 1);
+    await tester.tap(find.byTooltip('Zoom out'));
+    await tester.pump();
+
+    expect(controller.value, Matrix4.identity());
+  });
+
+  for (final width in const [390.0, 440.0]) {
+    for (final textScale in const [1.0, 2.0]) {
+      testWidgets('toolbar fits at ${width.toInt()} wide, ${textScale}x text', (
+        tester,
+      ) async {
+        tester.view.devicePixelRatio = 1;
+        tester.view.physicalSize = Size(width, 844);
+        addTearDown(tester.view.reset);
+        await tester.pumpWidget(
+          MediaQuery(
+            data: MediaQueryData(
+              size: Size(width, 844),
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: app(width: width),
+          ),
+        );
+
+        final filter = tester.getRect(find.byTooltip('Filter map places'));
+        final search = tester.getRect(
+          find.ancestor(
+            of: find.byTooltip('Search campus places (Ctrl+F)'),
+            matching: find.byType(IconButton),
+          ),
+        );
+        expect(tester.takeException(), isNull);
+        expect(search.left, greaterThanOrEqualTo(filter.right));
+        expect(search.right, lessThanOrEqualTo(width));
+        expect(search.shortestSide, greaterThanOrEqualTo(48));
+      });
+    }
+  }
 
   testWidgets('the legend names what the outlines mean', (tester) async {
     // Without it the map asks you to infer that a hollow shape is a car park
