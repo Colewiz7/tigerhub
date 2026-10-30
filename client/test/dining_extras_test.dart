@@ -23,6 +23,7 @@ import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/screens/dining_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/cache.dart';
+import 'package:tigerhub/widgets/inset_group.dart';
 import 'package:tigerhub/widgets/jump_list.dart';
 import 'package:tigerhub/widgets/segmented_picker.dart';
 import 'package:tigerhub/widgets/status_row.dart';
@@ -346,6 +347,25 @@ void main() {
         expect(find.textContaining('No food trucks'), findsNothing);
         expect(find.text('Crossroads'), findsOneWidget);
       });
+    }
+  });
+
+  group('section spacing', () {
+    // card bottom to the next title is the phone card gap, 10
+    for (final width in [390.0, 440.0]) {
+      for (final scale in [1.0, 2.0]) {
+        testWidgets('gap above each section title is 10 at $width wide, ${scale}x text', (tester) async {
+          await pumpDining(tester, _body(_six), size: Size(width, 3200 * scale), scale: scale);
+
+          final titles = find.byType(SectionTitle);
+          expect(titles, findsNWidgets(3));
+          for (var i = 1; i < 3; i++) {
+            final card = find.descendant(of: find.byType(InsetGroup).at(i - 1), matching: find.byType(Container)).first;
+            final gap = tester.getTopLeft(titles.at(i)).dy - tester.getBottomLeft(card).dy;
+            expect(gap, 10, reason: 'title $i');
+          }
+        });
+      }
     }
   });
 

@@ -38,10 +38,14 @@ class JumpList extends StatefulWidget {
     this.railFrom = 1100,
     this.railWidth = 240,
     this.contentMaxWidth = 900,
+    this.groupGap = 14,
   });
 
   final List<JumpGroup> groups;
   final Widget? footer;
+
+  /// Space between one group and the next.
+  final double groupGap;
 
   /// Below this the rail is not worth the width it costs.
   final double railFrom;
@@ -154,7 +158,7 @@ class _JumpListState extends State<JumpList> {
               }
               return Padding(
                 key: _keyFor(index),
-                padding: const EdgeInsets.only(bottom: 14),
+                padding: EdgeInsets.only(bottom: widget.groupGap),
                 child: widget.groups[index].builder(context),
               );
             },
