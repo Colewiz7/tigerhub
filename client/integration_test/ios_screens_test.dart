@@ -281,7 +281,7 @@ void main() {
           await tester.tap(find.byTooltip('Fit campus'));
           await _settle(tester);
           await tabShot('map_${mode}_top');
-          if (appearance == Brightness.light) await deviceShot('map_${mode}_top', type);
+          await deviceShot('map_${mode}_top', type);
           final viewer = find.descendant(of: root, matching: find.byType(InteractiveViewer));
           await _drag(tester, viewer, const Offset(-120, -160));
           await tabShot('map_${mode}_panned');
@@ -290,7 +290,7 @@ void main() {
 
         await _toTop(tester, root);
         await tabShot('${name}_${mode}_top');
-        if (appearance == Brightness.light) await deviceShot('${name}_${mode}_top', type);
+        await deviceShot('${name}_${mode}_top', type);
         await _scrollDown(tester, root);
         await tabShot('${name}_${mode}_scrolled');
 
