@@ -139,7 +139,58 @@ class DarkPalette {
     busy: Color(0xFFBDA379),
   );
 
-  static const all = [espresso, mocha, slate];
+  // true black page, iOS grey steps for cards, no shadows
+  static const midnightBlue = DarkPalette(
+    id: 'midnight_blue',
+    name: 'Midnight blue',
+    bg: Color(0xFF000000),
+    surface: Color(0xFF1C1C1E),
+    elevated: Color(0xFF2B2D32),
+    text: Color(0xFFF5F5F7),
+    muted: Color(0xFFAEAEB2),
+    accent: Color(0xFF5AA9FF),
+    onAccent: Color(0xFF000000),
+    accentContainer: Color(0xFF0B3A75),
+    onAccentContainer: Color(0xFFD6E7FF),
+    secondary: Color(0xFF7FB5FF),
+    onSecondary: Color(0xFF001B3D),
+    pill: Color(0xFF0F2C57),
+    onPill: Color(0xFFD6E7FF),
+    tertiary: Color(0xFFA8B8FF),
+    tertiaryContainer: Color(0xFF2A3166),
+    onTertiaryContainer: Color(0xFFE0E4FF),
+    outline: Color(0xFF8C9097),
+    outlineVariant: Color(0xFF383C44),
+    success: Color(0xFF7DBE80),
+    busy: Color(0xFFD2A448),
+  );
+
+  static const midnightOrange = DarkPalette(
+    id: 'midnight_orange',
+    name: 'Midnight orange',
+    bg: Color(0xFF000000),
+    surface: Color(0xFF1C1C1E),
+    elevated: Color(0xFF2E2C2A),
+    text: Color(0xFFF5F5F7),
+    muted: Color(0xFFAEAEB2),
+    accent: Color(0xFFFF9F5A),
+    onAccent: Color(0xFF000000),
+    accentContainer: Color(0xFF6B300A),
+    onAccentContainer: Color(0xFFFFDCC4),
+    secondary: Color(0xFFF0B48A),
+    onSecondary: Color(0xFF3A1D08),
+    pill: Color(0xFF5A2D12),
+    onPill: Color(0xFFFFDCC4),
+    tertiary: Color(0xFFD9C27A),
+    tertiaryContainer: Color(0xFF4A3F14),
+    onTertiaryContainer: Color(0xFFF0E2A8),
+    outline: Color(0xFF938D88),
+    outlineVariant: Color(0xFF403A36),
+    success: Color(0xFF7DBE80),
+    busy: Color(0xFFD2A448),
+  );
+
+  static const all = [espresso, mocha, slate, midnightBlue, midnightOrange];
 
   /// A chip fill: the chip colour at low alpha over a card. The tint is part
   /// of the pair, so the alpha is low enough that the pair still holds 4.5:1.

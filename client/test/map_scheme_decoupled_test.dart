@@ -79,5 +79,7 @@ void main() {
     expect(espresso.every((c) => c != null), isTrue);
     expect(await read(AppScheme.mocha), espresso);
     expect(await read(AppScheme.slate), espresso);
+    expect(await read(AppScheme.midnightBlue), espresso);
+    expect(await read(AppScheme.midnightOrange), espresso);
   });
 }
