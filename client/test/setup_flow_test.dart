@@ -9,12 +9,36 @@ library;
 
 import 'dart:ui' show CheckedState;
 
+import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
+import 'package:tigerhub/widgets/app_icon.dart';
 
 import 'support/setup_harness.dart';
+
+// the one capsule button, whatever it says
+Future<void> advance(WidgetTester tester) async {
+  await tester.tap(find.byType(FilledButton));
+  await tester.pumpAndSettle();
+}
+
+// lists build lazily, so what is below the fold needs a scroll first
+Future<void> reveal(WidgetTester tester, Finder target) async {
+  await tester.scrollUntilVisible(target, 200, scrollable: find.byType(Scrollable).first);
+  await tester.pumpAndSettle();
+}
+
+// from the welcome screen, a number of steps on
+Future<SetupHarness> openAt(WidgetTester tester, int steps, {Size size = const Size(390, 844), double scale = 1}) async {
+  final harness = await pumpSetup(tester, size: size, scale: scale);
+  for (var i = 0; i < steps; i++) {
+    await advance(tester);
+  }
+  return harness;
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -89,7 +113,33 @@ void main() {
       expect(after, SchemeController.forChoice(AppScheme.slate).surface);
     });
 
+    testWidgets('Reduce Motion crossfades the push instead of sliding', (tester) async {
+      tester.platformDispatcher.accessibilityFeaturesTestValue = const FakeAccessibilityFeatures(reduceMotion: true);
+      addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+      await pumpSetup(tester);
+      await tester.tap(find.text('Continue'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 120));
+      final route = ModalRoute.of(tester.element(find.text('Pick a look')));
+      expect(route, isA<PageRouteBuilder<void>>());
+      await tester.pumpAndSettle();
+      expect(find.text('Pick a look'), findsOneWidget);
+    });
+
+    testWidgets('on iOS the push is the native Cupertino route', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await pumpSetup(tester);
+        await tester.tap(find.text('Continue'));
+        await tester.pumpAndSettle();
+        expect(ModalRoute.of(tester.element(find.text('Pick a look'))), isA<CupertinoPageRoute<void>>());
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
     testWidgets('the chosen preview is the checked radio', (tester) async {
+      // below: semantics
       final handle = tester.ensureSemantics();
       await open(tester);
       await tester.tap(find.text(AppScheme.mocha.label));
@@ -99,6 +149,251 @@ void main() {
       final other = tester.getSemantics(find.bySemanticsLabel(AppScheme.espresso.label)).getSemanticsData();
       expect(other.flagsCollection.isChecked, CheckedState.isFalse);
       handle.dispose();
+    });
+  });
+
+  group('where you live', () {
+    testWidgets('lists every area and asks for no room until one is chosen', (tester) async {
+      await openAt(tester, 2);
+      expect(find.text('Where you live'), findsOneWidget);
+      expect(find.text('For your mailing address and shuttle times.'), findsOneWidget);
+      for (final area in setupAreas) {
+        expect(find.text(area.name), findsOneWidget);
+      }
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('Set up later'), findsOneWidget);
+    });
+
+    testWidgets('a checkmark marks the chosen area and the room field follows', (tester) async {
+      await openAt(tester, 2);
+      await tester.tap(find.text('Residence Halls'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('Peterson 1234'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
+      final row = find.ancestor(of: find.text('Residence Halls'), matching: find.byType(Row)).first;
+      final check = find.byWidgetPredicate((w) => w is AppIcon && w.kind == AppIconKind.check);
+      expect(find.descendant(of: row, matching: check), findsOneWidget);
+      final other = find.ancestor(of: find.text('Global Village'), matching: find.byType(Row)).first;
+      expect(find.descendant(of: other, matching: check), findsNothing);
+    });
+
+    testWidgets('never opens the keyboard on its own', (tester) async {
+      await openAt(tester, 2);
+      await tester.tap(find.text('Residence Halls'));
+      await tester.pumpAndSettle();
+      expect(FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>(), isNull);
+    });
+
+    testWidgets('a tap outside drops the keyboard', (tester) async {
+      await openAt(tester, 2);
+      await tester.tap(find.text('Residence Halls'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+      expect(FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>(), isNotNull);
+      await tester.tapAt(const Offset(200, 120));
+      await tester.pump();
+      expect(FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<EditableText>(), isNull);
+    });
+
+    testWidgets('a direct delivery area has no room field', (tester) async {
+      await openAt(tester, 2);
+      await tester.tap(find.text('RIT Inn'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsNothing);
+      expect(find.textContaining('straight to the property'), findsOneWidget);
+    });
+
+    testWidgets('the answer is held in the draft, nothing is stored yet', (tester) async {
+      final harness = await openAt(tester, 2);
+      await tester.tap(find.text('Global Village'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'GV 400 1020');
+      expect(Preferences.instance.homeArea, isNull);
+      expect(harness.done, 0);
+      await advance(tester);
+      expect(Preferences.instance.homeArea, isNull);
+    });
+
+    testWidgets('no areas says Housing unavailable and still moves on', (tester) async {
+      await pumpSetup(tester, areas: const []);
+      await advance(tester);
+      await advance(tester);
+      expect(find.text('Housing unavailable'), findsOneWidget);
+      expect(find.text('Set up later'), findsOneWidget);
+      await advance(tester);
+      expect(find.text('Your spots'), findsOneWidget);
+    });
+  });
+
+  group('your spots', () {
+    testWidgets('groups the places under the current Dining headers', (tester) async {
+      await openAt(tester, 3);
+      expect(find.text('Your spots'), findsOneWidget);
+      expect(find.text('Dorm side'), findsOneWidget);
+      expect(find.text("Gracie's"), findsOneWidget);
+      await reveal(tester, find.text('Global Village'));
+      expect(find.text('The Cafe & Market at Crossroads'), findsOneWidget);
+      await reveal(tester, find.text('Other'));
+      expect(find.text('Bytes'), findsOneWidget);
+    });
+
+    testWidgets('follows a renamed group', (tester) async {
+      final prefs = Preferences.instance;
+      await prefs.setDiningLayout(prefs.diningLayout.rename('dorm_side', 'West side', defaultName: 'Dorm side'));
+      await openAt(tester, 3);
+      expect(find.text('West side'), findsOneWidget);
+      expect(find.text('Dorm side'), findsNothing);
+    });
+
+    testWidgets('a tap picks a place with a check badge and changes the button', (tester) async {
+      final harness = await openAt(tester, 3);
+      expect(find.text('Set up later'), findsOneWidget);
+      await tester.tap(find.text("Gracie's"));
+      await tester.pumpAndSettle();
+      expect(find.text('Continue'), findsOneWidget);
+      final check = find.byWidgetPredicate((w) => w is AppIcon && w.kind == AppIconKind.check);
+      expect(check, findsOneWidget);
+      // held in the draft, nothing stored
+      expect(Preferences.instance.pinnedDining, isEmpty);
+      expect(harness.done, 0);
+      await tester.tap(find.text("Gracie's"));
+      await tester.pumpAndSettle();
+      expect(check, findsNothing);
+      expect(find.text('Set up later'), findsOneWidget);
+    });
+
+    testWidgets('the Hide Dorm side switch is on top, off, and names its four places', (tester) async {
+      await openAt(tester, 3);
+      expect(find.text('Hide Dorm side'), findsOneWidget);
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+      expect(find.text("Gracie's, Beanz, The Commons, The College Grind"), findsOneWidget);
+      final switchTop = tester.getTopLeft(find.byType(Switch)).dy;
+      expect(switchTop, lessThan(tester.getTopLeft(find.text("Gracie's")).dy));
+      await tester.tap(find.byType(Switch));
+      await tester.pumpAndSettle();
+      expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+      expect(find.text('Continue'), findsOneWidget);
+      expect(Preferences.instance.hiddenDiningGroups, isEmpty);
+    });
+
+    testWidgets('an empty Dining says so and Set up later still works', (tester) async {
+      await pumpSetup(tester, dining: const []);
+      for (var i = 0; i < 3; i++) {
+        await advance(tester);
+      }
+      expect(find.text('Dining unavailable'), findsOneWidget);
+      expect(find.text('Set up later'), findsOneWidget);
+      await advance(tester);
+      expect(find.text('Pick what your events list favors.'), findsOneWidget);
+    });
+
+    testWidgets('every tile is a 48 point target', (tester) async {
+      await openAt(tester, 3);
+      for (final name in ["Gracie's", 'Bytes']) {
+        if (name == 'Bytes') await reveal(tester, find.text(name));
+        final tile = find.ancestor(of: find.text(name), matching: find.byType(InkWell)).first;
+        final size = tester.getSize(tile);
+        expect(size.width, greaterThanOrEqualTo(48));
+        expect(size.height, greaterThanOrEqualTo(48));
+      }
+    });
+
+    for (final (size, scale) in [(const Size(390, 844), 2.0), (const Size(440, 956), 2.0), (const Size(390, 844), 1.0)]) {
+      testWidgets('fits ${size.width.toInt()}x${size.height.toInt()} at ${scale}x text, button pinned', (tester) async {
+        await openAt(tester, 3, size: size, scale: scale);
+        expect(tester.takeException(), isNull);
+        final button = tester.getRect(find.byType(FilledButton));
+        expect(button.bottom, lessThanOrEqualTo(size.height));
+        expect(button.height, greaterThanOrEqualTo(50));
+        expect(button.left, 20);
+        expect(button.right, size.width - 20);
+        // the long name is reachable and whole at large text
+        await reveal(tester, find.text('The Cafe & Market at Crossroads'));
+        expect(tester.takeException(), isNull);
+        expect(tester.getRect(find.byType(FilledButton)), button);
+      });
+    }
+  });
+
+  group('events', () {
+    testWidgets('offers the four presets as radio cards, none chosen', (tester) async {
+      await openAt(tester, 4);
+      expect(find.text('Events'), findsOneWidget);
+      for (final name in ['Free and fun', 'Academic and career', 'Low key', 'Everything']) {
+        expect(find.text(name), findsOneWidget);
+      }
+      expect(find.text('Set up later'), findsOneWidget);
+    });
+
+    testWidgets('picking one fills its radio and the button says Continue', (tester) async {
+      await openAt(tester, 4);
+      await tester.tap(find.text('Low key'));
+      await tester.pumpAndSettle();
+      expect(find.text('Continue'), findsOneWidget);
+      final check = find.byWidgetPredicate((w) => w is AppIcon && w.kind == AppIconKind.check);
+      expect(check, findsOneWidget);
+      // not stored, the rules are the shipped ones
+      expect(Preferences.instance.hideKeywords, defaultHideKeywords);
+    });
+
+    testWidgets('Follow a club has a chevron and pushes a search', (tester) async {
+      await openAt(tester, 4);
+      final row = find.ancestor(of: find.text('Follow a club'), matching: find.byType(Row)).first;
+      expect(find.descendant(of: row, matching: find.byWidgetPredicate((w) => w is AppIcon && w.kind == AppIconKind.chevron)), findsOneWidget);
+      await tester.tap(find.text('Follow a club'));
+      await tester.pumpAndSettle();
+      expect(find.text('Search clubs'), findsOneWidget);
+      expect(find.text('Chess Club'), findsOneWidget);
+      expect(find.text('Student Government'), findsOneWidget);
+    });
+
+    testWidgets('the search narrows by name and following shows on the step', (tester) async {
+      await openAt(tester, 4);
+      await tester.tap(find.text('Follow a club'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'chess');
+      await tester.pumpAndSettle();
+      expect(find.text('Student Government'), findsNothing);
+      await tester.tap(find.text('Chess Club'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+      expect(find.text('1 followed'), findsOneWidget);
+      expect(find.text('Continue'), findsOneWidget);
+    });
+
+    testWidgets('a search with no hits says No matches', (tester) async {
+      await openAt(tester, 4);
+      await tester.tap(find.text('Follow a club'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'zzz');
+      await tester.pumpAndSettle();
+      expect(find.text('No matches'), findsOneWidget);
+    });
+
+    testWidgets('no events says so, the row is off and Set up later works', (tester) async {
+      await pumpSetup(tester, events: const []);
+      for (var i = 0; i < 4; i++) {
+        await advance(tester);
+      }
+      expect(find.text('Events unavailable'), findsOneWidget);
+      await tester.tap(find.text('Follow a club'));
+      await tester.pumpAndSettle();
+      expect(find.text('Search clubs'), findsNothing);
+      expect(find.text('Set up later'), findsOneWidget);
+      await advance(tester);
+      expect(find.text('Your Today'), findsWidgets);
+    });
+
+    testWidgets('fits a phone at twice the text', (tester) async {
+      await openAt(tester, 4, scale: 2);
+      expect(tester.takeException(), isNull);
+      expect(tester.getRect(find.byType(FilledButton)).bottom, lessThanOrEqualTo(844));
+      await reveal(tester, find.text('Follow a club'));
+      expect(tester.takeException(), isNull);
     });
   });
 }

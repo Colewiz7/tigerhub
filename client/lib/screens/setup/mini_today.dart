@@ -89,7 +89,10 @@ class MiniToday extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 56, 16, 0),
-            child: Column(
+            // more cards than fit are cut off, as the real screen scrolls
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: Column(
               children: [
                 Row(
                   children: [
@@ -115,6 +118,7 @@ class MiniToday extends StatelessWidget {
                 const SizedBox(height: 16),
                 for (final card in cards) _Tile(type: card.type, size: card.size),
               ],
+              ),
             ),
           ),
           if (tabBar)

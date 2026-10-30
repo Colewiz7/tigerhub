@@ -3,9 +3,9 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../motion/reduce_motion.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/dynamic_theme.dart';
-import '../../theme/tokens.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/focus_ring.dart';
 import 'mini_today.dart';
@@ -108,7 +108,7 @@ class _Preview extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
+                duration: reduceMotion(context) ? Duration.zero : const Duration(milliseconds: 160),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(color: selected ? colors.primary : colors.outlineVariant, width: selected ? 2.5 : 1),
@@ -154,7 +154,7 @@ class _Radio extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
+      duration: reduceMotion(context) ? Duration.zero : const Duration(milliseconds: 160),
       width: 22,
       height: 22,
       decoration: BoxDecoration(

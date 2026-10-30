@@ -16,8 +16,12 @@ import 'package:flutter/material.dart';
 import '../../models/api_models.dart';
 import '../../services/dashboard.dart';
 import '../../theme/dynamic_theme.dart';
+import 'events_step.dart';
+import 'home_step.dart';
 import 'look_step.dart';
 import 'setup_kit.dart';
+import 'spots_step.dart';
+import 'today_step.dart';
 import 'welcome_step.dart';
 
 export 'setup_kit.dart' show SetupStep;
@@ -25,6 +29,10 @@ export 'setup_kit.dart' show SetupStep;
 Widget buildSetupStep(SetupStep step) => switch (step) {
   SetupStep.welcome => const WelcomeStep(),
   SetupStep.look => const LookStep(),
+  SetupStep.home => const HomeStep(),
+  SetupStep.spots => const SpotsStep(),
+  SetupStep.events => const EventsStep(),
+  SetupStep.today => const TodayStep(),
   _ => const SizedBox.shrink(),
 };
 
