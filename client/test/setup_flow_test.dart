@@ -7,7 +7,7 @@
 /// not answer changes nothing.
 library;
 
-import 'dart:ui' show CheckedState;
+import 'dart:ui' show CheckedState, Tristate;
 
 import 'package:flutter/cupertino.dart' show CupertinoPageRoute;
 import 'package:flutter/foundation.dart';
@@ -630,5 +630,112 @@ void main() {
         expect(tester.takeException(), isNull);
       });
     }
+  });
+
+  group('a re-run', () {
+    final base = [
+      ...defaultDashboard,
+      const CardInstance(id: 'shuttles-0', type: ModuleType.shuttles, size: CardSize.compact),
+    ];
+
+    Future<SetupHarness> openRerun(WidgetTester tester, {AppScheme initial = AppScheme.mocha}) async {
+      final prefs = Preferences.instance;
+      await prefs.setHome(area: 'global-village', unit: 'GV 400 1020');
+      await prefs.togglePinned(21);
+      await prefs.applyProfile(['x'], ['y'], keywordsEnabled: true);
+      await DashboardStore.save(base);
+      return pumpSetup(tester, rerun: true, dashboard: base, initial: initial);
+    }
+
+    testWidgets('has no welcome, Cancel on the left and Save on the right', (tester) async {
+      await openRerun(tester);
+      expect(find.text('Welcome to TigerHub'), findsNothing);
+      expect(find.text('Pick a look'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
+      expect(find.byTooltip('Back'), findsNothing);
+      expect(find.text('Continue'), findsOneWidget);
+      expect(tester.getTopLeft(find.text('Cancel')).dx, lessThan(tester.getTopLeft(find.text('Save')).dx));
+    });
+
+    testWidgets('every step starts filled in from what is stored', (tester) async {
+      final handle = tester.ensureSemantics();
+      await openRerun(tester);
+      expect(tester.getSemantics(find.bySemanticsLabel(AppScheme.mocha.label)).getSemanticsData().flagsCollection.isChecked, CheckedState.isTrue);
+      await advance(tester);
+      final row = find.ancestor(of: find.text('Global Village'), matching: find.byType(Row)).first;
+      expect(find.descendant(of: row, matching: find.byWidgetPredicate((w) => w is AppIcon && w.kind == AppIconKind.check)), findsOneWidget);
+      expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, 'GV 400 1020');
+      await advance(tester);
+      expect(tester.getSemantics(find.bySemanticsLabel("Gracie's")).getSemanticsData().flagsCollection.isSelected, Tristate.isTrue);
+      handle.dispose();
+    });
+
+    testWidgets('Cancel puts the scheme back and stores nothing', (tester) async {
+      final harness = await openRerun(tester);
+      await tester.tap(find.text(AppScheme.slate.label));
+      await tester.pumpAndSettle();
+      expect(harness.scheme.choice, AppScheme.slate);
+      await advance(tester);
+      await tester.tap(find.text('Residence Halls'));
+      await tester.pumpAndSettle();
+      // Cancel is only on the first step, so go back to it
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(harness.scheme.choice, AppScheme.mocha);
+      expect(harness.cancelled, 1);
+      expect(Preferences.instance.homeArea, 'global-village');
+    });
+
+    testWidgets('the system back button cancels too', (tester) async {
+      final harness = await openRerun(tester);
+      await tester.tap(find.text(AppScheme.slate.label));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(harness.scheme.choice, AppScheme.mocha);
+      expect(harness.cancelled, 1);
+    });
+
+    testWidgets('Save with nothing edited leaves everything as it was', (tester) async {
+      final harness = await openRerun(tester);
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      expect(harness.done, 1);
+      final prefs = Preferences.instance;
+      expect(prefs.hideKeywords, ['x']);
+      expect(prefs.pinnedDining, {'21'});
+      expect(prefs.homeUnit, 'GV 400 1020');
+      expect([for (final c in await DashboardStore.load()) c.toJson()], [for (final c in base) c.toJson()]);
+    });
+
+    testWidgets('turning a card off hides it, and its place, size and scope stay', (tester) async {
+      await openRerun(tester);
+      for (var i = 0; i < 4; i++) {
+        await advance(tester);
+      }
+      await reveal(tester, inList('Shuttles'));
+      await tester.tap(find.descendant(of: find.ancestor(of: inList('Shuttles'), matching: find.byType(Row)).first, matching: find.byType(Switch)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save'));
+      await tester.pumpAndSettle();
+      final saved = await DashboardStore.load();
+      expect(saved.length, base.length);
+      final shuttles = saved.firstWhere((c) => c.id == 'shuttles-0');
+      expect((shuttles.hidden, shuttles.size), (true, CardSize.compact));
+      expect([for (final c in saved) c.id], [for (final c in base) c.id]);
+    });
+
+    testWidgets('the last screen says Save', (tester) async {
+      await openRerun(tester);
+      for (var i = 0; i < 5; i++) {
+        await advance(tester);
+      }
+      expect(find.text("You're all set"), findsOneWidget);
+      expect(find.text('Save'), findsWidgets);
+      expect(find.text('Get started'), findsNothing);
+    });
   });
 }

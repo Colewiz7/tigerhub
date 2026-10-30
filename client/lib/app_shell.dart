@@ -15,6 +15,9 @@ import 'data/shuttles.dart';
 import 'home_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/setup/setup_flow.dart';
+import 'screens/setup/setup_kit.dart' show setupRoute;
+import 'services/dashboard.dart';
+import 'widgets/whats_new_sheet.dart';
 import 'models/api_models.dart';
 import 'screens/campus_screen.dart';
 import 'screens/dining_screen.dart';
@@ -140,9 +143,45 @@ class _AppShellState extends State<AppShell>
       hasExistingData().then((found) {
         if (!mounted) return;
         setState(() => _existing = found);
+        if (found) WidgetsBinding.instance.addPostFrameCallback((_) => _offerWhatsNew());
       });
     }
     if (mounted) setState(() {});
+  }
+
+  bool _offered = false;
+
+  /// Once, for someone with settings from before setup existed. Either button
+  /// counts as an answer, and so does closing the sheet.
+  Future<void> _offerWhatsNew() async {
+    if (!mounted || _offered || Preferences.instance.setupSeen) return;
+    _offered = true;
+    final personalize = await showWhatsNewSheet(context);
+    await Preferences.instance.markSetupSeen();
+    if (personalize && mounted) await _openPersonalize();
+  }
+
+  /// Setup again, from what is stored, ending in Save or Cancel.
+  Future<void> _openPersonalize() async {
+    final dashboard = await DashboardStore.load();
+    if (!mounted) return;
+    final navigator = Navigator.of(context);
+    void close() => navigator.pop();
+    await navigator.push(
+      setupRoute<void>(
+        context,
+        (_) => SetupFlow(
+          rerun: true,
+          scheme: widget.scheme,
+          areas: _areas.value?.data ?? const [],
+          dining: _dining.value?.data ?? const [],
+          events: _events.value?.data ?? const [],
+          dashboard: dashboard,
+          onDone: close,
+          onCancel: close,
+        ),
+      ),
+    );
   }
 
   final _subscriptions = Subscriptions();
@@ -300,6 +339,7 @@ class _AppShellState extends State<AppShell>
                                   ? SettingsScreen(
                                       scheme: widget.scheme,
                                       events: _events,
+                                      onPersonalize: _openPersonalize,
                                     )
                                   : NotificationListener<ScrollNotification>(
                                       onNotification: _onScroll,
