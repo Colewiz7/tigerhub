@@ -4,6 +4,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// upload key: CI passes env vars, a local build reads key.properties, neither is committed
+val keyProps = java.util.Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun signing(name: String, env: String): String? = System.getenv(env) ?: keyProps.getProperty(name)
+
 android {
     namespace = "dev.colewiz.tigerhub"
     compileSdk = flutter.compileSdkVersion
@@ -29,11 +37,23 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("upload") {
+            val path = signing("storeFile", "ANDROID_KEYSTORE_PATH")
+            if (path != null) {
+                storeFile = file(path)
+                storePassword = signing("storePassword", "ANDROID_KEYSTORE_PASSWORD")
+                keyAlias = signing("keyAlias", "ANDROID_KEY_ALIAS")
+                keyPassword = signing("keyPassword", "ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // no upload key on this machine: debug keys, so `flutter run --release` still works
+            val haveKey = signing("storeFile", "ANDROID_KEYSTORE_PATH") != null
+            signingConfig = signingConfigs.getByName(if (haveKey) "upload" else "debug")
         }
     }
 }
