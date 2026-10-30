@@ -91,6 +91,7 @@ class MiniToday extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 56, 16, 0),
             // more cards than fit are cut off, as the real screen scrolls
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               physics: const NeverScrollableScrollPhysics(),
               child: Column(
               children: [

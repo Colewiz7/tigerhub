@@ -44,6 +44,7 @@ class _WhatsNew extends StatelessWidget {
         children: [
           Flexible(
             child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
               child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

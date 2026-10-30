@@ -94,7 +94,12 @@ class _PreviewsState extends State<_Previews> {
             ],
           ],
         );
-        return fits ? row : SingleChildScrollView(controller: _scroll, scrollDirection: Axis.horizontal, child: row);
+        return fits ? row : SingleChildScrollView(
+                controller: _scroll,
+                scrollDirection: Axis.horizontal,
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                child: row,
+              );
       },
     );
   }
