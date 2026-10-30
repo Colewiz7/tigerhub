@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../data/dining_display_names.dart';
 import '../data/dining_layout.dart';
 import '../data/static_config.dart';
 import '../models/api_models.dart';
@@ -39,7 +40,7 @@ List<MenuAction> diningActions(DiningLocation location) {
         final wasPinned = prefs.isPinned(location.id);
         showFeedback(
           context,
-          'Hid ${location.name}',
+          'Hid ${locationDisplayName(location)}',
           action: SnackBarAction(
             label: 'Undo',
             onPressed: () => prefs.restoreDining(

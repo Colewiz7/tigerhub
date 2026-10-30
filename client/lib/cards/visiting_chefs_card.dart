@@ -17,6 +17,7 @@ import '../data/campus_time.dart';
 import '../data/chef_family.dart';
 import '../data/chef_listing.dart';
 import '../data/chef_location_color.dart';
+import '../data/dining_display_names.dart';
 import '../data/sources/rit_chefs.dart' show ritDiningPageUrl;
 import '../widgets/empty_state.dart';
 import '../widgets/chef_details.dart';
@@ -239,12 +240,12 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
               emphasis: phase.inactive ? RowEmphasis.quiet : RowEmphasis.normal,
               subtitle: ChefDetails.label(
                 VisitingChefsCard.window(chef),
-                chef.locationName,
+                chefPlaceName(chef),
                 status: VisitingChefsCard.status(chef, phase),
               ),
               subtitleBuilder: (context, style) => ChefDetails(
                 window: VisitingChefsCard.window(chef),
-                location: chef.locationName,
+                location: chefPlaceName(chef),
                 style: style,
                 locationColor: chefLocationColor(chef, Theme.of(context).colorScheme, muted: phase.inactive),
                 wrap: Insets.phone(context),
@@ -277,7 +278,7 @@ class _ChefRow extends StatelessWidget {
       excludeSemantics: true,
       label: [
         chef.name,
-        ChefDetails.label(window, chef.locationName, status: VisitingChefsCard.status(chef, phase)),
+        ChefDetails.label(window, chefPlaceName(chef), status: VisitingChefsCard.status(chef, phase)),
       ].where((s) => s.isNotEmpty).join(', '),
       child: Material(
         elevation: 0,
@@ -312,7 +313,7 @@ class _ChefRow extends StatelessWidget {
                       const SizedBox(height: 2),
                       ChefDetails(
                         window: window,
-                        location: chef.locationName,
+                        location: chefPlaceName(chef),
                         style: text.bodySmall,
                         locationColor: chefLocationColor(chef, scheme, muted: inactive),
                       ),

@@ -163,9 +163,11 @@ void main() {
             scale: scale,
             backend: _DiningBackend(const [], chefs: body),
           );
-          for (final text in ['The Cafe & Market at Crossroads', 'Kitchen at Brick City']) {
-            expect(find.text(text), findsOneWidget, reason: text);
-            final paragraph = find.descendant(of: find.text(text), matching: find.byType(RichText));
+          for (final (id, text) in [(1, 'Crossroads'), (2, 'Kitchen at Brick City')]) {
+            // the places list names Crossroads too, so look inside the row
+            final place = find.descendant(of: find.byKey(ValueKey('chef-$id')), matching: find.text(text));
+            expect(place, findsOneWidget, reason: text);
+            final paragraph = find.descendant(of: place, matching: find.byType(RichText));
             expect(tester.renderObject<RenderParagraph>(paragraph.first).didExceedMaxLines, isFalse);
           }
           expect(find.text('11 AM to 2 PM'), findsNWidgets(2));

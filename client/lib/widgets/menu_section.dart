@@ -70,9 +70,13 @@ class MenuSection extends StatelessWidget {
     }
     final names = [
       for (final name in stations.keys)
-        if (name != otherStation) name,
+        if (name != otherStation && isSpecialStation(name)) name,
+      for (final name in stations.keys)
+        if (name != otherStation && !isSpecialStation(name)) name,
       if (stations.containsKey(otherStation)) otherStation,
     ];
+    // the station that led before specials moved up stays open
+    final firstPlain = names.indexWhere((n) => n != otherStation && !isSpecialStation(n));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +95,10 @@ class MenuSection extends StatelessWidget {
             // A filter opens every section with a match, so folding never
             // hides a dish the person asked for.
             initiallyOpen:
-                i == 0 || (filtering && stations[names[i]]!.any(_matchesDiet)),
+                i == 0 ||
+                isSpecialStation(names[i]) ||
+                i == (firstPlain < 0 ? 0 : firstPlain) ||
+                (filtering && stations[names[i]]!.any(_matchesDiet)),
             // Matching dishes first, the rest still visible below.
             dishes: [
               ...stations[names[i]]!.where(_matchesDiet),
@@ -106,6 +113,9 @@ class MenuSection extends StatelessWidget {
       ],
     );
   }
+
+  /// Chef specials and any station like it, which lead the menu.
+  static bool isSpecialStation(String station) => station.toLowerCase().contains('special');
 
   /// The station a dish is served from, which is its published category.
   static String stationOf(Dish dish) {

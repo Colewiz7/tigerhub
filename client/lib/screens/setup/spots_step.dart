@@ -5,6 +5,7 @@ library;
 import 'package:flutter/material.dart';
 
 import '../../cards/dining_card.dart' show iconForVenue;
+import '../../data/dining_display_names.dart';
 import '../../data/dining_layout.dart';
 import '../../data/static_config.dart';
 import '../../models/api_models.dart';
@@ -103,7 +104,7 @@ class SpotsStep extends StatelessWidget {
     final config = StaticConfig.loadedOrNull;
     final ids = config?.diningGroupHideIds[dormSideGroupId];
     if (config == null || ids == null) return null;
-    final names = {for (final p in config.diningGroupPlaces) p.id: p.name};
+    final names = {for (final p in config.diningGroupPlaces) p.id: diningDisplayName(p.id, p.name)};
     return [for (final id in ids) names[id] ?? '$id'].join(', ');
   }
 
@@ -182,7 +183,7 @@ class _Tile extends StatelessWidget {
     return Semantics(
       button: true,
       selected: selected,
-      label: place.name,
+      label: locationDisplayName(place),
       excludeSemantics: true,
       onTap: onTap,
       child: FocusRing(
@@ -241,7 +242,7 @@ class _Tile extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  place.name,
+                  locationDisplayName(place),
                   textAlign: TextAlign.center,
                   maxLines: large ? null : 2,
                   overflow: large ? TextOverflow.visible : TextOverflow.ellipsis,

@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../../data/dining_display_names.dart';
 import '../../data/dining_layout.dart';
 import '../../data/static_config.dart';
 import '../../services/clipboard.dart';
@@ -59,7 +60,7 @@ class _DiningSectionState extends State<DiningSection> {
     final config = StaticConfig.loadedOrNull;
     final ids = config?.diningGroupHideIds[groupId];
     if (config == null || ids == null) return null;
-    final names = {for (final p in config.diningGroupPlaces) p.id: p.name};
+    final names = {for (final p in config.diningGroupPlaces) p.id: diningDisplayName(p.id, p.name)};
     return [for (final id in ids) names[id] ?? '$id'].join(', ');
   }
 

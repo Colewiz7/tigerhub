@@ -7,6 +7,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../data/dining_display_names.dart';
 import '../widgets/empty_state.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
@@ -338,7 +339,7 @@ class DiningRow extends StatelessWidget {
       grouped: grouped,
       dense: dense,
       icon: iconForPlace(location.id, location.name),
-      title: location.name,
+      title: locationDisplayName(location),
       subtitle: Preferences.instance.isPinned(location.id) ? 'Pinned · $when' : when,
       accent: accent,
       emphasis: open ? RowEmphasis.normal : RowEmphasis.quiet,

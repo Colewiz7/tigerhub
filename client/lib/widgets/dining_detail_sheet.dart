@@ -18,6 +18,7 @@ import '../theme/tokens.dart';
 import '../widgets/freshness.dart';
 import '../widgets/menu_section.dart';
 import '../data/campus_time.dart';
+import '../data/dining_display_names.dart';
 import '../widgets/occupancy_chart.dart';
 import '../services/subscriptions.dart';
 import 'app_icon.dart';
@@ -43,7 +44,7 @@ class DiningDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     // names the route for screen readers, so the body leaves the name out
-    appBar: AppBar(title: Text(location.name)),
+    appBar: AppBar(title: Text(locationDisplayName(location))),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 720),
@@ -143,9 +144,14 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
                     children: [
                       if (widget.showName)
                         Text(
-                          location.name,
+                          locationDisplayName(location),
                           style: text.titleLarge?.copyWith(fontSize: 24),
                         ),
+                      // the long name stays under the short one
+                      if (diningFullName(location.id, location.name) case final full?) ...[
+                        const SizedBox(height: 3),
+                        Text(full, key: const ValueKey('detail-full-name'), style: text.bodySmall),
+                      ],
                       if (location.summary != null) ...[
                         const SizedBox(height: 3),
                         Text(location.summary!, style: text.bodySmall),
