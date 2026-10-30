@@ -23,6 +23,7 @@ import 'package:tigerhub/screens/events_screen.dart';
 import 'package:tigerhub/screens/map_screen.dart';
 import 'package:tigerhub/screens/settings/settings_screen.dart';
 import 'package:tigerhub/services/api.dart';
+import 'package:tigerhub/services/cache.dart';
 import 'package:tigerhub/services/dashboard.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
@@ -281,7 +282,7 @@ void main() {
           await tester.tap(find.byTooltip('Fit campus'));
           await _settle(tester);
           await tabShot('map_${mode}_top');
-          if (appearance == Brightness.light) await deviceShot('map_${mode}_top', type);
+          await deviceShot('map_${mode}_top', type);
           final viewer = find.descendant(of: root, matching: find.byType(InteractiveViewer));
           await _drag(tester, viewer, const Offset(-120, -160));
           await tabShot('map_${mode}_panned');
@@ -290,7 +291,7 @@ void main() {
 
         await _toTop(tester, root);
         await tabShot('${name}_${mode}_top');
-        if (appearance == Brightness.light) await deviceShot('${name}_${mode}_top', type);
+        await deviceShot('${name}_${mode}_top', type);
         await _scrollDown(tester, root);
         await tabShot('${name}_${mode}_scrolled');
 
@@ -373,4 +374,65 @@ void main() {
     debugPrint('tab scrub end');
     binding.platformDispatcher.clearPlatformBrightnessTestValue();
   }, skip: !_appearances.contains(Brightness.dark));
+
+  // a fresh install walks the seven steps, someone with settings gets the sheet
+  testWidgets('setup screens', (tester) async {
+    Future<void> shot(String name) => binding.takeScreenshot(name);
+
+    Future<void> advance() async {
+      await tester.tap(find.byType(FilledButton));
+      await _settle(tester);
+    }
+
+    // below the fold, scrolled to and tapped, then back to the top for the picture
+    Future<void> pick(Finder target) async {
+      await tester.scrollUntilVisible(target, 200, scrollable: find.byType(Scrollable).first);
+      await tester.tap(target);
+      await _settle(tester);
+      tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0);
+      await _settle(tester);
+    }
+
+    Future<void> start(Future<void> Function() seed) async {
+      for (final key in const ['housing_area', 'housing_unit', 'dashboard_v2', 'color_scheme', 'pinned_dining', 'hidden_dining', 'hidden_dining_groups', 'hide_keywords', 'boost_keywords', 'keyword_rules_enabled', 'setup_seen']) {
+        await ResponseCache.instance.writeOrder(key, const []);
+      }
+      Preferences.instance.resetForTests();
+      await seed();
+      final scheme = SchemeController();
+      addTearDown(scheme.dispose);
+      await tester.pumpWidget(_app(ApiClient(backend: _FixtureBackend()), scheme));
+      await _settle(tester);
+    }
+
+    for (final appearance in _appearances) {
+      final mode = appearance.name;
+
+      await start(() async {});
+      await shot('setup_welcome_$mode');
+      await advance();
+      await pick(find.text(AppScheme.espresso.label));
+      await shot('setup_look_$mode');
+      await advance();
+      await pick(find.text('Global Village'));
+      await shot('setup_home_$mode');
+      await advance();
+      await pick(find.text("Gracie's"));
+      await pick(find.text('Beanz'));
+      await shot('setup_spots_$mode');
+      await advance();
+      await pick(find.text('Low key'));
+      await shot('setup_events_$mode');
+      await advance();
+      await shot('setup_today_$mode');
+      await advance();
+      await shot('setup_done_$mode');
+
+      // setup written before this existed, so it asks once
+      await start(() => Preferences.instance.setHome(area: 'global-village'));
+      expect(find.text("What's new in TigerHub"), findsOneWidget);
+      await shot('setup_whatsnew_$mode');
+    }
+    binding.platformDispatcher.clearPlatformBrightnessTestValue();
+  });
 }

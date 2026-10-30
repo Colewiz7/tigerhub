@@ -13,11 +13,21 @@ class GroupSection {
 }
 
 class DiningSections {
-  const DiningSections({required this.pinned, required this.groups, required this.hidden});
+  const DiningSections({
+    required this.pinned,
+    required this.groups,
+    required this.hidden,
+    this.hiddenGroups = const [],
+  });
 
   final List<DiningLocation> pinned;
   final List<GroupSection> groups;
   final List<DiningLocation> hidden;
+
+  // places a hidden group hides, under that group's name
+  final List<GroupSection> hiddenGroups;
+
+  int get hiddenCount => hidden.length + hiddenGroups.fold(0, (sum, g) => sum + g.places.length);
 
   int get visibleCount => pinned.length + groups.fold(0, (sum, g) => sum + g.places.length);
 }
@@ -33,8 +43,25 @@ DiningSections buildDiningSections({
   bool showHidden = true,
   // edit mode lists groups with no places too, apart from Other
   bool keepEmpty = false,
+  Set<String> hiddenGroups = const {},
+  Map<String, Set<int>> hideIds = const {},
 }) {
-  bool isHidden(DiningLocation l) => hidden.contains('${l.id}');
+  // a group hides its hide ids, or all its places when it lists none
+  final byHiddenGroup = <ResolvedGroup, List<DiningLocation>>{};
+  if (hiddenGroups.isNotEmpty) {
+    final byId = {for (final l in locations) l.id: l};
+    for (final group in layout.resolve(defaults: defaults, defaultGroupOf: defaultGroupOf, placeIds: [for (final l in locations) l.id])) {
+      if (group.id == otherGroupId || !hiddenGroups.contains(group.id)) continue;
+      final covered = hideIds[group.id];
+      final places = [
+        for (final id in group.placeIds)
+          if (covered == null || covered.contains(id)) byId[id]!,
+      ];
+      if (places.isNotEmpty) byHiddenGroup[group] = places;
+    }
+  }
+  final groupHidden = {for (final places in byHiddenGroup.values) for (final l in places) '${l.id}'};
+  bool isHidden(DiningLocation l) => hidden.contains('${l.id}') || groupHidden.contains('${l.id}');
   final visible = [
     for (final l in locations)
       if (!isHidden(l)) l,
@@ -67,8 +94,17 @@ DiningSections buildDiningSections({
   final hiddenPlaces = showHidden
       ? ([
           for (final l in locations)
-            if (isHidden(l)) l,
+            if (hidden.contains('${l.id}') && !groupHidden.contains('${l.id}')) l,
         ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase())))
       : <DiningLocation>[];
-  return DiningSections(pinned: pinnedPlaces, groups: groups, hidden: hiddenPlaces);
+  final hiddenSections = showHidden
+      ? [
+          for (final entry in byHiddenGroup.entries)
+            GroupSection(
+              group: entry.key,
+              places: [...entry.value]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase())),
+            ),
+        ]
+      : <GroupSection>[];
+  return DiningSections(pinned: pinnedPlaces, groups: groups, hidden: hiddenPlaces, hiddenGroups: hiddenSections);
 }

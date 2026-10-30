@@ -64,4 +64,47 @@ void main() {
     await tester.pumpAndSettle();
     expect(prefs.hiddenDining, {'21', '32'});
   });
+
+  testWidgets('every group but Other has a switch, Dorm side names its four places', (tester) async {
+    await _pump(tester);
+    expect(find.text('Hide Dorm side'), findsOneWidget);
+    expect(find.text('Hide SHED'), findsOneWidget);
+    expect(find.text('Hide Other'), findsNothing);
+    expect(find.text("Gracie's, Beanz, The Commons, The College Grind"), findsOneWidget);
+  });
+
+  testWidgets('the Dorm side switch hides it with a snackbar and Undo shows it', (tester) async {
+    final prefs = Preferences.instance;
+    await _pump(tester);
+    await tester.tap(find.byType(Switch).first);
+    await tester.pumpAndSettle();
+    expect(prefs.hiddenDiningGroups, {'dorm_side'});
+    expect(find.text('Hid Dorm side'), findsOneWidget);
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(prefs.hiddenDiningGroups, isEmpty);
+  });
+
+  testWidgets('Unhide all clears places and groups, one Undo brings both back', (tester) async {
+    final prefs = Preferences.instance;
+    await prefs.toggleHidden(32);
+    await prefs.setGroupHidden('dorm_side', true);
+    await _pump(tester);
+    await tester.tap(find.text('Unhide all'));
+    await tester.pumpAndSettle();
+    expect(prefs.hiddenDining, isEmpty);
+    expect(prefs.hiddenDiningGroups, isEmpty);
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(prefs.hiddenDining, {'32'});
+    expect(prefs.hiddenDiningGroups, {'dorm_side'});
+  });
+
+  testWidgets('Unhide all is on when only a group is hidden', (tester) async {
+    final handle = tester.ensureSemantics();
+    await Preferences.instance.setGroupHidden('dorm_side', true);
+    await _pump(tester);
+    expect(_enabled(tester, 'Unhide all'), isTrue);
+    handle.dispose();
+  });
 }

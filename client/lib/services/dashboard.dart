@@ -19,6 +19,8 @@ library;
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import 'cache.dart';
 
 /// The module types the dashboard can place.
@@ -302,6 +304,16 @@ class DashboardStore {
     return migrated;
   }
 
-  static Future<void> save(List<CardInstance> cards) => ResponseCache.instance
-      .writeOrder(_key, [for (final card in cards) jsonEncode(card.toJson())]);
+  /// Fires after a save with `notify`, so a screen that loaded the cards once
+  /// can load them again. The Today screen's own saves stay quiet.
+  static final DashboardChanges changes = DashboardChanges();
+
+  static Future<void> save(List<CardInstance> cards, {bool notify = false}) async {
+    await ResponseCache.instance.writeOrder(_key, [for (final card in cards) jsonEncode(card.toJson())]);
+    if (notify) changes.announce();
+  }
+}
+
+class DashboardChanges extends ChangeNotifier {
+  void announce() => notifyListeners();
 }

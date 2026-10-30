@@ -4,7 +4,8 @@
   "groups": [
     {
       "id": "dorm_side",
-      "name": "Dorm side"
+      "name": "Dorm side",
+      "hide_ids": [21, 31, 24, 35]
     },
     {
       "id": "shed",

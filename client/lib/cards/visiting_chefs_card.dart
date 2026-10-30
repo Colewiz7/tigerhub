@@ -23,6 +23,7 @@ import '../widgets/chef_details.dart';
 import '../models/api_models.dart';
 import '../services/api.dart';
 import '../services/open_link.dart';
+import '../services/preferences.dart';
 import '../theme/tokens.dart';
 import '../widgets/bounded_list.dart';
 import '../widgets/card_shell.dart';
@@ -36,9 +37,9 @@ import '../widgets/status_row.dart';
 /// The compact answer. Null while loading, so nothing is claimed.
 String? chefsCompactValue(Result<Collection<MenuItem>> result) {
   if (result.isPriming) return null;
-  final all = listedChefs(result.value?.data ?? const <MenuItem>[]);
+  final fetched = withoutHiddenChefs(result.value?.data ?? const <MenuItem>[], Preferences.instance.groupHiddenPlaces);
+  final all = listedChefs(fetched);
   if (all.isNotEmpty) return '${all.length} today';
-  final fetched = result.value?.data ?? const <MenuItem>[];
   final down = (result.value?.availability ?? Availability.available) == Availability.unavailable;
   if (down) return 'Unavailable';
   return fetched.isEmpty ? 'None today' : 'No more chefs';
@@ -129,15 +130,22 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Preferences.instance,
+    builder: (context, _) => _build(context),
+  );
+
+  Widget _build(BuildContext context) {
     final result = widget.result;
     final dragHandle = widget.dragHandle;
     final compact = widget.compact;
-    final fetched = result.value?.data ?? const <MenuItem>[];
+    final hiddenPlaces = Preferences.instance.groupHiddenPlaces;
+    final fetched = withoutHiddenChefs(result.value?.data ?? const <MenuItem>[], hiddenPlaces);
     final all = listedChefs(fetched);
     final value = result.value;
     final availability = value?.availability ?? Availability.available;
-    final upcoming = value is ChefCollection ? value.next : null;
+    final next = value is ChefCollection ? value.next : null;
+    final upcoming = next != null && !atHiddenPlace(next.locationName, hiddenPlaces) ? next : null;
     final nextLine = all.isEmpty && fetched.isNotEmpty && upcoming != null ? nextChefLine(upcoming, CampusTime.wallDate()) : null;
 
     if (compact && Insets.phone(context)) {
