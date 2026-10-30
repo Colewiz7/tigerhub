@@ -234,6 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _scrollController.addListener(_onScrolled);
     Preferences.instance.addListener(_onPreferences);
+    DashboardStore.changes.addListener(_restoreOrder);
     _tickMinute();
     _restoreOrder();
     _recreationSub = widget.api.recreation().listen((result) {
@@ -253,6 +254,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ..removeListener(_onScrolled)
       ..dispose();
     Preferences.instance.removeListener(_onPreferences);
+    DashboardStore.changes.removeListener(_restoreOrder);
     _minute?.cancel();
     _recreationSub?.cancel();
     _mapSub?.cancel();
