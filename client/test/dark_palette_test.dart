@@ -111,7 +111,7 @@ void main() {
     });
   }
 
-  test('the three schemes recolor primary, pill, picker and tab bar', () {
+  test('the five schemes recolor primary, pill, picker and tab bar', () {
     final s = AppScheme.values.map(SchemeController.forChoice).toList();
     final sets = <String, List<Color>>{
       'primary': [for (final x in s) x.primary],
@@ -124,8 +124,29 @@ void main() {
       'tab bar glass': [for (final x in s) x.surfaceContainer],
     };
     sets.forEach((role, colors) {
-      expect(colors.toSet().length, 3, reason: '$role must differ in every scheme: ${colors.map(hex)}');
+      expect(colors.toSet().length, 5, reason: '$role must differ in every scheme: ${colors.map(hex)}');
     });
+  });
+
+  test('the midnight schemes sit on true black with tonal cards', () {
+    for (final choice in [AppScheme.midnightBlue, AppScheme.midnightOrange]) {
+      final s = SchemeController.forChoice(choice);
+      expect(s.surfaceContainerLowest, const Color(0xFF000000), reason: choice.id);
+      expect(s.surface, const Color(0xFF000000), reason: choice.id);
+      expect(ratio(s.surfaceContainerLow, s.surfaceContainerLowest), greaterThanOrEqualTo(1.15), reason: choice.id);
+      expect(ratio(s.surfaceContainerHigh, s.surfaceContainerLow), greaterThanOrEqualTo(1.15), reason: choice.id);
+    }
+  });
+
+  test('midnight blue is blue and midnight orange is orange', () {
+    final b = SchemeController.forChoice(AppScheme.midnightBlue);
+    for (final c in [b.primary, b.secondaryContainer, b.primaryContainer, b.secondary]) {
+      expect(HSLColor.fromColor(c).hue, inInclusiveRange(200, 225), reason: hex(c));
+    }
+    final o = SchemeController.forChoice(AppScheme.midnightOrange);
+    for (final c in [o.primary, o.secondaryContainer, o.primaryContainer, o.secondary]) {
+      expect(HSLColor.fromColor(c).hue, inInclusiveRange(15, 35), reason: hex(c));
+    }
   });
 
   test('slate is blue, not orange', () {
@@ -166,7 +187,7 @@ void main() {
       final seeded = ColorScheme.fromSeed(seedColor: SchemeController.fallbackSeed, brightness: Brightness.light);
       expect(SchemeController.builtIn(Brightness.light), seeded);
       expect(DarkPalette.of(seeded), isNull);
-      expect(AppScheme.values.map((s) => s.id), ['espresso', 'mocha', 'slate']);
+      expect(AppScheme.values.map((s) => s.id), ['espresso', 'mocha', 'slate', 'midnight_blue', 'midnight_orange']);
     });
 
     test('status colours are unchanged', () {
