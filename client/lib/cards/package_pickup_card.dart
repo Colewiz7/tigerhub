@@ -52,7 +52,11 @@ String _clock(DateTime instant) {
       final next = nextOpening(service: 'package_pickup', rules: rules, now: now);
       final tomorrow = CampusTime.dateOf(now).add(const Duration(days: 1));
       final isTomorrow = next != null && CampusTime.dateOf(next) == tomorrow;
-      return (value: 'Closed today', caption: isTomorrow ? 'Opens ${_clock(next)} tomorrow' : 'Closed', quiet: true);
+      // The caption always names the state. Tomorrow's opening moves up to the
+      // value, so "Opens 9 AM" over "Closed today" says both.
+      return isTomorrow
+          ? (value: 'Opens ${_clock(next)}', caption: 'Closed today', quiet: true)
+          : (value: 'Closed today', caption: 'Closed', quiet: true);
   }
 }
 

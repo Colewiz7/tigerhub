@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
@@ -119,7 +120,7 @@ void main() {
   }
 
   for (final size in const [Size(390, 844), Size(440, 956)]) {
-    Future<void> pumpMap(WidgetTester tester) async {
+    Future<void> pumpMap(WidgetTester tester, {double scale = 1}) async {
       tester.view.devicePixelRatio = 1;
       tester.view.physicalSize = size;
       addTearDown(tester.view.reset);
@@ -127,7 +128,7 @@ void main() {
         MaterialApp(
           theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902))),
           home: MediaQuery(
-            data: MediaQueryData(size: size),
+            data: MediaQueryData(size: size, textScaler: TextScaler.linear(scale)),
             child: Scaffold(body: MapScreen(api: ApiClient(backend: _MapBackend()))),
           ),
         ),
@@ -176,6 +177,68 @@ void main() {
       final second = tester.getRect(cards.at(1));
       expect(second.right, lessThanOrEqualTo(strip.right + 0.5));
     }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+
+    testWidgets('${size.width.toInt()} wide: the legend toggle is a 48 point control with tap and expanded state', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpMap(tester);
+      final toggle = find.bySemanticsLabel('Map legend');
+      expect(toggle, findsOneWidget);
+      expect(
+        tester.getSemantics(toggle),
+        isSemantics(label: 'Map legend', isButton: true, hasTapAction: true, hasExpandedState: true, isExpanded: false),
+      );
+      final target = tester.getSize(find.ancestor(of: find.text('Legend'), matching: find.byType(InkWell)).first);
+      expect(target.height, greaterThanOrEqualTo(48));
+      expect(target.width, greaterThanOrEqualTo(48));
+
+      // entries are not in the tree until it opens, then each one is reachable
+      expect(find.bySemanticsLabel(RegExp(r'\bAcademic\b')), findsNothing);
+      tester.semantics.tap(find.semantics.byLabel('Map legend'));
+      await tester.pumpAndSettle();
+      expect(tester.getSemantics(toggle), isSemantics(label: 'Map legend', isButton: true, hasTapAction: true, hasExpandedState: true, isExpanded: true));
+      for (final label in ['Academic', 'Residential', 'Athletic', 'Dining', 'Other building', 'Parking', 'Green space', 'Water', 'Road', 'Walk path']) {
+        // the entries read as part of a merged node, so match inside the label
+        expect(find.bySemanticsLabel(RegExp('\\b$label\\b')), findsWidgets, reason: label);
+      }
+      handle.dispose();
+    }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+
+    testWidgets('${size.width.toInt()} wide: Enter and Space open and close the legend from the keyboard', (tester) async {
+      await pumpMap(tester);
+      Focus.of(tester.element(find.text('Legend'))).requestFocus();
+      await tester.pump();
+      expect(find.text('Academic'), findsNothing);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text('Academic'), findsOneWidget);
+      await tester.sendKeyEvent(LogicalKeyboardKey.space);
+      await tester.pumpAndSettle();
+      expect(find.text('Academic'), findsNothing);
+    }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+
+    for (final scale in const [1.0, 2.0]) {
+      testWidgets('${size.width.toInt()} wide at ${scale}x: kind cards show whole titles and counts, nothing overflows', (tester) async {
+        final overflows = await captureOverflows(() => pumpMap(tester, scale: scale));
+        expect(overflows, isEmpty);
+        final strip = find.byWidgetPredicate((w) => w.runtimeType.toString() == '_KindStrip');
+        final texts = find.descendant(of: strip, matching: find.byType(Text));
+        expect(texts, findsWidgets);
+        for (final element in texts.evaluate()) {
+          final paragraph = element.renderObject! as RenderParagraph;
+          final data = (element.widget as Text).data;
+          expect(paragraph.didExceedMaxLines, isFalse, reason: '$data cut by a line limit');
+          expect((element.widget as Text).overflow, isNull, reason: '$data has an ellipsis');
+        }
+        // the strip holds the tallest card whole, and its cards stay inside it
+        final stripRect = tester.getRect(strip);
+        for (final card in find.descendant(of: strip, matching: find.byType(Material)).evaluate()) {
+          final rect = tester.getRect(find.byWidget(card.widget));
+          expect(rect.bottom, lessThanOrEqualTo(stripRect.bottom + 0.5));
+        }
+        expect(find.text('Bottle and can return'), findsOneWidget);
+        expect(find.textContaining(RegExp(r'^\d+ places?$')), findsWidgets);
+      }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+    }
   }
 
   // the longest names in the capture, so the panel has the most to fit
