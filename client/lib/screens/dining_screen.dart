@@ -816,8 +816,15 @@ class _VisitingChefsGroup extends StatelessWidget {
         chefPlaceName(chef),
         status: VisitingChefsCard.status(chef, phase),
       ),
-      subtitleBuilder: (context, style) => ChefDetails(
+      titleBuilder: (context, titleStyle, detailStyle) => ChefTitle(
+        name: chef.name,
         window: VisitingChefsCard.window(chef),
+        titleStyle: titleStyle,
+        windowStyle: detailStyle,
+        nameMaxLines: 1,
+      ),
+      subtitleBuilder: (context, style) => ChefDetails(
+        window: null,
         location: chefPlaceName(chef),
         style: style,
         locationColor: chefLocationColor(chef, Theme.of(context).colorScheme, muted: phase.inactive),

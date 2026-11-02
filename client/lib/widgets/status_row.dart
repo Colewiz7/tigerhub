@@ -39,7 +39,13 @@ class StatusRow extends StatelessWidget {
     this.wrapSubtitle = false,
     this.grouped = false,
     this.subtitleBuilder,
+    this.titleBuilder,
   });
+
+  /// Draws the title itself, given the title and the detail style the row
+  /// would use. [title] is still what a screen reader says.
+  final Widget Function(BuildContext context, TextStyle? titleStyle, TextStyle? detailStyle)?
+  titleBuilder;
 
   /// Draws the subtitle itself, given the style the row would use. [subtitle]
   /// is then only what a screen reader says, and the built widget is kept out
@@ -214,12 +220,16 @@ class StatusRow extends StatelessWidget {
                         child: Opacity(
                           opacity: opacity,
                           child: _DenseBody(
-                            title: Text(
-                              title,
-                              style: titleStyle,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                            title: titleBuilder != null
+                                ? ExcludeSemantics(
+                                    child: titleBuilder!(context, titleStyle, subtitleStyle),
+                                  )
+                                : Text(
+                                    title,
+                                    style: titleStyle,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                             subtitle: subtitle == null
                                 ? null
                                 : subtitleBuilder != null
@@ -248,12 +258,17 @@ class StatusRow extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                title,
-                                style: titleStyle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              if (titleBuilder != null)
+                                ExcludeSemantics(
+                                  child: titleBuilder!(context, titleStyle, subtitleStyle),
+                                )
+                              else
+                                Text(
+                                  title,
+                                  style: titleStyle,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               if (subtitle != null) ...[
                                 const SizedBox(height: 2),
                                 if (subtitleBuilder != null)

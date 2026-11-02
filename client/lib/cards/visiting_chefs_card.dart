@@ -243,8 +243,15 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
                 chefPlaceName(chef),
                 status: VisitingChefsCard.status(chef, phase),
               ),
-              subtitleBuilder: (context, style) => ChefDetails(
+              titleBuilder: (context, titleStyle, detailStyle) => ChefTitle(
+                name: chef.name,
                 window: VisitingChefsCard.window(chef),
+                titleStyle: titleStyle,
+                windowStyle: detailStyle,
+                nameMaxLines: Insets.phone(context) ? 2 : 1,
+              ),
+              subtitleBuilder: (context, style) => ChefDetails(
+                window: null,
                 location: chefPlaceName(chef),
                 style: style,
                 locationColor: chefLocationColor(chef, Theme.of(context).colorScheme, muted: phase.inactive),
@@ -303,16 +310,16 @@ class _ChefRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      chef.name,
-                      style: inactive ? text.titleMedium?.copyWith(color: scheme.onSurfaceVariant) : text.titleMedium,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    ChefTitle(
+                      name: chef.name,
+                      window: window,
+                      titleStyle: inactive ? text.titleMedium?.copyWith(color: scheme.onSurfaceVariant) : text.titleMedium,
+                      windowStyle: text.bodySmall,
                     ),
-                    if (window != null || chef.locationName.isNotEmpty) ...[
+                    if (chefPlaceName(chef).isNotEmpty) ...[
                       const SizedBox(height: 2),
                       ChefDetails(
-                        window: window,
+                        window: null,
                         location: chefPlaceName(chef),
                         style: text.bodySmall,
                         locationColor: chefLocationColor(chef, scheme, muted: inactive),

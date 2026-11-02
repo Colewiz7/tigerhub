@@ -1,4 +1,8 @@
-/// The time and the location of a visiting chef, one line each.
+/// The time and the location of a visiting chef.
+///
+/// The time sits on the right of the name ([ChefTitle]) and the location
+/// keeps a line of its own here. (Earlier the two shared a column and the
+/// time ended up under the name.)
 ///
 /// The Today card used to join both into one subtitle capped at two lines, so
 /// the location (written last) was the first thing an ellipsis took. Here each
@@ -68,6 +72,103 @@ class ChefDetails extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [?time, ?place],
+    );
+  }
+}
+
+/// A chef's name with the time range on the right.
+///
+/// The time never wraps or clips: it is measured first and the name takes what
+/// is left. If the name would be cut in that lane (large text, long name) the
+/// time drops onto its own line under the name, still right-aligned.
+class ChefTitle extends StatelessWidget {
+  const ChefTitle({
+    super.key,
+    required this.name,
+    required this.window,
+    required this.titleStyle,
+    required this.windowStyle,
+    this.nameMaxLines = 2,
+  });
+
+  final String name;
+
+  /// "11 AM to 2 PM", or null when RIT gave no time.
+  final String? window;
+  final TextStyle? titleStyle;
+  final TextStyle? windowStyle;
+  final int nameMaxLines;
+
+  static const double _gap = 10;
+
+  @override
+  Widget build(BuildContext context) {
+    final nameText = Text(
+      name,
+      style: titleStyle,
+      maxLines: nameMaxLines,
+      overflow: TextOverflow.ellipsis,
+    );
+    final time = window;
+    if (time == null) return nameText;
+
+    final scaler = MediaQuery.textScalerOf(context);
+    final base = DefaultTextStyle.of(context).style;
+    final timeWidget = StatusText(time, style: windowStyle, maxLines: 1, overflow: TextOverflow.visible);
+
+    return LayoutBuilder(
+      builder: (context, box) {
+        final timePainter = TextPainter(
+          text: TextSpan(text: time, style: base.merge(windowStyle)),
+          textDirection: Directionality.of(context),
+          textScaler: scaler,
+          maxLines: 1,
+        )..layout();
+        // a pixel of slack so a rounded measure never wraps the time
+        final timeWidth = timePainter.width + 2;
+        final lane = box.maxWidth - timeWidth - _gap;
+        var beside = lane > 0;
+        if (beside) {
+          final narrow = TextPainter(
+            text: TextSpan(text: name, style: base.merge(titleStyle)),
+            textDirection: Directionality.of(context),
+            textScaler: scaler,
+            maxLines: nameMaxLines,
+          )..layout(maxWidth: lane);
+          // The time takes the right if the name still fits its lines there
+          // and no word breaks mid-way: "KO-BQ" never splits to make room.
+          var wordsWhole = true;
+          for (final word in name.split(RegExp(r'\s+'))) {
+            final w = TextPainter(
+              text: TextSpan(text: word, style: base.merge(titleStyle)),
+              textDirection: Directionality.of(context),
+              textScaler: scaler,
+              maxLines: 1,
+            )..layout();
+            if (w.width > lane) wordsWhole = false;
+          }
+          beside = !narrow.didExceedMaxLines && wordsWhole;
+        }
+        if (beside) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Expanded(child: nameText),
+              const SizedBox(width: _gap),
+              SizedBox(width: timeWidth, child: Align(alignment: Alignment.centerRight, child: timeWidget)),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            nameText,
+            Align(alignment: Alignment.centerRight, child: timeWidget),
+          ],
+        );
+      },
     );
   }
 }
