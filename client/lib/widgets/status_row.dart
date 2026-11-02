@@ -39,13 +39,18 @@ class StatusRow extends StatelessWidget {
     this.wrapSubtitle = false,
     this.grouped = false,
     this.subtitleBuilder,
-    this.titleBuilder,
+    this.sideBuilder,
   });
 
-  /// Draws the title itself, given the title and the detail style the row
-  /// would use. [title] is still what a screen reader says.
-  final Widget Function(BuildContext context, TextStyle? titleStyle, TextStyle? detailStyle)?
-  titleBuilder;
+  /// Wraps the row's text block (title and subtitle), given the styles the row
+  /// would use. Chef rows use it to put a time on the right, centred on the block.
+  final Widget Function(
+    BuildContext context,
+    TextStyle? titleStyle,
+    TextStyle? detailStyle,
+    Widget body,
+  )?
+  sideBuilder;
 
   /// Draws the subtitle itself, given the style the row would use. [subtitle]
   /// is then only what a screen reader says, and the built widget is kept out
@@ -136,6 +141,15 @@ class StatusRow extends StatelessWidget {
         child: _row(context),
       );
 
+  Widget _withSide(
+    BuildContext context,
+    TextStyle? titleStyle,
+    TextStyle? detailStyle,
+    Widget body,
+  ) => sideBuilder == null
+      ? body
+      : sideBuilder!(context, titleStyle, detailStyle, body);
+
   Widget _row(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
@@ -217,19 +231,19 @@ class StatusRow extends StatelessWidget {
                     SizedBox(width: dense ? 10 : 13),
                     if (dense)
                       Expanded(
-                        child: Opacity(
+                        child: _withSide(
+                          context,
+                          titleStyle,
+                          subtitleStyle,
+                          Opacity(
                           opacity: opacity,
                           child: _DenseBody(
-                            title: titleBuilder != null
-                                ? ExcludeSemantics(
-                                    child: titleBuilder!(context, titleStyle, subtitleStyle),
-                                  )
-                                : Text(
-                                    title,
-                                    style: titleStyle,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                            title: Text(
+                              title,
+                              style: titleStyle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                             subtitle: subtitle == null
                                 ? null
                                 : subtitleBuilder != null
@@ -248,27 +262,27 @@ class StatusRow extends StatelessWidget {
                             trailing: trailing,
                           ),
                         ),
+                        ),
                       )
                     else
                       Expanded(
-                        child: Opacity(
+                        child: _withSide(
+                          context,
+                          titleStyle,
+                          subtitleStyle,
+                          Opacity(
                           opacity: opacity,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              if (titleBuilder != null)
-                                ExcludeSemantics(
-                                  child: titleBuilder!(context, titleStyle, subtitleStyle),
-                                )
-                              else
-                                Text(
-                                  title,
-                                  style: titleStyle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                              Text(
+                                title,
+                                style: titleStyle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                               if (subtitle != null) ...[
                                 const SizedBox(height: 2),
                                 if (subtitleBuilder != null)
@@ -291,6 +305,7 @@ class StatusRow extends StatelessWidget {
                               ],
                             ],
                           ),
+                        ),
                         ),
                       ),
                     if (trailing != null && !dense) ...[

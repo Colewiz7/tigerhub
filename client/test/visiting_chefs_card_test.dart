@@ -280,7 +280,7 @@ void main() {
       });
     }
 
-    goldenWidgets('from 600pt the time sits beside the name, the location under, still coloured', (
+    goldenWidgets('from 600pt the time sits at the right, centred, the location under the name, still coloured', (
       tester,
     ) async {
       await _pump(
@@ -295,8 +295,11 @@ void main() {
       final place = find.text('Kitchen at Brick City');
       expect(time, findsOneWidget);
       expect(place, findsOneWidget);
-      expect(tester.getCenter(time).dy, closeTo(tester.getCenter(find.text('Tandoor of India')).dy, 8));
-      expect(tester.getTopLeft(find.text('Crossroads')).dy, greaterThan(tester.getBottomLeft(time).dy - 4));
+      final row600 = tester.getRect(
+        find.ancestor(of: find.text('Tandoor of India'), matching: find.byType(Material)).first,
+      );
+      expect(tester.getCenter(time).dy, closeTo(row600.center.dy, 2));
+      expect(tester.getTopLeft(find.text('Crossroads')).dy, greaterThan(tester.getTopLeft(find.text('Tandoor of India')).dy));
       // the 4 PM slot has not started at noon, so the colour is the muted one
       final scheme = Theme.of(tester.element(find.byType(VisitingChefsCard))).colorScheme;
       expect(tester.widget<Text>(place).style?.color, chefLocationColor(long[1], scheme, muted: true));
@@ -338,9 +341,16 @@ void main() {
                 expect(tr.right, lessThanOrEqualTo(width - 16), reason: '$time clipped');
                 expect(tr.left, greaterThanOrEqualTo(0));
                 if (scale == 1) {
-                  // beside the name, on its line
+                  // beside the name block, centred on the whole row
                   expect(tr.left, greaterThanOrEqualTo(nr.right), reason: '$time not right of name');
-                  expect(tr.center.dy, inInclusiveRange(nr.top, nr.bottom), reason: time);
+                  final row = tester.getRect(
+                    find.ancestor(of: n, matching: find.byType(Material)).first,
+                  );
+                  expect(tr.center.dy, closeTo(row.center.dy, 2), reason: '$time not centred on its row');
+                  // two lines, so no taller than a dense row
+                  if (!inSheet) {
+                    expect(row.height, lessThanOrEqualTo(StatusRow.denseHeight + 8), reason: '$time row grew');
+                  }
                 } else {
                   // beside or, when the name needs the room, under it
                   expect(
