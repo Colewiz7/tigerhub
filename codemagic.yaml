@@ -260,16 +260,20 @@ workflows:
         - tigerhub_upload
     scripts:
       # First, so a bad credential fails in seconds, not after a compile. A
-      # track with no release yet counts as build 0.
+      # track with no release yet counts as build 0 (the CLI exits non-zero
+      # then), and the project build counter keeps numbers rising.
       - name: Next build number (Play internal track)
         script: |
-          set -euo pipefail
-          LATEST=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks=internal | tail -n 1 | tr -d '[:space:]')
+          set -eu
+          LATEST=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks=internal 2>/dev/null | tail -n 1 | tr -d '[:space:]' || true)
           case "$LATEST" in ''|None|none|null) LATEST=0 ;; esac
           case "$LATEST" in
             *[!0-9]*) echo "Unexpected build number output: $LATEST"; exit 1 ;;
           esac
-          echo "BUILD_NUMBER=$((LATEST + 1))" >> "$CM_ENV"
+          NEXT=$((LATEST + 1))
+          if [ "${PROJECT_BUILD_NUMBER:-0}" -gt "$NEXT" ]; then NEXT=$PROJECT_BUILD_NUMBER; fi
+          echo "Latest on internal track: $LATEST; using build number $NEXT"
+          echo "BUILD_NUMBER=$NEXT" >> "$CM_ENV"
       - name: Upload key is present
         script: |
           set -eu
