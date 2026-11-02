@@ -1,5 +1,5 @@
-/// Package pickup on Today: the counter for where you live, by its
-/// scheduled hours. Holidays are not in the data, so it says scheduled.
+/// Package pickup on Today: the counter for where you live. The caption says
+/// the state (Open or Closed), the same words the Mail screen uses.
 library;
 
 import 'package:flutter/material.dart';
@@ -45,14 +45,14 @@ String _clock(DateTime instant) {
     case ServiceState.unknown:
       return none;
     case ServiceState.open:
-      return (value: 'Until ${_clock(today.closesAt!)}', caption: 'Scheduled', quiet: false);
+      return (value: 'Until ${_clock(today.closesAt!)}', caption: 'Open', quiet: false);
     case ServiceState.closedUntilLater:
-      return (value: 'Opens ${_clock(today.opensAt!)}', caption: 'Scheduled', quiet: true);
+      return (value: 'Opens ${_clock(today.opensAt!)}', caption: 'Closed', quiet: true);
     case ServiceState.closedForDay:
       final next = nextOpening(service: 'package_pickup', rules: rules, now: now);
       final tomorrow = CampusTime.dateOf(now).add(const Duration(days: 1));
       final isTomorrow = next != null && CampusTime.dateOf(next) == tomorrow;
-      return (value: 'Closed today', caption: isTomorrow ? 'Opens ${_clock(next)} tomorrow' : 'Scheduled', quiet: true);
+      return (value: 'Closed today', caption: isTomorrow ? 'Opens ${_clock(next)} tomorrow' : 'Closed', quiet: true);
   }
 }
 
