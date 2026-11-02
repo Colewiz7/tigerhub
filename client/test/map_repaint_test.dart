@@ -364,6 +364,8 @@ void main() {
         ),
       ),
     );
+    await tester.tap(find.text('Legend'));
+    await tester.pump();
     expect(find.text(MapFamily.dining.label), findsOneWidget);
   });
 }
