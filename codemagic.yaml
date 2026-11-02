@@ -231,3 +231,58 @@ workflows:
       - client/build/tab_scrub.mp4
       - client/build/home_indicator_check.png
       - /tmp/xcodebuild_logs/*.log
+
+  # 5. Signed Android App Bundle, uploaded to the Google Play internal testing
+  #    track as a draft release. Nothing is published to users. Manual start
+  #    only, like the others. Linux minutes, so far cheaper than the macOS ones.
+  #
+  #    Needs, all stored in Codemagic and none in this repo:
+  #    - an Android keystore named tigerhub_upload (Teams > Personal account >
+  #      Code signing identities > Android keystores). Codemagic exports it as
+  #      CM_KEYSTORE_PATH, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS and CM_KEY_PASSWORD,
+  #      which client/android/app/build.gradle.kts reads.
+  #    - a variable group named google_play holding
+  #      GCLOUD_SERVICE_ACCOUNT_CREDENTIALS, the Play service account JSON,
+  #      marked secure.
+  android-internal:
+    name: Android - signed AAB to Play internal
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      flutter: *flutter
+      java: 17
+      groups:
+        - google_play
+      vars:
+        PACKAGE_NAME: dev.colewiz.tigerhub
+      android_signing:
+        - tigerhub_upload
+    scripts:
+      # First, so a bad credential fails in seconds, not after a compile. A
+      # track with no release yet counts as build 0.
+      - name: Next build number (Play internal track)
+        script: |
+          set -euo pipefail
+          LATEST=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" --tracks=internal | tail -n 1 | tr -d '[:space:]')
+          case "$LATEST" in ''|None|none|null) LATEST=0 ;; esac
+          case "$LATEST" in
+            *[!0-9]*) echo "Unexpected build number output: $LATEST"; exit 1 ;;
+          esac
+          echo "BUILD_NUMBER=$((LATEST + 1))" >> "$CM_ENV"
+      - name: Upload key is present
+        script: |
+          set -eu
+          test -n "${CM_KEYSTORE_PATH:-}" && test -f "$CM_KEYSTORE_PATH"
+      - name: Packages
+        script: cd client && flutter pub get
+      - name: Build app bundle
+        script: |
+          cd client
+          flutter build appbundle --release --build-number="$BUILD_NUMBER"
+    artifacts:
+      - client/build/app/outputs/bundle/release/*.aab
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true

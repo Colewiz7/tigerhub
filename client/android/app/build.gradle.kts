@@ -29,11 +29,31 @@ android {
         versionName = flutter.versionName
     }
 
+    // Upload key settings come from the environment, which Codemagic fills in
+    // from its hosted keystore. Nothing about the key is stored in the repo.
+    // Without them (local runs, GitHub Actions) release builds fall back to the
+    // debug key so `flutter run --release` and CI debug builds keep working.
+    val keystorePath: String? = System.getenv("CM_KEYSTORE_PATH")
+    val hasUploadKey = !keystorePath.isNullOrEmpty() && file(keystorePath).exists()
+
+    signingConfigs {
+        if (hasUploadKey) {
+            create("upload") {
+                storeFile = file(keystorePath!!)
+                storePassword = System.getenv("CM_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("CM_KEY_ALIAS")
+                keyPassword = System.getenv("CM_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasUploadKey) {
+                signingConfigs.getByName("upload")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
