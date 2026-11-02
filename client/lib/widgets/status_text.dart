@@ -1,6 +1,7 @@
 /// Status text with a soft rounded highlight on each clock time.
 ///
-/// "Open until 10 PM" paints a pill behind "10 PM" only. The text stays one
+/// "Open until 10 PM" paints a pill behind "10 PM" only. A range such as
+/// "11 AM to 2 PM" is one pill. The text stays one
 /// plain [Text], so the baseline, wrapping, ellipsis and the spoken sentence
 /// are exactly what they were. The pills are painted behind it from the same
 /// line layout, which a TextSpan background cannot do because it has no
@@ -38,10 +39,21 @@ class StatusText extends StatelessWidget {
     caseSensitive: false,
   );
 
-  /// Where the times sit in [text].
-  static List<TextRange> timeRanges(String text) => [
-    for (final m in _time.allMatches(text)) TextRange(start: m.start, end: m.end),
-  ];
+  /// What may sit between two times for them to read as one range.
+  static final RegExp _joiner = RegExp(r'^\s*(?:to|[-\u2013])\s*$', caseSensitive: false);
+
+  /// Where the times sit in [text]. "11 AM to 2 PM" is one range.
+  static List<TextRange> timeRanges(String text) {
+    final out = <TextRange>[];
+    for (final m in _time.allMatches(text)) {
+      if (out.isNotEmpty && _joiner.hasMatch(text.substring(out.last.end, m.start))) {
+        out[out.length - 1] = TextRange(start: out.last.start, end: m.end);
+      } else {
+        out.add(TextRange(start: m.start, end: m.end));
+      }
+    }
+    return out;
+  }
 
   /// The pill colour: the primary at a low alpha, so it reads as a tint of
   /// whatever surface the text sits on.

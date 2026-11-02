@@ -175,10 +175,15 @@ class DiningCard extends StatelessWidget {
     this.onShowAll,
     this.category,
     this.compact = false,
+    this.api,
   });
 
   final Result<Collection<DiningLocation>> result;
   final Widget? dragHandle;
+
+  /// Rows open the dining detail page when this is set. Edit mode (a drag
+  /// handle is present) leaves them inert.
+  final ApiClient? api;
   final VoidCallback? onShowAll;
   final String? category;
   final bool compact;
@@ -231,6 +236,7 @@ class DiningCard extends StatelessWidget {
           locations: locations,
           onShowAll: onShowAll,
           limit: compact ? 1 : null,
+          api: dragHandle == null ? api : null,
         ),
       },
     );
@@ -238,8 +244,9 @@ class DiningCard extends StatelessWidget {
 }
 
 class _List extends StatelessWidget {
-  const _List({required this.locations, this.onShowAll, this.limit});
+  const _List({required this.locations, this.onShowAll, this.limit, this.api});
 
+  final ApiClient? api;
   final List<DiningLocation> locations;
   final VoidCallback? onShowAll;
   final int? limit;
@@ -272,7 +279,7 @@ class _List extends StatelessWidget {
           sorted.skip(shown).where((location) => location.isOpen).length,
       onShowAll: onShowAll,
       itemBuilder: (context, index) =>
-          DiningRow(location: sorted[index], dense: true),
+          DiningRow(location: sorted[index], dense: true, api: api),
     );
   }
 }
@@ -298,8 +305,8 @@ class DiningRow extends StatelessWidget {
   /// The dashboard's condensed phone row.
   final bool dense;
 
-  /// When supplied the row opens a detail sheet. The Today card preview leaves
-  /// it null, since tapping there navigates to the Dining tab instead.
+  /// When supplied the row opens the detail page, and long-press shows its
+  /// actions. Null while the Today card is being edited.
   final ApiClient? api;
 
   @override

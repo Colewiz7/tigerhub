@@ -681,25 +681,20 @@ class _DiningToolbar extends StatelessWidget {
             ),
           ),
           if (types.length > 1)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.only(right: 8),
-              child: Row(
-                children: [
-                  for (final kind in types)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(venueTypeLabel(kind)),
-                        avatar: AppIcon(kind, size: 17, color: scheme.onSurfaceVariant),
-                        showCheckmark: false,
-                        selected: type == kind,
-                        onSelected: (on) => onTypeChanged(on ? kind : null),
-                      ),
+            FadingChipRow(
+              children: [
+                for (final kind in types)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(venueTypeLabel(kind)),
+                      avatar: AppIcon(kind, size: 17, color: scheme.onSurfaceVariant),
+                      showCheckmark: false,
+                      selected: type == kind,
+                      onSelected: (on) => onTypeChanged(on ? kind : null),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
         ],
       ),
@@ -718,6 +713,73 @@ class _DiningToolbar extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// A horizontal row that fades out at the right edge while more is off
+/// screen, so a clipped chip reads as scrollable.
+class FadingChipRow extends StatefulWidget {
+  const FadingChipRow({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  State<FadingChipRow> createState() => FadingChipRowState();
+}
+
+class FadingChipRowState extends State<FadingChipRow> {
+  static const double _fade = 32;
+  final _controller = ScrollController();
+  bool _more = false;
+
+  /// Whether the right edge is fading, that is, more chips lie off screen.
+  @visibleForTesting
+  bool get fading => _more;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_update);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _update());
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _update() {
+    if (!mounted || !_controller.hasClients) return;
+    final more = _controller.position.maxScrollExtent - _controller.offset > 1;
+    if (more != _more) setState(() => _more = more);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Always masked, so the scroll view keeps its state and position when the
+    // fade comes and goes. Width and content changes arrive as metrics
+    // notifications, which the scroll listener alone never sees.
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _update());
+        return false;
+      },
+      child: ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (bounds) => LinearGradient(
+          colors: _more ? const [Colors.black, Colors.black, Colors.transparent] : const [Colors.black, Colors.black],
+          stops: _more ? [0, 1 - _fade / bounds.width, 1] : const [0, 1],
+        ).createShader(bounds),
+        child: SingleChildScrollView(
+          controller: _controller,
+          scrollDirection: Axis.horizontal,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.only(right: 8),
+          child: Row(children: widget.children),
+        ),
+      ),
+    );
+  }
 }
 
 class _FoodTrucksGroup extends StatelessWidget {

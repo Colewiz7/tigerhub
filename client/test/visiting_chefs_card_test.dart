@@ -172,6 +172,15 @@ Future<void> _pump(
   await tester.pumpAndSettle();
 }
 
+/// Tabs past the chef rows, which are focusable now, to the footer.
+Future<void> _tabToFooter(WidgetTester tester) async {
+  for (var i = 0; i < 20; i++) {
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    if (find.byKey(const ValueKey('focus-ring')).evaluate().isNotEmpty) return;
+  }
+}
+
 /// Whether [finder]'s text was cut by a line limit.
 bool _cut(WidgetTester tester, Finder finder) {
   final paragraph = find.descendant(of: finder, matching: find.byType(RichText));
@@ -812,8 +821,7 @@ void main() {
 
       expect(ring, findsNothing, reason: 'no ring until the keyboard arrives');
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
+      await _tabToFooter(tester);
       expect(ring, findsOneWidget);
       expect(side().color, scheme.primary);
       expect(side().width, 2);
@@ -855,8 +863,7 @@ void main() {
       tester,
     ) async {
       await pumpMany(tester);
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
+      await _tabToFooter(tester);
 
       final boxRect = tester.getRect(footerBox());
       final ringRect = tester.getRect(find.byKey(const ValueKey('focus-ring')));
