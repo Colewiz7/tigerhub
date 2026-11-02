@@ -24,7 +24,7 @@ class LookStep extends StatelessWidget {
         return SetupPage(
           badge: const SetupBadge(glyph: AppIconKind.appearance),
           title: 'Pick a look',
-          subtitle: 'Choose the colours TigerHub uses.',
+          subtitle: 'Choose the colors TigerHub uses.',
           leading: flow.leadingFor(context, SetupStep.look),
           trailing: flow.trailingFor(context),
           slivers: [
