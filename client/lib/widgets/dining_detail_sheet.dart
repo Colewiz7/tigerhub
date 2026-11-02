@@ -215,8 +215,12 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
               const SizedBox(height: 20),
               Text('How busy', style: text.labelSmall),
               const SizedBox(height: 10),
-              if (hourly.isEmpty)
+              if (hourly.isEmpty &&
+                  _history?.error == null &&
+                  (_history?.isPriming ?? true))
                 const PrimingPlaceholder(label: 'Loading occupancy')
+              else if (!occupancyHasShape(hourly))
+                const OccupancyUnavailable()
               else ...[
                 OccupancyChart(hourly: hourly, nowHour: nowHour),
                 const SizedBox(height: 8),
