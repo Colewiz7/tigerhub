@@ -118,6 +118,66 @@ void main() {
     }
   }
 
+  for (final size in const [Size(390, 844), Size(440, 956)]) {
+    Future<void> pumpMap(WidgetTester tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902))),
+          home: MediaQuery(
+            data: MediaQueryData(size: size),
+            child: Scaffold(body: MapScreen(api: ApiClient(backend: _MapBackend()))),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    Finder legendFinder() => find.byWidgetPredicate((w) => w.runtimeType.toString() == '_MapLegend');
+
+    testWidgets('${size.width.toInt()} wide: the legend starts collapsed and expands with every entry', (tester) async {
+      await pumpMap(tester);
+      final map = tester.getRect(find.byType(InteractiveViewer));
+      final closed = tester.getRect(legendFinder());
+      // a line or two, not a third of the map
+      expect(closed.height, lessThan(map.height / 6));
+      expect(find.text('Legend'), findsOneWidget);
+      expect(find.text('(c) OpenStreetMap contributors, ODbL'), findsOneWidget);
+      expect(find.text('Academic'), findsNothing);
+
+      await tester.tap(find.text('Legend'));
+      await tester.pumpAndSettle();
+      for (final label in ['Academic', 'Residential', 'Athletic', 'Dining', 'Other building', 'Parking', 'Green space', 'Water', 'Road', 'Walk path']) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
+      expect(find.text('(c) OpenStreetMap contributors, ODbL'), findsOneWidget);
+      final open = tester.getRect(legendFinder());
+      expect(open.height, greaterThan(closed.height));
+      expect(open.overlaps(tester.getRect(find.byTooltip('North up'))), isFalse);
+
+      await tester.tap(find.text('Legend'));
+      await tester.pumpAndSettle();
+      expect(find.text('Academic'), findsNothing);
+    }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+
+    testWidgets('${size.width.toInt()} wide: strip cards stop short of the right edge', (tester) async {
+      await pumpMap(tester);
+      final strip = tester.getRect(find.byWidgetPredicate((w) => w.runtimeType.toString() == '_KindStrip'));
+      final cards = find.descendant(
+        of: find.byWidgetPredicate((w) => w.runtimeType.toString() == '_KindStrip'),
+        matching: find.byType(Material),
+      );
+      expect(cards, findsWidgets);
+      final first = tester.getRect(cards.first);
+      expect(first.right, lessThan(strip.right));
+      // the second card is whole too: two fit the strip
+      final second = tester.getRect(cards.at(1));
+      expect(second.right, lessThanOrEqualTo(strip.right + 0.5));
+    }, variant: TargetPlatformVariant({TargetPlatform.iOS, TargetPlatform.android}));
+  }
+
   // the longest names in the capture, so the panel has the most to fit
   final features = parseCampusMapFeatures(File('test/fixtures/maps_category_35.data').readAsStringSync()).map(CampusMapFeature.fromJson).toList();
   String longest(Iterable<CampusMapFeature> some) => some.map((f) => f.name).reduce((a, b) => a.length >= b.length ? a : b);

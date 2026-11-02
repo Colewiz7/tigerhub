@@ -624,7 +624,7 @@ class _EventStrip extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               )
-            : ListView.separated(
+            : LayoutBuilder(builder: (context, constraints) => ListView.separated(
                 keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 scrollDirection: Axis.horizontal,
                 itemCount: result.groups.length,
@@ -632,7 +632,7 @@ class _EventStrip extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final group = result.groups[index];
                   return SizedBox(
-                    width: 230,
+                    width: _stripCardWidth(constraints.maxWidth, 230),
                     child: Material(
                       color: Theme.of(context).colorScheme.surfaceContainerHigh,
                       borderRadius: Shapes.inner,
@@ -670,7 +670,7 @@ class _EventStrip extends StatelessWidget {
                     ),
                   );
                 },
-              ),
+              )),
       ),
     ],
   );
@@ -991,6 +991,15 @@ double _stripHeight(BuildContext context, {required bool events}) {
   return [92.0, kinds, places].reduce(math.max).ceilToDouble();
 }
 
+/// A strip card never runs off the right edge: two share the width on a phone,
+/// and the strip scrolls from there. [max] is the card's width where there is
+/// room for more than two.
+double _stripCardWidth(double available, double max) {
+  const gap = 8.0;
+  if (!available.isFinite || available >= max * 2 + gap) return max;
+  return math.max(120.0, (available - gap) / 2);
+}
+
 class _KindStrip extends StatelessWidget {
   const _KindStrip({required this.features, required this.onSelect});
 
@@ -1010,7 +1019,7 @@ class _KindStrip extends StatelessWidget {
     final entries = groups.entries.toList()
       ..sort((a, b) => a.value.name.compareTo(b.value.name));
 
-    return ListView.separated(
+    return LayoutBuilder(builder: (context, constraints) => ListView.separated(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       scrollDirection: Axis.horizontal,
       itemCount: entries.length,
@@ -1020,7 +1029,7 @@ class _KindStrip extends StatelessWidget {
         final scheme = Theme.of(context).colorScheme;
         final palette = mapPinPalette(entry.key, scheme.brightness);
         return SizedBox(
-          width: 236,
+          width: _stripCardWidth(constraints.maxWidth, 236),
           child: Material(
             color: scheme.surfaceContainerHigh,
             borderRadius: Shapes.inner,
@@ -1076,7 +1085,7 @@ class _KindStrip extends StatelessWidget {
           ),
         );
       },
-    );
+    ));
   }
 }
 
@@ -1092,7 +1101,7 @@ class _PlaceStrip extends StatelessWidget {
   final ValueChanged<CampusMapFeature> onSelect;
 
   @override
-  Widget build(BuildContext context) => ListView.separated(
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) => ListView.separated(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     scrollDirection: Axis.horizontal,
     itemCount: features.length,
@@ -1100,7 +1109,7 @@ class _PlaceStrip extends StatelessWidget {
     itemBuilder: (context, index) {
       final feature = features[index];
       return SizedBox(
-        width: 236,
+        width: _stripCardWidth(constraints.maxWidth, 236),
         child: Material(
           color: Theme.of(context).colorScheme.surfaceContainerHigh,
           borderRadius: Shapes.inner,
@@ -1143,7 +1152,7 @@ class _PlaceStrip extends StatelessWidget {
         ),
       );
     },
-  );
+  ));
 }
 
 class _SelectedPlace extends StatelessWidget {
@@ -2766,10 +2775,21 @@ class _MapGeometry {
   }
 }
 
-class _MapLegend extends StatelessWidget {
+class _MapLegend extends StatefulWidget {
   const _MapLegend({required this.scheme});
 
   final ColorScheme scheme;
+
+  @override
+  State<_MapLegend> createState() => _MapLegendState();
+}
+
+/// Collapsed to a single line by default: the full legend is a third of a
+/// phone map. The credit stays in view either way.
+class _MapLegendState extends State<_MapLegend> {
+  bool _open = false;
+
+  ColorScheme get scheme => widget.scheme;
 
   MapPalette get map => MapPalette.of(scheme.brightness);
 
@@ -2794,16 +2814,19 @@ class _MapLegend extends StatelessWidget {
               : 7,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            _entry(MapFamily.academic, 'Academic'),
-            _entry(MapFamily.residential, 'Residential'),
-            _entry(MapFamily.athletic, 'Athletic'),
-            _entry(MapFamily.dining, 'Dining'),
-            _entry(MapFamily.otherBuilt, 'Other building'),
-            _entry(MapFamily.parking, 'Parking'),
-            _entry(MapFamily.open, 'Green space'),
-            _entry(null, 'Water'),
-            _lineEntry('Road', path: false),
-            _lineEntry('Walk path', path: true),
+            _toggle(context),
+            if (_open) ...[
+              _entry(MapFamily.academic, 'Academic'),
+              _entry(MapFamily.residential, 'Residential'),
+              _entry(MapFamily.athletic, 'Athletic'),
+              _entry(MapFamily.dining, 'Dining'),
+              _entry(MapFamily.otherBuilt, 'Other building'),
+              _entry(MapFamily.parking, 'Parking'),
+              _entry(MapFamily.open, 'Green space'),
+              _entry(null, 'Water'),
+              _lineEntry('Road', path: false),
+              _lineEntry('Walk path', path: true),
+            ],
             Text(
               '(c) OpenStreetMap contributors, ODbL',
               style: TextStyle(
@@ -2818,6 +2841,39 @@ class _MapLegend extends StatelessWidget {
       ),
     );
   }
+
+  Widget _toggle(BuildContext context) => Semantics(
+    button: true,
+    expanded: _open,
+    label: 'Map legend',
+    excludeSemantics: true,
+    child: InkWell(
+      onTap: () => setState(() => _open = !_open),
+      borderRadius: Shapes.small,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 32),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Legend',
+              style: TextStyle(
+                fontSize: mapLabelMinSize,
+                height: 1.1,
+                fontWeight: FontWeight.w700,
+                color: map.chromeInk,
+              ),
+            ),
+            const SizedBox(width: 3),
+            RotatedBox(
+              quarterTurns: _open ? 2 : 0,
+              child: AppIcon(AppIconKind.expand, size: 16, color: map.chromeInk),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   /// A null family is the water swatch.
   Widget _entry(MapFamily? family, String label) => Row(
