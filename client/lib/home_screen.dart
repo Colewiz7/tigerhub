@@ -527,6 +527,7 @@ class _HomeScreenState extends State<HomeScreen> {
           category: card.scope,
           compact: card.size == CardSize.compact,
           dragHandle: controls,
+          api: widget.api,
           onShowAll: () => widget.onGoToTab(1),
         ),
         ModuleType.generalEvents => ListenableBuilder(

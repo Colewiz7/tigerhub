@@ -237,6 +237,8 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
               dense: true,
               icon: iconForChef(chef),
               title: chef.name,
+              // editing leaves rows inert, as the dining rows do
+              onTap: widget.dragHandle == null ? () => _showAllChefs(context, all, focus: chef) : null,
               emphasis: phase.inactive ? RowEmphasis.quiet : RowEmphasis.normal,
               subtitle: ChefDetails.label(
                 VisitingChefsCard.window(chef),
@@ -261,9 +263,10 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
 /// One chef: a badge, the name, then the time and the location, wrapping
 /// rather than cut.
 class _ChefRow extends StatelessWidget {
-  const _ChefRow({required this.chef});
+  const _ChefRow({super.key, required this.chef, this.focused = false});
 
   final MenuItem chef;
+  final bool focused;
 
   @override
   Widget build(BuildContext context) {
@@ -283,7 +286,8 @@ class _ChefRow extends StatelessWidget {
       child: Material(
         elevation: 0,
         color: scheme.surfaceContainerHigh,
-        borderRadius: Shapes.inner,
+        borderRadius: focused ? null : Shapes.inner,
+        shape: focused ? RoundedRectangleBorder(borderRadius: Shapes.inner, side: BorderSide(color: scheme.primary, width: 2)) : null,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
@@ -333,7 +337,7 @@ class _ChefRow extends StatelessWidget {
 /// because the card has a fixed box in a grid of cards, and growing it would
 /// push the rest of the home screen about. Esc, the scrim and the close button
 /// all dismiss it.
-Future<void> _showAllChefs(BuildContext context, List<MenuItem> chefs) {
+Future<void> _showAllChefs(BuildContext context, List<MenuItem> chefs, {MenuItem? focus}) {
   final scheme = Theme.of(context).colorScheme;
   return showModalBottomSheet<void>(
     context: context,
@@ -350,14 +354,17 @@ Future<void> _showAllChefs(BuildContext context, List<MenuItem> chefs) {
         ),
       ),
     ),
-    builder: (context) => _ChefsSheet(chefs: chefs),
+    builder: (context) => _ChefsSheet(chefs: chefs, focus: focus),
   );
 }
 
 class _ChefsSheet extends StatefulWidget {
-  const _ChefsSheet({required this.chefs});
+  const _ChefsSheet({required this.chefs, this.focus});
 
   final List<MenuItem> chefs;
+
+  /// The chef that was tapped: scrolled into view and outlined.
+  final MenuItem? focus;
 
   @override
   State<_ChefsSheet> createState() => _ChefsSheetState();
@@ -365,12 +372,19 @@ class _ChefsSheet extends StatefulWidget {
 
 class _ChefsSheetState extends State<_ChefsSheet> {
   final _rearm = ChefRearm();
+  final _focusKey = GlobalKey();
 
   List<MenuItem> get chefs => widget.chefs;
 
   @override
   void initState() {
     super.initState();
+    if (widget.focus != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final target = _focusKey.currentContext;
+        if (target != null) Scrollable.ensureVisible(target, alignment: 0.3);
+      });
+    }
     // the sheet stays open as slots start and end
     _rearm.arm(chefs, () {
       if (mounted) setState(() {});
@@ -432,8 +446,11 @@ class _ChefsSheetState extends State<_ChefsSheet> {
               shrinkWrap: true,
               itemCount: chefs.length,
               separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) =>
-                  _ChefRow(chef: chefs[index]),
+              itemBuilder: (context, index) {
+                final chef = chefs[index];
+                final focused = chef.id == widget.focus?.id;
+                return _ChefRow(key: focused ? _focusKey : null, chef: chef, focused: focused);
+              },
             ),
           ),
         ],

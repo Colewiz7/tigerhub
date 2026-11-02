@@ -36,9 +36,16 @@ void main() {
       expect(only('from noon'), 'noon');
     });
 
-    test('a range highlights both ends and not the "to"', () {
+    test('a range is one highlight, "to" included', () {
       const text = 'Italian • 11 a.m. to 2 p.m.';
-      expect([for (final r in StatusText.timeRanges(text)) text.substring(r.start, r.end)], ['11 a.m.', '2 p.m.']);
+      expect([for (final r in StatusText.timeRanges(text)) text.substring(r.start, r.end)], ['11 a.m. to 2 p.m.']);
+      const dash = 'Open 11 AM - 2 PM';
+      expect([for (final r in StatusText.timeRanges(dash)) dash.substring(r.start, r.end)], ['11 AM - 2 PM']);
+    });
+
+    test('separate times stay separate', () {
+      const text = 'Opens 7 AM, closes 9 PM';
+      expect([for (final r in StatusText.timeRanges(text)) text.substring(r.start, r.end)], ['7 AM', '9 PM']);
     });
 
     test('text with no time has nothing to highlight', () {
