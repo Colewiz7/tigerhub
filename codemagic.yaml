@@ -247,7 +247,8 @@ workflows:
   android-internal:
     name: Android - signed AAB to Play internal
     max_build_duration: 30
-    instance_type: linux_x2
+    # linux_x2 is not on the free personal plan; mac_mini_m2 is, and meters macOS minutes.
+    instance_type: mac_mini_m2
     environment:
       flutter: *flutter
       java: 17
