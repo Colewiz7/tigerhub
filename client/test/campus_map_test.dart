@@ -435,6 +435,8 @@ void main() {
     // and an olive one is grass.
     await tester.pumpWidget(app());
 
+    await tester.tap(find.text('Legend'));
+    await tester.pump();
     // the project notes 4: colour is never the only carrier. The building categories
     // are told apart by hue, so every family the map paints has to be named
     // where the reader can see it, and the legend is that place.

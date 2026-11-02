@@ -148,6 +148,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                   ),
                                   for (final item in shown)
                                     EventRow(
+                                      stacked: true,
                                       event: item.event,
                                       boosted: item.boosted,
                                     ),
@@ -175,6 +176,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                   if (open)
                                     for (final item in group.hidden)
                                       EventRow(
+                                        stacked: true,
                                         event: item.event,
                                         forceDimmed: true,
                                       ),

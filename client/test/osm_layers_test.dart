@@ -249,6 +249,8 @@ void main() {
         ),
       ),
     );
+    await tester.tap(find.text('Legend'));
+    await tester.pump();
     expect(find.text('Water'), findsOneWidget);
     final credit = find.text('(c) OpenStreetMap contributors, ODbL');
     expect(credit, findsOneWidget);

@@ -271,7 +271,7 @@ final menuSurfaces = <MenuSurface>[
     target: () => find.text('Judson/Hale Aquatics Center'),
     labels: const ['Copy text', 'Hide'],
     effects: const {
-      'Copy text': Copies('Judson/Hale Aquatics Center\n2:30 PM to 4:30 PM,  7:00 PM to 10:00 PM'),
+      'Copy text': Copies('Judson/Hale Aquatics Center\n2:30 PM to 4:30 PM,  7 PM to 10 PM'),
       'Hide': HidesCampusRow('Judson/Hale Aquatics Center'),
     },
   ),

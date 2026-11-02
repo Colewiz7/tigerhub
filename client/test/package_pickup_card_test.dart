@@ -35,23 +35,34 @@ final _offices = [for (final o in _config('post_offices')['offices'] as List<dyn
 void main() {
   group('the answer', () {
     test('residence halls use DSP, open on a tuesday morning until 4:30 PM', () {
-      expect(_at('residence-halls', 13, 10), (value: 'Until 4:30 PM', caption: 'Scheduled', quiet: false));
+      expect(_at('residence-halls', 13, 10), (value: 'Until 4:30 PM', caption: 'Open', quiet: false));
     });
 
     test('before it opens it says when', () {
-      expect(_at('global-village', 13, 8), (value: 'Opens 9 AM', caption: 'Scheduled', quiet: true));
+      expect(_at('global-village', 13, 8), (value: 'Opens 9 AM', caption: 'Closed', quiet: true));
     });
 
     test('after closing on a weekday the next opening is tomorrow', () {
-      expect(_at('global-village', 13, 17), (value: 'Closed today', caption: 'Opens 9 AM tomorrow', quiet: true));
+      expect(_at('global-village', 13, 17), (value: 'Opens 9 AM', caption: 'Closed today', quiet: true));
     });
 
     test('friday evening opens saturday at noon', () {
-      expect(_at('global-village', 16, 17).caption, 'Opens 12 PM tomorrow');
+      expect(_at('global-village', 16, 17), (value: 'Opens 12 PM', caption: 'Closed today', quiet: true));
+    });
+
+    test('the caption always names the state', () {
+      for (final area in ['residence-halls', 'global-village']) {
+        for (var day = 12; day <= 18; day++) {
+          for (var hour = 0; hour < 24; hour++) {
+            final caption = _at(area, day, hour).caption;
+            expect(caption, anyOf('Open', 'Closed', 'Closed today'), reason: '$area day $day hour $hour');
+          }
+        }
+      }
     });
 
     test('saturday evening is closed with no opening tomorrow', () {
-      expect(_at('global-village', 17, 17), (value: 'Closed today', caption: 'Scheduled', quiet: true));
+      expect(_at('global-village', 17, 17), (value: 'Closed today', caption: 'Closed', quiet: true));
     });
 
     test('greek houses use the global village office', () {
@@ -107,7 +118,7 @@ void main() {
     await tester.pump();
     expect(find.byType(CompactCard), findsOneWidget);
     expect(find.text('Until 4:30 PM'), findsOneWidget);
-    expect(find.text('Scheduled'), findsOneWidget);
+    expect(find.text('Open'), findsOneWidget);
     await tester.tap(find.text('Until 4:30 PM'));
     expect(taps, [4]);
   });

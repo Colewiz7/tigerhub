@@ -57,6 +57,9 @@ class JumpList extends StatefulWidget {
 }
 
 class _JumpListState extends State<JumpList> {
+  // height of the soft top edge once the list has scrolled
+  static const double _topFade = 14;
+
   final _controller = ScrollController();
   final _keys = <int, GlobalKey>{};
   int _active = 0;
@@ -165,10 +168,45 @@ class _JumpListState extends State<JumpList> {
           ),
         );
 
+        // Once scrolled, rows leave through the top edge under the filter
+        // chips. A soft edge there stops a title being sliced mid-letter.
+        final page = Theme.of(context).scaffoldBackgroundColor;
+        final faded = Stack(
+          children: [
+            Positioned.fill(child: list),
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              height: _topFade,
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, _) {
+                    final scrolled = _controller.hasClients && _controller.offset > 1;
+                    return DecoratedBox(
+                      key: const ValueKey('jump-list-top-fade'),
+                      decoration: BoxDecoration(
+                        gradient: scrolled
+                            ? LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [page, page.withValues(alpha: 0)],
+                              )
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        );
+
         final bounded = Center(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxWidth: widget.contentMaxWidth),
-            child: list,
+            child: faded,
           ),
         );
 

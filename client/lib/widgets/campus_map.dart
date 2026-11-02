@@ -426,12 +426,16 @@ class _CampusMapViewState extends State<CampusMapView> {
           ),
           const SizedBox(height: 10),
           // a strip is a fixed row of cards, a selected panel grows with its text
-          ConstrainedBox(
+          LayoutBuilder(builder: (context, strip) => ConstrainedBox(
             constraints:
                 selected == null &&
                     selectedBuilding == null &&
                     selectedEvent == null
-                ? BoxConstraints.tightFor(height: _stripHeight(context, events: _showEvents))
+                ? BoxConstraints.tightFor(
+                    height: !_showEvents && _kind == null
+                        ? _kindStripHeight(context, strip.maxWidth, _kindEntries(visible))
+                        : _stripHeight(context, events: _showEvents),
+                  )
                 : BoxConstraints(minHeight: 146, maxHeight: selectedEvent == null ? _placePanelMax(context) : _eventPanelHeight(context)),
             child: _showEvents
                 ? selectedEvent == null
@@ -464,7 +468,7 @@ class _CampusMapViewState extends State<CampusMapView> {
                     feature: selected ?? selectedBuilding!,
                     onClose: () => setState(() => _selectedId = null),
                   ),
-          ),
+          )),
         ],
       ),
     );
@@ -624,7 +628,7 @@ class _EventStrip extends StatelessWidget {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               )
-            : ListView.separated(
+            : LayoutBuilder(builder: (context, constraints) => ListView.separated(
                 keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 scrollDirection: Axis.horizontal,
                 itemCount: result.groups.length,
@@ -632,7 +636,7 @@ class _EventStrip extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final group = result.groups[index];
                   return SizedBox(
-                    width: 230,
+                    width: _stripCardWidth(constraints.maxWidth, 230),
                     child: Material(
                       color: Theme.of(context).colorScheme.surfaceContainerHigh,
                       borderRadius: Shapes.inner,
@@ -670,7 +674,7 @@ class _EventStrip extends StatelessWidget {
                     ),
                   );
                 },
-              ),
+              )),
       ),
     ],
   );
@@ -991,6 +995,67 @@ double _stripHeight(BuildContext context, {required bool events}) {
   return [92.0, kinds, places].reduce(math.max).ceilToDouble();
 }
 
+typedef _KindEntry = ({String key, String name, int count});
+
+/// The kinds the strip lists, A to Z, with how many places each holds.
+List<_KindEntry> _kindEntries(List<CampusMapFeature> features) {
+  final groups = <String, ({String name, int count})>{};
+  for (final feature in features) {
+    final previous = groups[feature.kind];
+    groups[feature.kind] = (
+      name: feature.kindName,
+      count: (previous?.count ?? 0) + 1,
+    );
+  }
+  return [
+    for (final entry in groups.entries)
+      (key: entry.key, name: entry.value.name, count: entry.value.count),
+  ]..sort((a, b) => a.name.compareTo(b.name));
+}
+
+String _kindCount(int count) => '$count ${count == 1 ? 'place' : 'places'}';
+
+// past this the icon circle goes, so the words get the card
+bool _kindIconFits(BuildContext context) => MediaQuery.textScalerOf(context).scale(1) <= 1.3;
+
+const double _kindCardPadX = 14;
+const double _kindIconLane = 38 + 10;
+
+double _textHeight(BuildContext context, String text, TextStyle? style, double width) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textScaler: MediaQuery.textScalerOf(context),
+    textDirection: TextDirection.ltr,
+  )..layout(maxWidth: math.max(1.0, width));
+  final height = painter.height;
+  painter.dispose();
+  return height;
+}
+
+/// The tallest kind card at this width and text size, whole titles and counts
+/// with no ellipsis. Never under 92.
+double _kindStripHeight(BuildContext context, double stripWidth, List<_KindEntry> kinds) {
+  final text = Theme.of(context).textTheme;
+  final lane = _stripCardWidth(stripWidth, 236) - _kindCardPadX * 2 - (_kindIconFits(context) ? _kindIconLane : 0);
+  var tallest = _kindIconFits(context) ? 38.0 : 0.0;
+  for (final kind in kinds) {
+    final body = _textHeight(context, kind.name, text.titleSmall?.copyWith(height: 1.05), lane) +
+        3 +
+        _textHeight(context, _kindCount(kind.count), text.bodySmall, lane);
+    tallest = math.max(tallest, body);
+  }
+  return math.max(92.0, 16 + tallest).ceilToDouble();
+}
+
+/// A strip card never runs off the right edge: two share the width on a phone,
+/// and the strip scrolls from there. [max] is the card's width where there is
+/// room for more than two.
+double _stripCardWidth(double available, double max) {
+  const gap = 8.0;
+  if (!available.isFinite || available >= max * 2 + gap) return max;
+  return math.max(120.0, (available - gap) / 2);
+}
+
 class _KindStrip extends StatelessWidget {
   const _KindStrip({required this.features, required this.onSelect});
 
@@ -999,18 +1064,10 @@ class _KindStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final groups = <String, ({String name, int count})>{};
-    for (final feature in features) {
-      final previous = groups[feature.kind];
-      groups[feature.kind] = (
-        name: feature.kindName,
-        count: (previous?.count ?? 0) + 1,
-      );
-    }
-    final entries = groups.entries.toList()
-      ..sort((a, b) => a.value.name.compareTo(b.value.name));
+    final entries = _kindEntries(features);
+    final showIcon = _kindIconFits(context);
 
-    return ListView.separated(
+    return LayoutBuilder(builder: (context, constraints) => ListView.separated(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       scrollDirection: Axis.horizontal,
       itemCount: entries.length,
@@ -1020,7 +1077,7 @@ class _KindStrip extends StatelessWidget {
         final scheme = Theme.of(context).colorScheme;
         final palette = mapPinPalette(entry.key, scheme.brightness);
         return SizedBox(
-          width: 236,
+          width: _stripCardWidth(constraints.maxWidth, 236),
           child: Material(
             color: scheme.surfaceContainerHigh,
             borderRadius: Shapes.inner,
@@ -1030,40 +1087,40 @@ class _KindStrip extends StatelessWidget {
               canRequestFocus: true,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
+                  horizontal: _kindCardPadX,
                   vertical: 8,
                 ),
                 child: Row(
                   children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: palette.$1,
-                        shape: BoxShape.circle,
+                    // at large text the circle gives its room to the words
+                    if (showIcon) ...[
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: palette.$1,
+                          shape: BoxShape.circle,
+                        ),
+                        alignment: Alignment.center,
+                        child: AppIcon(mapPlaceIcon(entry.key), size: 20, color: palette.$2),
                       ),
-                      alignment: Alignment.center,
-                      child: AppIcon(mapPlaceIcon(entry.key), size: 20, color: palette.$2),
-                    ),
-                    const SizedBox(width: 10),
+                      const SizedBox(width: 10),
+                    ],
                     Expanded(
+                      // whole title and count, never an ellipsis: the strip
+                      // is as tall as the tallest card (_kindStripHeight)
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            entry.value.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                            entry.name,
                             style: Theme.of(context).textTheme.titleSmall
                                 ?.copyWith(height: 1.05),
                           ),
                           const SizedBox(height: 3),
                           Text(
-                            '${entry.value.count} '
-                            '${entry.value.count == 1 ? 'place' : 'places'}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            _kindCount(entry.count),
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ],
@@ -1076,7 +1133,7 @@ class _KindStrip extends StatelessWidget {
           ),
         );
       },
-    );
+    ));
   }
 }
 
@@ -1092,7 +1149,7 @@ class _PlaceStrip extends StatelessWidget {
   final ValueChanged<CampusMapFeature> onSelect;
 
   @override
-  Widget build(BuildContext context) => ListView.separated(
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) => ListView.separated(
     keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
     scrollDirection: Axis.horizontal,
     itemCount: features.length,
@@ -1100,7 +1157,7 @@ class _PlaceStrip extends StatelessWidget {
     itemBuilder: (context, index) {
       final feature = features[index];
       return SizedBox(
-        width: 236,
+        width: _stripCardWidth(constraints.maxWidth, 236),
         child: Material(
           color: Theme.of(context).colorScheme.surfaceContainerHigh,
           borderRadius: Shapes.inner,
@@ -1143,7 +1200,7 @@ class _PlaceStrip extends StatelessWidget {
         ),
       );
     },
-  );
+  ));
 }
 
 class _SelectedPlace extends StatelessWidget {
@@ -2766,10 +2823,21 @@ class _MapGeometry {
   }
 }
 
-class _MapLegend extends StatelessWidget {
+class _MapLegend extends StatefulWidget {
   const _MapLegend({required this.scheme});
 
   final ColorScheme scheme;
+
+  @override
+  State<_MapLegend> createState() => _MapLegendState();
+}
+
+/// Collapsed to a single line by default: the full legend is a third of a
+/// phone map. The credit stays in view either way.
+class _MapLegendState extends State<_MapLegend> {
+  bool _open = false;
+
+  ColorScheme get scheme => widget.scheme;
 
   MapPalette get map => MapPalette.of(scheme.brightness);
 
@@ -2783,7 +2851,8 @@ class _MapLegend extends StatelessWidget {
         border: Border.all(color: map.chromeEdge.withValues(alpha: 0.5)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        // no top padding: the 48 point toggle supplies it
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 7),
         child: Wrap(
           spacing: 14,
           // The rows are already tall at large text, and a legend that runs
@@ -2794,16 +2863,19 @@ class _MapLegend extends StatelessWidget {
               : 7,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            _entry(MapFamily.academic, 'Academic'),
-            _entry(MapFamily.residential, 'Residential'),
-            _entry(MapFamily.athletic, 'Athletic'),
-            _entry(MapFamily.dining, 'Dining'),
-            _entry(MapFamily.otherBuilt, 'Other building'),
-            _entry(MapFamily.parking, 'Parking'),
-            _entry(MapFamily.open, 'Green space'),
-            _entry(null, 'Water'),
-            _lineEntry('Road', path: false),
-            _lineEntry('Walk path', path: true),
+            _toggle(context),
+            if (_open) ...[
+              _entry(MapFamily.academic, 'Academic'),
+              _entry(MapFamily.residential, 'Residential'),
+              _entry(MapFamily.athletic, 'Athletic'),
+              _entry(MapFamily.dining, 'Dining'),
+              _entry(MapFamily.otherBuilt, 'Other building'),
+              _entry(MapFamily.parking, 'Parking'),
+              _entry(MapFamily.open, 'Green space'),
+              _entry(null, 'Water'),
+              _lineEntry('Road', path: false),
+              _lineEntry('Walk path', path: true),
+            ],
             Text(
               '(c) OpenStreetMap contributors, ODbL',
               style: TextStyle(
@@ -2818,6 +2890,45 @@ class _MapLegend extends StatelessWidget {
       ),
     );
   }
+
+  void _flip() => setState(() => _open = !_open);
+
+  Widget _toggle(BuildContext context) => Semantics(
+    button: true,
+    expanded: _open,
+    label: 'Map legend',
+    // the words and chevron below are drawing, this node is the control
+    excludeSemantics: true,
+    onTap: _flip,
+    child: InkWell(
+      onTap: _flip,
+      borderRadius: Shapes.small,
+      child: ConstrainedBox(
+        // a 48 point target, the small label sits in the middle of it
+        constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Legend',
+              style: TextStyle(
+                fontSize: mapLabelMinSize,
+                height: 1.1,
+                fontWeight: FontWeight.w700,
+                color: map.chromeInk,
+              ),
+            ),
+            const SizedBox(width: 3),
+            RotatedBox(
+              quarterTurns: _open ? 2 : 0,
+              child: AppIcon(AppIconKind.expand, size: 16, color: map.chromeInk),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 
   /// A null family is the water swatch.
   Widget _entry(MapFamily? family, String label) => Row(
