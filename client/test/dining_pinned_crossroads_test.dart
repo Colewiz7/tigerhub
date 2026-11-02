@@ -67,15 +67,15 @@ void main() {
     expect(last.bottom, lessThanOrEqualTo(700 - 87));
   });
 
-  testWidgets('the list has a soft top edge for rows scrolling out under the chips', (tester) async {
-    await pump(tester);
-    final mask = find.descendant(of: find.byType(JumpList), matching: find.byType(ShaderMask));
-    ShaderMask masked() => tester.widget<ShaderMask>(mask.first);
-    // unscrolled, the gradient starts opaque
-    final before = masked();
-    expect(before.blendMode, BlendMode.dstIn);
+  testWidgets('the list has a soft top edge once rows scroll out under the chips', (tester) async {
+    // a tall inset makes the short sample list scroll
+    await pump(tester, inset: 400);
+    BoxDecoration fade() => tester
+        .widget<DecoratedBox>(find.byKey(const ValueKey('jump-list-top-fade')))
+        .decoration as BoxDecoration;
+    expect(fade().gradient, isNull);
     await tester.drag(find.descendant(of: find.byType(JumpList), matching: find.byType(Scrollable)).first, const Offset(0, -150));
     await tester.pumpAndSettle();
-    expect(tester.widget<ShaderMask>(mask.first), isNotNull);
+    expect(fade().gradient, isNotNull);
   });
 }

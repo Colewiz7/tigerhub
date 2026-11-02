@@ -9,8 +9,6 @@
 /// position indicator rather than only a control.
 library;
 
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import '../motion/reduce_motion.dart';
@@ -172,25 +170,37 @@ class _JumpListState extends State<JumpList> {
 
         // Once scrolled, rows leave through the top edge under the filter
         // chips. A soft edge there stops a title being sliced mid-letter.
-        final faded = AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            final scrolled = _controller.hasClients && _controller.offset > 1;
-            return ShaderMask(
-              blendMode: BlendMode.dstIn,
-              shaderCallback: (bounds) => LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  scrolled ? const Color(0x00FFFFFF) : const Color(0xFFFFFFFF),
-                  const Color(0xFFFFFFFF),
-                ],
-                stops: [0, scrolled ? math.min(1.0, _topFade / bounds.height) : 0],
-              ).createShader(bounds),
-              child: child,
-            );
-          },
-          child: list,
+        final page = Theme.of(context).scaffoldBackgroundColor;
+        final faded = Stack(
+          children: [
+            Positioned.fill(child: list),
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 0,
+              height: _topFade,
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, _) {
+                    final scrolled = _controller.hasClients && _controller.offset > 1;
+                    return DecoratedBox(
+                      key: const ValueKey('jump-list-top-fade'),
+                      decoration: BoxDecoration(
+                        gradient: scrolled
+                            ? LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [page, page.withValues(alpha: 0)],
+                              )
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
         );
 
         final bounded = Center(
