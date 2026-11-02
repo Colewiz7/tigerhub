@@ -243,8 +243,17 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
                 chefPlaceName(chef),
                 status: VisitingChefsCard.status(chef, phase),
               ),
-              subtitleBuilder: (context, style) => ChefDetails(
+              sideBuilder: (context, titleStyle, detailStyle, body) => ChefSide(
+                name: chef.name,
                 window: VisitingChefsCard.window(chef),
+                location: chefPlaceName(chef),
+                titleStyle: titleStyle,
+                windowStyle: detailStyle,
+                nameMaxLines: Insets.phone(context) ? 2 : 1,
+                child: body,
+              ),
+              subtitleBuilder: (context, style) => ChefDetails(
+                window: null,
                 location: chefPlaceName(chef),
                 style: style,
                 locationColor: chefLocationColor(chef, Theme.of(context).colorScheme, muted: phase.inactive),
@@ -299,7 +308,13 @@ class _ChefRow extends StatelessWidget {
               ),
               const SizedBox(width: 13),
               Expanded(
-                child: Column(
+                child: ChefSide(
+                  name: chef.name,
+                  window: window,
+                  location: chefPlaceName(chef),
+                  titleStyle: inactive ? text.titleMedium?.copyWith(color: scheme.onSurfaceVariant) : text.titleMedium,
+                  windowStyle: text.bodySmall,
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -309,16 +324,17 @@ class _ChefRow extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (window != null || chef.locationName.isNotEmpty) ...[
+                    if (chefPlaceName(chef).isNotEmpty) ...[
                       const SizedBox(height: 2),
                       ChefDetails(
-                        window: window,
+                        window: null,
                         location: chefPlaceName(chef),
                         style: text.bodySmall,
                         locationColor: chefLocationColor(chef, scheme, muted: inactive),
                       ),
                     ],
                   ],
+                ),
                 ),
               ),
             ],

@@ -43,11 +43,17 @@ class OccupancyChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (hourly.isEmpty) return const SizedBox.shrink();
+    if (!occupancyHasShape(hourly)) return const OccupancyUnavailable();
 
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
-    final peak = hourly.fold<int>(1, (m, h) => h.today > m ? h.today : m);
+    // Scaled over today and the typical day together. Real payloads carry
+    // today = 0 for every hour not yet reached, so scaling to today alone left
+    // the whole plot as 2px slivers.
+    final peak = hourly.fold<int>(
+      1,
+      (m, h) => [m, h.today, h.average].reduce((a, b) => a > b ? a : b),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,23 +71,30 @@ class OccupancyChart extends StatelessWidget {
                     child: Tooltip(
                       message: '${_hourLabel(hour.hour)}  '
                           '${hour.today} here, ${hour.average} typical',
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: FractionallySizedBox(
-                          heightFactor: (hour.today / peak).clamp(0.02, 1.0),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
+                      // Fills the column so each bar has a real width. A bar
+                      // under loose constraints measured 0px wide, which is
+                      // what left the plot blank.
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // The typical day, so the chart has shape before
+                          // today's count catches up with it.
+                          _Bar(
+                            key: ValueKey('occupancy-typical-${hour.hour}'),
+                            fraction: hour.average / peak,
+                            color: scheme.onSurface.withValues(alpha: 0.18),
+                          ),
+                          if (hour.today > 0)
+                            _Bar(
+                              key: ValueKey('occupancy-today-${hour.hour}'),
+                              fraction: hour.today / peak,
                               color: hour.hour == nowHour
                                   ? scheme.primary
-                                  : scheme.primary.withValues(alpha: _dimAlpha),
-                              // Rounded data-ends, anchored square to the
-                              // baseline so the bar reads from zero.
-                              borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(4),
-                              ),
+                                  : scheme.primary.withValues(
+                                      alpha: _dimAlpha,
+                                    ),
                             ),
-                          ),
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -126,7 +139,7 @@ String busynessCaption(
   // "Quieter than usual for this time" under a HOW BUSY heading, which reads
   // as an invitation to a place you cannot get into.
   if (!isOpen) {
-    return 'Closed now. The line is today so far against a typical day.';
+    return 'Closed now. Bars show today so far against a typical day.';
   }
   final now = hourly.where((h) => h.hour == nowHour).firstOrNull;
   if (now == null || now.average == 0) return '';
@@ -136,4 +149,67 @@ String busynessCaption(
   if (ratio > 0.25) return 'Busier than usual for this time';
   if (ratio < -0.25) return 'Quieter than usual for this time';
   return 'About as busy as usual for this time';
+}
+
+/// Whether there is anything to draw: some hour reports a count or a typical.
+bool occupancyHasShape(List<OccupancyHour> hourly) =>
+    hourly.any((h) => h.today > 0 || h.average > 0);
+
+class _Bar extends StatelessWidget {
+  const _Bar({super.key, required this.fraction, required this.color});
+
+  final double fraction;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    if (fraction <= 0) return const SizedBox.shrink();
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: FractionallySizedBox(
+        // Both factors: a childless box takes the smallest size its
+        // constraints allow, so width must be pinned as well as height.
+        widthFactor: 1,
+        heightFactor: fraction.clamp(0.04, 1.0),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: color,
+            // Rounded data-ends, anchored square to the baseline.
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown instead of the plot when no data came back or every hour reads zero.
+class OccupancyUnavailable extends StatelessWidget {
+  const OccupancyUnavailable({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      label: 'Occupancy unavailable',
+      child: ExcludeSemantics(
+        child: Container(
+          key: const ValueKey('occupancy-unavailable'),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: scheme.surfaceContainerHigh,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            'Occupancy unavailable',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

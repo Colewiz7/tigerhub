@@ -280,7 +280,7 @@ void main() {
       });
     }
 
-    testWidgets('from 600pt the time and the location share one line, still coloured', (
+    goldenWidgets('from 600pt the time sits at the right, centred, the location under the name, still coloured', (
       tester,
     ) async {
       await _pump(
@@ -295,10 +295,94 @@ void main() {
       final place = find.text('Kitchen at Brick City');
       expect(time, findsOneWidget);
       expect(place, findsOneWidget);
-      expect(tester.getTopLeft(place).dy, closeTo(tester.getTopLeft(find.text('4 PM to 7:30 PM')).dy, 1));
+      final row600 = tester.getRect(
+        find.ancestor(of: find.text('Tandoor of India'), matching: find.byType(Material)).first,
+      );
+      expect(tester.getCenter(time).dy, closeTo(row600.center.dy, 2));
+      expect(tester.getTopLeft(find.text('Crossroads')).dy, greaterThan(tester.getTopLeft(find.text('Tandoor of India')).dy));
       // the 4 PM slot has not started at noon, so the colour is the muted one
       final scheme = Theme.of(tester.element(find.byType(VisitingChefsCard))).colorScheme;
       expect(tester.widget<Text>(place).style?.color, chefLocationColor(long[1], scheme, muted: true));
+    });
+
+    for (final width in [390.0, 440.0]) {
+      for (final scale in [1.0, 2.0]) {
+        for (final inSheet in [false, true]) {
+          goldenWidgets(
+            'the time is on the right of each ${inSheet ? 'sheet' : 'card'} row at $width, ${scale}x',
+            (tester) async {
+              await _pump(
+                tester,
+                result: result,
+                size: Size(width, 844),
+                brightness: Brightness.light,
+                scale: scale,
+              );
+              if (inSheet) {
+                await tester.tap(find.text('Visiting chefs'));
+                await tester.pumpAndSettle();
+              }
+              Finder scoped(String t) => inSheet
+                  ? find.descendant(of: find.byType(BottomSheet), matching: find.text(t))
+                  : find.text(t);
+              final rights = <double>[];
+              for (final (time, name) in [
+                ('11 AM to 2:30 PM', 'Tandoor of India'),
+                ('4 PM to 7:30 PM', 'KO-BQ'),
+              ]) {
+                final t = scoped(time);
+                final n = scoped(name);
+                expect(t, findsOneWidget, reason: time);
+                expect(_cut(tester, t), isFalse, reason: time);
+                final tr = tester.getRect(t);
+                final nr = tester.getRect(n);
+                // one line, never wrapped
+                expect(tr.height, lessThan(30 * scale), reason: '$time wrapped');
+                expect(tr.right, lessThanOrEqualTo(width - 16), reason: '$time clipped');
+                expect(tr.left, greaterThanOrEqualTo(0));
+                if (scale == 1) {
+                  // beside the name block, centred on the whole row
+                  expect(tr.left, greaterThanOrEqualTo(nr.right), reason: '$time not right of name');
+                  final row = tester.getRect(
+                    find.ancestor(of: n, matching: find.byType(Material)).first,
+                  );
+                  expect(tr.center.dy, closeTo(row.center.dy, 2), reason: '$time not centred on its row');
+                  // two lines, so no taller than a dense row
+                  if (!inSheet) {
+                    expect(row.height, lessThanOrEqualTo(StatusRow.denseHeight + 8), reason: '$time row grew');
+                  }
+                } else {
+                  // beside or, when the name needs the room, under it
+                  expect(
+                    tr.left >= nr.right || tr.top >= nr.bottom - 2,
+                    isTrue,
+                    reason: '$time overlaps the name',
+                  );
+                }
+                rights.add(tr.right);
+              }
+              // right aligned: both rows end on the same edge
+              expect(rights[0], closeTo(rights[1], 1.5));
+            },
+          );
+        }
+      }
+    }
+
+    goldenWidgets('a chef row reads its time to a screen reader', (tester) async {
+      final handle = tester.ensureSemantics();
+      await _pump(
+        tester,
+        result: result,
+        size: const Size(390, 844),
+        brightness: Brightness.light,
+        scale: 1,
+      );
+      expect(
+        find.bySemanticsLabel(RegExp(r'Tandoor of India.*11 AM to 2:30 PM.*Crossroads')),
+        findsOneWidget,
+      );
+      handle.dispose();
     });
 
     testWidgets('the cuisine text is gone from the card and the sheet, the icon stays', (

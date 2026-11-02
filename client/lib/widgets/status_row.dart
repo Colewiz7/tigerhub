@@ -39,7 +39,18 @@ class StatusRow extends StatelessWidget {
     this.wrapSubtitle = false,
     this.grouped = false,
     this.subtitleBuilder,
+    this.sideBuilder,
   });
+
+  /// Wraps the row's text block (title and subtitle), given the styles the row
+  /// would use. Chef rows use it to put a time on the right, centred on the block.
+  final Widget Function(
+    BuildContext context,
+    TextStyle? titleStyle,
+    TextStyle? detailStyle,
+    Widget body,
+  )?
+  sideBuilder;
 
   /// Draws the subtitle itself, given the style the row would use. [subtitle]
   /// is then only what a screen reader says, and the built widget is kept out
@@ -130,6 +141,15 @@ class StatusRow extends StatelessWidget {
         child: _row(context),
       );
 
+  Widget _withSide(
+    BuildContext context,
+    TextStyle? titleStyle,
+    TextStyle? detailStyle,
+    Widget body,
+  ) => sideBuilder == null
+      ? body
+      : sideBuilder!(context, titleStyle, detailStyle, body);
+
   Widget _row(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final text = Theme.of(context).textTheme;
@@ -211,7 +231,11 @@ class StatusRow extends StatelessWidget {
                     SizedBox(width: dense ? 10 : 13),
                     if (dense)
                       Expanded(
-                        child: Opacity(
+                        child: _withSide(
+                          context,
+                          titleStyle,
+                          subtitleStyle,
+                          Opacity(
                           opacity: opacity,
                           child: _DenseBody(
                             title: Text(
@@ -238,10 +262,15 @@ class StatusRow extends StatelessWidget {
                             trailing: trailing,
                           ),
                         ),
+                        ),
                       )
                     else
                       Expanded(
-                        child: Opacity(
+                        child: _withSide(
+                          context,
+                          titleStyle,
+                          subtitleStyle,
+                          Opacity(
                           opacity: opacity,
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,6 +305,7 @@ class StatusRow extends StatelessWidget {
                               ],
                             ],
                           ),
+                        ),
                         ),
                       ),
                     if (trailing != null && !dense) ...[
