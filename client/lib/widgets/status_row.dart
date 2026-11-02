@@ -34,6 +34,8 @@ class StatusRow extends StatelessWidget {
     this.semanticHint,
     this.dense = false,
     this.subtitleMaxLines = 2,
+    this.titleMaxLines = 1,
+    this.subtitleLines = 1,
     this.actions = const [],
     this.iconSize = 18,
     this.wrapSubtitle = false,
@@ -55,6 +57,13 @@ class StatusRow extends StatelessWidget {
   /// Standard rows only: the subtitle takes a second line once text is turned
   /// up. Off where a list budgets a fixed row height.
   final bool wrapSubtitle;
+
+  /// Standard rows only: lines the title may take before it ellipsizes.
+  final int titleMaxLines;
+
+  /// Standard rows only: lines the subtitle may take. Where a list budgets a
+  /// fixed row height, leave at 1.
+  final int subtitleLines;
 
   /// max subtitle lines, null shows all
   /// null only outside BoundedList
@@ -251,7 +260,7 @@ class StatusRow extends StatelessWidget {
                               Text(
                                 title,
                                 style: titleStyle,
-                                maxLines: 1,
+                                maxLines: titleMaxLines,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               if (subtitle != null) ...[
@@ -268,7 +277,9 @@ class StatusRow extends StatelessWidget {
                                     // wraps, all of it when null
                                     maxLines: subtitleMaxLines == null
                                         ? null
-                                        : (wrapSubtitle && largeText ? 2 : 1),
+                                        : (wrapSubtitle && largeText
+                                              ? math.max(2, subtitleLines)
+                                              : subtitleLines),
                                     overflow: subtitleMaxLines == null
                                         ? TextOverflow.clip
                                         : TextOverflow.ellipsis,

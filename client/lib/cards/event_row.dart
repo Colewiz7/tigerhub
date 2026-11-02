@@ -6,6 +6,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../data/campus_time.dart';
 import '../models/api_models.dart';
@@ -64,9 +65,15 @@ class EventRow extends StatelessWidget {
     this.boosted = false,
     this.forceDimmed = false,
     this.dense = false,
+    this.stacked = false,
   });
 
   final CampusEvent event;
+
+  /// The Events tab's row: time and place stack under a title of up to two
+  /// lines, nothing sits beside the title. Off for the dashboard's fixed
+  /// height rows, which keep the time on the right.
+  final bool stacked;
 
   /// The dashboard's condensed phone row.
   final bool dense;
@@ -127,6 +134,12 @@ class EventRow extends StatelessWidget {
 
     final when = event.allDay ? 'All day' : formatDayAndClock(event.startsAt);
 
+    // The full row always names the day, so every row reads the same way:
+    // "Tue 3 Nov, noon", "Mon 2 Nov, 1:00 PM", "Tue 3 Nov, all day".
+    final fullStamp = event.allDay
+        ? '${DateFormat('EEE d MMM').format(CampusTime.fieldsOf(event.startsAt))}, all day'
+        : formatDayAndClock(event.startsAt);
+
     // Show the day whenever the event is not today. Two genuinely different
     // events on different days used to render as an identical clock time,
     // which read as a duplicated row.
@@ -157,7 +170,15 @@ class EventRow extends StatelessWidget {
           ? AppIconKind.hidden
           : iconForEventType(event.eventType),
       title: event.displayTitle,
-      subtitle: condensed ? denseSubtitle : (place ?? when),
+      // stacked: time under the title, place under the time, so nothing sits
+      // beside the title to cut it short
+      subtitle: condensed
+          ? denseSubtitle
+          : stacked
+          ? (place == null ? fullStamp : '$fullStamp\n$place')
+          : (place ?? when),
+      titleMaxLines: stacked && !condensed ? 2 : 1,
+      subtitleLines: stacked && !condensed ? 3 : 1,
       accent: boosted
           ? Theme.of(context).colorScheme.primary
           : (isPast ? semantic.closed : semantic.open),
@@ -165,7 +186,7 @@ class EventRow extends StatelessWidget {
       semanticHint: 'Opens event details',
       onTap: () => showEventDetailsSheet(context, event),
       actions: _actions(when),
-      trailing: condensed
+      trailing: condensed || stacked
           ? (isPast ? ended : null)
           : Column(
               crossAxisAlignment: CrossAxisAlignment.end,
