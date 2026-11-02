@@ -87,7 +87,7 @@ class _FixtureBackend implements Backend {
       case '/dining':
         return _openAt(_decode(diningJson), _now);
       case '/events':
-        return _decode(eventsJson);
+        return _events;
       case '/dining/visiting-chefs':
         return _decode(chefsJson);
       case '/dining/specials':
@@ -135,6 +135,39 @@ Map<String, dynamic> _openAt(Map<String, dynamic> body, DateTime now) {
   }
   return body;
 }
+
+// the captured feed is mostly all day and past by the pinned clock, so the Events
+// shots use six made up timed events instead, all after _now (12:30 edt, Aug 30)
+Map<String, dynamic> _event(String title, String organizer, String key, String type, String start, String end, {String? location}) => {
+  'all_day': false,
+  'building': null,
+  'description': null,
+  'ends_at': end,
+  'event_type': type,
+  'location': location,
+  'organizer': organizer,
+  'organizer_key': key,
+  'room': null,
+  'source': 'campusgroups',
+  'starts_at': start,
+  'title': title,
+  'uid': 'fixture-$key-$start',
+  'url': null,
+};
+
+// utc times, edt is four hours behind
+final Map<String, dynamic> _events = {
+  'data': [
+    _event('Sunset Yoga on the Quarter Mile', 'Campus Life', 'CAMPUSLIFE', 'Wellness', '2026-08-30T22:00:00Z', '2026-08-30T23:00:00Z', location: 'Quarter Mile'),
+    _event('Open Mic Night', 'Campus Life', 'CAMPUSLIFE', 'Arts', '2026-09-01T00:00:00Z', '2026-09-01T02:00:00Z', location: 'Ritz Sports Zone'),
+    _event('Student Government General Meeting', 'Student Government', 'SG', 'Meeting', '2026-08-30T22:30:00Z', '2026-08-30T23:30:00Z', location: 'Student Alumni Union'),
+    _event('Student Photography Gallery Opening', 'College of Art and Design', 'CAD', 'Arts', '2026-09-02T21:00:00Z', '2026-09-02T23:00:00Z', location: 'Gallery r'),
+    _event("Men's Soccer vs. Clarkson", 'RIT Athletics', 'ATHLETICS', 'Athletics', '2026-09-01T23:00:00Z', '2026-09-02T01:00:00Z'),
+    _event("Women's Volleyball vs. Nazareth", 'RIT Athletics', 'ATHLETICS', 'Athletics', '2026-09-03T22:00:00Z', '2026-09-04T00:00:00Z', location: 'Gordon Field House'),
+  ],
+  'last_updated': '2026-08-30T16:00:00Z',
+  'stale': false,
+};
 
 // no captured menu exists, so a small made up one
 final Map<String, dynamic> _menu = {
@@ -415,7 +448,22 @@ void main() {
       await shot('setup_welcome_$mode');
       await advance();
       await pick(find.text(AppScheme.espresso.label));
+      // five previews are wider than the screen, so the strip is shot three times,
+      // each look whole in at least one frame
+      final strip = find.byWidgetPredicate((w) => w is Scrollable && w.axis == Axis.horizontal);
+      ScrollPosition stripAt() => tester.state<ScrollableState>(strip).position;
+      stripAt().jumpTo(0);
+      await _settle(tester);
       await shot('setup_look_$mode');
+      // two previews and a gap a step: Slate and Midnight blue
+      stripAt().jumpTo(2 * (132 + 12));
+      await _settle(tester);
+      await shot('setup_look_more_$mode');
+      stripAt().jumpTo(stripAt().maxScrollExtent);
+      await _settle(tester);
+      await shot('setup_look_end_$mode');
+      stripAt().jumpTo(0);
+      await _settle(tester);
       await advance();
       await pick(find.text('Global Village'));
       await shot('setup_home_$mode');

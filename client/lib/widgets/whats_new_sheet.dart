@@ -73,7 +73,7 @@ class _WhatsNew extends StatelessWidget {
               style: text.bodyMedium?.copyWith(fontSize: 17, color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
-            const _Line(glyph: AppIconKind.appearance, title: 'Pick a look', line: 'Choose a colour scheme.'),
+            const _Line(glyph: AppIconKind.appearance, title: 'Pick a look', line: 'Choose a color scheme.'),
             const _Line(glyph: AppIconKind.dining, title: 'Hide Dorm side', line: 'Keep a dining group off Dining and Today.'),
             const _Line(glyph: AppIconKind.todayTab, title: 'Your Today', line: 'Choose the cards and clubs you follow.'),
           ],
