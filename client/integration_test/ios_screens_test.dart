@@ -14,6 +14,7 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:tigerhub/app_shell.dart';
 import 'package:tigerhub/config.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/dining_display_names.dart';
 import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/data/sources/campus_places.dart';
 import 'package:tigerhub/home_screen.dart';
@@ -49,7 +50,8 @@ const _deviceShots = bool.fromEnvironment('DEVICE_SHOTS');
 
 const _scrollBy = 600.0;
 const _detailId = 23;
-const _detailName = 'The Cafe & Market at Crossroads';
+// rows draw the short name
+final _detailName = diningDisplayName(_detailId, 'The Cafe & Market at Crossroads');
 
 // the redesign's card set, not the shipped defaults
 const _todayCards = [
@@ -149,7 +151,8 @@ final Map<String, dynamic> _menu = {
 };
 
 // mirrors main.dart, only the backend differs
-Widget _app(ApiClient api, SchemeController scheme) => AnimatedBuilder(
+// a key makes a fresh shell, so initState loads the seeded preferences again
+Widget _app(ApiClient api, SchemeController scheme, {Key? key}) => AnimatedBuilder(
   animation: scheme,
   builder: (context, _) {
     return MaterialApp(
@@ -157,7 +160,7 @@ Widget _app(ApiClient api, SchemeController scheme) => AnimatedBuilder(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.from(scheme.scheme),
       builder: phoneModeBuilder(PhoneMode.fromEnvironment()),
-      home: AppShell(api: api, scheme: scheme),
+      home: AppShell(key: key, api: api, scheme: scheme),
     );
   },
 );
@@ -401,7 +404,7 @@ void main() {
       await seed();
       final scheme = SchemeController();
       addTearDown(scheme.dispose);
-      await tester.pumpWidget(_app(ApiClient(backend: _FixtureBackend()), scheme));
+      await tester.pumpWidget(_app(ApiClient(backend: _FixtureBackend()), scheme, key: UniqueKey()));
       await _settle(tester);
     }
 
