@@ -384,7 +384,7 @@ class _MailSection extends StatelessWidget {
     final shown = officesToShow(all, mine: mine, layout: layout);
     return ListView(
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(4, 6, 4, 24)),
+      padding: TabBarInset.pad(context, const EdgeInsets.fromLTRB(Insets.phoneMargin, 6, Insets.phoneMargin, 24)),
       children: [
         HousingCard(areas: areas, api: api),
         const SizedBox(height: 22),
@@ -653,14 +653,14 @@ String _dayLabel(List<String> days) {
 String _time(String hhmm) {
   final parts = hhmm.split(':');
   if (parts.length < 2) return hhmm;
-  final hour = int.tryParse(parts[0]) ?? 0;
-  final minute = parts[1];
-  if (hour == 0 && minute == '00') return 'midnight';
-  if (hour == 12 && minute == '00') return 'noon';
-  final suffix = hour >= 12 ? 'PM' : 'AM';
-  final display = hour % 12 == 0 ? 12 : hour % 12;
-  return '$display:$minute $suffix';
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null || minute == null) return hhmm;
+  // one format with the status line and the rest of the app: 9 AM, 4:30 PM
+  return _clockOf(hour * 60 + minute);
 }
+
+String _clockOf(int minute) => clockLabel(minute).replaceFirst('12 PM', 'noon');
 
 const _counterNote = 'Mail is collected at the counter';
 
@@ -687,10 +687,7 @@ String? _statusLineOf(TodaysHours today) {
 /// `"16:30"` strings; this one takes a resolved moment.
 String _clockAt(DateTime instant) {
   final fields = CampusTime.fieldsOf(instant);
-  final hour = fields.hour % 12 == 0 ? 12 : fields.hour % 12;
-  final suffix = fields.hour < 12 ? 'AM' : 'PM';
-  if (fields.minute == 0) return '$hour $suffix';
-  return '$hour:${fields.minute.toString().padLeft(2, '0')} $suffix';
+  return _clockOf(fields.hour * 60 + fields.minute);
 }
 
 class _PostOfficeBlock extends StatelessWidget {
@@ -750,7 +747,7 @@ class _PostOfficeBlock extends StatelessWidget {
                       Text(office.name, style: text.titleMedium),
                       const SizedBox(height: 2),
                       Text(
-                        '${office.street}  ${office.side} side',
+                        '${office.street} \u00b7 ${office.side} side',
                         style: text.bodySmall,
                       ),
                     ],
@@ -930,19 +927,26 @@ class _ServiceHours extends StatelessWidget {
           color: scheme.surfaceContainerHigh,
           borderRadius: Shapes.inner,
         ),
-        clipBehavior: Clip.antiAlias,
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // The route marker. Decoration, so it carries no meaning that is
-              // not also in the text.
+              // not also in the text. Inset from the corners and rounded
+              // itself: flush to the edge, the card's radius cut it to a sliver.
               ExcludeSemantics(
-                child: Container(width: 4, color: scheme.primary),
+                child: Container(
+                  width: 4,
+                  margin: const EdgeInsets.fromLTRB(10, 16, 0, 16),
+                  decoration: BoxDecoration(
+                    color: scheme.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+                  padding: const EdgeInsets.fromLTRB(12, 16, 16, 18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -999,7 +1003,7 @@ class _ServiceHeading extends StatelessWidget {
 
     final name = Text(_serviceLabel(service), style: text.titleMedium);
     final label = Text(
-      '${season[0].toUpperCase()}${season.substring(1)}',
+      '${season[0].toUpperCase()}${season.substring(1)} hours',
       style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
     );
 
@@ -1051,14 +1055,14 @@ class _DaySpans extends StatelessWidget {
         const SizedBox(height: 8),
         for (var i = 0; i < rules.length; i++) ...[
           // A split shift stacks under one caption. No plus sign: it reads as
-          // arithmetic, or as both spans running at once.
-          if (i > 0) const _WavyBreak(),
+          // arithmetic, or as both spans running at once. No ornament between
+          // the spans either: it read as an underline.
+          if (i > 0) const SizedBox(height: 10),
           Text(
             '${_time(rules[i].opensAt)} to ${_time(rules[i].closesAt)}',
             textAlign: TextAlign.center,
-            style: text.displayMedium?.copyWith(
-              fontSize: 34,
-              height: 1.15,
+            // the app's row scale, not a hero number
+            style: text.titleMedium?.copyWith(
               fontWeight: AppTheme.weight(Weights.medium),
               fontVariations: Weights.medium,
               color: over ? scheme.onSurfaceVariant : scheme.onSurface,
@@ -1068,61 +1072,6 @@ class _DaySpans extends StatelessWidget {
       ],
     );
   }
-}
-
-/// The marker between two spans of one day. Decoration only: the caption above
-/// already says which day, and each span states its own times.
-class _WavyBreak extends StatelessWidget {
-  const _WavyBreak();
-
-  @override
-  Widget build(BuildContext context) => ExcludeSemantics(
-    child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: SizedBox(
-        height: 7,
-        child: CustomPaint(
-          painter: _WavyPainter(
-            color: Theme.of(context).colorScheme.primary
-                .withValues(alpha: 0.55),
-          ),
-          size: const Size(double.infinity, 7),
-        ),
-      ),
-    ),
-  );
-}
-
-class _WavyPainter extends CustomPainter {
-  const _WavyPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-
-    // A short wave in the middle, rather than a rule the full width, so it
-    // separates the spans without looking like another divider.
-    const period = 13.0;
-    final width = size.width.clamp(0.0, 96.0);
-    final left = (size.width - width) / 2;
-    final middle = size.height / 2;
-
-    final path = Path()..moveTo(left, middle);
-    for (var x = 0.0; x < width; x += period) {
-      path.relativeQuadraticBezierTo(period / 4, -middle, period / 2, 0);
-      path.relativeQuadraticBezierTo(period / 4, middle, period / 2, 0);
-    }
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(_WavyPainter old) => old.color != color;
 }
 
 class _ContactChip extends StatelessWidget {
@@ -1145,7 +1094,13 @@ class _ContactChip extends StatelessWidget {
           children: [
             Icon(icon.of(context), size: 14, color: scheme.onSurfaceVariant),
             const SizedBox(width: 7),
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
+            // shrinks to fit rather than overflowing or breaking mid-word
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(label, style: Theme.of(context).textTheme.bodySmall),
+              ),
+            ),
           ],
         ),
       ),

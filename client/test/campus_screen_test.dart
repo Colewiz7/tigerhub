@@ -34,6 +34,7 @@ import 'package:tigerhub/screens/campus_screen.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/services/preferences.dart';
 import 'package:tigerhub/theme/app_theme.dart';
+import 'package:tigerhub/theme/tokens.dart';
 import 'package:tigerhub/widgets/empty_state.dart';
 import 'package:tigerhub/widgets/section_nav.dart';
 import 'package:url_launcher_platform_interface/method_channel_url_launcher.dart';
@@ -1018,7 +1019,7 @@ void main() {
         .toSet();
 
     expect(
-      labels.any((d) => d == 'Fall' || d == 'Summer'),
+      labels.any((d) => d == 'Fall hours' || d == 'Summer hours'),
       isTrue,
       reason: 'the hours shown belong to a season that is never named',
     );
@@ -1117,10 +1118,59 @@ void main() {
         RitClock.pin(instant);
         await pumpCampus(tester);
         final scheme = schemeOf(tester);
-        expect(colorOf(tester, '9:00 AM to 4:30 PM'), pickupGrey ? scheme.onSurfaceVariant : scheme.onSurface);
-        expect(colorOf(tester, '9:00 AM to 1:00 PM'), shippingGrey ? scheme.onSurfaceVariant : scheme.onSurface);
+        expect(colorOf(tester, '9 AM to 4:30 PM'), pickupGrey ? scheme.onSurfaceVariant : scheme.onSurface);
+        expect(colorOf(tester, '9 AM to 1 PM'), shippingGrey ? scheme.onSurfaceVariant : scheme.onSurface);
       });
     }
+
+    group('on a phone', () {
+      Future<void> openMail(WidgetTester tester) async {
+        RitClock.pin(CampusTime.wall(2026, 9, 15, 10));
+        await pumpCampus(tester, size: const Size(390, 3000));
+        await tester.tap(find.text('Mail'));
+        await tester.pumpAndSettle();
+      }
+
+      testWidgets('side margin matches the other screens', (tester) async {
+        await openMail(tester);
+        final note = find.text('You get an email notice first. There are no mailboxes.');
+        expect(tester.getTopLeft(note).dx, Insets.phoneMargin);
+      });
+
+      testWidgets('address has one separator and no double space', (tester) async {
+        await openMail(tester);
+        expect(find.text('6000 Reynolds Drive \u00b7 west side'), findsOneWidget);
+        final texts = tester.widgetList<Text>(find.byType(Text)).map((t) => t.data ?? '');
+        expect(texts.where((d) => d.contains('  ')), isEmpty);
+      });
+
+      testWidgets('every clock uses one format', (tester) async {
+        await openMail(tester);
+        final texts = tester.widgetList<Text>(find.byType(Text)).map((t) => t.data ?? '').toList();
+        expect(texts.where((d) => RegExp(r':00 [AP]M').hasMatch(d)), isEmpty);
+        expect(texts, contains('9 AM to 1 PM'));
+        expect(texts, contains('1:30 PM to 4 PM'));
+        expect(texts, contains('Open \u00b7 until 1 PM'));
+      });
+
+      testWidgets('hours read at row scale, not hero scale', (tester) async {
+        await openMail(tester);
+        final hours = tester.widget<Text>(find.text('9 AM to 4:30 PM').first);
+        final row = tester.widget<Text>(find.text('Global Village Post Office'));
+        expect(hours.style!.fontSize!, lessThanOrEqualTo(row.style!.fontSize!));
+      });
+
+      testWidgets('accent bar is inset from the card corners', (tester) async {
+        await openMail(tester);
+        final bar = find.byWidgetPredicate((w) => w is Container && w.constraints?.maxWidth == 4).first;
+        final card = find.ancestor(of: bar, matching: find.byType(IntrinsicHeight)).first;
+        final barRect = tester.getRect(find.descendant(of: bar, matching: find.byType(DecoratedBox)).first);
+        final cardRect = tester.getRect(card);
+        expect(barRect.top - cardRect.top, greaterThanOrEqualTo(16));
+        expect(cardRect.bottom - barRect.bottom, greaterThanOrEqualTo(16));
+        expect(barRect.left - cardRect.left, greaterThan(0));
+      });
+    });
 
     for (final width in [390.0, 440.0]) {
       for (final scale in [1.0, 2.0]) {
