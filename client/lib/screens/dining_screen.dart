@@ -681,7 +681,7 @@ class _DiningToolbar extends StatelessWidget {
             ),
           ),
           if (types.length > 1)
-            _FadingChipRow(
+            FadingChipRow(
               children: [
                 for (final kind in types)
                   Padding(
@@ -717,19 +717,23 @@ class _DiningToolbar extends StatelessWidget {
 
 /// A horizontal row that fades out at the right edge while more is off
 /// screen, so a clipped chip reads as scrollable.
-class _FadingChipRow extends StatefulWidget {
-  const _FadingChipRow({required this.children});
+class FadingChipRow extends StatefulWidget {
+  const FadingChipRow({super.key, required this.children});
 
   final List<Widget> children;
 
   @override
-  State<_FadingChipRow> createState() => _FadingChipRowState();
+  State<FadingChipRow> createState() => FadingChipRowState();
 }
 
-class _FadingChipRowState extends State<_FadingChipRow> {
+class FadingChipRowState extends State<FadingChipRow> {
   static const double _fade = 32;
   final _controller = ScrollController();
   bool _more = false;
+
+  /// Whether the right edge is fading, that is, more chips lie off screen.
+  @visibleForTesting
+  bool get fading => _more;
 
   @override
   void initState() {
@@ -752,21 +756,28 @@ class _FadingChipRowState extends State<_FadingChipRow> {
 
   @override
   Widget build(BuildContext context) {
-    final row = SingleChildScrollView(
-      controller: _controller,
-      scrollDirection: Axis.horizontal,
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: const EdgeInsets.only(right: 8),
-      child: Row(children: widget.children),
-    );
-    if (!_more) return row;
-    return ShaderMask(
-      blendMode: BlendMode.dstIn,
-      shaderCallback: (bounds) => LinearGradient(
-        colors: const [Colors.black, Colors.black, Colors.transparent],
-        stops: [0, 1 - _fade / bounds.width, 1],
-      ).createShader(bounds),
-      child: row,
+    // Always masked, so the scroll view keeps its state and position when the
+    // fade comes and goes. Width and content changes arrive as metrics
+    // notifications, which the scroll listener alone never sees.
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (_) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _update());
+        return false;
+      },
+      child: ShaderMask(
+        blendMode: BlendMode.dstIn,
+        shaderCallback: (bounds) => LinearGradient(
+          colors: _more ? const [Colors.black, Colors.black, Colors.transparent] : const [Colors.black, Colors.black],
+          stops: _more ? [0, 1 - _fade / bounds.width, 1] : const [0, 1],
+        ).createShader(bounds),
+        child: SingleChildScrollView(
+          controller: _controller,
+          scrollDirection: Axis.horizontal,
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.only(right: 8),
+          child: Row(children: widget.children),
+        ),
+      ),
     );
   }
 }

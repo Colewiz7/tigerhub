@@ -435,7 +435,9 @@ class _ChefsSheetState extends State<_ChefsSheet> {
             ),
           ),
           Flexible(
-            child: ListView.separated(
+            // Every row is built, so the tapped chef always has a context to
+            // scroll to. A lazy list leaves a far row unbuilt and unreachable.
+            child: SingleChildScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               padding: const EdgeInsets.fromLTRB(
                 Insets.cardPadding,
@@ -443,14 +445,19 @@ class _ChefsSheetState extends State<_ChefsSheet> {
                 Insets.cardPadding,
                 Insets.cardPadding,
               ),
-              shrinkWrap: true,
-              itemCount: chefs.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final chef = chefs[index];
-                final focused = chef.id == widget.focus?.id;
-                return _ChefRow(key: focused ? _focusKey : null, chef: chef, focused: focused);
-              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < chefs.length; i++) ...[
+                    if (i > 0) const SizedBox(height: 8),
+                    _ChefRow(
+                      key: chefs[i].id == widget.focus?.id ? _focusKey : null,
+                      chef: chefs[i],
+                      focused: chefs[i].id == widget.focus?.id,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ],

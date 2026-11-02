@@ -85,9 +85,57 @@ void main() {
     await tester.tap(find.text('Tandoor of India'));
     await tester.pumpAndSettle();
     expect(find.text('2 visiting chefs today'), findsOneWidget);
-    final sheetRow = find.descendant(of: find.byType(ListView), matching: find.text('Tandoor of India'));
+    final sheetRow = find.descendant(of: find.byType(BottomSheet), matching: find.text('Tandoor of India'));
     expect(sheetRow, findsOneWidget);
     final material = tester.widget<Material>(find.ancestor(of: sheetRow, matching: find.byType(Material)).first);
+    expect((material.shape as RoundedRectangleBorder).side.width, 2);
+  });
+
+  testWidgets('a chef far down a long list is scrolled into view and outlined', (tester) async {
+    final many = Result<Collection<MenuItem>>(
+      value: ChefCollection(
+        data: [
+          for (var i = 0; i < 12; i++)
+            MenuItem(
+              id: 100 + i,
+              name: 'Chef $i',
+              locationName: 'RITZ',
+              category: 'Visiting Chef',
+              startsAt: DateTime.parse('2026-10-14T11:00:00-04:00'),
+              endsAt: DateTime.parse('2026-10-14T14:00:00-04:00'),
+            ),
+        ],
+        stale: false,
+        lastUpdated: DateTime.now(),
+      ),
+      state: DataState.ok,
+    );
+    // Wide enough that the card lists every chef, on a screen short enough
+    // that the sheet cannot hold them all.
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(700, 600);
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      theme: AppTheme.from(ColorScheme.fromSeed(seedColor: const Color(0xFFF76902))),
+      home: Scaffold(
+        body: SingleChildScrollView(child: SizedBox(height: 1500, child: VisitingChefsCard(result: many))),
+      ),
+    ));
+    await tester.pump();
+    final tapped = find.text('Chef 11');
+    expect(tapped, findsOneWidget, reason: 'the card lists the last chef');
+    await tester.ensureVisible(tapped);
+    await tester.tap(tapped);
+    await tester.pumpAndSettle();
+
+    final sheet = find.byType(BottomSheet);
+    final row = find.descendant(of: sheet, matching: find.text('Chef 11'));
+    expect(row, findsOneWidget);
+    final viewport = tester.getRect(find.descendant(of: sheet, matching: find.byType(Scrollable)));
+    final at = tester.getRect(row);
+    expect(at.top, greaterThanOrEqualTo(viewport.top - 0.5));
+    expect(at.bottom, lessThanOrEqualTo(viewport.bottom + 0.5));
+    final material = tester.widget<Material>(find.ancestor(of: row, matching: find.byType(Material)).first);
     expect((material.shape as RoundedRectangleBorder).side.width, 2);
   });
 
