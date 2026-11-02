@@ -71,28 +71,30 @@ class OccupancyChart extends StatelessWidget {
                     child: Tooltip(
                       message: '${_hourLabel(hour.hour)}  '
                           '${hour.today} here, ${hour.average} typical',
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Stack(
-                          alignment: Alignment.bottomCenter,
-                          children: [
-                            // The typical day, so the chart has shape before
-                            // today's count catches up with it.
+                      // Fills the column so each bar has a real width. A bar
+                      // under loose constraints measured 0px wide, which is
+                      // what left the plot blank.
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // The typical day, so the chart has shape before
+                          // today's count catches up with it.
+                          _Bar(
+                            key: ValueKey('occupancy-typical-${hour.hour}'),
+                            fraction: hour.average / peak,
+                            color: scheme.onSurface.withValues(alpha: 0.18),
+                          ),
+                          if (hour.today > 0)
                             _Bar(
-                              fraction: hour.average / peak,
-                              color: scheme.onSurface.withValues(alpha: 0.18),
+                              key: ValueKey('occupancy-today-${hour.hour}'),
+                              fraction: hour.today / peak,
+                              color: hour.hour == nowHour
+                                  ? scheme.primary
+                                  : scheme.primary.withValues(
+                                      alpha: _dimAlpha,
+                                    ),
                             ),
-                            if (hour.today > 0)
-                              _Bar(
-                                fraction: hour.today / peak,
-                                color: hour.hour == nowHour
-                                    ? scheme.primary
-                                    : scheme.primary.withValues(
-                                        alpha: _dimAlpha,
-                                      ),
-                              ),
-                          ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
@@ -137,7 +139,7 @@ String busynessCaption(
   // "Quieter than usual for this time" under a HOW BUSY heading, which reads
   // as an invitation to a place you cannot get into.
   if (!isOpen) {
-    return 'Closed now. The line is today so far against a typical day.';
+    return 'Closed now. Bars show today so far against a typical day.';
   }
   final now = hourly.where((h) => h.hour == nowHour).firstOrNull;
   if (now == null || now.average == 0) return '';
@@ -154,7 +156,7 @@ bool occupancyHasShape(List<OccupancyHour> hourly) =>
     hourly.any((h) => h.today > 0 || h.average > 0);
 
 class _Bar extends StatelessWidget {
-  const _Bar({required this.fraction, required this.color});
+  const _Bar({super.key, required this.fraction, required this.color});
 
   final double fraction;
   final Color color;
@@ -162,13 +164,19 @@ class _Bar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (fraction <= 0) return const SizedBox.shrink();
-    return FractionallySizedBox(
-      heightFactor: fraction.clamp(0.04, 1.0),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: color,
-          // Rounded data-ends, anchored square to the baseline.
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: FractionallySizedBox(
+        // Both factors: a childless box takes the smallest size its
+        // constraints allow, so width must be pinned as well as height.
+        widthFactor: 1,
+        heightFactor: fraction.clamp(0.04, 1.0),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: color,
+            // Rounded data-ends, anchored square to the baseline.
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+          ),
         ),
       ),
     );

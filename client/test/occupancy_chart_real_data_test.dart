@@ -12,12 +12,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:tigerhub/data/backend.dart';
+import 'package:tigerhub/data/rit_clock.dart';
 import 'package:tigerhub/data/sources/maps_occupancy.dart';
 import 'package:tigerhub/models/api_models.dart';
 import 'package:tigerhub/services/api.dart';
 import 'package:tigerhub/theme/app_theme.dart';
 import 'package:tigerhub/theme/dynamic_theme.dart';
 import 'package:tigerhub/widgets/dining_detail_sheet.dart';
+
+import 'golden_harness.dart';
 import 'package:tigerhub/widgets/occupancy_chart.dart';
 
 List<OccupancyHour> _real() => OccupancyHistory.fromJson(
@@ -26,6 +29,18 @@ List<OccupancyHour> _real() => OccupancyHistory.fromJson(
     123,
   )!,
 ).hourly;
+
+/// The real typical day with today counted so far: hours 7 to 12 filled in,
+/// nothing yet after noon, as a live reading looks at lunchtime.
+List<OccupancyHour> _openDay() => [
+  for (final h in _real())
+    OccupancyHour(
+      hour: h.hour,
+      today: h.hour >= 7 && h.hour <= 12 ? (h.average * 1.2).round() + 1 : 0,
+      oneWeekAgo: h.oneWeekAgo,
+      average: h.average,
+    ),
+];
 
 Widget _wrap(Widget child, AppScheme scheme) => MaterialApp(
   theme: AppTheme.from(SchemeController(initial: scheme).scheme),
@@ -69,20 +84,123 @@ void main() {
             average: h.average,
           ),
       ];
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
       await tester.pumpWidget(_wrap(OccupancyChart(hourly: morning, nowHour: 12), scheme));
-      // Nothing today yet, a typical day peaking at 67. The tallest bar must
-      // be a real fraction of the 96px plot, not a sliver.
-      final tallest = tester
-          .widgetList<FractionallySizedBox>(find.byType(FractionallySizedBox))
-          .map((b) => b.heightFactor!)
-          .reduce((a, b) => a > b ? a : b);
-      expect(tallest, greaterThan(0.9));
-      final heights = tester
-          .renderObjectList<RenderBox>(find.byType(DecoratedBox))
-          .map((b) => b.size.height);
-      expect(heights.reduce((a, b) => a > b ? a : b), greaterThan(60));
       expect(find.byKey(const ValueKey('occupancy-unavailable')), findsNothing);
+
+      // Every hour has a typical bar with a real width and height. A childless
+      // box under loose constraints measured 0px wide, so height alone proved
+      // nothing.
+      final typical = [
+        for (var h = 0; h < 24; h++)
+          tester.getRect(find.byKey(ValueKey('occupancy-typical-$h'))),
+      ];
+      for (var h = 0; h < 24; h++) {
+        expect(typical[h].width, greaterThanOrEqualTo(4), reason: 'hour $h has no width');
+        expect(typical[h].height, greaterThan(0), reason: 'hour $h has no height');
+      }
+      // The tallest typical bar (hour 12, 67 against a peak of 67) is the
+      // full 96px plot.
+      expect(typical[12].height, closeTo(96, 0.5));
+      // Side by side: no overlap, a gap between neighbours, all inside the
+      // 350px the chart has at 390 wide.
+      for (var h = 1; h < 24; h++) {
+        expect(typical[h].left, greaterThan(typical[h - 1].right), reason: 'hours ${h - 1} and $h touch');
+      }
+      expect(typical.first.left, greaterThanOrEqualTo(20));
+      expect(typical.last.right, lessThanOrEqualTo(370));
+      // Bars share one baseline.
+      for (final r in typical) {
+        expect(r.bottom, closeTo(typical[12].bottom, 0.5));
+      }
+      // Nothing counted yet today before hour 3, so those hours have only the
+      // typical bar; later hours with a count draw a today bar on the same
+      // column, no wider than the typical one.
+      for (var h = 3; h < 24; h++) {
+        final today = find.byKey(ValueKey('occupancy-today-$h'));
+        if (morning[h].today == 0) {
+          expect(today, findsNothing);
+        } else {
+          final r = tester.getRect(today);
+          expect(r.width, closeTo(typical[h].width, 0.5));
+          expect(r.left, closeTo(typical[h].left, 0.5));
+          expect(r.height, lessThanOrEqualTo(typical[h].height + 0.5));
+        }
+      }
     });
+  }
+
+  testWidgets('today bars have a width too, on the typical bar column', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(_wrap(OccupancyChart(hourly: _openDay(), nowHour: 12), AppScheme.espresso));
+    for (var h = 7; h <= 12; h++) {
+      final today = tester.getRect(find.byKey(ValueKey('occupancy-today-$h')));
+      final typical = tester.getRect(find.byKey(ValueKey('occupancy-typical-$h')));
+      expect(today.width, greaterThanOrEqualTo(4), reason: 'hour $h');
+      expect(today.left, closeTo(typical.left, 0.5));
+      expect(today.bottom, closeTo(typical.bottom, 0.5));
+    }
+    expect(find.byKey(const ValueKey('occupancy-today-13')), findsNothing);
+  });
+
+  for (final brightness in Brightness.values) {
+    for (final open in [false, true]) {
+      final name = 'occupancy_sheet_390x844_${open ? 'open' : 'closed'}_${brightness.name}';
+      goldenWidgets(name, (tester) async {
+        RitClock.pin(DateTime.utc(2026, 10, 14, 16));
+        addTearDown(RitClock.reset);
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+        final scheme = SchemeController.builtIn(brightness);
+        final theme = AppTheme.from(scheme);
+        final history = {
+          'mdo_id': 123,
+          'count': 4,
+          'max_occ': 150,
+          'open_status': open ? 'Open Now' : 'Closed Now',
+          'hourly': [
+            for (final h in open ? _openDay() : _real())
+              {'hour': h.hour, 'today': h.today, 'one_week_ago': h.oneWeekAgo, 'average': h.average},
+          ],
+        };
+        final location = DiningLocation.fromJson({
+          // not 1: the response cache is shared, and the failure test below
+          // needs an id with nothing stored
+          'id': 2,
+          'name': 'The Cafe & Market at Crossroads',
+          'today': <dynamic>[],
+          'is_open': open,
+          'occupancy': {'count': 4, 'max_occ': 150},
+        });
+        await tester.pumpWidget(
+          MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: theme.copyWith(textTheme: theme.textTheme.apply(fontFamily: AppTheme.fontFamily)),
+            home: Scaffold(
+              backgroundColor: scheme.surface,
+              body: DiningDetailSheet(
+                location: location,
+                api: ApiClient(backend: _Backend(history)),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('How busy'), findsOneWidget);
+        expect(find.byKey(const ValueKey('occupancy-typical-12')), findsOneWidget);
+        expect(
+          find.textContaining(open ? 'usual for this time' : 'Closed now'),
+          findsOneWidget,
+        );
+        await expectLater(find.byType(Scaffold), matchesGoldenFile('goldens/$name.png'));
+      });
+    }
   }
 
   testWidgets('no data at all is an unavailable state, not a blank block', (tester) async {
