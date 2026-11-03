@@ -27,6 +27,13 @@ void main() {
     expect(manifest, contains('android:label="TigerHub"'));
   });
 
+  test('app data is not backed up automatically', () {
+    expect(manifest, contains('android:allowBackup="false"'));
+    // No rules files exist, so nothing should reference one.
+    expect(manifest, isNot(contains('dataExtractionRules')));
+    expect(manifest, isNot(contains('fullBackupContent')));
+  });
+
   test('the application id matches the desktop one', () {
     // dev.colewiz.tigerhub is also the Linux window class, and the recon notes
     // record that guessing "tigerhub" instead wasted time before.
