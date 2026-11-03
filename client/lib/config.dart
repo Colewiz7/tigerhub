@@ -25,6 +25,12 @@ class AppConfig {
 
   static const String appName = 'TigerHub';
 
+  /// Opened in the browser from About. Store listings point at the same pages.
+  static const String privacyPolicyUrl =
+      'https://colewiz7.github.io/tigerhub-site/privacy.html';
+  static const String supportUrl =
+      'https://colewiz7.github.io/tigerhub-site/support.html';
+
   /// The version the build ships as, the name part of `version:` in
   /// pubspec.yaml. A test fails when they differ.
   static const String buildVersion = '1.0.0';
