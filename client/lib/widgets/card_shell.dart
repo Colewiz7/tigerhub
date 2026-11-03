@@ -20,8 +20,7 @@ import 'freshness.dart';
 const double editControlsWidth = 32 * 2 + 16;
 const double editControlsHeight = 32 * 2 + 16;
 
-// the old single row, only to keep normal mode heights
-const double _rowControlsWidth = 32 * 3 + 6 * 2;
+// the least a phone header band is, the height of the old single row of controls
 const double _rowControlsHeight = 32;
 
 /// The most edit mode may grow a tight header by.
@@ -58,7 +57,6 @@ class CardShell extends StatelessWidget {
     this.onOpen,
     this.openLabel,
     this.endsInRow = false,
-    this.tightHeader = false,
   });
 
   /// Whether the card above [context] is a phone card whose header links to
@@ -84,11 +82,6 @@ class CardShell extends StatelessWidget {
   /// under its text. A linked phone card takes that off its bottom padding so
   /// the text sits the card's padding from the edge.
   final bool endsInRow;
-
-  /// Phones: the header band is as tall as its title and hero and no taller
-  /// than edit mode needs to grow it by 48, instead of also reserving room
-  /// for the old one row of edit controls.
-  final bool tightHeader;
 
   /// Section identity. Cards without one show the title alone.
   final AppIconKind? glyph;
@@ -131,7 +124,6 @@ class CardShell extends StatelessWidget {
               hasHero: hero != null,
               editing: dragHandle != null,
               legacy: !Insets.phone(context),
-              tight: tightHeader,
               title: _CardTitle(
                 title: title,
                 glyph: glyph,
@@ -183,7 +175,6 @@ class CardShell extends StatelessWidget {
       hasHero: hero != null,
       editing: editing,
       legacy: false,
-      tight: tightHeader,
       title: Semantics(
         container: true,
         button: !editing,
@@ -395,7 +386,6 @@ class _CardHeader extends MultiChildRenderObjectWidget {
     required this.hasHero,
     required this.editing,
     required this.legacy,
-    required this.tight,
     required Widget title,
     required Widget freshness,
     required Widget hero,
@@ -405,10 +395,6 @@ class _CardHeader extends MultiChildRenderObjectWidget {
   final bool hasHero;
   final bool editing;
 
-  /// Phone only: the band reserves just what edit mode needs, see
-  /// [CardShell.tightHeader].
-  final bool tight;
-
   /// 600pt and wider: the header as it was before the phone condense. Edit
   /// mode keeps the normal height by ellipsizing the title to its normal line
   /// count and, as a last resort, scaling the hero down.
@@ -416,15 +402,14 @@ class _CardHeader extends MultiChildRenderObjectWidget {
 
   @override
   RenderObject createRenderObject(BuildContext context) =>
-      _RenderCardHeader(hasHero: hasHero, editing: editing, legacy: legacy, tight: tight);
+      _RenderCardHeader(hasHero: hasHero, editing: editing, legacy: legacy);
 
   @override
   void updateRenderObject(BuildContext context, _RenderCardHeader renderObject) {
     renderObject
       ..hasHero = hasHero
       ..editing = editing
-      ..legacy = legacy
-      ..tight = tight;
+      ..legacy = legacy;
   }
 }
 
@@ -439,20 +424,10 @@ class _RenderCardHeader extends RenderBox
     required bool hasHero,
     required bool editing,
     required bool legacy,
-    required bool tight,
   }) {
     _hasHero = hasHero;
     _editing = editing;
     _legacy = legacy;
-    _tight = tight;
-  }
-
-  late bool _tight;
-  bool get tight => _tight;
-  set tight(bool value) {
-    if (value == _tight) return;
-    _tight = value;
-    markNeedsLayout();
   }
 
   late bool _legacy;
@@ -629,20 +604,16 @@ class _RenderCardHeader extends RenderBox
     }
 
     final edit = editing ? plan(editControlsWidth, editControlsHeight) : null;
-    final double base;
-    if (tight) {
-      // Only what edit mode needs to grow by [_editGrowth] at most. Planning
-      // the old row of controls beside the title wrapped it in the room that
-      // row left, and reserved up to 24 dead points under a one line title.
-      final editBand = (edit ?? plan(editControlsWidth, editControlsHeight)).band;
-      base = math.max(
-        math.max(normalBand, _rowControlsHeight),
-        editBand - _editGrowth,
-      );
-    } else {
-      // normal mode keeps what the old one row asked for, so no card moves
-      base = math.max(normalBand, plan(_rowControlsWidth, _rowControlsHeight).band);
-    }
+    // The band is as tall as the title and hero, never under 32, and no
+    // shorter than edit mode needs less 48 of growth. Planning the old row of
+    // controls beside the title instead wrapped the title in the room that row
+    // left, and at 1.15x text and up reserved 38 dead points under the header
+    // whenever a wide hero pill left that row too little room.
+    final editBand = (edit ?? plan(editControlsWidth, editControlsHeight)).band;
+    final base = math.max(
+      math.max(normalBand, _rowControlsHeight),
+      editBand - _editGrowth,
+    );
     final band = edit == null ? base : math.max(base, edit.band);
     size = constraints.constrain(Size(maxW, band));
 
