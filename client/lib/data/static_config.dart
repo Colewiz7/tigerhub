@@ -31,6 +31,7 @@ class StaticConfig {
     'housing_areas',
     'shed_hours',
     'fd_locations',
+    'dining_links',
   ];
 
   static Future<StaticConfig> load() async {
@@ -138,6 +139,20 @@ class StaticConfig {
       if (entry['dining_id'] == diningId) return entry;
     }
     return null;
+  }
+
+  // --- dining pages ---
+
+  /// The RIT page for a dining location, its own when it has one and the
+  /// locations index otherwise. Null before the table is loaded.
+  String? diningPageUrl(int diningId) {
+    final table = _files['dining_links'];
+    if (table == null) return null;
+    for (final raw in table['links'] as List<dynamic>? ?? const []) {
+      final entry = raw as Map<String, dynamic>;
+      if (entry['dining_id'] == diningId) return entry['url'] as String;
+    }
+    return table['fallback_url'] as String?;
   }
 
   // --- post offices ---

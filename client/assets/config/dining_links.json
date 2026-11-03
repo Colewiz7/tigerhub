@@ -1,0 +1,91 @@
+{
+  "last_verified": "2026-11-03",
+  "source_note": "RIT dining location pages from https://www.rit.edu/dining/locations. A location without its own page falls back to fallback_url.",
+  "fallback_url": "https://www.rit.edu/dining/locations",
+  "links": [
+    {
+      "dining_id": 23,
+      "url": "https://www.rit.edu/dining/location/cafe-and-market-crossroads"
+    },
+    {
+      "dining_id": 27,
+      "url": "https://www.rit.edu/dining/location/corner-store"
+    },
+    {
+      "dining_id": 31,
+      "url": "https://www.rit.edu/dining/location/beanz"
+    },
+    {
+      "dining_id": 36,
+      "url": "https://www.rit.edu/dining/location/nathans-soup-salad"
+    },
+    {
+      "dining_id": 441,
+      "url": "https://www.rit.edu/dining/location/loaded-latke"
+    },
+    {
+      "dining_id": 481,
+      "url": "https://www.rit.edu/dining/location/bytes"
+    },
+    {
+      "dining_id": 34,
+      "url": "https://www.rit.edu/dining/location/ctrl-alt-deli"
+    },
+    {
+      "dining_id": 21,
+      "url": "https://www.rit.edu/dining/location/gracies"
+    },
+    {
+      "dining_id": 30,
+      "url": "https://www.rit.edu/dining/location/artesano-bakery-cafe"
+    },
+    {
+      "dining_id": 37,
+      "url": "https://www.rit.edu/dining/location/javas"
+    },
+    {
+      "dining_id": 35,
+      "url": "https://www.rit.edu/dining/location/college-grind"
+    },
+    {
+      "dining_id": 22,
+      "url": "https://www.rit.edu/dining/location/kitchen-brick-city"
+    },
+    {
+      "dining_id": 26,
+      "url": "https://www.rit.edu/dining/location/ritz"
+    },
+    {
+      "dining_id": 29,
+      "url": "https://www.rit.edu/dining/location/market-global-village"
+    },
+    {
+      "dining_id": 38,
+      "url": "https://www.rit.edu/dining/location/midnight-oil"
+    },
+    {
+      "dining_id": 24,
+      "url": "https://www.rit.edu/dining/location/commons"
+    },
+    {
+      "dining_id": 25,
+      "url": "https://www.rit.edu/dining/location/patio-global-village"
+    },
+    {
+      "dining_id": 32,
+      "url": "https://www.rit.edu/dining/location/ben-and-jerrys"
+    },
+    {
+      "dining_id": 461,
+      "url": "https://www.rit.edu/dining/location/petals-restaurant"
+    },
+    {
+      "dining_id": 501,
+      "url": "https://www.rit.edu/dining/food-trucks"
+    },
+    {
+      "dining_id": 41,
+      "url": "https://www.rit.edu/dining/directory"
+    }
+  ]
+}
