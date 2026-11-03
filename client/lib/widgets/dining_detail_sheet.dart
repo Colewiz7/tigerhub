@@ -18,6 +18,8 @@ import '../theme/tokens.dart';
 import '../widgets/freshness.dart';
 import '../widgets/menu_section.dart';
 import '../data/campus_time.dart';
+import '../data/static_config.dart';
+import 'focus_ring.dart';
 import '../data/dining_display_names.dart';
 import '../widgets/occupancy_chart.dart';
 import '../services/subscriptions.dart';
@@ -265,6 +267,11 @@ class _DiningDetailSheetState extends State<DiningDetailSheet> {
               Text(_stripHtml(location.description!), style: text.bodyMedium),
             ],
 
+            if (StaticConfig.loadedOrNull?.diningPageUrl(location.id) case final page?) ...[
+              const SizedBox(height: 14),
+              _OriginalPageButton(url: page),
+            ],
+
             if (location.mapsUrl != null) ...[
               const SizedBox(height: 18),
               _LinkRow(
@@ -326,6 +333,63 @@ class _PinButton extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Opens the RIT page in the browser, or copies its address when nothing opens.
+class _OriginalPageButton extends StatelessWidget {
+  const _OriginalPageButton({required this.url});
+
+  final String url;
+
+  static const label = 'Open original page';
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    void open() => openOrCopy(context, Uri.parse(url), label: 'Link');
+    // excludeSemantics drops the InkWell's own tap action, so it is restated.
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        link: true,
+        label: label,
+        onTap: open,
+        excludeSemantics: true,
+        child: FocusRing(
+          radius: 24,
+          builder: (onFocusChange) => InkWell(
+            key: const ValueKey('open-original-page'),
+            borderRadius: BorderRadius.circular(24),
+            onFocusChange: onFocusChange,
+            onTap: open,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(AppIconKind.link.of(context), size: 18, color: scheme.primary),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        label,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: scheme.primary,
+                          decoration: TextDecoration.underline,
+                          decorationColor: scheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
