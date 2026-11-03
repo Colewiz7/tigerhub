@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../config.dart';
+import '../../services/open_link.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/app_icon.dart';
 import '../../widgets/status_row.dart';
@@ -119,6 +120,28 @@ class AboutSection extends StatelessWidget {
           ),
         ),
         const VersionRow(),
+        StatusRow(
+          key: const ValueKey('about-privacy'),
+          icon: AppIconKind.link,
+          title: 'Privacy policy',
+          semanticHint: 'Opens externally',
+          onTap: () => openOrCopy(
+            context,
+            Uri.parse(AppConfig.privacyPolicyUrl),
+            label: 'Privacy policy link',
+          ),
+        ),
+        StatusRow(
+          key: const ValueKey('about-support'),
+          icon: AppIconKind.link,
+          title: 'Support',
+          semanticHint: 'Opens externally',
+          onTap: () => openOrCopy(
+            context,
+            Uri.parse(AppConfig.supportUrl),
+            label: 'Support link',
+          ),
+        ),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
