@@ -722,7 +722,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         : ReorderableBuilder<String>(
                       // edit mode resizes cards and the grid measures them once
                       // so remount it, with its own wrap key or the old items stay
-                      key: ValueKey(_editing),
+                      //
+                      // Outside edit mode the key also names the shown cards and
+                      // their sizes. The grid keeps the offsets it measured for the
+                      // old cards, so a layout that arrives later (setup finishing,
+                      // smart order) would slide every card in from those stale
+                      // offsets, painting them over the header and each other.
+                      key: ValueKey(
+                        _editing
+                            ? 'edit'
+                            : [for (final id in shown) '$id:${_instance(id)?.size.id}'].join('|'),
+                      ),
                       // No scrollController on purpose. The inner GridView is
                       // non-scrollable and the parent CustomScrollView does the
                       // scrolling, so the package must find that itself. Passing

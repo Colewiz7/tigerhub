@@ -102,6 +102,52 @@ void main() {
     );
   }
 
+  for (final scrolled in const [false, true]) {
+    testWidgets(
+      'a layout saved while Today is open (setup finishing) never paints a card off its place${scrolled ? ', scrolled' : ''}',
+      (tester) async {
+        try {
+          await pumpToday(tester, const Size(390, 844), 1);
+          await tester.pumpAndSettle();
+          if (scrolled) {
+            tester
+                .state<ScrollableState>(find.byType(Scrollable).first)
+                .position
+                .jumpTo(120);
+            await tester.pump();
+          }
+          // the default four are built and settled; now the setup plan lands
+          await DashboardStore.save(_saved, notify: true);
+          final frames = <List<Rect>>[];
+          for (var i = 0; i < 40; i++) {
+            await tester.pump(const Duration(milliseconds: 16));
+            frames.add(_cards(tester));
+          }
+          await tester.pumpAndSettle();
+          final settled = _cards(tester);
+
+          for (final (i, frame) in frames.indexed) {
+            if (frame.length != settled.length) continue;
+            for (final (j, rect) in frame.indexed) {
+              expect(
+                rect.top,
+                closeTo(settled[j].top, 0.5),
+                reason: 'frame $i card $j',
+              );
+              expect(
+                rect.left,
+                closeTo(settled[j].left, 0.5),
+                reason: 'frame $i card $j',
+              );
+            }
+          }
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
+      },
+    );
+  }
+
   for (final size in const [Size(390, 844), Size(440, 956)]) {
     for (final scale in const [1.0, 2.0]) {
       for (final scrolled in const [false, true]) {
