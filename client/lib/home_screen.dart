@@ -194,6 +194,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// Edit mode reveals the remove buttons and the add row.
   bool _editing = false;
+
+  /// The saved cards have been read once.
+  bool _restored = false;
   String? _selectedId;
   Result<Collection<RecreationFacility>> _recreation = const Result(
     value: null,
@@ -273,6 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final loaded = await DashboardStore.load();
     if (!mounted) return;
     setState(() {
+      _restored = true;
       _instances = loaded;
       _syncFromInstances();
     });
@@ -710,7 +714,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 SliverPadding(
                   padding: EdgeInsets.symmetric(horizontal: sideInset),
                   sliver: SliverToBoxAdapter(
-                    child: ReorderableBuilder<String>(
+                    // Not built until the saved cards are in. The grid measures
+                    // its first layout, so the default four it would draw
+                    // first send the saved ones in from the wrong places.
+                    child: !_restored
+                        ? const SizedBox.shrink()
+                        : ReorderableBuilder<String>(
                       // edit mode resizes cards and the grid measures them once
                       // so remount it, with its own wrap key or the old items stay
                       key: ValueKey(_editing),
