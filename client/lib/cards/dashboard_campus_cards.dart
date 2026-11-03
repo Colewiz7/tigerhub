@@ -211,6 +211,21 @@ class DashboardMapCard extends StatelessWidget {
     state: result.state,
     fetchedAt: result.fetchedAt,
     dragHandle: dragHandle,
-    child: CampusMapView(result: result, events: events),
+    // The map is a Column with an Expanded, so it needs a height to fill. A
+    // wide cell gives it one; a phone sizes a card to its content, and without
+    // this the layout fails and, in release, leaves the grid positioned from
+    // an unlaid out card, so cards below it paint over the header.
+    child: LayoutBuilder(
+      builder: (context, box) => box.hasBoundedHeight
+          ? CampusMapView(result: result, events: events)
+          : SizedBox(
+              height: _phoneMapHeight * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.5),
+              child: CampusMapView(result: result, events: events),
+            ),
+    ),
   );
+
+  /// The map card's height on a phone at 1x text: the toolbar, a map you can
+  /// pan and the kind strip.
+  static const double _phoneMapHeight = 560;
 }
