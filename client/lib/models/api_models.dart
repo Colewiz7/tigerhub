@@ -552,6 +552,7 @@ class Dish {
   const Dish({
     required this.name,
     this.category,
+    this.station,
     this.allergens = const [],
     this.dietary = const [],
     this.calories,
@@ -559,6 +560,9 @@ class Dish {
 
   final String name;
   final String? category;
+
+  /// The counter that serves it, when the feed names one.
+  final String? station;
 
   /// Exactly as RIT publishes them. Never interpreted or extended.
   final List<String> allergens;
@@ -568,6 +572,7 @@ class Dish {
   factory Dish.fromJson(Map<String, dynamic> json) => Dish(
     name: json['name'] as String? ?? '',
     category: json['category'] as String?,
+    station: json['station'] as String?,
     allergens: (json['allergens'] as List<dynamic>? ?? const [])
         .map((e) => e as String)
         .toList(),

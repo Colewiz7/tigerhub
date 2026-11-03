@@ -1,0 +1,183 @@
+{
+ "result": [
+  {
+   "strMenuForDate": "2026-11-03",
+   "conceptData": [
+    {
+     "conceptId": 3,
+     "conceptName": "Asian",
+     "strWeekStartDate": "2026-10-25",
+     "strWeekEndDate": "2026-10-31",
+     "rowId": 5
+    },
+    {
+     "conceptId": 10,
+     "conceptName": "Chef's Creation",
+     "strWeekStartDate": "2026-10-25",
+     "strWeekEndDate": "2026-10-31",
+     "rowId": 3
+    },
+    {
+     "conceptId": 14,
+     "conceptName": "Deli",
+     "strWeekStartDate": "2026-10-25",
+     "strWeekEndDate": "2026-10-31",
+     "rowId": 1
+    },
+    {
+     "conceptId": 17,
+     "conceptName": "Grab &amp; Go",
+     "strWeekStartDate": "2026-10-25",
+     "strWeekEndDate": "2026-10-31",
+     "rowId": 6
+    },
+    {
+     "conceptId": 18,
+     "conceptName": "Grill",
+     "strWeekStartDate": "2026-10-25",
+     "strWeekEndDate": "2026-10-31",
+     "rowId": 2
+    },
+    {
+     "conceptId": 33,
+     "conceptName": "Pizza",
+     "strWeekStartDate": "2026-10-25",
+     "strWeekEndDate": "2026-10-31",
+     "rowId": 4
+    },
+    {
+     "conceptId": 41,
+     "conceptName": "Soup",
+     "strWeekStartDate": "2026-10-25",
+     "strWeekEndDate": "2026-10-31",
+     "rowId": 7
+    },
+    {
+     "conceptId": 94,
+     "conceptName": "Deli on Gluten Free",
+     "strWeekStartDate": "2026-10-25",
+     "strWeekEndDate": "2026-10-31",
+     "rowId": 8
+    },
+    {
+     "conceptId": 3,
+     "conceptName": "Asian",
+     "strWeekStartDate": "2026-11-01",
+     "strWeekEndDate": "2026-11-07",
+     "rowId": 5
+    },
+    {
+     "conceptId": 10,
+     "conceptName": "Chef's Creation",
+     "strWeekStartDate": "2026-11-01",
+     "strWeekEndDate": "2026-11-07",
+     "rowId": 3
+    },
+    {
+     "conceptId": 14,
+     "conceptName": "Deli",
+     "strWeekStartDate": "2026-11-01",
+     "strWeekEndDate": "2026-11-07",
+     "rowId": 1
+    },
+    {
+     "conceptId": 17,
+     "conceptName": "Grab &amp; Go",
+     "strWeekStartDate": "2026-11-01",
+     "strWeekEndDate": "2026-11-07",
+     "rowId": 6
+    },
+    {
+     "conceptId": 18,
+     "conceptName": "Grill",
+     "strWeekStartDate": "2026-11-01",
+     "strWeekEndDate": "2026-11-07",
+     "rowId": 2
+    },
+    {
+     "conceptId": 33,
+     "conceptName": "Pizza",
+     "strWeekStartDate": "2026-11-01",
+     "strWeekEndDate": "2026-11-07",
+     "rowId": 4
+    },
+    {
+     "conceptId": 41,
+     "conceptName": "Soup",
+     "strWeekStartDate": "2026-11-01",
+     "strWeekEndDate": "2026-11-07",
+     "rowId": 7
+    },
+    {
+     "conceptId": 94,
+     "conceptName": "Deli on Gluten Free",
+     "strWeekStartDate": "2026-11-01",
+     "strWeekEndDate": "2026-11-07",
+     "rowId": 8
+    }
+   ],
+   "allMenuRecipes": [
+    {
+     "componentName": "Burger Halal RIT",
+     "englishAlternateName": "Halal Burger",
+     "category": "Entree",
+     "allergenName": "Gluten,Soy,Wheat",
+     "recipeProductDietaryName": "Beef",
+     "calories": "490.59",
+     "isShowOnMenu": 1,
+     "rowId": 2
+    },
+    {
+     "componentName": "Bowl Bolognese Pork & Beef",
+     "englishAlternateName": "Pork & Beef Bolognese",
+     "category": "Entree",
+     "allergenName": "Gluten,Milk,Wheat",
+     "recipeProductDietaryName": "Pork, Beef",
+     "calories": "1439.79",
+     "isShowOnMenu": 1,
+     "rowId": 3
+    },
+    {
+     "componentName": "Soup Lobster Bisque; Portion; 8 Ounce",
+     "englishAlternateName": "Lobster Bisque (7.5 Ounce)",
+     "category": "Soups",
+     "allergenName": "Gluten,Milk,Shellfish,Wheat",
+     "recipeProductDietaryName": "",
+     "calories": "318.75",
+     "isShowOnMenu": 1,
+     "rowId": 7
+    },
+    {
+     "componentName": "Bread Garlic Knot; Portion; 1.35 Ounce",
+     "englishAlternateName": "Garlic Knot",
+     "category": "Side",
+     "allergenName": "Gluten,Soy,Wheat",
+     "recipeProductDietaryName": "Vegetarian",
+     "calories": "124.13",
+     "isShowOnMenu": 1,
+     "rowId": 3
+    },
+    {
+     "componentName": "Bowl Vegan Bolognese CR",
+     "englishAlternateName": "Vegan Bolognese w/ Tree Nuts",
+     "category": "Entree",
+     "allergenName": "Gluten,May Contain Traces of Gluten,May Contain Traces of Wheat,Treenut,Wheat",
+     "recipeProductDietaryName": "Vegan, Vegetarian",
+     "calories": "1187.88",
+     "isShowOnMenu": 1,
+     "rowId": 3
+    },
+    {
+     "componentName": "Burger Vegetable RIT",
+     "englishAlternateName": "Veggie Burger",
+     "category": "Entree",
+     "allergenName": "Gluten,Soy,Wheat",
+     "recipeProductDietaryName": "Vegan, Vegetarian",
+     "calories": "323.01",
+     "isShowOnMenu": 1,
+     "rowId": 2
+    }
+   ]
+  }
+ ]
+}

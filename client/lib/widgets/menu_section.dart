@@ -65,8 +65,13 @@ class MenuSection extends StatelessWidget {
 
     // Station order is the order the feed first names them, Other last.
     final stations = <String, List<Dish>>{};
+    final specials = <Dish>[];
     for (final dish in menu.dishes) {
-      stations.putIfAbsent(stationOf(dish), () => []).add(dish);
+      if (isChefSpecial(dish)) {
+        specials.add(dish);
+      } else {
+        stations.putIfAbsent(stationOf(dish), () => []).add(dish);
+      }
     }
     final names = [
       for (final name in stations.keys)
@@ -88,6 +93,20 @@ class MenuSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
         ],
+        // Absent when the feed names no chef special today, never empty.
+        if (specials.isNotEmpty)
+          _StationSection(
+            key: const ValueKey('station-section-chef-special'),
+            station: chefSpecialTitle,
+            initiallyOpen: true,
+            dishes: [
+              ...specials.where(_matchesDiet),
+              ...specials.where((d) => !_matchesDiet(d)),
+            ],
+            prefs: prefs,
+            demoteUnmatched: filtering,
+            matches: _matchesDiet,
+          ),
         for (var i = 0; i < names.length; i++)
           _StationSection(
             key: ValueKey('station-section-${names[i]}'),
@@ -114,8 +133,19 @@ class MenuSection extends StatelessWidget {
     );
   }
 
-  /// Chef specials and any station like it, which lead the menu.
-  static bool isSpecialStation(String station) => station.toLowerCase().contains('special');
+  /// Chef specials and any station like it, which lead the menu. FD names the
+  /// Crossroads counter "Chef's Creation", TigerCenter calls it "chef
+  /// specials", so both match, in any case and with or without the apostrophe.
+  static bool isSpecialStation(String station) {
+    final name = station.toLowerCase().replaceAll(RegExp('[\'\u2019]'), '');
+    return name.contains('special') || name.contains('chefs creation');
+  }
+
+  /// A dish the feed files under a chef special counter.
+  static bool isChefSpecial(Dish dish) {
+    final station = dish.station?.trim();
+    return station != null && station.isNotEmpty && isSpecialStation(station);
+  }
 
   /// The station a dish is served from, which is its published category.
   static String stationOf(Dish dish) {
@@ -132,6 +162,9 @@ class MenuSection extends StatelessWidget {
         });
   }
 }
+
+/// Heading of the section that leads the menu.
+const String chefSpecialTitle = "Chef's special";
 
 /// Where a dish goes when the feed names no category.
 const String otherStation = 'Other';
