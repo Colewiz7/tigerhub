@@ -311,12 +311,15 @@ class _DishRow extends StatelessWidget {
                   ),
                   if (flagged.isNotEmpty) ...[
                     const SizedBox(width: 10),
-                    // Flagged, not removed.
-                    _Tag(
-                      label: 'Contains ${flagged.first.toLowerCase()}',
-                      foreground: semantic.closed,
-                      background: semantic.closedContainer,
-                      icon: AppIconKind.warning,
+                    // Flagged, not removed. Flexible: beside the name it gets
+                    // unbounded width otherwise.
+                    Flexible(
+                      child: _Tag(
+                        label: 'Contains ${flagged.first.toLowerCase()}',
+                        foreground: semantic.closed,
+                        background: semantic.closedContainer,
+                        icon: AppIconKind.warning,
+                      ),
                     ),
                   ],
                 ],
@@ -438,12 +441,16 @@ class _Tag extends StatelessWidget {
                 Icon(icon!.of(context), size: 12, color: foreground),
                 const SizedBox(width: 5),
               ],
-              Text(
-                label,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: foreground),
+              // Flexible so a long published tag wraps inside the pill
+              // instead of pushing past the row.
+              Flexible(
+                child: Text(
+                  label,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: foreground),
+                ),
               ),
             ],
           ),
