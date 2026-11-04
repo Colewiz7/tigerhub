@@ -36,6 +36,7 @@ import '../widgets/tab_bar.dart';
 import '../widgets/week_grid.dart';
 import '../services/subscriptions.dart';
 import 'quick_links_section.dart';
+import '../widgets/sheet_inset.dart';
 
 class CampusScreen extends StatefulWidget {
   const CampusScreen({
@@ -490,7 +491,7 @@ class _FindSection extends StatelessWidget {
             wrapSubtitle: true,
             title: kind.kindName,
             subtitle: '${kind.count} on campus',
-            onTap: () => showModalBottomSheet<void>(
+            onTap: () => showAppSheet<void>(
               context: context,
               showDragHandle: true,
               isScrollControlled: true,
@@ -1162,7 +1163,7 @@ class _RecreationRow extends StatelessWidget {
       ],
       onTap: facility.days.length < 2
           ? null
-          : () => showModalBottomSheet<void>(
+          : () => showAppSheet<void>(
               context: context,
               showDragHandle: true,
               builder: (context) => _WeekSheet(facility: facility),

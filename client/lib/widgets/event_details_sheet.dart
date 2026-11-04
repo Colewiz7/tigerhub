@@ -7,6 +7,7 @@ import '../models/api_models.dart';
 import '../services/open_link.dart';
 import 'app_icon.dart';
 import 'status_row.dart';
+import 'sheet_inset.dart';
 
 // &#8212; and &#x2014; with or without the semicolon, as HTML5 allows. Digits
 // are consumed greedily, so '&#8212abc' is a dash then 'abc'. A number that is
@@ -59,7 +60,7 @@ String eventDescriptionText(String? raw, {String? eventUrl}) {
 }
 
 Future<void> showEventDetailsSheet(BuildContext context, CampusEvent event) =>
-    showModalBottomSheet<void>(
+    showAppSheet<void>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,

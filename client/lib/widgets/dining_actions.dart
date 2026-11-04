@@ -12,6 +12,7 @@ import '../services/preferences.dart';
 import '../theme/tokens.dart';
 import 'app_icon.dart';
 import 'context_actions.dart';
+import 'sheet_inset.dart';
 
 const moveToGroupLabel = 'Move to group';
 
@@ -72,7 +73,7 @@ List<ResolvedGroup> groupsFor(DiningLocation location) {
 
 Future<void> showMoveToGroupSheet(BuildContext context, DiningLocation location) {
   final scheme = Theme.of(context).colorScheme;
-  return showModalBottomSheet<void>(
+  return showAppSheet<void>(
     context: context,
     backgroundColor: scheme.surfaceContainerLow,
     showDragHandle: true,

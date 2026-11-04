@@ -34,6 +34,7 @@ import '../widgets/focus_ring.dart';
 import '../widgets/freshness.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
+import '../widgets/sheet_inset.dart';
 
 /// The compact answer. Null while loading, so nothing is claimed.
 String? chefsCompactValue(Result<Collection<MenuItem>> result) {
@@ -354,7 +355,7 @@ class _ChefRow extends StatelessWidget {
 /// all dismiss it.
 Future<void> _showAllChefs(BuildContext context, List<MenuItem> chefs, {MenuItem? focus}) {
   final scheme = Theme.of(context).colorScheme;
-  return showModalBottomSheet<void>(
+  return showAppSheet<void>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,

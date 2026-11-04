@@ -12,6 +12,7 @@ import '../theme/app_theme.dart';
 import '../theme/tokens.dart';
 import 'app_icon.dart';
 import 'focus_ring.dart';
+import 'sheet_inset.dart';
 
 /// How the sheet ended. Only a button is an answer, a swipe, a tap outside or
 /// the back button is not, so the sheet comes back next launch.
@@ -19,7 +20,7 @@ enum WhatsNewResult { personalize, notNow, dismissed }
 
 Future<WhatsNewResult> showWhatsNewSheet(BuildContext context) async {
   final scheme = Theme.of(context).colorScheme;
-  final chose = await showModalBottomSheet<WhatsNewResult>(
+  final chose = await showAppSheet<WhatsNewResult>(
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
