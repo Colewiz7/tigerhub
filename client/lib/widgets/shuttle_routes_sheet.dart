@@ -16,10 +16,11 @@ import 'app_icon.dart';
 import 'context_actions.dart';
 import 'empty_state.dart';
 import 'status_row.dart';
+import 'sheet_inset.dart';
 
 Future<void> showShuttleRoutesSheet(BuildContext context) {
   final scheme = Theme.of(context).colorScheme;
-  return showModalBottomSheet<void>(
+  return showAppSheet<void>(
     context: context,
     backgroundColor: scheme.surfaceContainerLow,
     showDragHandle: true,

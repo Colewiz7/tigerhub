@@ -38,6 +38,7 @@ import 'widgets/context_actions.dart' show ContextActionsScope;
 import 'widgets/tab_bar.dart';
 import 'widgets/today_header.dart';
 import 'widgets/touch_target.dart';
+import 'widgets/sheet_inset.dart';
 
 /// The icon each module type shows in the card library and the hidden chips.
 /// The name comes from `moduleLabels` beside the type itself, so the library
@@ -858,7 +859,7 @@ class _EditBar extends StatelessWidget {
   ];
 
   Future<void> _showLibrary(BuildContext context) async {
-    final picked = await showModalBottomSheet<ModuleType>(
+    final picked = await showAppSheet<ModuleType>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
