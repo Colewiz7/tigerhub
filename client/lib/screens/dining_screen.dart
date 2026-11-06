@@ -19,6 +19,7 @@ import '../data/chef_location_color.dart';
 import '../data/dining_display_names.dart';
 import '../data/dining_layout.dart';
 import '../data/dining_sections.dart';
+import '../data/foodshare.dart';
 import '../data/static_config.dart';
 import '../data/local_backend.dart' show staleGraceMultiplier;
 import '../data/sources/food_trucks.dart' show foodTrucksCadence;
@@ -35,6 +36,7 @@ import '../widgets/segmented_picker.dart';
 import '../services/open_link.dart';
 import '../widgets/jump_list.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/focus_ring.dart';
 import '../widgets/freshness.dart';
 import '../widgets/search_field.dart';
 import '../services/preferences.dart';
@@ -338,6 +340,15 @@ class _DiningScreenState extends State<DiningScreen> {
       for (final truck in trucks)
         if (_FoodTrucksGroup.isLater(truck.date, today)) truck,
     ];
+    // Not a place: it has no pin, hide or group, so Dorm side hiding and the
+    // venue chips leave it alone. Open now lists it while the pantry is open,
+    // All always, Favorites never. Search finds it by name.
+    final foodShare = foodShareStatusAt(CampusTime.nowUtc());
+    final showFoodShare =
+        type == null &&
+        view != DiningView.favorites &&
+        (view == DiningView.all || foodShare.isOpen) &&
+        foodShareMatches(query);
     final todayTrucks = [
       for (final truck in trucks)
         if (!_FoodTrucksGroup.isLater(truck.date, today)) truck,
@@ -430,6 +441,13 @@ class _DiningScreenState extends State<DiningScreen> {
                       count: laterTrucks.length,
                       builder: (context) => _FoodTrucksGroup(title: 'Upcoming food trucks', trucks: laterTrucks),
                     ),
+                  if (showFoodShare)
+                    JumpGroup(
+                      label: foodShareLabel,
+                      icon: AppIconKind.grocery,
+                      count: foodShare.isOpen ? 1 : 0,
+                      builder: (context) => _FoodShareGroup(status: foodShare),
+                    ),
                   if (sections.hiddenCount > 0)
                     JumpGroup(
                       label: 'Hidden',
@@ -473,6 +491,47 @@ class _PlaceSection extends StatelessWidget {
                 onMove: editing ? () => showMoveToGroupSheet(context, location) : null,
               ),
           ],
+        ),
+      ],
+    );
+  }
+}
+
+class _FoodShareGroup extends StatelessWidget {
+  const _FoodShareGroup({required this.status});
+
+  final FoodShareStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = Uri.parse(foodShareSourceUrl);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionTitle(foodShareLabel),
+        // the ring sits outside the group, which clips its rows
+        FocusRing(
+          radius: Shapes.innerRadius,
+          builder: (onFocusChange) => Focus(
+            canRequestFocus: false,
+            skipTraversal: true,
+            onFocusChange: onFocusChange,
+            child: InsetGroup(
+              children: [
+                StatusRow(
+                  key: const ValueKey('foodshare'),
+                  icon: AppIconKind.grocery,
+                  dense: true,
+                  grouped: true,
+                  subtitleMaxLines: null,
+                  title: foodShareKind,
+                  subtitle: '${status.text} · $foodShareNote',
+                  semanticHint: 'FoodShare, opens RIT page externally',
+                  onTap: () => openOrCopy(context, url, label: foodShareLabel),
+                ),
+              ],
+            ),
+          ),
         ),
       ],
     );
