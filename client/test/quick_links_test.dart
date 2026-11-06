@@ -34,6 +34,7 @@ void main() {
     (label: 'Service Center', url: 'https://help.rit.edu/'),
     (label: 'FMS requests', url: 'https://www.rit.edu/facilitiesmanagement/request-service'),
     (label: 'Reserve', url: 'https://reserve.rit.edu/'),
+    (label: 'FoodShare', url: 'https://www.rit.edu/lead/rit-foodshare'),
   ];
 
   setUpAll(() async {
@@ -57,9 +58,12 @@ void main() {
   }
 
   testWidgets('every quick link renders, has semantics and opens externally', (tester) async {
-    expect(quickLinks, hasLength(8));
+    expect(quickLinks, hasLength(9));
     expect(quickLinks.map((link) => (label: link.label, url: link.url)).toList(), expectedLinks);
     expect(quickLinks.firstWhere((link) => link.label == 'Reserve').subtitle, 'Sign in with RIT');
+    final foodShare = quickLinks.firstWhere((link) => link.label == 'FoodShare');
+    expect(foodShare.subtitle, 'Free food pantry');
+    expect(foodShare.lastVerified, '2026-11-06');
     for (final link in quickLinks) {
       final parsed = DateTime.tryParse(link.lastVerified);
       expect(parsed?.toIso8601String().substring(0, 10), link.lastVerified);

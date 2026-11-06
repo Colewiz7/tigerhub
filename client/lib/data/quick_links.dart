@@ -16,4 +16,5 @@ const quickLinks = <QuickLink>[
   QuickLink(label: 'Service Center', url: 'https://help.rit.edu/', lastVerified: '2026-10-14'),
   QuickLink(label: 'FMS requests', url: 'https://www.rit.edu/facilitiesmanagement/request-service', lastVerified: '2026-10-14', subtitle: 'Facilities requests'),
   QuickLink(label: 'Reserve', url: 'https://reserve.rit.edu/', lastVerified: '2026-10-20', subtitle: 'Sign in with RIT'),
+  QuickLink(label: 'FoodShare', url: 'https://www.rit.edu/lead/rit-foodshare', lastVerified: '2026-11-06', subtitle: 'Free food pantry'),
 ];
