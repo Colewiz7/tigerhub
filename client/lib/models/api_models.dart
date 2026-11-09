@@ -81,12 +81,20 @@ class UpcomingChef {
     required this.date,
     required this.name,
     required this.locationName,
+    this.startsAt,
+    this.endsAt,
   });
 
   /// A calendar date, kept as UTC midnight so the device offset never shifts it.
   final DateTime date;
   final String name;
   final String locationName;
+
+  /// The slot on that date, only when the feed could say. The schedule page
+  /// publishes dates and no times, so these are today's time for the same chef
+  /// at the same place, or null.
+  final DateTime? startsAt;
+  final DateTime? endsAt;
 
   static UpcomingChef? fromJson(Object? raw) {
     if (raw is! Map<String, dynamic>) return null;
@@ -95,6 +103,8 @@ class UpcomingChef {
         date: _requiredCalendarDate(raw, 'date'),
         name: raw['name'] as String? ?? '',
         locationName: raw['location_name'] as String? ?? '',
+        startsAt: _date(raw['start_time']),
+        endsAt: _date(raw['end_time']),
       );
     } on MissingTimeException {
       return null;

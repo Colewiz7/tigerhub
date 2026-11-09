@@ -11,7 +11,6 @@ library;
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 import '../data/campus_time.dart';
 import '../data/chef_family.dart';
@@ -35,6 +34,7 @@ import '../widgets/freshness.dart';
 import '../widgets/scalloped_badge.dart';
 import '../widgets/status_row.dart';
 import '../widgets/sheet_inset.dart';
+import '../widgets/status_text.dart';
 
 /// The compact answer. Null while loading, so nothing is claimed.
 String? chefsCompactValue(Result<Collection<MenuItem>> result) {
@@ -70,36 +70,17 @@ class VisitingChefsCard extends StatefulWidget {
   @override
   State<VisitingChefsCard> createState() => _VisitingChefsCardState();
 
-  /// "11:00 AM to 2:00 PM", on the campus clock. Null when RIT gave no time,
-  /// which is never filled in by guessing.
-  static String? window(MenuItem chef) {
-    final start = chef.startsAt;
-    final end = chef.endsAt;
-    if (start != null && end != null) {
-      return '${_clock(start)} to ${_clock(end)}';
-    }
-    if (start != null) return 'from ${_clock(start)}';
-    if (end != null) return 'until ${_clock(end)}';
-    return null;
-  }
+  /// "11 AM to 2 PM", on the campus clock. Null when RIT gave no time, which
+  /// is never filled in by guessing.
+  static String? window(MenuItem chef) => chefWindow(chef.startsAt, chef.endsAt);
 
   /// What a screen reader adds for a chef who is not on right now: "starts at
   /// 4 PM" or "ended". Null for a chef who is on, or has no time.
   static String? status(MenuItem chef, ChefPhase phase) => switch (phase) {
-    ChefPhase.upcoming => chef.startsAt == null ? null : 'starts at ${_clock(chef.startsAt!)}',
+    ChefPhase.upcoming => chef.startsAt == null ? null : 'starts at ${chefClock(chef.startsAt!)}',
     ChefPhase.ended => 'ended',
     _ => null,
   };
-
-  /// "11 AM" on the hour and "4:30 PM" otherwise. The ":00" is dropped because
-  /// at large text it is what pushed the window onto a second line.
-  static String _clock(DateTime when) {
-    final f = CampusTime.fieldsOf(when);
-    if (f.minute == 0 && f.hour != 0 && f.hour != 12) {
-      return DateFormat('h a').format(f);
-    }
-    return formatClock(when);
-  }
 }
 
 class _VisitingChefsCardState extends State<VisitingChefsCard> {
@@ -214,7 +195,7 @@ class _VisitingChefsCardState extends State<VisitingChefsCard> {
               if (nextLine != null)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  child: Text(nextLine, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+                  child: StatusText(nextLine, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
                 ),
             ],
           ),
