@@ -3,10 +3,13 @@ library;
 
 import 'dart:async';
 
+import 'package:intl/intl.dart';
+
 import '../models/api_models.dart';
 import 'campus_time.dart';
 import 'dining_display_names.dart';
 import 'dining_hidden.dart' show GroupPlace;
+import '../widgets/freshness.dart' show formatClock;
 import 'sources/rit_chefs.dart' show locationKey;
 
 const Duration chefGrace = Duration(minutes: 30);
@@ -71,14 +74,34 @@ const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 
 // all of the chefs the feed lists for today have ended
 bool chefsAllEnded(Iterable<MenuItem> chefs, {DateTime? now}) => chefs.isNotEmpty && listedChefs(chefs, now: now).isEmpty;
 
-// "Next: Tomorrow · Chef Lin · Gracie's", dates on the campus calendar
+/// "11 AM" on the hour and "4:30 PM" otherwise. The ":00" is dropped because
+/// at large text it is what pushed the window onto a second line.
+String chefClock(DateTime when) {
+  final f = CampusTime.fieldsOf(when);
+  if (f.minute == 0 && f.hour != 0 && f.hour != 12) {
+    return DateFormat('h a').format(f);
+  }
+  return formatClock(when);
+}
+
+/// "11 AM to 2 PM" on the campus clock. Null when there is no time, which is
+/// never filled in by guessing.
+String? chefWindow(DateTime? start, DateTime? end) {
+  if (start != null && end != null) return '${chefClock(start)} to ${chefClock(end)}';
+  if (start != null) return 'from ${chefClock(start)}';
+  if (end != null) return 'until ${chefClock(end)}';
+  return null;
+}
+
+// "Next: Tomorrow · Chef Lin · Gracie's · 11 AM to 2 PM", dates on the campus
+// calendar. The time is there only when the feed carried one.
 String nextChefLine(UpcomingChef next, DateTime today) {
   final days = next.date.difference(DateTime.utc(today.year, today.month, today.day)).inDays;
   final day = switch (days) {
     1 => 'Tomorrow',
     _ => '${_weekdays[next.date.weekday - 1]}, ${_months[next.date.month - 1]} ${next.date.day}',
   };
-  return 'Next: ${[day, next.name, diningDisplayName(null, next.locationName)].where((part) => part.isNotEmpty).join(' · ')}';
+  return 'Next: ${[day, next.name, diningDisplayName(null, next.locationName), chefWindow(next.startsAt, next.endsAt) ?? ''].where((part) => part.isNotEmpty).join(' · ')}';
 }
 
 /// Where a listed chef is in their slot.

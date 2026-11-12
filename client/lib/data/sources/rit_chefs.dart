@@ -683,7 +683,7 @@ Map<String, dynamic> visitingChefsView({
   }
 
   if (items.isNotEmpty) {
-    return {'items': items, 'availability': availabilityAvailable, 'next': _nextChef(schedule, today)};
+    return {'items': items, 'availability': availabilityAvailable, 'next': _nextChef(schedule, today, fromMenus)};
   }
 
   // The only way to a quiet day. TigerCenter publishing menus without a chef
@@ -693,23 +693,42 @@ Map<String, dynamic> visitingChefsView({
     return {
       'items': items,
       'availability': availabilityEmpty,
-      'next': _nextChef(schedule, today),
+      'next': _nextChef(schedule, today, fromMenus),
     };
   }
   return {'items': items, 'availability': availabilityUnavailable};
 }
 
-Map<String, dynamic>? _nextChef(Map<String, dynamic>? schedule, String today) {
+// The first later day with a chef. The schedule page has dates and no times,
+// so the time is today's /menus time when the same chef is at the same place,
+// and absent otherwise.
+Map<String, dynamic>? _nextChef(
+  Map<String, dynamic>? schedule,
+  String today,
+  List<Map<String, dynamic>> todays,
+) {
   if (schedule == null) return null;
   for (final date in schedule.keys.toList()..sort()) {
     if (date.compareTo(today) <= 0) continue;
     final chefs = (schedule[date] as Map<String, dynamic>)['chefs'] as List;
     if (chefs.isEmpty) continue;
     final first = chefs.first as Map<String, dynamic>;
+    final name = first['name'] as String? ?? '';
+    final place = first['location_name'] as String? ?? '';
+    Map<String, dynamic>? same;
+    for (final c in todays) {
+      if (normalizeLocationName('${c['name']}') == normalizeLocationName(name) &&
+          locationKey('${c['location_name']}') == locationKey(place)) {
+        same = c;
+        break;
+      }
+    }
     return {
       'date': date,
-      'name': first['name'],
-      'location_name': first['location_name'],
+      'name': name,
+      'location_name': place,
+      if (same != null) 'start_time': _isoOn(date, same['start'] as String?),
+      if (same != null) 'end_time': _isoOn(date, same['end'] as String?),
     };
   }
   return null;
