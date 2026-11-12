@@ -33,5 +33,5 @@ class AppConfig {
 
   /// The version the build ships as, the name part of `version:` in
   /// pubspec.yaml. A test fails when they differ.
-  static const String buildVersion = '1.0.0';
+  static const String buildVersion = '1.1.0';
 }

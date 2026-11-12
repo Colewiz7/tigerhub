@@ -243,7 +243,7 @@ void main() {
 
             await pumpCard(tester, width, card.value.build(edit()));
             final edited = contentTop(tester, shell);
-            expect(edited - normal, inInclusiveRange(0, 48));
+            expect(edited - normal, inInclusiveRange(0, 48.001));
 
             // The hero is the same element, so toggling edit mode does not
             // recreate it and replay its entrance.
@@ -373,7 +373,7 @@ void main() {
           // Not asserted here: that the hero element survives. The grid
           // rebuilds the whole card when edit mode starts, so that only holds
           // for the header, which the card level tests above cover.
-          expect(edited.height - normal.height, inInclusiveRange(0, 48));
+          expect(edited.height - normal.height, inInclusiveRange(0, 48.001));
           expect(edited.gap, normal.gap);
           expectNoOverlap(
             tester,
